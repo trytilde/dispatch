@@ -38,6 +38,12 @@ importers:
       '@openbot/providers':
         specifier: workspace:*
         version: link:packages/providers
+      '@openbot/skills-provider':
+        specifier: workspace:*
+        version: link:packages/skills-provider
+      '@openbot/skills-provider-core':
+        specifier: workspace:*
+        version: link:packages/skills-provider-core
       '@playwright/test':
         specifier: 1.55.0
         version: 1.55.0
@@ -211,6 +217,15 @@ importers:
       '@openbot/providers':
         specifier: workspace:*
         version: link:../../packages/providers
+      '@openbot/skills-provider':
+        specifier: workspace:*
+        version: link:../../packages/skills-provider
+      '@openbot/skills-provider-core':
+        specifier: workspace:*
+        version: link:../../packages/skills-provider-core
+      '@trytilde/harness-sdk':
+        specifier: 0.1.2
+        version: 0.1.2
       '@trytilde/harness-sdk-vercel-ai-node':
         specifier: 0.2.0
         version: 0.2.0(@ai-sdk/mcp@1.0.70(zod@4.4.3))(@trytilde/harness-sdk@0.1.2)(ai@6.0.250(zod@4.4.3))
@@ -561,6 +576,50 @@ importers:
       microsandbox:
         specifier: 0.6.8
         version: 0.6.8
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
+
+  packages/skills-provider:
+    dependencies:
+      '@openbot/skills-provider-core':
+        specifier: workspace:*
+        version: link:../skills-provider-core
+      '@trytilde/api-client':
+        specifier: github:trytilde/harness-sdk#c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d&path:packages/api-client
+        version: git+https://git@github.com:trytilde/harness-sdk.git#c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d&path:packages/api-client
+      '@trytilde/harness-sdk':
+        specifier: 0.1.2
+        version: 0.1.2
+      ai:
+        specifier: 6.0.250
+        version: 6.0.250(zod@4.4.3)
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
+
+  packages/skills-provider-core:
+    dependencies:
+      ai:
+        specifier: 6.0.250
+        version: 6.0.250(zod@4.4.3)
     devDependencies:
       '@types/node':
         specifier: 24.3.0
@@ -2414,6 +2473,10 @@ packages:
 
   '@trytilde/api-client@0.1.2':
     resolution: {integrity: sha512-kpwS1CgRqVrTrcYJ5ZrZm+iA1gamx5CO9YRzTT9rEdn5bIOTsrbHyTCvbBTH9XrBD3Q5K3dFenW0H2Ku7NMScA==}
+
+  '@trytilde/api-client@git+https://git@github.com:trytilde/harness-sdk.git#c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d&path:packages/api-client':
+    resolution: {commit: c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d, path: packages/api-client, repo: git@github.com:trytilde/harness-sdk.git, type: git}
+    version: 0.1.2
 
   '@trytilde/cli@0.1.0':
     resolution: {integrity: sha512-6gJ8BrU2nYS2i3rKd2lubRTA8TVdWeBrUTD2XbKrX1s625lQ/n+My8muOQARxRP+B04PY2apuYJCNni1I+WqHw==}
@@ -6700,6 +6763,8 @@ snapshots:
 
   '@trytilde/api-client@0.1.2': {}
 
+  '@trytilde/api-client@git+https://git@github.com:trytilde/harness-sdk.git#c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d&path:packages/api-client': {}
+
   '@trytilde/cli@0.1.0(@types/react@19.2.18)':
     dependencies:
       '@trytilde/harness-sdk': 0.1.2
@@ -7189,14 +7254,6 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       vite: 7.3.6(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.20.4)(yaml@2.9.0)
-
-  '@vitest/mocker@3.2.4(vite@7.3.6(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      vite: 7.3.6(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -9894,7 +9951,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.3.6(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0))
+      '@vitest/mocker': 3.2.4(vite@7.3.6(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.20.4)(yaml@2.9.0))
       '@vitest/pretty-format': 3.2.7
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4

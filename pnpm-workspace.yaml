@@ -3,6 +3,7 @@ packages:
   - packages/*
 
 onlyBuiltDependencies:
+  - '@trytilde/api-client'
   - '@bufbuild/buf'
   - electron
   - esbuild

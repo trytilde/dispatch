@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ApprovalCard, TaskRows, Thinking, ToolChips } from "@openbot/ui";
 import type { Sandbox } from "@openbot/contracts";
-import { InstallationPhase, type Agent, type ChatMessage as OpenBotMessage, type ChatSession, type InstallationStatus } from "@openbot/control-service-proto";
-import { agentClient, chatClient, installationClient, sandboxClient } from "../client.js";
+import { InstallationPhase, type Agent, type ChatMessage as OpenBotMessage, type ChatSession, type InstallationStatus, type Skill } from "@openbot/control-service-proto";
+import { agentClient, chatClient, installationClient, sandboxClient, skillsClient } from "../client.js";
 
 type Gate = "loading" | "locked" | "app";
 
@@ -238,6 +238,7 @@ function Workspace() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState("");
   const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [messages, setMessages] = useState<OpenBotMessage[]>([]);
   const [chatBusy, setChatBusy] = useState(false);
@@ -255,6 +256,7 @@ function Workspace() {
       setAgents(result.agents);
       setSelectedAgentId((current) => current || result.agents[0]?.id || "");
     });
+    void skillsClient.listSkills({ pageSize: 8 }).then((result) => setSkills(result.skills)).catch(() => undefined);
     void sandboxClient.getSandbox({}).then(setComputer).catch(() => undefined);
   }, []);
 
@@ -316,7 +318,7 @@ function Workspace() {
   }
   return (
     <main className="workspace-shell">
-      <aside className="rail"><Brand /><button className="new-chat" onClick={() => void newSession()} disabled={!selectedAgent}><span>+</span> New chat</button><nav><p>Agents</p>{agents.map((agent) => <div key={agent.id}><button className={`agent-row ${agent.id === selectedAgent?.id ? "active" : ""}`} onClick={() => setSelectedAgentId(agent.id)}><span className="avatar">{agent.displayName.slice(0, 1)}</span><span><strong>{agent.displayName}</strong><small>{agent.status}</small></span></button>{agent.id === selectedAgent?.id ? <div className="session-list">{sessions.map((session) => <button key={session.id} className={session.id === selectedSessionId ? "active" : ""} onClick={() => setSelectedSessionId(session.id)}>{session.title || "New chat"}</button>)}</div> : null}</div>)}</nav><div className="rail-footer"><span className="status-dot" /> Tilde ChatKit</div></aside>
+      <aside className="rail"><Brand /><button className="new-chat" onClick={() => void newSession()} disabled={!selectedAgent}><span>+</span> New chat</button><nav><p>Agents</p>{agents.map((agent) => <div key={agent.id}><button className={`agent-row ${agent.id === selectedAgent?.id ? "active" : ""}`} onClick={() => setSelectedAgentId(agent.id)}><span className="avatar">{agent.displayName.slice(0, 1)}</span><span><strong>{agent.displayName}</strong><small>{agent.status}</small></span></button>{agent.id === selectedAgent?.id ? <div className="session-list">{sessions.map((session) => <button key={session.id} className={session.id === selectedSessionId ? "active" : ""} onClick={() => setSelectedSessionId(session.id)}>{session.title || "New chat"}</button>)}</div> : null}</div>)}{skills.length ? <div className="managed-skills"><p>Managed skills</p>{skills.map((skill) => <span key={skill.id} title={skill.description}>{skill.name}</span>)}</div> : null}</nav><div className="rail-footer"><span className="status-dot" /> Tilde ChatKit</div></aside>
       <section className="chat-pane"><header><div><p className="eyebrow">Agent workspace</p><h2>{selectedAgent?.displayName ?? "OpenBot"}</h2></div><button className="secondary" onClick={() => void startComputer()} disabled={sandboxBusy}>{sandboxBusy ? "Starting…" : computer ? "Open computer" : "Start computer"}</button></header><div className="conversation">{messages.length === 0 ? <EmptyChat name={selectedAgent?.displayName ?? "your agent"} /> : messages.map((message) => <ChatMessage key={message.id} message={message} />)}{chatBusy ? <div className="thinking-inline"><span /> Thinking</div> : null}{chatError ? <p className="error">{chatError}</p> : null}</div><form className="composer" onSubmit={send}><textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask OpenBot to get something done…" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }} /><div><span>Tilde ChatKit · OpenAI</span><button aria-label="Send" disabled={!draft.trim() || chatBusy || !selectedAgent}><Arrow /></button></div></form></section>
       <section className="work-pane"><header className="tabs">{["Desktop", "Files", "Terminal", "Activity"].map((tab) => <button className={workspaceTab === tab ? "active" : ""} onClick={() => setWorkspaceTab(tab)} key={tab}>{tab}</button>)}</header><div className="workspace-content">{workspaceTab === "Desktop" ? desktopUrl ? <iframe title="Agent desktop" src={desktopUrl} /> : <DesktopEmpty onStart={() => void startComputer()} busy={sandboxBusy} /> : workspaceTab === "Terminal" ? <TerminalStub sandboxId={computer?.id ?? ""} /> : workspaceTab === "Files" ? <FilesStub /> : <ActivityStub />}</div></section>
     </main>

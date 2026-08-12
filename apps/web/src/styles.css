@@ -99,6 +99,9 @@ h1 { font-size: clamp(2rem, 4vw, 3.75rem); line-height: .98; letter-spacing: -.0
 .session-list { margin: 2px 0 9px 47px; display: grid; gap: 2px; }
 .session-list button { overflow: hidden; padding: 5px 7px; border-radius: 6px; color: var(--ink-3); background: transparent; text-align: left; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
 .session-list button:hover, .session-list button.active { color: var(--ink); background: var(--field); }
+.managed-skills { display: grid; gap: 4px; margin-top: 18px; }
+.managed-skills > p { margin-bottom: 2px; }
+.managed-skills > span { overflow: hidden; padding: 4px 7px; color: var(--ink-3); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .rail-footer { margin-top: auto; padding: 10px; display: flex; align-items: center; gap: 7px; color: var(--ink-3); font-size: 10px; }.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-tint); }
 .chat-pane { min-width: 0; display: grid; grid-template-rows: auto 1fr auto; border-right: 1px solid var(--line); background: var(--surface); }
 .chat-pane > header { height: 67px; padding: 0 22px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }.chat-pane header h2 { margin-top: 3px; font-size: 15px; }

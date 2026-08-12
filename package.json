@@ -35,6 +35,8 @@
     "@openbot/db": "workspace:*",
     "@openbot/inference-model-provider": "workspace:*",
     "@openbot/providers": "workspace:*",
+    "@openbot/skills-provider": "workspace:*",
+    "@openbot/skills-provider-core": "workspace:*",
     "@playwright/test": "1.55.0",
     "@trytilde/cli": "0.1.0",
     "@trytilde/harness-sdk-vercel-ai-node": "0.2.0",

@@ -6,6 +6,7 @@
     "@openbot/agent-provider",
     "@openbot/agent-provider-core",
     "@openbot/box-host",
+    "@openbot/cli",
     "@openbot/computer-provider-core",
     "@openbot/computer-providers",
     "@openbot/computer-service",

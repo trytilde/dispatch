@@ -29,12 +29,14 @@ pnpm --filter @openbot/desktop package
 Run focused package tests while iterating:
 
 ```bash
+pnpm --filter @openbot/cli test
 pnpm --filter @openbot/server test
 pnpm --filter @openbot/db test
 ```
 
 ## Repository map
 
+- `cli`: React Ink repository CLI, local Hono listener, dev supervision, and production deployment.
 - `apps/web`: React 19, Vite, TanStack Router, Connect clients.
 - `apps/server`: Hono HTTP routes, ConnectRPC services, Tilde agent runtime.
 - `apps/desktop`: Electron main/preload shell and packaged local server.
@@ -46,8 +48,8 @@ pnpm --filter @openbot/db test
 - `configuration`: fork-owned Vercel AI SDK agent endpoints, runtime skills, sandbox seed, and provider plugins.
 - `packages/db`: Drizzle over local SQLite or remote libSQL/Turso.
 - `packages/ui`: shared React UI and vendored Beautiful UI components.
-- `api/index.ts`: Vercel Function entrypoint.
-- `scripts/`: local development and coordinated production deployment.
+- `server.ts`: portable root Hono entrypoint for Vercel.
+- `scripts/`: non-interactive build helpers that do not belong to the operator CLI.
 - `docs/adrs`: concise records of durable architecture, code, and product design decisions.
 - `tilde.state.yaml`: portable Tilde ChatKit resources; never a secret store.
 
@@ -103,7 +105,7 @@ pnpm --filter @openbot/db test
 
 ## Local development
 
-`pnpm dev` loads `.env.local`, creates local control state under `.data/`, generates contracts, builds box-host, migrates the database, and starts server/web plus Electron when available. With Tilde credentials, it runs through `tilde tunnel`.
+`pnpm dev` delegates to `openbot dev`, loads `.env.local`, generates contracts, and starts the watched Hono app, web app, and Electron when available. `pnpm local` runs the built web UI and control routes from one Hono origin.
 
 - Default web URL: `http://127.0.0.1:4173`.
 - Default control server: `http://127.0.0.1:4100`.

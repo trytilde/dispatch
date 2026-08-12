@@ -9,7 +9,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe("TildeAgentProvider", () => {
   it("maps grouped Mission Control sessions", async () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
-      const url = String(input);
+      const url = requestUrl(input);
       expect(url).toContain("/chatkit/mission-control/sidebar?");
       expect(url).toContain("agent_sort=updated_at");
       return Response.json({
@@ -41,10 +41,12 @@ describe("TildeAgentProvider", () => {
 
   it("registers and unregisters agents without exposing control operations as tools", async () => {
     const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-      const url = String(input);
-      if (init?.method === "DELETE") return new Response(null, { status: 204 });
+      const url = requestUrl(input);
+      const method = input instanceof Request ? input.method : init?.method;
+      if (method === "DELETE") return new Response(null, { status: 204 });
       expect(url).toContain("/chatkit/agents/http-vercel-ai-sdk");
-      expect(init?.body).toContain("https://openbot.test/api/agents/scout");
+      const body = input instanceof Request ? await input.clone().text() : String(init?.body ?? "");
+      expect(body).toContain("https://openbot.test/api/agents/scout");
       return Response.json({
         agent: { id: "scout", configuration: { display_name: "Scout", endpoint_url: "https://openbot.test/api/agents/scout" }, status: "enabled" },
         api_key: "agent-api-key",
@@ -63,7 +65,7 @@ describe("TildeAgentProvider", () => {
 
   it("creates sessions and sends messages", async () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
-      const url = String(input);
+      const url = requestUrl(input);
       if (url.endsWith("/sessions")) {
         return Response.json({ session: { id: "session-one", created_at: "2026-08-12T00:00:00.000Z", updated_at: "2026-08-12T00:00:00.000Z" } });
       }
@@ -81,3 +83,7 @@ describe("TildeAgentProvider", () => {
     expect(messages.items.map((message) => [message.role, message.text])).toEqual([["user", "hello"], ["assistant", "hi"]]);
   });
 });
+
+function requestUrl(input: string | URL | Request): string {
+  return input instanceof Request ? input.url : String(input);
+}

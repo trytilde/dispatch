@@ -37,6 +37,11 @@ that internal interface to ConnectRPC for the web and Electron renderer.
 one-time credentials; source-level `CreateAgent` continues to open a pull
 request under ADR-0001.
 
+Tilde implementations use the Harness SDK. They prefer its high-level domain
+clients and use its generated typed API client where a high-level operation is
+not available; provider implementations do not call untyped Tilde endpoints
+with `fetch`.
+
 Model-facing capabilities are explicit and optional: a provider that needs to
 expose AI SDK tools implements `registerTools()`, and a provider that needs to
 contribute instructions implements `injectPromptPart()`. Control-plane agent

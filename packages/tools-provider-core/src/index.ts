@@ -1,5 +1,6 @@
 import type { ToolSet } from "ai";
-import type { DeployableProvider } from "@openbot/runtime-provider-core";
+import type { OptionalDeployable } from "@openbot/runtime-provider-core";
+export type { Deployable } from "@openbot/runtime-provider-core";
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
@@ -63,7 +64,7 @@ export interface ToolsPromptContext {
   userId?: string;
 }
 
-export interface ToolsProvider extends DeployableProvider {
+export interface ToolsProvider extends OptionalDeployable {
   readonly descriptor: ToolsProviderDescriptor;
   health(context: ToolsProviderCallContext): Promise<{ healthy: boolean; message?: string }>;
   listTools(context: ToolsProviderCallContext): Promise<readonly ToolSummary[]>;

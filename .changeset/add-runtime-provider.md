@@ -10,4 +10,4 @@
 "@openbot/tools-provider-core": patch
 ---
 
-Add one-command phased provider deployment and the Vercel runtime implementation.
+Add one-command provider lifecycle deployment with Vercel and local systemd or launchd runtimes.

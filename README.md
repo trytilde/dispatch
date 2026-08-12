@@ -17,6 +17,8 @@ pnpm dev
 
 No setup or pairing code is required. The web app is a disconnected UX shell and `control-service-proto` is intentionally empty while the frontend contract is designed.
 
+After `pnpm build`, `pnpm --filter @openbot/server start` serves the web UI, SPA routes, `/healthz`, and `/rpc` from the single Hono origin at `http://127.0.0.1:4100`.
+
 ## Deploy to Vercel
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftrytilde%2Fopenbot&project-name=openbot&repository-name=openbot)
@@ -26,12 +28,12 @@ pnpm deploy:prod -- --dry-run --json
 pnpm deploy:prod -- --yes
 ```
 
-The production workflow validates and builds the monorepo, deploys the static frontend and bare Hono API, then verifies `/healthz`.
+The production build stages the web app in `public/` for Vercel's static CDN and deploys the bare Hono server for `/healthz` and `/rpc`. The same Hono app serves the built web UI and SPA fallbacks directly when run locally or on another Node.js host.
 
 ## Current application boundary
 
 - `apps/web` owns the UX shell and frontend routes.
-- `apps/server` owns a bare Hono server, `/healthz`, and ConnectRPC federation under `/rpc`.
+- `apps/server` owns a bare Hono server, the built web UI fallback, `/healthz`, and ConnectRPC federation under `/rpc`.
 - `packages/control-service-proto` is the future owner-facing API contract and is intentionally empty.
 - Domain packages remain available but are not wired into the application yet.
 

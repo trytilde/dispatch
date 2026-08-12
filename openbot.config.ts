@@ -23,6 +23,5 @@ export default defineConfig({
   sandbox: {
     assetsDirectory: "configuration/sandbox/assets",
     bootstrap: "configuration/sandbox/bootstrap.sh",
-    secretsManifest: "configuration/sandbox/secrets.example.yaml",
   },
 });

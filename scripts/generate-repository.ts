@@ -16,7 +16,6 @@ export async function discoverRepositoryFiles(base = root): Promise<string[]> {
     repositoryConfig.skills.directory,
     repositoryConfig.sandbox.assetsDirectory,
     repositoryConfig.sandbox.bootstrap,
-    repositoryConfig.sandbox.secretsManifest,
   ];
   const files: string[] = [];
   for (const candidate of candidates) await walk(resolve(base, candidate), base, files);

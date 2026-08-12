@@ -8,21 +8,26 @@
     "node": "24.x"
   },
   "scripts": {
-    "build": "XDG_CACHE_HOME=.cache pnpm contracts:generate && XDG_CACHE_HOME=.cache turbo run build",
-    "check": "XDG_CACHE_HOME=.cache pnpm contracts:generate && XDG_CACHE_HOME=.cache tsc -p scripts/tsconfig.json && XDG_CACHE_HOME=.cache turbo run typecheck lint test && pnpm vitest run scripts",
+    "build": "XDG_CACHE_HOME=.cache pnpm openbot:generate && pnpm contracts:generate && XDG_CACHE_HOME=.cache turbo run build",
+    "check": "XDG_CACHE_HOME=.cache pnpm openbot:generate && pnpm contracts:generate && XDG_CACHE_HOME=.cache tsc -p scripts/tsconfig.json && XDG_CACHE_HOME=.cache turbo run typecheck lint test && pnpm vitest run scripts",
     "contracts:generate": "XDG_CACHE_HOME=.cache pnpm --filter @openbot/contracts generate",
     "db:migrate": "pnpm --filter @openbot/db migrate",
     "dev": "tsx scripts/dev.ts",
     "dev:local": "tsx scripts/dev-local.ts",
     "deploy:prod": "tsx scripts/deploy-prod.ts",
+    "openbot:generate": "tsx scripts/generate-repository.ts",
+    "openbot": "tsx scripts/openbot.ts",
     "test": "vitest run scripts && turbo run test",
     "test:e2e": "playwright test",
-    "typecheck": "XDG_CACHE_HOME=.cache pnpm contracts:generate && XDG_CACHE_HOME=.cache tsc -p scripts/tsconfig.json && XDG_CACHE_HOME=.cache turbo run typecheck"
+    "typecheck": "XDG_CACHE_HOME=.cache pnpm openbot:generate && pnpm contracts:generate && XDG_CACHE_HOME=.cache tsc -p scripts/tsconfig.json && XDG_CACHE_HOME=.cache turbo run typecheck"
   },
   "devDependencies": {
+    "@openbot/agent-sdk": "workspace:*",
+    "@openbot/config": "workspace:*",
     "@playwright/test": "1.55.0",
     "@vercel/sandbox": "3.0.0",
     "@openbot/providers": "workspace:*",
+    "ai": "6.0.250",
     "@trytilde/cli": "0.1.0",
     "@types/node": "24.3.0",
     "@openbot/db": "workspace:*",

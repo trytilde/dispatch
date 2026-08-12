@@ -1,0 +1,4 @@
+interface:
+  display_name: "Customize OpenBot"
+  short_description: "Change repository-owned OpenBot behavior safely"
+  default_prompt: "Inspect this OpenBot fork and implement the requested repository configuration change."

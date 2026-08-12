@@ -7,7 +7,7 @@
   "functions": {
     "api/index.ts": {
       "maxDuration": 300,
-      "includeFiles": "apps/server/dist/**"
+      "includeFiles": "{apps/server/dist,agents,providers,skills,sandbox}/**/*"
     }
   },
   "rewrites": [

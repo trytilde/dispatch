@@ -1,0 +1,13 @@
+# Contributing
+
+Use Node 24 and pnpm 10. Work on a focused branch, preserve unrelated fork changes, and run:
+
+```bash
+pnpm install
+pnpm check
+pnpm build
+```
+
+Provider contracts belong in `packages/provider-sdk`; default integrations belong in `packages/providers`; fork-specific integrations belong in `providers/`. Agent prompts and execution belong in `agents/`, not the server router. Never commit `.env`, `sandbox/secrets.yaml`, deployment state, or generated credentials.
+
+When contributing from a fork, separate reusable core changes from private configuration. `.agents/skills/upstream-pr` documents the repository workflow for coding agents.

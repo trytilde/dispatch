@@ -1,0 +1,4 @@
+interface:
+  display_name: "Update OpenBot"
+  short_description: "Bring upstream OpenBot changes into a fork"
+  default_prompt: "Update this OpenBot fork from upstream while preserving repository configuration."

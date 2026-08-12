@@ -1,0 +1,26 @@
+{
+  "name": "@openbot/computer-providers",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "assets:generate": "node scripts/generate-assets.mjs",
+    "build": "pnpm assets:generate && tsc --noEmit",
+    "lint": "pnpm assets:generate && tsc --noEmit",
+    "test": "pnpm assets:generate && vitest run",
+    "typecheck": "pnpm assets:generate && tsc --noEmit"
+  },
+  "dependencies": {
+    "@openbot/computer-provider-core": "workspace:*",
+    "@vercel/sandbox": "3.0.0",
+    "ai": "6.0.250",
+    "microsandbox": "0.6.8",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.3.0",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}

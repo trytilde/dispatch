@@ -1,4 +1,4 @@
-import { createDatabase, eq, installations } from "@openbot/db";
+import { and, createDatabase, eq, installations, lifecycleLeases } from "@openbot/db";
 import type { SandboxHandle } from "@openbot/provider-sdk";
 
 export const installationId = "default";
@@ -24,6 +24,7 @@ export async function ensureInstallation(origin?: string) {
     sandboxState: null,
     sandboxCreatedAt: null,
     sandboxCheckpointId: null,
+    configurationDigest: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -40,9 +41,26 @@ export async function updateInstallation(patch: Partial<{
   sandboxState: string | null;
   sandboxCreatedAt: Date | null;
   sandboxCheckpointId: string | null;
+  configurationDigest: string | null;
 }>) {
   await ensureInstallation();
   await createDatabase().update(installations).set({ ...patch, updatedAt: new Date() }).where(eq(installations.id, installationId));
+}
+
+export async function withLifecycleLease<T>(id: string, action: () => Promise<T>): Promise<T> {
+  const db = createDatabase();
+  const holder = crypto.randomUUID();
+  const now = new Date();
+  const expiresAt = new Date(now.valueOf() + 5 * 60_000);
+  await db.insert(lifecycleLeases).values({ id, holder, expiresAt }).onConflictDoNothing();
+  let [lease] = await db.select().from(lifecycleLeases).where(eq(lifecycleLeases.id, id));
+  if (lease?.holder !== holder && lease && lease.expiresAt <= now) {
+    await db.update(lifecycleLeases).set({ holder, expiresAt }).where(and(eq(lifecycleLeases.id, id), eq(lifecycleLeases.holder, lease.holder)));
+    [lease] = await db.select().from(lifecycleLeases).where(eq(lifecycleLeases.id, id));
+  }
+  if (lease?.holder !== holder) throw new Error(`Lifecycle ${id} is already running`);
+  try { return await action(); }
+  finally { await db.delete(lifecycleLeases).where(and(eq(lifecycleLeases.id, id), eq(lifecycleLeases.holder, holder))); }
 }
 
 export async function persistSandbox(handle: SandboxHandle): Promise<void> {

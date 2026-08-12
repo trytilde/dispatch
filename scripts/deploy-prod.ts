@@ -145,6 +145,7 @@ async function main(): Promise<void> {
     delete state.steps.validate;
     delete state.steps.deploy_initial;
     delete state.steps.deploy_final;
+    delete state.steps.reconcile;
     delete state.steps.smoke;
   }
 
@@ -404,6 +405,13 @@ async function main(): Promise<void> {
   await step("deploy_final", async () => {
     state.deploymentUrl = await deployVercel(env);
     state.publicOrigin = await productionOrigin(state.deploymentUrl, projectName, env);
+  });
+
+  await step("reconcile", async () => {
+    if (!state.publicOrigin) throw new Error("Final deployment origin is missing");
+    const cookie = await unlock(state.publicOrigin, setupCode);
+    const response = await fetch(`${state.publicOrigin}/api/admin/reconcile`, { method: "POST", headers: { cookie } });
+    if (!response.ok) throw new Error(`Repository reconciliation failed (${response.status}): ${await response.text()}`);
   });
 
   await step("smoke", async () => {

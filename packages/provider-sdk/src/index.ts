@@ -10,7 +10,11 @@ export type ProviderKind =
   | "chat"
   | "environment"
   | "tool"
-  | "workspace-storage";
+  | "workspace-storage"
+  | "source-control"
+  | "deployment";
+
+export type ExtensionProviderKind = ProviderKind;
 
 export interface ProviderDescriptor {
   id: string;
@@ -110,6 +114,18 @@ export interface PromptProvider extends Provider {
 export interface SandboxSpec {
   image?: string;
   labels?: Readonly<Record<string, string>>;
+  repository?: {
+    digest: string;
+    assets: readonly SandboxAsset[];
+    bootstrap?: string;
+    environment?: Readonly<Record<string, string>>;
+  };
+}
+
+export interface SandboxAsset {
+  path: string;
+  contentBase64: string;
+  executable: boolean;
 }
 
 export interface SandboxHandle {
@@ -151,6 +167,18 @@ export interface CreateAgentSpec {
   timeoutMs?: number;
 }
 
+export interface AgentRegistrationSpec extends CreateAgentSpec {
+  sourceId: string;
+  sourceDigest: string;
+}
+
+export interface RegisteredAgent extends AgentRecord {
+  credentials?: {
+    apiKey: string;
+    webhookSigningKey: string;
+  };
+}
+
 export interface CreatedAgent {
   agent: AgentRecord;
   credentials: {
@@ -165,6 +193,9 @@ export interface AgentProvider extends Provider {
   get(id: string, context: ProviderCallContext): Promise<AgentRecord>;
   create(spec: CreateAgentSpec, context: ProviderCallContext): Promise<CreatedAgent>;
   update(id: string, patch: { displayName?: string; endpointUrl?: URL }, context: ProviderCallContext): Promise<AgentRecord>;
+  register(spec: AgentRegistrationSpec, context: ProviderCallContext): Promise<RegisteredAgent>;
+  inspect(id: string, context: ProviderCallContext): Promise<RegisteredAgent>;
+  disable(id: string, context: ProviderCallContext): Promise<void>;
 }
 
 export interface ChatSession {
@@ -219,6 +250,32 @@ export interface ToolProvider extends SystemPromptInjectingProvider {
 export interface SkillProvider extends SystemPromptInjectingProvider {
   listSkills(context: ProviderCallContext): Promise<readonly PromptSkillSummary[]>;
   readSkill(id: string, context: ProviderCallContext): Promise<string>;
+  reconcileRegistry?(spec: SkillRegistrySpec, context: ProviderCallContext): Promise<SkillRegistryResult>;
+  inspectRegistry?(id: string, context: ProviderCallContext): Promise<SkillRegistryResult>;
+}
+
+export interface SkillRegistration {
+  name: string;
+  description: string;
+  content: string;
+  sourcePath: string;
+  digest: string;
+}
+
+export interface SkillRegistrySpec {
+  name: string;
+  description: string;
+  skills: readonly SkillRegistration[];
+  existingRegistryId?: string;
+  existingSkills?: Readonly<Record<string, string>>;
+}
+
+export interface SkillRegistryResult {
+  id: string;
+  name: string;
+  skills: ReadonlyArray<PromptSkillSummary & { digest?: string }>;
+  created: boolean;
+  changed: boolean;
 }
 
 export interface MemoryProvider extends SystemPromptInjectingProvider {
@@ -229,4 +286,90 @@ export interface MemoryProvider extends SystemPromptInjectingProvider {
 export interface WorkspaceStorageProvider extends SystemPromptInjectingProvider {
   read(path: string, context: ProviderCallContext): Promise<Uint8Array>;
   write(path: string, content: Uint8Array, context: ProviderCallContext): Promise<void>;
+}
+
+export interface SourceFileChange {
+  path: string;
+  content: string;
+}
+
+export interface PullRequestPublication {
+  id: string;
+  branch: string;
+  url: URL;
+  status: "open" | "merged" | "closed";
+}
+
+export interface SourceControlProvider extends Provider {
+  publishPullRequest(input: {
+    branch: string;
+    title: string;
+    body: string;
+    baseBranch: string;
+    files: readonly SourceFileChange[];
+  }, context: ProviderCallContext): Promise<PullRequestPublication>;
+  inspectPullRequest(id: string, context: ProviderCallContext): Promise<PullRequestPublication>;
+}
+
+export interface DeploymentProvider extends Provider {
+  deploymentForCommit(commitSha: string, context: ProviderCallContext): Promise<{
+    id: string;
+    url?: URL;
+    status: "pending" | "ready" | "failed" | "unknown";
+  }>;
+}
+
+export interface ProviderFactoryContext {
+  options: unknown;
+  getSecret(name: string): Promise<string | undefined>;
+}
+
+export type ProviderFactory<T extends Provider = Provider> = (
+  context: ProviderFactoryContext,
+) => T | Promise<T>;
+
+export interface ProviderPluginRegistration {
+  kind: ExtensionProviderKind;
+  id: string;
+  create: ProviderFactory;
+}
+
+export interface ProviderPlugin {
+  id: string;
+  registrations: readonly ProviderPluginRegistration[];
+}
+
+export interface ProviderPluginBuilder {
+  register(kind: ExtensionProviderKind, id: string, create: ProviderFactory): void;
+  ai(id: string, create: ProviderFactory<AiProvider>): void;
+  agent(id: string, create: ProviderFactory<AgentProvider>): void;
+  chat(id: string, create: ProviderFactory<ChatProvider>): void;
+  skills(id: string, create: ProviderFactory<SkillProvider>): void;
+  sandbox(id: string, create: ProviderFactory<SandboxProvider>): void;
+  environment(id: string, create: ProviderFactory<EnvProvider>): void;
+  sourceControl(id: string, create: ProviderFactory<SourceControlProvider>): void;
+  deployment(id: string, create: ProviderFactory<DeploymentProvider>): void;
+}
+
+export function defineProviderPlugin(input: {
+  id: string;
+  register(builder: ProviderPluginBuilder): void;
+}): ProviderPlugin {
+  const registrations: ProviderPluginRegistration[] = [];
+  const add = (kind: ExtensionProviderKind, id: string, create: ProviderFactory): void => {
+    registrations.push({ kind, id, create });
+  };
+  const builder: ProviderPluginBuilder = {
+    register: add,
+    ai: (id, create) => add("ai", id, create),
+    agent: (id, create) => add("agent", id, create),
+    chat: (id, create) => add("chat", id, create),
+    skills: (id, create) => add("skill", id, create),
+    sandbox: (id, create) => add("sandbox", id, create),
+    environment: (id, create) => add("environment", id, create),
+    sourceControl: (id, create) => add("source-control", id, create),
+    deployment: (id, create) => add("deployment", id, create),
+  };
+  input.register(builder);
+  return { id: input.id, registrations };
 }

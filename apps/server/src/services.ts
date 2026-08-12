@@ -15,6 +15,7 @@ import type {
   ChatSession,
   ProviderCallContext,
   SandboxHandle,
+  SandboxProvider,
 } from "@openbot/provider-sdk";
 import { ProviderError } from "@openbot/provider-sdk";
 import {
@@ -34,12 +35,15 @@ import {
   setEnvironment,
   tildeEnvironment,
 } from "./environment.js";
+import { configuredProvider } from "./provider-registry.js";
+import { publishAgent } from "./publishing.js";
 import {
   clearSandbox,
   ensureInstallation,
   persistSandbox,
   updateInstallation,
 } from "./store.js";
+import { loadRepository } from "./repository.js";
 
 function authorized(context: HandlerContext): void {
   if (!hasValidSession(context.requestHeader.get("cookie"), setupCode())) {
@@ -244,21 +248,9 @@ export function registerServices(router: ConnectRouter): void {
     async createAgent(request, context) {
       authorized(context);
       if (!request.displayName.trim()) throw new ConnectError("Agent display name is required", Code.InvalidArgument);
-      const installation = await ensureInstallation();
-      if (!installation.publicOrigin) throw new ConnectError("Public origin is not configured", Code.FailedPrecondition);
-      const provider = (await tildeProviders()).agents;
-      const created = await provider.create({
-        displayName: request.displayName.trim(),
-        endpointUrl: new URL("/api/tilde/chatkit", installation.publicOrigin),
-        streaming: true,
-        timeoutMs: 300_000,
-      }, providerContext(undefined, context.signal));
-      const suffix = created.agent.id.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-      await setEnvironment({
-        [`OPENBOT_TILDE_AGENT_${suffix}_API_KEY`]: created.credentials.apiKey,
-        [`OPENBOT_TILDE_AGENT_${suffix}_WEBHOOK_SIGNING_KEY`]: created.credentials.webhookSigningKey,
-      });
-      return protoAgent(created.agent);
+      const id = `${request.displayName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 48) || "agent"}-${crypto.randomUUID().slice(0, 6)}`;
+      const publication = await publishAgent({ id, displayName: request.displayName.trim() }, context.signal);
+      return protoAgent({ id, displayName: request.displayName.trim(), status: "pull_request", endpointUrl: publication.pullRequestUrl, createdAt: new Date(), updatedAt: new Date() });
     },
     async getAgent(request, context) {
       authorized(context);
@@ -330,8 +322,8 @@ export function registerServices(router: ConnectRouter): void {
       authorized(context);
       const existing = await currentSandbox(providerContext(undefined, context.signal), false);
       if (existing?.state === "running" || existing?.state === "starting") return protoSandbox(existing);
-      const handle = await defaultSandboxProvider().create(
-        { image: request.image || undefined },
+      const handle = await (await configuredProvider<SandboxProvider>("sandbox")).create(
+        await sandboxSpec(request.image || undefined),
         providerContext(undefined, context.signal),
       );
       await persistSandbox(handle);
@@ -344,29 +336,42 @@ export function registerServices(router: ConnectRouter): void {
     async exec(request, context) {
       authorized(context);
       const handle = await requiredSandbox(providerContext(undefined, context.signal));
-      return defaultSandboxProvider().exec(handle.id, request.command, request.arguments, providerContext(undefined, context.signal));
+      return (await configuredProvider<SandboxProvider>("sandbox")).exec(handle.id, request.command, request.arguments, providerContext(undefined, context.signal));
     },
     async getDesktop(_request, context) {
       authorized(context);
       const handle = await requiredSandbox(providerContext(undefined, context.signal));
-      const desktop = await defaultSandboxProvider().desktop(handle.id, providerContext(undefined, context.signal));
+      const desktop = await (await configuredProvider<SandboxProvider>("sandbox")).desktop(handle.id, providerContext(undefined, context.signal));
       return { url: desktop.url.toString(), expiresAt: desktop.expiresAt.toISOString() };
     },
     async checkpoint(_request, context) {
       authorized(context);
       const current = await requiredSandbox(providerContext(undefined, context.signal));
-      const handle = await defaultSandboxProvider().checkpoint(current.id, providerContext(undefined, context.signal));
+      const handle = await (await configuredProvider<SandboxProvider>("sandbox")).checkpoint(current.id, providerContext(undefined, context.signal));
       await persistSandbox(handle);
       return protoSandbox(handle);
     },
     async stopSandbox(_request, context) {
       authorized(context);
       const current = await requiredSandbox(providerContext(undefined, context.signal));
-      const handle = await defaultSandboxProvider().stop(current.id, providerContext(undefined, context.signal));
+      const handle = await (await configuredProvider<SandboxProvider>("sandbox")).stop(current.id, providerContext(undefined, context.signal));
       await persistSandbox(handle);
       return protoSandbox(handle);
     },
   });
+}
+
+async function sandboxSpec(image?: string) {
+  const repository = await loadRepository();
+  return {
+    ...(image ? { image } : {}),
+    repository: {
+      digest: repository.digest,
+      assets: repository.sandbox.assets,
+      ...(repository.sandbox.bootstrap ? { bootstrap: repository.sandbox.bootstrap } : {}),
+      environment: repository.sandbox.secrets,
+    },
+  };
 }
 
 async function requiredSandbox(context: ProviderCallContext): Promise<SandboxHandle> {
@@ -378,7 +383,7 @@ async function requiredSandbox(context: ProviderCallContext): Promise<SandboxHan
 async function currentSandbox(context: ProviderCallContext, clearMissing: boolean): Promise<SandboxHandle | undefined> {
   const installation = await ensureInstallation();
   if (!installation.sandboxInstanceId) return undefined;
-  const provider = defaultSandboxProvider();
+  const provider = await configuredProvider<SandboxProvider>("sandbox");
   if (installation.sandboxProviderId && installation.sandboxProviderId !== provider.descriptor.id) {
     if (clearMissing) await clearSandbox();
     return undefined;

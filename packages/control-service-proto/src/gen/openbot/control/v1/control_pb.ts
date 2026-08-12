@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file openbot/control/v1/control.proto.
  */
 export const file_openbot_control_v1_control: GenFile = /*@__PURE__*/
-  fileDesc("CiBvcGVuYm90L2NvbnRyb2wvdjEvY29udHJvbC5wcm90bxISb3BlbmJvdC5jb250cm9sLnYxIh4KHEdldEluc3RhbGxhdGlvblN0YXR1c1JlcXVlc3Qi9QEKEkluc3RhbGxhdGlvblN0YXR1cxI0CgVwaGFzZRgBIAEoDjIlLm9wZW5ib3QuY29udHJvbC52MS5JbnN0YWxsYXRpb25QaGFzZRIXCg9vbmJvYXJkaW5nX3N0ZXAYAiABKAkSGAoQdGlsZGVfY29uZmlndXJlZBgDIAEoCBIYChBtb2RlbF9jb25maWd1cmVkGAQgASgIEhUKDXB1YmxpY19vcmlnaW4YBSABKAkSHAoUZW52aXJvbm1lbnRfcHJvdmlkZXIYBiABKAkSJwofZW52aXJvbm1lbnRfcHJvdmlkZXJfY29uZmlndXJlZBgHIAEoCCLJAgocQ29uZmlndXJlSW5zdGFsbGF0aW9uUmVxdWVzdBIVCg10aWxkZV9hcGlfa2V5GAEgASgJEiEKGXRpbGRlX3dlYmhvb2tfc2lnbmluZ19rZXkYAiABKAkSFAoMdGlsZGVfb3JnX2lkGAMgASgJEhUKDXRpbGRlX3RlYW1faWQYBCABKAkSFgoOdGlsZGVfYWdlbnRfaWQYBSABKAkSHAoUdGlsZGVfdWlfcHJvdmlkZXJfaWQYBiABKAkSFgoOb3BlbmFpX2FwaV9rZXkYByABKAkSFAoMb3BlbmFpX21vZGVsGAggASgJEhgKEHZlcmNlbF9hcGlfdG9rZW4YCSABKAkSIwobdGlsZGVfcnVudGltZV9tY3Bfc2VydmVyX2lkGAogASgJEh8KF3RpbGRlX3NraWxsX3JlZ2lzdHJ5X2lkGAsgASgJIigKGFNldE9uYm9hcmRpbmdTdGVwUmVxdWVzdBIMCgRzdGVwGAEgASgJIsMBCgVBZ2VudBIKCgJpZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSEwoLcHJvdmlkZXJfaWQYAyABKAkSDgoGc3RhdHVzGAQgASgJEhcKD2hhc191aV9lbmRwb2ludBgFIAEoCBIUCgxlbmRwb2ludF91cmwYBiABKAkSEgoKY3JlYXRlZF9hdBgHIAEoCRISCgp1cGRhdGVkX2F0GAggASgJEhwKFGxhc3RfdXNlcl9tZXNzYWdlX2F0GAkgASgJIoABChFMaXN0QWdlbnRzUmVxdWVzdBIRCglwYWdlX3NpemUYASABKA0SFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJEjAKBHNvcnQYAyABKA4yIi5vcGVuYm90LmNvbnRyb2wudjEuQWdlbnRTb3J0T3JkZXISDQoFcXVlcnkYBCABKAkiWAoSTGlzdEFnZW50c1Jlc3BvbnNlEikKBmFnZW50cxgBIAMoCzIZLm9wZW5ib3QuY29udHJvbC52MS5BZ2VudBIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkiHQoPR2V0QWdlbnRSZXF1ZXN0EgoKAmlkGAEgASgJIm4KElVwZGF0ZUFnZW50UmVxdWVzdBIKCgJpZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSFAoMZW5kcG9pbnRfdXJsGAMgASgJEhQKB2VuYWJsZWQYBCABKAhIAIgBAUIKCghfZW5hYmxlZCKIAQoUUmVnaXN0ZXJBZ2VudFJlcXVlc3QSCgoCaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEhQKDGVuZHBvaW50X3VybBgDIAEoCRIWCglzdHJlYW1pbmcYBCABKAhIAIgBARISCgp0aW1lb3V0X21zGAUgASgNQgwKCl9zdHJlYW1pbmciJAoWVW5yZWdpc3RlckFnZW50UmVxdWVzdBIKCgJpZBgBIAEoCSIvChdVbnJlZ2lzdGVyQWdlbnRSZXNwb25zZRIUCgx1bnJlZ2lzdGVyZWQYASABKAgikAEKC0NoYXRTZXNzaW9uEgoKAmlkGAEgASgJEhAKCGFnZW50X2lkGAIgASgJEg0KBXRpdGxlGAMgASgJEg4KBnVucmVhZBgEIAEoCBISCgpjcmVhdGVkX2F0GAUgASgJEhIKCnVwZGF0ZWRfYXQYBiABKAkSHAoUbGFzdF91c2VyX21lc3NhZ2VfYXQYByABKAkihAEKDFNlc3Npb25Hcm91cBIoCgVhZ2VudBgBIAEoCzIZLm9wZW5ib3QuY29udHJvbC52MS5BZ2VudBIxCghzZXNzaW9ucxgCIAMoCzIfLm9wZW5ib3QuY29udHJvbC52MS5DaGF0U2Vzc2lvbhIXCg9uZXh0X3BhZ2VfdG9rZW4YAyABKAki8QEKGExpc3RTZXNzaW9uR3JvdXBzUmVxdWVzdBIXCg9hZ2VudF9wYWdlX3NpemUYASABKA0SHQoVYWdlbnRfbmV4dF9wYWdlX3Rva2VuGAIgASgJEhoKEnNlc3Npb25zX3Blcl9hZ2VudBgDIAEoDRI2CgphZ2VudF9zb3J0GAQgASgOMiIub3BlbmJvdC5jb250cm9sLnYxLkFnZW50U29ydE9yZGVyEjoKDHNlc3Npb25fc29ydBgFIAEoDjIkLm9wZW5ib3QuY29udHJvbC52MS5TZXNzaW9uU29ydE9yZGVyEg0KBXF1ZXJ5GAYgASgJImYKGUxpc3RTZXNzaW9uR3JvdXBzUmVzcG9uc2USMAoGZ3JvdXBzGAEgAygLMiAub3BlbmJvdC5jb250cm9sLnYxLlNlc3Npb25Hcm91cBIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkilgEKE0xpc3RTZXNzaW9uc1JlcXVlc3QSEAoIYWdlbnRfaWQYASABKAkSEQoJcGFnZV9zaXplGAIgASgNEhcKD25leHRfcGFnZV90b2tlbhgDIAEoCRIyCgRzb3J0GAQgASgOMiQub3BlbmJvdC5jb250cm9sLnYxLlNlc3Npb25Tb3J0T3JkZXISDQoFcXVlcnkYBSABKAkiYgoUTGlzdFNlc3Npb25zUmVzcG9uc2USMQoIc2Vzc2lvbnMYASADKAsyHy5vcGVuYm90LmNvbnRyb2wudjEuQ2hhdFNlc3Npb24SFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJIjcKFENyZWF0ZVNlc3Npb25SZXF1ZXN0EhAKCGFnZW50X2lkGAEgASgJEg0KBXRpdGxlGAIgASgJIjkKFFJlbmFtZVNlc3Npb25SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSDQoFdGl0bGUYAiABKAkiLgoYTWFya1Nlc3Npb25VbnJlYWRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkicQoLQ2hhdE1lc3NhZ2USCgoCaWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIMCgRyb2xlGAMgASgJEgwKBHRleHQYBCABKAkSEgoKY3JlYXRlZF9hdBgFIAEoCRISCgp1cGRhdGVkX2F0GAYgASgJIlUKE0xpc3RNZXNzYWdlc1JlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIRCglwYWdlX3NpemUYAiABKA0SFwoPbmV4dF9wYWdlX3Rva2VuGAMgASgJImIKFExpc3RNZXNzYWdlc1Jlc3BvbnNlEjEKCG1lc3NhZ2VzGAEgAygLMh8ub3BlbmJvdC5jb250cm9sLnYxLkNoYXRNZXNzYWdlEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSJIChJTZW5kTWVzc2FnZVJlcXVlc3QSEAoIYWdlbnRfaWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIMCgR0ZXh0GAMgASgJIioKFEludGVycnVwdENoYXRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiLAoVSW50ZXJydXB0Q2hhdFJlc3BvbnNlEhMKC2ludGVycnVwdGVkGAEgASgIIq4BCg5Qcm92aWRlclN0YXR1cxIKCgJpZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSLgoEa2luZBgDIAEoDjIgLm9wZW5ib3QuY29udHJvbC52MS5Qcm92aWRlcktpbmQSEgoKY29uZmlndXJlZBgEIAEoCBIPCgdoZWFsdGh5GAUgASgIEhQKDGNhcGFiaWxpdGllcxgGIAMoCRIPCgdtZXNzYWdlGAcgASgJIhYKFExpc3RQcm92aWRlcnNSZXF1ZXN0Ik4KFUxpc3RQcm92aWRlcnNSZXNwb25zZRI1Cglwcm92aWRlcnMYASADKAsyIi5vcGVuYm90LmNvbnRyb2wudjEuUHJvdmlkZXJTdGF0dXMiIgoUQ2hlY2tQcm92aWRlclJlcXVlc3QSCgoCaWQYASABKAkqtQEKEUluc3RhbGxhdGlvblBoYXNlEiIKHklOU1RBTExBVElPTl9QSEFTRV9VTlNQRUNJRklFRBAAEh0KGUlOU1RBTExBVElPTl9QSEFTRV9MT0NLRUQQARIcChhJTlNUQUxMQVRJT05fUEhBU0VfVElMREUQAhIhCh1JTlNUQUxMQVRJT05fUEhBU0VfT05CT0FSRElORxADEhwKGElOU1RBTExBVElPTl9QSEFTRV9SRUFEWRAEKpEBCg5BZ2VudFNvcnRPcmRlchIgChxBR0VOVF9TT1JUX09SREVSX1VOU1BFQ0lGSUVEEAASHwobQUdFTlRfU09SVF9PUkRFUl9VUERBVEVEX0FUEAESHwobQUdFTlRfU09SVF9PUkRFUl9DUkVBVEVEX0FUEAISGwoXQUdFTlRfU09SVF9PUkRFUl9NQU5VQUwQAyp8ChBTZXNzaW9uU29ydE9yZGVyEiIKHlNFU1NJT05fU09SVF9PUkRFUl9VTlNQRUNJRklFRBAAEiEKHVNFU1NJT05fU09SVF9PUkRFUl9VUERBVEVEX0FUEAESIQodU0VTU0lPTl9TT1JUX09SREVSX0NSRUFURURfQVQQAirJAQoMUHJvdmlkZXJLaW5kEh0KGVBST1ZJREVSX0tJTkRfVU5TUEVDSUZJRUQQABIUChBQUk9WSURFUl9LSU5EX0FJEAESGgoWUFJPVklERVJfS0lORF9DT01QVVRFUhACEhcKE1BST1ZJREVSX0tJTkRfQUdFTlQQAxIdChlQUk9WSURFUl9LSU5EX0VOVklST05NRU5UEAQSFgoSUFJPVklERVJfS0lORF9UT09MEAUSGAoUUFJPVklERVJfS0lORF9TS0lMTFMQBjLOAgoTSW5zdGFsbGF0aW9uU2VydmljZRJlCglHZXRTdGF0dXMSMC5vcGVuYm90LmNvbnRyb2wudjEuR2V0SW5zdGFsbGF0aW9uU3RhdHVzUmVxdWVzdBomLm9wZW5ib3QuY29udHJvbC52MS5JbnN0YWxsYXRpb25TdGF0dXMSZQoJQ29uZmlndXJlEjAub3BlbmJvdC5jb250cm9sLnYxLkNvbmZpZ3VyZUluc3RhbGxhdGlvblJlcXVlc3QaJi5vcGVuYm90LmNvbnRyb2wudjEuSW5zdGFsbGF0aW9uU3RhdHVzEmkKEVNldE9uYm9hcmRpbmdTdGVwEiwub3BlbmJvdC5jb250cm9sLnYxLlNldE9uYm9hcmRpbmdTdGVwUmVxdWVzdBomLm9wZW5ib3QuY29udHJvbC52MS5JbnN0YWxsYXRpb25TdGF0dXMyywMKDEFnZW50U2VydmljZRJbCgpMaXN0QWdlbnRzEiUub3BlbmJvdC5jb250cm9sLnYxLkxpc3RBZ2VudHNSZXF1ZXN0GiYub3BlbmJvdC5jb250cm9sLnYxLkxpc3RBZ2VudHNSZXNwb25zZRJKCghHZXRBZ2VudBIjLm9wZW5ib3QuY29udHJvbC52MS5HZXRBZ2VudFJlcXVlc3QaGS5vcGVuYm90LmNvbnRyb2wudjEuQWdlbnQSUAoLVXBkYXRlQWdlbnQSJi5vcGVuYm90LmNvbnRyb2wudjEuVXBkYXRlQWdlbnRSZXF1ZXN0Ghkub3BlbmJvdC5jb250cm9sLnYxLkFnZW50ElQKDVJlZ2lzdGVyQWdlbnQSKC5vcGVuYm90LmNvbnRyb2wudjEuUmVnaXN0ZXJBZ2VudFJlcXVlc3QaGS5vcGVuYm90LmNvbnRyb2wudjEuQWdlbnQSagoPVW5yZWdpc3RlckFnZW50Eioub3BlbmJvdC5jb250cm9sLnYxLlVucmVnaXN0ZXJBZ2VudFJlcXVlc3QaKy5vcGVuYm90LmNvbnRyb2wudjEuVW5yZWdpc3RlckFnZW50UmVzcG9uc2UypAYKC0NoYXRTZXJ2aWNlEnAKEUxpc3RTZXNzaW9uR3JvdXBzEiwub3BlbmJvdC5jb250cm9sLnYxLkxpc3RTZXNzaW9uR3JvdXBzUmVxdWVzdBotLm9wZW5ib3QuY29udHJvbC52MS5MaXN0U2Vzc2lvbkdyb3Vwc1Jlc3BvbnNlEmEKDExpc3RTZXNzaW9ucxInLm9wZW5ib3QuY29udHJvbC52MS5MaXN0U2Vzc2lvbnNSZXF1ZXN0Gigub3BlbmJvdC5jb250cm9sLnYxLkxpc3RTZXNzaW9uc1Jlc3BvbnNlEloKDUNyZWF0ZVNlc3Npb24SKC5vcGVuYm90LmNvbnRyb2wudjEuQ3JlYXRlU2Vzc2lvblJlcXVlc3QaHy5vcGVuYm90LmNvbnRyb2wudjEuQ2hhdFNlc3Npb24SWgoNUmVuYW1lU2Vzc2lvbhIoLm9wZW5ib3QuY29udHJvbC52MS5SZW5hbWVTZXNzaW9uUmVxdWVzdBofLm9wZW5ib3QuY29udHJvbC52MS5DaGF0U2Vzc2lvbhJiChFNYXJrU2Vzc2lvblVucmVhZBIsLm9wZW5ib3QuY29udHJvbC52MS5NYXJrU2Vzc2lvblVucmVhZFJlcXVlc3QaHy5vcGVuYm90LmNvbnRyb2wudjEuQ2hhdFNlc3Npb24SYQoMTGlzdE1lc3NhZ2VzEicub3BlbmJvdC5jb250cm9sLnYxLkxpc3RNZXNzYWdlc1JlcXVlc3QaKC5vcGVuYm90LmNvbnRyb2wudjEuTGlzdE1lc3NhZ2VzUmVzcG9uc2USXwoLU2VuZE1lc3NhZ2USJi5vcGVuYm90LmNvbnRyb2wudjEuU2VuZE1lc3NhZ2VSZXF1ZXN0Gigub3BlbmJvdC5jb250cm9sLnYxLkxpc3RNZXNzYWdlc1Jlc3BvbnNlEmAKCUludGVycnVwdBIoLm9wZW5ib3QuY29udHJvbC52MS5JbnRlcnJ1cHRDaGF0UmVxdWVzdBopLm9wZW5ib3QuY29udHJvbC52MS5JbnRlcnJ1cHRDaGF0UmVzcG9uc2Uy1gEKD1Byb3ZpZGVyU2VydmljZRJkCg1MaXN0UHJvdmlkZXJzEigub3BlbmJvdC5jb250cm9sLnYxLkxpc3RQcm92aWRlcnNSZXF1ZXN0Gikub3BlbmJvdC5jb250cm9sLnYxLkxpc3RQcm92aWRlcnNSZXNwb25zZRJdCg1DaGVja1Byb3ZpZGVyEigub3BlbmJvdC5jb250cm9sLnYxLkNoZWNrUHJvdmlkZXJSZXF1ZXN0GiIub3BlbmJvdC5jb250cm9sLnYxLlByb3ZpZGVyU3RhdHVzYgZwcm90bzM");
+  fileDesc("CiBvcGVuYm90L2NvbnRyb2wvdjEvY29udHJvbC5wcm90bxISb3BlbmJvdC5jb250cm9sLnYxIh4KHEdldEluc3RhbGxhdGlvblN0YXR1c1JlcXVlc3Qi9QEKEkluc3RhbGxhdGlvblN0YXR1cxI0CgVwaGFzZRgBIAEoDjIlLm9wZW5ib3QuY29udHJvbC52MS5JbnN0YWxsYXRpb25QaGFzZRIXCg9vbmJvYXJkaW5nX3N0ZXAYAiABKAkSGAoQdGlsZGVfY29uZmlndXJlZBgDIAEoCBIYChBtb2RlbF9jb25maWd1cmVkGAQgASgIEhUKDXB1YmxpY19vcmlnaW4YBSABKAkSHAoUZW52aXJvbm1lbnRfcHJvdmlkZXIYBiABKAkSJwofZW52aXJvbm1lbnRfcHJvdmlkZXJfY29uZmlndXJlZBgHIAEoCCLJAgocQ29uZmlndXJlSW5zdGFsbGF0aW9uUmVxdWVzdBIVCg10aWxkZV9hcGlfa2V5GAEgASgJEiEKGXRpbGRlX3dlYmhvb2tfc2lnbmluZ19rZXkYAiABKAkSFAoMdGlsZGVfb3JnX2lkGAMgASgJEhUKDXRpbGRlX3RlYW1faWQYBCABKAkSFgoOdGlsZGVfYWdlbnRfaWQYBSABKAkSHAoUdGlsZGVfdWlfcHJvdmlkZXJfaWQYBiABKAkSFgoOb3BlbmFpX2FwaV9rZXkYByABKAkSFAoMb3BlbmFpX21vZGVsGAggASgJEhgKEHZlcmNlbF9hcGlfdG9rZW4YCSABKAkSIwobdGlsZGVfcnVudGltZV9tY3Bfc2VydmVyX2lkGAogASgJEh8KF3RpbGRlX3NraWxsX3JlZ2lzdHJ5X2lkGAsgASgJIigKGFNldE9uYm9hcmRpbmdTdGVwUmVxdWVzdBIMCgRzdGVwGAEgASgJIsMBCgVBZ2VudBIKCgJpZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSEwoLcHJvdmlkZXJfaWQYAyABKAkSDgoGc3RhdHVzGAQgASgJEhcKD2hhc191aV9lbmRwb2ludBgFIAEoCBIUCgxlbmRwb2ludF91cmwYBiABKAkSEgoKY3JlYXRlZF9hdBgHIAEoCRISCgp1cGRhdGVkX2F0GAggASgJEhwKFGxhc3RfdXNlcl9tZXNzYWdlX2F0GAkgASgJIoABChFMaXN0QWdlbnRzUmVxdWVzdBIRCglwYWdlX3NpemUYASABKA0SFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJEjAKBHNvcnQYAyABKA4yIi5vcGVuYm90LmNvbnRyb2wudjEuQWdlbnRTb3J0T3JkZXISDQoFcXVlcnkYBCABKAkiWAoSTGlzdEFnZW50c1Jlc3BvbnNlEikKBmFnZW50cxgBIAMoCzIZLm9wZW5ib3QuY29udHJvbC52MS5BZ2VudBIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkiHQoPR2V0QWdlbnRSZXF1ZXN0EgoKAmlkGAEgASgJIm4KElVwZGF0ZUFnZW50UmVxdWVzdBIKCgJpZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSFAoMZW5kcG9pbnRfdXJsGAMgASgJEhQKB2VuYWJsZWQYBCABKAhIAIgBAUIKCghfZW5hYmxlZCKIAQoUUmVnaXN0ZXJBZ2VudFJlcXVlc3QSCgoCaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEhQKDGVuZHBvaW50X3VybBgDIAEoCRIWCglzdHJlYW1pbmcYBCABKAhIAIgBARISCgp0aW1lb3V0X21zGAUgASgNQgwKCl9zdHJlYW1pbmciJAoWVW5yZWdpc3RlckFnZW50UmVxdWVzdBIKCgJpZBgBIAEoCSIvChdVbnJlZ2lzdGVyQWdlbnRSZXNwb25zZRIUCgx1bnJlZ2lzdGVyZWQYASABKAgikAEKC0NoYXRTZXNzaW9uEgoKAmlkGAEgASgJEhAKCGFnZW50X2lkGAIgASgJEg0KBXRpdGxlGAMgASgJEg4KBnVucmVhZBgEIAEoCBISCgpjcmVhdGVkX2F0GAUgASgJEhIKCnVwZGF0ZWRfYXQYBiABKAkSHAoUbGFzdF91c2VyX21lc3NhZ2VfYXQYByABKAkihAEKDFNlc3Npb25Hcm91cBIoCgVhZ2VudBgBIAEoCzIZLm9wZW5ib3QuY29udHJvbC52MS5BZ2VudBIxCghzZXNzaW9ucxgCIAMoCzIfLm9wZW5ib3QuY29udHJvbC52MS5DaGF0U2Vzc2lvbhIXCg9uZXh0X3BhZ2VfdG9rZW4YAyABKAki8QEKGExpc3RTZXNzaW9uR3JvdXBzUmVxdWVzdBIXCg9hZ2VudF9wYWdlX3NpemUYASABKA0SHQoVYWdlbnRfbmV4dF9wYWdlX3Rva2VuGAIgASgJEhoKEnNlc3Npb25zX3Blcl9hZ2VudBgDIAEoDRI2CgphZ2VudF9zb3J0GAQgASgOMiIub3BlbmJvdC5jb250cm9sLnYxLkFnZW50U29ydE9yZGVyEjoKDHNlc3Npb25fc29ydBgFIAEoDjIkLm9wZW5ib3QuY29udHJvbC52MS5TZXNzaW9uU29ydE9yZGVyEg0KBXF1ZXJ5GAYgASgJImYKGUxpc3RTZXNzaW9uR3JvdXBzUmVzcG9uc2USMAoGZ3JvdXBzGAEgAygLMiAub3BlbmJvdC5jb250cm9sLnYxLlNlc3Npb25Hcm91cBIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkilgEKE0xpc3RTZXNzaW9uc1JlcXVlc3QSEAoIYWdlbnRfaWQYASABKAkSEQoJcGFnZV9zaXplGAIgASgNEhcKD25leHRfcGFnZV90b2tlbhgDIAEoCRIyCgRzb3J0GAQgASgOMiQub3BlbmJvdC5jb250cm9sLnYxLlNlc3Npb25Tb3J0T3JkZXISDQoFcXVlcnkYBSABKAkiYgoUTGlzdFNlc3Npb25zUmVzcG9uc2USMQoIc2Vzc2lvbnMYASADKAsyHy5vcGVuYm90LmNvbnRyb2wudjEuQ2hhdFNlc3Npb24SFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJIjcKFENyZWF0ZVNlc3Npb25SZXF1ZXN0EhAKCGFnZW50X2lkGAEgASgJEg0KBXRpdGxlGAIgASgJIjkKFFJlbmFtZVNlc3Npb25SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSDQoFdGl0bGUYAiABKAkiLgoYTWFya1Nlc3Npb25VbnJlYWRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkicQoLQ2hhdE1lc3NhZ2USCgoCaWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIMCgRyb2xlGAMgASgJEgwKBHRleHQYBCABKAkSEgoKY3JlYXRlZF9hdBgFIAEoCRISCgp1cGRhdGVkX2F0GAYgASgJIlUKE0xpc3RNZXNzYWdlc1JlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIRCglwYWdlX3NpemUYAiABKA0SFwoPbmV4dF9wYWdlX3Rva2VuGAMgASgJImIKFExpc3RNZXNzYWdlc1Jlc3BvbnNlEjEKCG1lc3NhZ2VzGAEgAygLMh8ub3BlbmJvdC5jb250cm9sLnYxLkNoYXRNZXNzYWdlEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSJIChJTZW5kTWVzc2FnZVJlcXVlc3QSEAoIYWdlbnRfaWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIMCgR0ZXh0GAMgASgJIioKFEludGVycnVwdENoYXRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiLAoVSW50ZXJydXB0Q2hhdFJlc3BvbnNlEhMKC2ludGVycnVwdGVkGAEgASgIIuUBCgVTa2lsbBIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEg8KB2NvbnRlbnQYBCABKAkSDwoHdmVyc2lvbhgFIAEoDRITCgtzb3VyY2Vfa2luZBgGIAEoCRITCgtzb3VyY2VfcGF0aBgHIAEoCRIdChVzb3VyY2VfcmVwb3NpdG9yeV91cmwYCCABKAkSGgoSc291cmNlX2NvbW1pdF9oYXNoGAkgASgJEhIKCmNyZWF0ZWRfYXQYCiABKAkSEgoKdXBkYXRlZF9hdBgLIAEoCSJpChFMaXN0U2tpbGxzUmVxdWVzdBIRCglwYWdlX3NpemUYASABKA0SFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJEhMKC25hbWVfcHJlZml4GAMgASgJEhMKC3JlZ2lzdHJ5X2lkGAQgASgJIlgKEkxpc3RTa2lsbHNSZXNwb25zZRIpCgZza2lsbHMYASADKAsyGS5vcGVuYm90LmNvbnRyb2wudjEuU2tpbGwSFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJIh0KD0dldFNraWxsUmVxdWVzdBIKCgJpZBgBIAEoCSLmAQoSQ3JlYXRlU2tpbGxSZXF1ZXN0EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSDwoHY29udGVudBgEIAEoCRIPCgd2ZXJzaW9uGAUgASgNEhMKC3NvdXJjZV9raW5kGAYgASgJEhMKC3NvdXJjZV9wYXRoGAcgASgJEhoKEnNvdXJjZV9wcm92aWRlcl9pZBgIIAEoCRIdChVzb3VyY2VfcmVwb3NpdG9yeV91cmwYCSABKAkSGgoSc291cmNlX2NvbW1pdF9oYXNoGAogASgJIogBChJVcGRhdGVTa2lsbFJlcXVlc3QSCgoCaWQYASABKAkSEQoEbmFtZRgCIAEoCUgAiAEBEhgKC2Rlc2NyaXB0aW9uGAMgASgJSAGIAQESFAoHY29udGVudBgEIAEoCUgCiAEBQgcKBV9uYW1lQg4KDF9kZXNjcmlwdGlvbkIKCghfY29udGVudCJOCgxTa2lsbFN1bW1hcnkSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRIPCgd2ZXJzaW9uGAQgASgNIpgBCg1Ta2lsbFJlZ2lzdHJ5EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSMAoGc2tpbGxzGAQgAygLMiAub3BlbmJvdC5jb250cm9sLnYxLlNraWxsU3VtbWFyeRISCgpjcmVhdGVkX2F0GAUgASgJEhIKCnVwZGF0ZWRfYXQYBiABKAkiXQoaTGlzdFNraWxsUmVnaXN0cmllc1JlcXVlc3QSEQoJcGFnZV9zaXplGAEgASgNEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCRITCgtuYW1lX3ByZWZpeBgDIAEoCSJtChtMaXN0U2tpbGxSZWdpc3RyaWVzUmVzcG9uc2USNQoKcmVnaXN0cmllcxgBIAMoCzIhLm9wZW5ib3QuY29udHJvbC52MS5Ta2lsbFJlZ2lzdHJ5EhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSIlChdHZXRTa2lsbFJlZ2lzdHJ5UmVxdWVzdBIKCgJpZBgBIAEoCSJiChVSZWdpc3RlclNraWxsc1JlcXVlc3QSEwoLcmVnaXN0cnlfaWQYASABKAkSDAoEbmFtZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRIRCglza2lsbF9pZHMYBCADKAkibwoKU2tpbGxBc3NldBIMCgRwYXRoGAEgASgJEhIKCnNpemVfYnl0ZXMYAiABKAQSFwoPY2hlY2tzdW1fc2hhMjU2GAMgASgJEhIKCm1lZGlhX3R5cGUYBCABKAkSEgoKZXhlY3V0YWJsZRgFIAEoCCK/AQoSU2tpbGxBc3NldE1hbmlmZXN0EgoKAmlkGAEgASgJEhMKC3Byb3ZpZGVyX2lkGAIgASgJEhMKC3NvdXJjZV9wYXRoGAMgASgJEhoKEnNvdXJjZV9jb21taXRfaGFzaBgEIAEoCRIUCgxjb250ZW50X2hhc2gYBSABKAkSEgoKY3JlYXRlZF9hdBgGIAEoCRItCgVmaWxlcxgHIAMoCzIeLm9wZW5ib3QuY29udHJvbC52MS5Ta2lsbEFzc2V0IjAKHEdldFNraWxsQXNzZXRNYW5pZmVzdFJlcXVlc3QSEAoIc2tpbGxfaWQYASABKAkiOwoZRG93bmxvYWRTa2lsbEFzc2V0UmVxdWVzdBIQCghza2lsbF9pZBgBIAEoCRIMCgRwYXRoGAIgASgJInwKGkRvd25sb2FkU2tpbGxBc3NldFJlc3BvbnNlEgwKBHBhdGgYASABKAkSDwoHY29udGVudBgCIAEoDBISCgptZWRpYV90eXBlGAMgASgJEhcKD2NoZWNrc3VtX3NoYTI1NhgEIAEoCRISCgpleGVjdXRhYmxlGAUgASgIIq4BCg5Qcm92aWRlclN0YXR1cxIKCgJpZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSLgoEa2luZBgDIAEoDjIgLm9wZW5ib3QuY29udHJvbC52MS5Qcm92aWRlcktpbmQSEgoKY29uZmlndXJlZBgEIAEoCBIPCgdoZWFsdGh5GAUgASgIEhQKDGNhcGFiaWxpdGllcxgGIAMoCRIPCgdtZXNzYWdlGAcgASgJIhYKFExpc3RQcm92aWRlcnNSZXF1ZXN0Ik4KFUxpc3RQcm92aWRlcnNSZXNwb25zZRI1Cglwcm92aWRlcnMYASADKAsyIi5vcGVuYm90LmNvbnRyb2wudjEuUHJvdmlkZXJTdGF0dXMiIgoUQ2hlY2tQcm92aWRlclJlcXVlc3QSCgoCaWQYASABKAkqtQEKEUluc3RhbGxhdGlvblBoYXNlEiIKHklOU1RBTExBVElPTl9QSEFTRV9VTlNQRUNJRklFRBAAEh0KGUlOU1RBTExBVElPTl9QSEFTRV9MT0NLRUQQARIcChhJTlNUQUxMQVRJT05fUEhBU0VfVElMREUQAhIhCh1JTlNUQUxMQVRJT05fUEhBU0VfT05CT0FSRElORxADEhwKGElOU1RBTExBVElPTl9QSEFTRV9SRUFEWRAEKpEBCg5BZ2VudFNvcnRPcmRlchIgChxBR0VOVF9TT1JUX09SREVSX1VOU1BFQ0lGSUVEEAASHwobQUdFTlRfU09SVF9PUkRFUl9VUERBVEVEX0FUEAESHwobQUdFTlRfU09SVF9PUkRFUl9DUkVBVEVEX0FUEAISGwoXQUdFTlRfU09SVF9PUkRFUl9NQU5VQUwQAyp8ChBTZXNzaW9uU29ydE9yZGVyEiIKHlNFU1NJT05fU09SVF9PUkRFUl9VTlNQRUNJRklFRBAAEiEKHVNFU1NJT05fU09SVF9PUkRFUl9VUERBVEVEX0FUEAESIQodU0VTU0lPTl9TT1JUX09SREVSX0NSRUFURURfQVQQAirJAQoMUHJvdmlkZXJLaW5kEh0KGVBST1ZJREVSX0tJTkRfVU5TUEVDSUZJRUQQABIUChBQUk9WSURFUl9LSU5EX0FJEAESGgoWUFJPVklERVJfS0lORF9DT01QVVRFUhACEhcKE1BST1ZJREVSX0tJTkRfQUdFTlQQAxIdChlQUk9WSURFUl9LSU5EX0VOVklST05NRU5UEAQSFgoSUFJPVklERVJfS0lORF9UT09MEAUSGAoUUFJPVklERVJfS0lORF9TS0lMTFMQBjLOAgoTSW5zdGFsbGF0aW9uU2VydmljZRJlCglHZXRTdGF0dXMSMC5vcGVuYm90LmNvbnRyb2wudjEuR2V0SW5zdGFsbGF0aW9uU3RhdHVzUmVxdWVzdBomLm9wZW5ib3QuY29udHJvbC52MS5JbnN0YWxsYXRpb25TdGF0dXMSZQoJQ29uZmlndXJlEjAub3BlbmJvdC5jb250cm9sLnYxLkNvbmZpZ3VyZUluc3RhbGxhdGlvblJlcXVlc3QaJi5vcGVuYm90LmNvbnRyb2wudjEuSW5zdGFsbGF0aW9uU3RhdHVzEmkKEVNldE9uYm9hcmRpbmdTdGVwEiwub3BlbmJvdC5jb250cm9sLnYxLlNldE9uYm9hcmRpbmdTdGVwUmVxdWVzdBomLm9wZW5ib3QuY29udHJvbC52MS5JbnN0YWxsYXRpb25TdGF0dXMyywMKDEFnZW50U2VydmljZRJbCgpMaXN0QWdlbnRzEiUub3BlbmJvdC5jb250cm9sLnYxLkxpc3RBZ2VudHNSZXF1ZXN0GiYub3BlbmJvdC5jb250cm9sLnYxLkxpc3RBZ2VudHNSZXNwb25zZRJKCghHZXRBZ2VudBIjLm9wZW5ib3QuY29udHJvbC52MS5HZXRBZ2VudFJlcXVlc3QaGS5vcGVuYm90LmNvbnRyb2wudjEuQWdlbnQSUAoLVXBkYXRlQWdlbnQSJi5vcGVuYm90LmNvbnRyb2wudjEuVXBkYXRlQWdlbnRSZXF1ZXN0Ghkub3BlbmJvdC5jb250cm9sLnYxLkFnZW50ElQKDVJlZ2lzdGVyQWdlbnQSKC5vcGVuYm90LmNvbnRyb2wudjEuUmVnaXN0ZXJBZ2VudFJlcXVlc3QaGS5vcGVuYm90LmNvbnRyb2wudjEuQWdlbnQSagoPVW5yZWdpc3RlckFnZW50Eioub3BlbmJvdC5jb250cm9sLnYxLlVucmVnaXN0ZXJBZ2VudFJlcXVlc3QaKy5vcGVuYm90LmNvbnRyb2wudjEuVW5yZWdpc3RlckFnZW50UmVzcG9uc2UypAYKC0NoYXRTZXJ2aWNlEnAKEUxpc3RTZXNzaW9uR3JvdXBzEiwub3BlbmJvdC5jb250cm9sLnYxLkxpc3RTZXNzaW9uR3JvdXBzUmVxdWVzdBotLm9wZW5ib3QuY29udHJvbC52MS5MaXN0U2Vzc2lvbkdyb3Vwc1Jlc3BvbnNlEmEKDExpc3RTZXNzaW9ucxInLm9wZW5ib3QuY29udHJvbC52MS5MaXN0U2Vzc2lvbnNSZXF1ZXN0Gigub3BlbmJvdC5jb250cm9sLnYxLkxpc3RTZXNzaW9uc1Jlc3BvbnNlEloKDUNyZWF0ZVNlc3Npb24SKC5vcGVuYm90LmNvbnRyb2wudjEuQ3JlYXRlU2Vzc2lvblJlcXVlc3QaHy5vcGVuYm90LmNvbnRyb2wudjEuQ2hhdFNlc3Npb24SWgoNUmVuYW1lU2Vzc2lvbhIoLm9wZW5ib3QuY29udHJvbC52MS5SZW5hbWVTZXNzaW9uUmVxdWVzdBofLm9wZW5ib3QuY29udHJvbC52MS5DaGF0U2Vzc2lvbhJiChFNYXJrU2Vzc2lvblVucmVhZBIsLm9wZW5ib3QuY29udHJvbC52MS5NYXJrU2Vzc2lvblVucmVhZFJlcXVlc3QaHy5vcGVuYm90LmNvbnRyb2wudjEuQ2hhdFNlc3Npb24SYQoMTGlzdE1lc3NhZ2VzEicub3BlbmJvdC5jb250cm9sLnYxLkxpc3RNZXNzYWdlc1JlcXVlc3QaKC5vcGVuYm90LmNvbnRyb2wudjEuTGlzdE1lc3NhZ2VzUmVzcG9uc2USXwoLU2VuZE1lc3NhZ2USJi5vcGVuYm90LmNvbnRyb2wudjEuU2VuZE1lc3NhZ2VSZXF1ZXN0Gigub3BlbmJvdC5jb250cm9sLnYxLkxpc3RNZXNzYWdlc1Jlc3BvbnNlEmAKCUludGVycnVwdBIoLm9wZW5ib3QuY29udHJvbC52MS5JbnRlcnJ1cHRDaGF0UmVxdWVzdBopLm9wZW5ib3QuY29udHJvbC52MS5JbnRlcnJ1cHRDaGF0UmVzcG9uc2Uy1gEKD1Byb3ZpZGVyU2VydmljZRJkCg1MaXN0UHJvdmlkZXJzEigub3BlbmJvdC5jb250cm9sLnYxLkxpc3RQcm92aWRlcnNSZXF1ZXN0Gikub3BlbmJvdC5jb250cm9sLnYxLkxpc3RQcm92aWRlcnNSZXNwb25zZRJdCg1DaGVja1Byb3ZpZGVyEigub3BlbmJvdC5jb250cm9sLnYxLkNoZWNrUHJvdmlkZXJSZXF1ZXN0GiIub3BlbmJvdC5jb250cm9sLnYxLlByb3ZpZGVyU3RhdHVzMoAHCg1Ta2lsbHNTZXJ2aWNlElsKCkxpc3RTa2lsbHMSJS5vcGVuYm90LmNvbnRyb2wudjEuTGlzdFNraWxsc1JlcXVlc3QaJi5vcGVuYm90LmNvbnRyb2wudjEuTGlzdFNraWxsc1Jlc3BvbnNlEkoKCEdldFNraWxsEiMub3BlbmJvdC5jb250cm9sLnYxLkdldFNraWxsUmVxdWVzdBoZLm9wZW5ib3QuY29udHJvbC52MS5Ta2lsbBJQCgtDcmVhdGVTa2lsbBImLm9wZW5ib3QuY29udHJvbC52MS5DcmVhdGVTa2lsbFJlcXVlc3QaGS5vcGVuYm90LmNvbnRyb2wudjEuU2tpbGwSUAoLVXBkYXRlU2tpbGwSJi5vcGVuYm90LmNvbnRyb2wudjEuVXBkYXRlU2tpbGxSZXF1ZXN0Ghkub3BlbmJvdC5jb250cm9sLnYxLlNraWxsEnYKE0xpc3RTa2lsbFJlZ2lzdHJpZXMSLi5vcGVuYm90LmNvbnRyb2wudjEuTGlzdFNraWxsUmVnaXN0cmllc1JlcXVlc3QaLy5vcGVuYm90LmNvbnRyb2wudjEuTGlzdFNraWxsUmVnaXN0cmllc1Jlc3BvbnNlEmIKEEdldFNraWxsUmVnaXN0cnkSKy5vcGVuYm90LmNvbnRyb2wudjEuR2V0U2tpbGxSZWdpc3RyeVJlcXVlc3QaIS5vcGVuYm90LmNvbnRyb2wudjEuU2tpbGxSZWdpc3RyeRJeCg5SZWdpc3RlclNraWxscxIpLm9wZW5ib3QuY29udHJvbC52MS5SZWdpc3RlclNraWxsc1JlcXVlc3QaIS5vcGVuYm90LmNvbnRyb2wudjEuU2tpbGxSZWdpc3RyeRJxChVHZXRTa2lsbEFzc2V0TWFuaWZlc3QSMC5vcGVuYm90LmNvbnRyb2wudjEuR2V0U2tpbGxBc3NldE1hbmlmZXN0UmVxdWVzdBomLm9wZW5ib3QuY29udHJvbC52MS5Ta2lsbEFzc2V0TWFuaWZlc3QScwoSRG93bmxvYWRTa2lsbEFzc2V0Ei0ub3BlbmJvdC5jb250cm9sLnYxLkRvd25sb2FkU2tpbGxBc3NldFJlcXVlc3QaLi5vcGVuYm90LmNvbnRyb2wudjEuRG93bmxvYWRTa2lsbEFzc2V0UmVzcG9uc2ViBnByb3RvMw");
 
 /**
  * @generated from message openbot.control.v1.GetInstallationStatusRequest
@@ -798,6 +798,570 @@ export const InterruptChatResponseSchema: GenMessage<InterruptChatResponse> = /*
   messageDesc(file_openbot_control_v1_control, 26);
 
 /**
+ * @generated from message openbot.control.v1.Skill
+ */
+export type Skill = Message<"openbot.control.v1.Skill"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description: string;
+
+  /**
+   * @generated from field: string content = 4;
+   */
+  content: string;
+
+  /**
+   * @generated from field: uint32 version = 5;
+   */
+  version: number;
+
+  /**
+   * @generated from field: string source_kind = 6;
+   */
+  sourceKind: string;
+
+  /**
+   * @generated from field: string source_path = 7;
+   */
+  sourcePath: string;
+
+  /**
+   * @generated from field: string source_repository_url = 8;
+   */
+  sourceRepositoryUrl: string;
+
+  /**
+   * @generated from field: string source_commit_hash = 9;
+   */
+  sourceCommitHash: string;
+
+  /**
+   * @generated from field: string created_at = 10;
+   */
+  createdAt: string;
+
+  /**
+   * @generated from field: string updated_at = 11;
+   */
+  updatedAt: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.Skill.
+ * Use `create(SkillSchema)` to create a new message.
+ */
+export const SkillSchema: GenMessage<Skill> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 27);
+
+/**
+ * @generated from message openbot.control.v1.ListSkillsRequest
+ */
+export type ListSkillsRequest = Message<"openbot.control.v1.ListSkillsRequest"> & {
+  /**
+   * @generated from field: uint32 page_size = 1;
+   */
+  pageSize: number;
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
+
+  /**
+   * @generated from field: string name_prefix = 3;
+   */
+  namePrefix: string;
+
+  /**
+   * @generated from field: string registry_id = 4;
+   */
+  registryId: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.ListSkillsRequest.
+ * Use `create(ListSkillsRequestSchema)` to create a new message.
+ */
+export const ListSkillsRequestSchema: GenMessage<ListSkillsRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 28);
+
+/**
+ * @generated from message openbot.control.v1.ListSkillsResponse
+ */
+export type ListSkillsResponse = Message<"openbot.control.v1.ListSkillsResponse"> & {
+  /**
+   * @generated from field: repeated openbot.control.v1.Skill skills = 1;
+   */
+  skills: Skill[];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.ListSkillsResponse.
+ * Use `create(ListSkillsResponseSchema)` to create a new message.
+ */
+export const ListSkillsResponseSchema: GenMessage<ListSkillsResponse> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 29);
+
+/**
+ * @generated from message openbot.control.v1.GetSkillRequest
+ */
+export type GetSkillRequest = Message<"openbot.control.v1.GetSkillRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.GetSkillRequest.
+ * Use `create(GetSkillRequestSchema)` to create a new message.
+ */
+export const GetSkillRequestSchema: GenMessage<GetSkillRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 30);
+
+/**
+ * @generated from message openbot.control.v1.CreateSkillRequest
+ */
+export type CreateSkillRequest = Message<"openbot.control.v1.CreateSkillRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description: string;
+
+  /**
+   * @generated from field: string content = 4;
+   */
+  content: string;
+
+  /**
+   * @generated from field: uint32 version = 5;
+   */
+  version: number;
+
+  /**
+   * @generated from field: string source_kind = 6;
+   */
+  sourceKind: string;
+
+  /**
+   * @generated from field: string source_path = 7;
+   */
+  sourcePath: string;
+
+  /**
+   * @generated from field: string source_provider_id = 8;
+   */
+  sourceProviderId: string;
+
+  /**
+   * @generated from field: string source_repository_url = 9;
+   */
+  sourceRepositoryUrl: string;
+
+  /**
+   * @generated from field: string source_commit_hash = 10;
+   */
+  sourceCommitHash: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.CreateSkillRequest.
+ * Use `create(CreateSkillRequestSchema)` to create a new message.
+ */
+export const CreateSkillRequestSchema: GenMessage<CreateSkillRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 31);
+
+/**
+ * @generated from message openbot.control.v1.UpdateSkillRequest
+ */
+export type UpdateSkillRequest = Message<"openbot.control.v1.UpdateSkillRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: optional string name = 2;
+   */
+  name?: string;
+
+  /**
+   * @generated from field: optional string description = 3;
+   */
+  description?: string;
+
+  /**
+   * @generated from field: optional string content = 4;
+   */
+  content?: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.UpdateSkillRequest.
+ * Use `create(UpdateSkillRequestSchema)` to create a new message.
+ */
+export const UpdateSkillRequestSchema: GenMessage<UpdateSkillRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 32);
+
+/**
+ * @generated from message openbot.control.v1.SkillSummary
+ */
+export type SkillSummary = Message<"openbot.control.v1.SkillSummary"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description: string;
+
+  /**
+   * @generated from field: uint32 version = 4;
+   */
+  version: number;
+};
+
+/**
+ * Describes the message openbot.control.v1.SkillSummary.
+ * Use `create(SkillSummarySchema)` to create a new message.
+ */
+export const SkillSummarySchema: GenMessage<SkillSummary> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 33);
+
+/**
+ * @generated from message openbot.control.v1.SkillRegistry
+ */
+export type SkillRegistry = Message<"openbot.control.v1.SkillRegistry"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description: string;
+
+  /**
+   * @generated from field: repeated openbot.control.v1.SkillSummary skills = 4;
+   */
+  skills: SkillSummary[];
+
+  /**
+   * @generated from field: string created_at = 5;
+   */
+  createdAt: string;
+
+  /**
+   * @generated from field: string updated_at = 6;
+   */
+  updatedAt: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.SkillRegistry.
+ * Use `create(SkillRegistrySchema)` to create a new message.
+ */
+export const SkillRegistrySchema: GenMessage<SkillRegistry> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 34);
+
+/**
+ * @generated from message openbot.control.v1.ListSkillRegistriesRequest
+ */
+export type ListSkillRegistriesRequest = Message<"openbot.control.v1.ListSkillRegistriesRequest"> & {
+  /**
+   * @generated from field: uint32 page_size = 1;
+   */
+  pageSize: number;
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
+
+  /**
+   * @generated from field: string name_prefix = 3;
+   */
+  namePrefix: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.ListSkillRegistriesRequest.
+ * Use `create(ListSkillRegistriesRequestSchema)` to create a new message.
+ */
+export const ListSkillRegistriesRequestSchema: GenMessage<ListSkillRegistriesRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 35);
+
+/**
+ * @generated from message openbot.control.v1.ListSkillRegistriesResponse
+ */
+export type ListSkillRegistriesResponse = Message<"openbot.control.v1.ListSkillRegistriesResponse"> & {
+  /**
+   * @generated from field: repeated openbot.control.v1.SkillRegistry registries = 1;
+   */
+  registries: SkillRegistry[];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.ListSkillRegistriesResponse.
+ * Use `create(ListSkillRegistriesResponseSchema)` to create a new message.
+ */
+export const ListSkillRegistriesResponseSchema: GenMessage<ListSkillRegistriesResponse> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 36);
+
+/**
+ * @generated from message openbot.control.v1.GetSkillRegistryRequest
+ */
+export type GetSkillRegistryRequest = Message<"openbot.control.v1.GetSkillRegistryRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.GetSkillRegistryRequest.
+ * Use `create(GetSkillRegistryRequestSchema)` to create a new message.
+ */
+export const GetSkillRegistryRequestSchema: GenMessage<GetSkillRegistryRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 37);
+
+/**
+ * @generated from message openbot.control.v1.RegisterSkillsRequest
+ */
+export type RegisterSkillsRequest = Message<"openbot.control.v1.RegisterSkillsRequest"> & {
+  /**
+   * @generated from field: string registry_id = 1;
+   */
+  registryId: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description: string;
+
+  /**
+   * @generated from field: repeated string skill_ids = 4;
+   */
+  skillIds: string[];
+};
+
+/**
+ * Describes the message openbot.control.v1.RegisterSkillsRequest.
+ * Use `create(RegisterSkillsRequestSchema)` to create a new message.
+ */
+export const RegisterSkillsRequestSchema: GenMessage<RegisterSkillsRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 38);
+
+/**
+ * @generated from message openbot.control.v1.SkillAsset
+ */
+export type SkillAsset = Message<"openbot.control.v1.SkillAsset"> & {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path: string;
+
+  /**
+   * @generated from field: uint64 size_bytes = 2;
+   */
+  sizeBytes: bigint;
+
+  /**
+   * @generated from field: string checksum_sha256 = 3;
+   */
+  checksumSha256: string;
+
+  /**
+   * @generated from field: string media_type = 4;
+   */
+  mediaType: string;
+
+  /**
+   * @generated from field: bool executable = 5;
+   */
+  executable: boolean;
+};
+
+/**
+ * Describes the message openbot.control.v1.SkillAsset.
+ * Use `create(SkillAssetSchema)` to create a new message.
+ */
+export const SkillAssetSchema: GenMessage<SkillAsset> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 39);
+
+/**
+ * @generated from message openbot.control.v1.SkillAssetManifest
+ */
+export type SkillAssetManifest = Message<"openbot.control.v1.SkillAssetManifest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string provider_id = 2;
+   */
+  providerId: string;
+
+  /**
+   * @generated from field: string source_path = 3;
+   */
+  sourcePath: string;
+
+  /**
+   * @generated from field: string source_commit_hash = 4;
+   */
+  sourceCommitHash: string;
+
+  /**
+   * @generated from field: string content_hash = 5;
+   */
+  contentHash: string;
+
+  /**
+   * @generated from field: string created_at = 6;
+   */
+  createdAt: string;
+
+  /**
+   * @generated from field: repeated openbot.control.v1.SkillAsset files = 7;
+   */
+  files: SkillAsset[];
+};
+
+/**
+ * Describes the message openbot.control.v1.SkillAssetManifest.
+ * Use `create(SkillAssetManifestSchema)` to create a new message.
+ */
+export const SkillAssetManifestSchema: GenMessage<SkillAssetManifest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 40);
+
+/**
+ * @generated from message openbot.control.v1.GetSkillAssetManifestRequest
+ */
+export type GetSkillAssetManifestRequest = Message<"openbot.control.v1.GetSkillAssetManifestRequest"> & {
+  /**
+   * @generated from field: string skill_id = 1;
+   */
+  skillId: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.GetSkillAssetManifestRequest.
+ * Use `create(GetSkillAssetManifestRequestSchema)` to create a new message.
+ */
+export const GetSkillAssetManifestRequestSchema: GenMessage<GetSkillAssetManifestRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 41);
+
+/**
+ * @generated from message openbot.control.v1.DownloadSkillAssetRequest
+ */
+export type DownloadSkillAssetRequest = Message<"openbot.control.v1.DownloadSkillAssetRequest"> & {
+  /**
+   * @generated from field: string skill_id = 1;
+   */
+  skillId: string;
+
+  /**
+   * @generated from field: string path = 2;
+   */
+  path: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.DownloadSkillAssetRequest.
+ * Use `create(DownloadSkillAssetRequestSchema)` to create a new message.
+ */
+export const DownloadSkillAssetRequestSchema: GenMessage<DownloadSkillAssetRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 42);
+
+/**
+ * @generated from message openbot.control.v1.DownloadSkillAssetResponse
+ */
+export type DownloadSkillAssetResponse = Message<"openbot.control.v1.DownloadSkillAssetResponse"> & {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path: string;
+
+  /**
+   * @generated from field: bytes content = 2;
+   */
+  content: Uint8Array;
+
+  /**
+   * @generated from field: string media_type = 3;
+   */
+  mediaType: string;
+
+  /**
+   * @generated from field: string checksum_sha256 = 4;
+   */
+  checksumSha256: string;
+
+  /**
+   * @generated from field: bool executable = 5;
+   */
+  executable: boolean;
+};
+
+/**
+ * Describes the message openbot.control.v1.DownloadSkillAssetResponse.
+ * Use `create(DownloadSkillAssetResponseSchema)` to create a new message.
+ */
+export const DownloadSkillAssetResponseSchema: GenMessage<DownloadSkillAssetResponse> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 43);
+
+/**
  * @generated from message openbot.control.v1.ProviderStatus
  */
 export type ProviderStatus = Message<"openbot.control.v1.ProviderStatus"> & {
@@ -842,7 +1406,7 @@ export type ProviderStatus = Message<"openbot.control.v1.ProviderStatus"> & {
  * Use `create(ProviderStatusSchema)` to create a new message.
  */
 export const ProviderStatusSchema: GenMessage<ProviderStatus> = /*@__PURE__*/
-  messageDesc(file_openbot_control_v1_control, 27);
+  messageDesc(file_openbot_control_v1_control, 44);
 
 /**
  * @generated from message openbot.control.v1.ListProvidersRequest
@@ -855,7 +1419,7 @@ export type ListProvidersRequest = Message<"openbot.control.v1.ListProvidersRequ
  * Use `create(ListProvidersRequestSchema)` to create a new message.
  */
 export const ListProvidersRequestSchema: GenMessage<ListProvidersRequest> = /*@__PURE__*/
-  messageDesc(file_openbot_control_v1_control, 28);
+  messageDesc(file_openbot_control_v1_control, 45);
 
 /**
  * @generated from message openbot.control.v1.ListProvidersResponse
@@ -872,7 +1436,7 @@ export type ListProvidersResponse = Message<"openbot.control.v1.ListProvidersRes
  * Use `create(ListProvidersResponseSchema)` to create a new message.
  */
 export const ListProvidersResponseSchema: GenMessage<ListProvidersResponse> = /*@__PURE__*/
-  messageDesc(file_openbot_control_v1_control, 29);
+  messageDesc(file_openbot_control_v1_control, 46);
 
 /**
  * @generated from message openbot.control.v1.CheckProviderRequest
@@ -889,7 +1453,7 @@ export type CheckProviderRequest = Message<"openbot.control.v1.CheckProviderRequ
  * Use `create(CheckProviderRequestSchema)` to create a new message.
  */
 export const CheckProviderRequestSchema: GenMessage<CheckProviderRequest> = /*@__PURE__*/
-  messageDesc(file_openbot_control_v1_control, 30);
+  messageDesc(file_openbot_control_v1_control, 47);
 
 /**
  * @generated from enum openbot.control.v1.InstallationPhase
@@ -1201,4 +1765,83 @@ export const ProviderService: GenService<{
   },
 }> = /*@__PURE__*/
   serviceDesc(file_openbot_control_v1_control, 3);
+
+/**
+ * @generated from service openbot.control.v1.SkillsService
+ */
+export const SkillsService: GenService<{
+  /**
+   * @generated from rpc openbot.control.v1.SkillsService.ListSkills
+   */
+  listSkills: {
+    methodKind: "unary";
+    input: typeof ListSkillsRequestSchema;
+    output: typeof ListSkillsResponseSchema;
+  },
+  /**
+   * @generated from rpc openbot.control.v1.SkillsService.GetSkill
+   */
+  getSkill: {
+    methodKind: "unary";
+    input: typeof GetSkillRequestSchema;
+    output: typeof SkillSchema;
+  },
+  /**
+   * @generated from rpc openbot.control.v1.SkillsService.CreateSkill
+   */
+  createSkill: {
+    methodKind: "unary";
+    input: typeof CreateSkillRequestSchema;
+    output: typeof SkillSchema;
+  },
+  /**
+   * @generated from rpc openbot.control.v1.SkillsService.UpdateSkill
+   */
+  updateSkill: {
+    methodKind: "unary";
+    input: typeof UpdateSkillRequestSchema;
+    output: typeof SkillSchema;
+  },
+  /**
+   * @generated from rpc openbot.control.v1.SkillsService.ListSkillRegistries
+   */
+  listSkillRegistries: {
+    methodKind: "unary";
+    input: typeof ListSkillRegistriesRequestSchema;
+    output: typeof ListSkillRegistriesResponseSchema;
+  },
+  /**
+   * @generated from rpc openbot.control.v1.SkillsService.GetSkillRegistry
+   */
+  getSkillRegistry: {
+    methodKind: "unary";
+    input: typeof GetSkillRegistryRequestSchema;
+    output: typeof SkillRegistrySchema;
+  },
+  /**
+   * @generated from rpc openbot.control.v1.SkillsService.RegisterSkills
+   */
+  registerSkills: {
+    methodKind: "unary";
+    input: typeof RegisterSkillsRequestSchema;
+    output: typeof SkillRegistrySchema;
+  },
+  /**
+   * @generated from rpc openbot.control.v1.SkillsService.GetSkillAssetManifest
+   */
+  getSkillAssetManifest: {
+    methodKind: "unary";
+    input: typeof GetSkillAssetManifestRequestSchema;
+    output: typeof SkillAssetManifestSchema;
+  },
+  /**
+   * @generated from rpc openbot.control.v1.SkillsService.DownloadSkillAsset
+   */
+  downloadSkillAsset: {
+    methodKind: "unary";
+    input: typeof DownloadSkillAssetRequestSchema;
+    output: typeof DownloadSkillAssetResponseSchema;
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_openbot_control_v1_control, 4);
 

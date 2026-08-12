@@ -32,6 +32,18 @@ service ProviderService {
   rpc CheckProvider(CheckProviderRequest) returns (ProviderStatus);
 }
 
+service SkillsService {
+  rpc ListSkills(ListSkillsRequest) returns (ListSkillsResponse);
+  rpc GetSkill(GetSkillRequest) returns (Skill);
+  rpc CreateSkill(CreateSkillRequest) returns (Skill);
+  rpc UpdateSkill(UpdateSkillRequest) returns (Skill);
+  rpc ListSkillRegistries(ListSkillRegistriesRequest) returns (ListSkillRegistriesResponse);
+  rpc GetSkillRegistry(GetSkillRegistryRequest) returns (SkillRegistry);
+  rpc RegisterSkills(RegisterSkillsRequest) returns (SkillRegistry);
+  rpc GetSkillAssetManifest(GetSkillAssetManifestRequest) returns (SkillAssetManifest);
+  rpc DownloadSkillAsset(DownloadSkillAssetRequest) returns (DownloadSkillAssetResponse);
+}
+
 message GetInstallationStatusRequest {}
 
 enum InstallationPhase {
@@ -194,6 +206,110 @@ message SendMessageRequest {
 }
 message InterruptChatRequest { string session_id = 1; }
 message InterruptChatResponse { bool interrupted = 1; }
+
+message Skill {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string content = 4;
+  uint32 version = 5;
+  string source_kind = 6;
+  string source_path = 7;
+  string source_repository_url = 8;
+  string source_commit_hash = 9;
+  string created_at = 10;
+  string updated_at = 11;
+}
+
+message ListSkillsRequest {
+  uint32 page_size = 1;
+  string next_page_token = 2;
+  string name_prefix = 3;
+  string registry_id = 4;
+}
+message ListSkillsResponse {
+  repeated Skill skills = 1;
+  string next_page_token = 2;
+}
+message GetSkillRequest { string id = 1; }
+message CreateSkillRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string content = 4;
+  uint32 version = 5;
+  string source_kind = 6;
+  string source_path = 7;
+  string source_provider_id = 8;
+  string source_repository_url = 9;
+  string source_commit_hash = 10;
+}
+message UpdateSkillRequest {
+  string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional string content = 4;
+}
+
+message SkillSummary {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  uint32 version = 4;
+}
+message SkillRegistry {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated SkillSummary skills = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+message ListSkillRegistriesRequest {
+  uint32 page_size = 1;
+  string next_page_token = 2;
+  string name_prefix = 3;
+}
+message ListSkillRegistriesResponse {
+  repeated SkillRegistry registries = 1;
+  string next_page_token = 2;
+}
+message GetSkillRegistryRequest { string id = 1; }
+message RegisterSkillsRequest {
+  string registry_id = 1;
+  string name = 2;
+  string description = 3;
+  repeated string skill_ids = 4;
+}
+
+message SkillAsset {
+  string path = 1;
+  uint64 size_bytes = 2;
+  string checksum_sha256 = 3;
+  string media_type = 4;
+  bool executable = 5;
+}
+message SkillAssetManifest {
+  string id = 1;
+  string provider_id = 2;
+  string source_path = 3;
+  string source_commit_hash = 4;
+  string content_hash = 5;
+  string created_at = 6;
+  repeated SkillAsset files = 7;
+}
+message GetSkillAssetManifestRequest { string skill_id = 1; }
+message DownloadSkillAssetRequest {
+  string skill_id = 1;
+  string path = 2;
+}
+message DownloadSkillAssetResponse {
+  string path = 1;
+  bytes content = 2;
+  string media_type = 3;
+  string checksum_sha256 = 4;
+  bool executable = 5;
+}
 
 enum ProviderKind {
   PROVIDER_KIND_UNSPECIFIED = 0;

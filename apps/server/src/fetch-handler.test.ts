@@ -11,6 +11,7 @@ afterEach(() => {
   delete process.env.OPENBOT_TILDE_WEBHOOK_SIGNING_KEY;
   delete process.env.OPENBOT_TILDE_ORG_ID;
   delete process.env.OPENBOT_TILDE_TEAM_ID;
+  delete process.env.OPENBOT_TILDE_SKILL_REGISTRY_ID;
 });
 
 describe("Fetch dispatcher", () => {
@@ -64,6 +65,51 @@ describe("Fetch dispatcher", () => {
     expect(rpc.status).toBe(200);
     await expect(rpc.json()).resolves.toMatchObject({
       sessions: [{ id: "session-one", agentId: "agent-one", title: "First session", unread: true }],
+    });
+  });
+
+  it("serves Tilde skills through the authenticated control protocol", async () => {
+    process.env.OPENBOT_TILDE_API_KEY = "test-api-key";
+    process.env.OPENBOT_TILDE_WEBHOOK_SIGNING_KEY = "test-signing-key";
+    process.env.OPENBOT_TILDE_ORG_ID = "org-one";
+    process.env.OPENBOT_TILDE_TEAM_ID = "team-one";
+    vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request) => {
+      const request = input instanceof Request ? input : new Request(input);
+      expect(request.url).toContain("/api/v1/team/team-one/skill");
+      expect(request.headers.get("x-api-key")).toBe("test-api-key");
+      return Response.json({
+        items: [{
+          id: "skill-one",
+          name: "Research",
+          description: "Research carefully",
+          content: "# Research",
+          version: 1,
+          source_kind: "repository",
+          org_id: "org-one",
+          team_id: "team-one",
+          created_at: "2026-08-12T00:00:00.000Z",
+          updated_at: "2026-08-12T00:00:00.000Z",
+        }],
+      });
+    }));
+
+    const cookie = issueSessionCookie(setupCode, true).split(";")[0] ?? "";
+    const rpc = await fetchRequestHandler(new Request(
+      "https://openbot.test/rpc/openbot.control.v1.SkillsService/ListSkills",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "connect-protocol-version": "1",
+          cookie,
+        },
+        body: JSON.stringify({ pageSize: 10 }),
+      },
+    ));
+
+    expect(rpc.status).toBe(200);
+    await expect(rpc.json()).resolves.toMatchObject({
+      skills: [{ id: "skill-one", name: "Research", sourceKind: "repository" }],
     });
   });
 });

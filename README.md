@@ -48,6 +48,8 @@ Only sandbox-specific secrets declared in `sandbox/secrets.example.yaml` are inj
 
 ## Common commands
 
+Run `pnpm openbot` in a terminal for an interactive launcher with arrow-key navigation. Every command also remains directly callable for scripts and repeatable workflows:
+
 ```bash
 pnpm openbot check
 pnpm openbot doctor
@@ -57,6 +59,8 @@ pnpm openbot providers list
 pnpm openbot sync
 pnpm openbot status
 ```
+
+Long-running operations show live progress and finish with compact status tables. Add `--json` to `check`, `doctor`, `providers list`, `sync`, or `status` when another tool needs stable machine-readable output.
 
 `agent create` writes a local module by default. With `--publish`, OpenBot creates a branch and pull request through the configured source-control provider. A human merges it; the normal deployment then federates and registers the new endpoint. Runtime code never commits directly to the deployment branch.
 

@@ -17,7 +17,7 @@ pnpm dev
 
 No setup or pairing code is required. The web app is a disconnected UX shell and `control-service-proto` is intentionally empty while the frontend contract is designed.
 
-After `pnpm build`, `pnpm --filter @openbot/server start` serves the web UI, SPA routes, `/healthz`, and `/rpc` from the single Hono origin at `http://127.0.0.1:4100`.
+After `pnpm build`, `pnpm local` serves the web UI, SPA routes, `/healthz`, and `/rpc` from the single Hono origin at `http://127.0.0.1:4100`. `pnpm openbot local` invokes the same React Ink CLI command directly.
 
 ## Deploy to Vercel
 
@@ -32,8 +32,9 @@ The production build stages the web app in `public/` for Vercel's static CDN and
 
 ## Current application boundary
 
+- `cli` owns the React Ink repository CLI, local Hono listener, development process supervision, and production deployment command.
 - `apps/web` owns the UX shell and frontend routes.
-- `apps/server` owns a bare Hono server, the built web UI fallback, `/healthz`, and ConnectRPC federation under `/rpc`.
+- `apps/server` owns the portable Hono application, built web UI fallback, `/healthz`, and ConnectRPC federation under `/rpc`; it does not bind a port.
 - `packages/control-service-proto` is the future owner-facing API contract and is intentionally empty.
 - Domain packages remain available but are not wired into the application yet.
 

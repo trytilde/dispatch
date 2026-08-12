@@ -1,7 +1,8 @@
 import { spawn } from "node:child_process";
-import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
+import arg from "arg";
 import { config as loadDotenv } from "dotenv";
+import { repositoryRoot } from "./paths.js";
 
 export interface DeployOptions {
   yes: boolean;
@@ -10,14 +11,16 @@ export interface DeployOptions {
 }
 
 export function parseOptions(argv: readonly string[]): DeployOptions {
-  const args = argv.filter((argument) => argument !== "--");
-  const known = new Set(["--yes", "--dry-run", "--json"]);
-  const unknown = args.filter((argument) => !known.has(argument));
-  if (unknown.length) throw new Error(`Unknown deploy option: ${unknown.join(", ")}`);
+  const parsed = arg({
+    "--yes": Boolean,
+    "--dry-run": Boolean,
+    "--json": Boolean,
+  }, { argv: argv.filter((argument) => argument !== "--") });
+  if (parsed._.length) throw new Error(`Unknown deploy option: ${parsed._.join(", ")}`);
   return {
-    yes: args.includes("--yes"),
-    dryRun: args.includes("--dry-run"),
-    json: args.includes("--json"),
+    yes: parsed["--yes"] ?? false,
+    dryRun: parsed["--dry-run"] ?? false,
+    json: parsed["--json"] ?? false,
   };
 }
 
@@ -36,10 +39,10 @@ export function deploymentUrl(output: string): string {
   return url;
 }
 
-async function main(): Promise<void> {
-  loadDotenv({ path: resolve(".env.local"), override: false, quiet: true });
-  loadDotenv({ path: resolve(".env"), override: false, quiet: true });
-  const options = parseOptions(process.argv.slice(2));
+export async function runProductionDeploy(argv: readonly string[]): Promise<void> {
+  loadDotenv({ path: resolve(repositoryRoot, ".env.local"), override: false, quiet: true });
+  loadDotenv({ path: resolve(repositoryRoot, ".env"), override: false, quiet: true });
+  const options = parseOptions(argv);
   if (!options.yes && !options.dryRun) throw new Error("Production deployment requires --yes (or use --dry-run)");
 
   const report = (event: string, details: Record<string, unknown> = {}): void => {
@@ -73,6 +76,7 @@ async function main(): Promise<void> {
 async function run(command: string, args: readonly string[], inherit = true): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolvePromise, reject) => {
     const child = spawn(command, args, {
+      cwd: repositoryRoot,
       env: process.env,
       stdio: inherit ? "inherit" : ["ignore", "pipe", "pipe"],
     });
@@ -84,13 +88,5 @@ async function run(command: string, args: readonly string[], inherit = true): Pr
     child.once("exit", (code) => code === 0
       ? resolvePromise({ stdout, stderr })
       : reject(new Error(`${command} ${args.join(" ")} failed with exit code ${code ?? "unknown"}`)));
-  });
-}
-
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  main().catch((error: unknown) => {
-    const secrets = [process.env.VERCEL_TOKEN ?? ""];
-    process.stderr.write(`${redact(error instanceof Error ? error.message : String(error), secrets)}\n`);
-    process.exitCode = 1;
   });
 }

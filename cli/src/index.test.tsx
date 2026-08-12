@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { render } from "ink-testing-library";
-import { CommandMenu, Help } from "./openbot-ui.js";
-import { parseInvocation } from "./openbot.js";
+import { CommandMenu, Help } from "./ui.js";
+import { parseInvocation } from "./index.js";
 
 describe("OpenBot CLI", () => {
   it("parses commands after pnpm's separator", () => expect(parseInvocation(["--", "deploy", "--dry-run"])).toEqual({ command: "deploy", rest: ["--dry-run"] }));
   it("defaults to help", () => expect(parseInvocation([])).toEqual({ command: "help", rest: [] }));
+  it("supports the help alias", () => expect(parseInvocation(["-h"])).toEqual({ command: "help", rest: [] }));
   it("renders discoverable command help", () => {
     const { lastFrame } = render(<Help />);
     expect(lastFrame()).toContain("Fork it. Configure it. Run it.");
@@ -16,6 +17,6 @@ describe("OpenBot CLI", () => {
     const { stdin } = render(<CommandMenu onSelect={(command) => { selected = command; }} />);
     stdin.write("j");
     stdin.write("\r");
-    expect(selected).toBe("check");
+    expect(selected).toBe("local");
   });
 });

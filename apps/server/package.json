@@ -6,9 +6,7 @@
   "exports": { ".": "./src/index.js" },
   "scripts": {
     "build": "tsc --noEmit && tsup",
-    "dev": "tsx watch src/local.ts",
     "lint": "tsc --noEmit",
-    "start": "tsx src/local.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -19,7 +17,6 @@
   },
   "devDependencies": {
     "@types/node": "24.3.0",
-    "tsx": "4.20.4",
     "tsup": "8.5.1",
     "typescript": "5.9.2",
     "vitest": "3.2.4"

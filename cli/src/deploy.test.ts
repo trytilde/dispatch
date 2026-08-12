@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { deploymentUrl, parseOptions, redact } from "./deploy-prod.js";
+import { deploymentUrl, parseOptions, redact } from "./deploy.js";
 
 describe("deploy-prod", () => {
   it("parses the minimal deployment options", () => {
     expect(parseOptions(["--", "--yes", "--json"])).toEqual({ yes: true, dryRun: false, json: true });
     expect(parseOptions(["--dry-run"])).toEqual({ yes: false, dryRun: true, json: false });
-    expect(() => parseOptions(["--resume"])).toThrow("Unknown deploy option");
+    expect(() => parseOptions(["--resume"])).toThrow("unknown or unexpected option: --resume");
   });
 
   it("redacts the Vercel token", () => {

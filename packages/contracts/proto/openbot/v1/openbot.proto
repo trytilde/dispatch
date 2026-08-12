@@ -10,7 +10,6 @@ service InstallationService {
 
 service AgentService {
   rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
-  rpc CreateAgent(CreateAgentRequest) returns (Agent);
   rpc GetAgent(GetAgentRequest) returns (Agent);
   rpc UpdateAgent(UpdateAgentRequest) returns (Agent);
 }
@@ -96,9 +95,6 @@ message Agent {
 
 message ListAgentsRequest {}
 message ListAgentsResponse { repeated Agent agents = 1; }
-message CreateAgentRequest {
-  string display_name = 1;
-}
 message GetAgentRequest { string id = 1; }
 message UpdateAgentRequest {
   string id = 1;

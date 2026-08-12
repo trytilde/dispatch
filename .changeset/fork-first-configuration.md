@@ -11,4 +11,4 @@
 "@openbot/web": minor
 ---
 
-Add one fork-owned `configuration/` tree for Vercel AI SDK-compatible agent endpoints, runtime skills, sandbox setup, and provider integrations, with an interactive terminal CLI for setup and operation.
+Add one fork-owned `configuration/` tree for directly authored Vercel AI SDK-compatible agent endpoints, runtime skills, sandbox setup, and provider integrations, with an interactive terminal CLI for setup and operation. OpenBot discovers committed agent modules without generating or publishing TypeScript at runtime.

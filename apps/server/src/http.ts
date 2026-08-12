@@ -19,7 +19,6 @@ import { ensureInstallation } from "./store.js";
 import { configuredProvider } from "./provider-registry.js";
 import { loadRepository } from "./repository.js";
 import { reconcileRepository } from "./reconcile.js";
-import { getAgentPublication, publishAgent } from "./publishing.js";
 
 export const httpApp = new Hono();
 
@@ -47,22 +46,6 @@ httpApp.post("/api/admin/reconcile", async (context) => {
   if (!hasValidSession(context.req.header("cookie") ?? null, setupCode())) return context.json({ error: "Setup session required" }, 401);
   const report = await reconcileRepository({ origin: publicOrigin(context.req.raw) });
   return context.json(report, report.errors.length ? 502 : 200);
-});
-
-httpApp.post("/api/agent-publications", async (context) => {
-  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode())) return context.json({ error: "Setup session required" }, 401);
-  try {
-    const body = await context.req.json<{ id: string; displayName: string; description?: string }>();
-    return context.json(await publishAgent(body, context.req.raw.signal), 202);
-  } catch (error) {
-    return context.json({ error: error instanceof Error ? error.message : "Unable to publish agent" }, 400);
-  }
-});
-
-httpApp.get("/api/agent-publications/:id", async (context) => {
-  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode())) return context.json({ error: "Setup session required" }, 401);
-  const publication = await getAgentPublication(context.req.param("id"));
-  return publication ? context.json(publication) : context.json({ error: "Publication not found" }, 404);
 });
 
 httpApp.use("/api/chat", async (context, next) => {

@@ -4,13 +4,13 @@ import { CommandMenu, Help, ProviderTable } from "./openbot-ui.js";
 import { parseInvocation, wantsJson } from "./openbot.js";
 
 describe("OpenBot CLI", () => {
-  it("parses commands after pnpm's separator", () => expect(parseInvocation(["--", "agent", "create"])).toEqual({ command: "agent", rest: ["create"] }));
+  it("parses commands after pnpm's separator", () => expect(parseInvocation(["--", "providers", "list"])).toEqual({ command: "providers", rest: ["list"] }));
   it("defaults to help", () => expect(parseInvocation([])).toEqual({ command: "help", rest: [] }));
   it("detects machine-readable output", () => expect(wantsJson(["list", "--json"])).toBe(true));
   it("renders discoverable command help", () => {
     const { lastFrame } = render(<Help />);
     expect(lastFrame()).toContain("Fork it. Configure it. Run it.");
-    expect(lastFrame()).toContain("agent create");
+    expect(lastFrame()).toContain("sync");
     expect(lastFrame()).toContain("--json");
   });
   it("renders provider health without raw JSON", () => {

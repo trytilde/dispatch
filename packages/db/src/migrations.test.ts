@@ -18,6 +18,7 @@ test("migrations are idempotent", async () => {
   const tables = rows.rows.map((row) => row.name);
   expect(tables).toContain("installations");
   expect(tables).toContain("deployment_steps");
+  expect(tables).not.toContain("agent_publications");
   expect(tables).not.toContain("agents");
   expect(tables).not.toContain("chat_sessions");
   expect(tables).not.toContain("sandboxes");

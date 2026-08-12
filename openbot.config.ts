@@ -9,7 +9,6 @@ export default defineConfig({
     skills: "tilde-skills",
     sandbox: "auto",
     environment: "auto",
-    sourceControl: "github",
     deployment: "vercel",
   },
   skills: {
@@ -25,9 +24,5 @@ export default defineConfig({
     assetsDirectory: "configuration/sandbox/assets",
     bootstrap: "configuration/sandbox/bootstrap.sh",
     secretsManifest: "configuration/sandbox/secrets.example.yaml",
-  },
-  publishing: {
-    mode: "pull-request",
-    deploymentBranch: "main",
   },
 });

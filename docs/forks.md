@@ -1,6 +1,6 @@
 # Maintain a fork
 
-Public forks can use the Vercel clone flow directly. Private installations should mirror the repository into a private Git host, connect that repository to Vercel, and configure `OPENBOT_GITHUB_REPOSITORY` plus a repository-scoped `OPENBOT_GITHUB_TOKEN` when runtime pull-request publication is desired.
+Public forks can use the Vercel clone flow directly. Private installations should mirror the repository into a private Git host and connect that repository to Vercel. OpenBot never writes source changes back to either repository at runtime.
 
 Keep the upstream project as a second remote:
 

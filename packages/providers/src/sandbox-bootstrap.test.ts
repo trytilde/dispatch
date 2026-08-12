@@ -15,6 +15,7 @@ describe("desktop sandbox bootstrap", () => {
     expect(desktopBootstrapScript).toContain(`CUA_DRIVER_VERSION="${CUA_DRIVER_VERSION}"`);
     expect(desktopBootstrapScript).toContain(`CHROME_SHA256_AMD64="${CHROME_SHA256_AMD64}"`);
     expect(desktopBootstrapScript).toContain("cua-driver --version >/dev/null");
+    expect(desktopBootstrapScript).toContain("/usr/local/bin/openbot-cua-driver");
   });
 
   it("requires a desktop capability before exposing noVNC", () => {
@@ -24,7 +25,8 @@ describe("desktop sandbox bootstrap", () => {
       "CUA_DRIVER_SOCKET=/tmp/openbot-cua-driver.sock",
     );
     expect(desktopStartScript).toContain("getent passwd 1000");
-    expect(desktopStartScript).toContain('cua-driver serve --socket "$CUA_DRIVER_SOCKET"');
+    expect(desktopStartScript).toContain('"$CUA_EXECUTABLE" serve --socket "$CUA_DRIVER_SOCKET"');
+    expect(desktopStartScript).toContain("--dangerously-bypass-approvals");
     expect(desktopStartScript).toContain("/proc/sys/kernel/random/boot_id");
     expect(desktopStartScript).toContain("kill -0 \"$locked_pid\"");
     expect(desktopStartScript).not.toContain("0.0.0.0:5901");

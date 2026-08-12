@@ -81,7 +81,7 @@ START_LOCK=/tmp/openbot-desktop-start.lock
 START_OWNER="$START_LOCK/owner"
 CURRENT_BOOT="$(cat /proc/sys/kernel/random/boot_id)"
 lock_acquired=false
-for _ in 1 2; do
+for _ in $(seq 1 20); do
   if mkdir "$START_LOCK" 2>/dev/null; then
     printf '%s %s\n' "$CURRENT_BOOT" "$$" > "$START_OWNER"
     lock_acquired=true
@@ -94,8 +94,14 @@ for _ in 1 2; do
       && kill -0 "$locked_pid" 2>/dev/null; then
     exit 0
   fi
-  rm -f "$START_OWNER"
-  rmdir "$START_LOCK" 2>/dev/null || true
+  if [[ -s "$START_OWNER" ]]; then
+    rm -f "$START_OWNER"
+    rmdir "$START_LOCK" 2>/dev/null || true
+  else
+    # Another launcher won mkdir but has not published its owner yet. Waiting
+    # avoids deleting a valid lock in the narrow create/first-RPC race.
+    sleep 0.05
+  fi
 done
 [[ "$lock_acquired" == true ]] || exit 0
 cleanup_start_lock() {

@@ -29,6 +29,7 @@ describe("desktop sandbox bootstrap", () => {
     expect(desktopStartScript).toContain("--dangerously-bypass-approvals");
     expect(desktopStartScript).toContain("/proc/sys/kernel/random/boot_id");
     expect(desktopStartScript).toContain("kill -0 \"$locked_pid\"");
+    expect(desktopStartScript).toContain("has not published its owner yet");
     expect(desktopStartScript).not.toContain("0.0.0.0:5901");
   });
 });

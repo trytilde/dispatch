@@ -1,22 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  openAIChatGPTAccountId,
-  OpenAIApiKeyInferenceModelProvider,
-  OpenAIOAuthInferenceModelProvider,
-} from "./index.js";
+import { openAIChatGPTAccountId, OpenAIOAuthInferenceModelProvider } from "./openai-oauth.js";
 
-describe("OpenAI inference model providers", () => {
-  it("selects the API-key model at call time", () => {
-    const provider = new OpenAIApiKeyInferenceModelProvider({ apiKey: "sk-test-not-a-real-key" });
-    expect(provider.model(" gpt-test ").modelId).toBe("gpt-test");
-    expect(provider.injectPromptPart()).toContain("OpenAI model runtime");
-  });
-
-  it("rejects an empty runtime model name", () => {
-    const provider = new OpenAIApiKeyInferenceModelProvider({ apiKey: "sk-test-not-a-real-key" });
-    expect(() => provider.model(" ")).toThrow("Inference model name is required");
-  });
-
+describe("OpenAIOAuthInferenceModelProvider", () => {
   it("extracts the ChatGPT account ID from an OAuth token", () => {
     const token = jwt({
       "https://api.openai.com/auth": { chatgpt_account_id: "account-123" },

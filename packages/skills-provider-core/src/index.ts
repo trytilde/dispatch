@@ -1,5 +1,5 @@
 import type { Tool } from "ai";
-import type { OptionalDeployable } from "@openbot/runtime-provider-core";
+import type { DeployableProvider } from "@openbot/runtime-provider-core";
 export type { Deployable } from "@openbot/runtime-provider-core";
 
 export interface SkillsProviderCallContext {
@@ -168,7 +168,7 @@ export interface SkillsProviderModelHooks {
   ): string | undefined | Promise<string | undefined>;
 }
 
-export interface SkillsProvider extends SkillsProviderModelHooks, OptionalDeployable {
+export interface SkillsProvider extends SkillsProviderModelHooks, DeployableProvider {
   readonly descriptor: SkillsProviderDescriptor;
   health(context: SkillsProviderCallContext): Promise<{ healthy: boolean; message?: string }>;
   listSkills(request: ListSkillsRequest, context: SkillsProviderCallContext): Promise<Page<Skill>>;

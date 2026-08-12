@@ -1,5 +1,5 @@
 import type { Tool } from "ai";
-import type { OptionalDeployable } from "@openbot/runtime-provider-core";
+import type { DeployableProvider } from "@openbot/runtime-provider-core";
 export type { Deployable } from "@openbot/runtime-provider-core";
 
 export type ComputerState = "creating" | "running" | "sleeping" | "failed";
@@ -156,7 +156,7 @@ export interface PublishedComputerImage extends BuiltComputerImage {
   publishedAt: Date;
 }
 
-export interface ComputerProvider extends OptionalDeployable {
+export interface ComputerProvider extends DeployableProvider {
   readonly descriptor: ComputerProviderDescriptor;
   health(context: ComputerCallContext): Promise<{ healthy: boolean; message?: string }>;
   injectPromptPart(context: ComputerPromptContext, callContext: ComputerCallContext): ComputerPromptPart | undefined | Promise<ComputerPromptPart | undefined>;

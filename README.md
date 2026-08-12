@@ -43,12 +43,12 @@ configuration/providers/<id>/
 configuration/sandbox/assets/
                         files copied to /workspace on every sandbox start
 configuration/sandbox/bootstrap.sh
-                        idempotent script run after those files are copied
+                        optional idempotent script run after files are copied
 ```
 
 Agent route modules export `POST` using Tilde `chatKitEndpoint` and the Vercel AI SDK. OpenBot serves each module at `/api/agents/<id>`. Skills are reconciled into the configured Tilde registry. Removed agents remain orphaned by default; `pnpm openbot sync --prune --yes` explicitly disables them remotely.
 
-Only sandbox-specific secrets declared in `configuration/sandbox/secrets.example.yaml` are injected. Set them as `OPENBOT_SANDBOX_SECRET_<NAME>` or, for local development only, in ignored `configuration/sandbox/secrets.yaml`. Provider and control-plane credentials are never implicitly copied into a sandbox. SOPS portability is intentionally deferred from this first version.
+When a fork needs sandbox-only secrets, create `configuration/sandbox/secrets.example.yaml` to declare their names. Set values as `OPENBOT_SANDBOX_SECRET_<NAME>` or, for local development only, in ignored `configuration/sandbox/secrets.yaml`. Provider and control-plane credentials are never implicitly copied into a sandbox. SOPS portability is intentionally deferred from this first version.
 
 ## Common commands
 

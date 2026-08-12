@@ -1,18 +1,26 @@
 import { Code, ConnectError, type ConnectRouter, type HandlerContext } from "@connectrpc/connect";
 import {
   AgentService,
+  AgentSortOrder,
   ChatService,
   InstallationPhase,
   InstallationService,
   ProviderKind,
   ProviderService,
+  SessionSortOrder,
+} from "@openbot/control-service-proto";
+import {
   SandboxService,
   SandboxState,
 } from "@openbot/contracts";
 import type {
-  AgentRecord,
-  ChatMessage,
-  ChatSession,
+  Agent,
+  AgentMessage,
+  AgentProviderCallContext,
+  AgentSession,
+} from "@openbot/agent-provider-core";
+import { TildeAgentProvider } from "@openbot/agent-provider";
+import type {
   ProviderCallContext,
   SandboxHandle,
   SandboxProvider,
@@ -21,8 +29,6 @@ import { ProviderError } from "@openbot/provider-sdk";
 import {
   defaultSandboxProvider,
   OpenAiProvider,
-  TildeAgentProvider,
-  TildeChatProvider,
 } from "@openbot/providers";
 import { hasValidSession } from "./crypto.js";
 import { setupCode } from "./config.js";
@@ -37,6 +43,7 @@ import {
 import { configuredProvider } from "./provider-registry.js";
 import { clearSandbox, ensureInstallation, persistSandbox, updateInstallation } from "./store.js";
 import { loadRepository } from "./repository.js";
+import { environmentSuffix } from "./reconcile.js";
 
 function authorized(context: HandlerContext): void {
   if (!hasValidSession(context.requestHeader.get("cookie"), setupCode())) {
@@ -81,12 +88,12 @@ async function installationStatus() {
 
 function providerKind(kind: string): ProviderKind {
   if (kind === "ai") return ProviderKind.AI;
-  if (kind === "sandbox") return ProviderKind.SANDBOX;
+  if (kind === "sandbox") return ProviderKind.COMPUTER;
   if (kind === "agent") return ProviderKind.AGENT;
-  if (kind === "chat") return ProviderKind.CHAT;
   if (kind === "environment") return ProviderKind.ENVIRONMENT;
   if (kind === "tool") return ProviderKind.TOOL;
-  return ProviderKind.WORKSPACE_STORAGE;
+  if (kind === "skill") return ProviderKind.SKILLS;
+  return ProviderKind.UNSPECIFIED;
 }
 
 function sandboxState(state: string): SandboxState {
@@ -106,18 +113,21 @@ function protoSandbox(handle: SandboxHandle) {
   };
 }
 
-function protoAgent(agent: AgentRecord) {
+function protoAgent(agent: Agent) {
   return {
     id: agent.id,
     displayName: agent.displayName,
+    providerId: agent.providerId,
     status: agent.status,
+    hasUiEndpoint: agent.hasUiEndpoint,
     endpointUrl: agent.endpointUrl ?? "",
-    createdAt: agent.createdAt?.toISOString() ?? "",
-    updatedAt: agent.updatedAt?.toISOString() ?? "",
+    createdAt: agent.createdAt.toISOString(),
+    updatedAt: agent.updatedAt.toISOString(),
+    lastUserMessageAt: agent.lastUserMessageAt?.toISOString() ?? "",
   };
 }
 
-function protoSession(session: ChatSession) {
+function protoSession(session: AgentSession) {
   return {
     id: session.id,
     agentId: session.agentId,
@@ -125,26 +135,25 @@ function protoSession(session: ChatSession) {
     unread: session.unread ?? false,
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
+    lastUserMessageAt: session.lastUserMessageAt?.toISOString() ?? "",
   };
 }
 
-function protoMessage(message: ChatMessage) {
+function protoMessage(message: AgentMessage) {
   return {
     id: message.id,
     sessionId: message.sessionId,
     role: message.role,
     text: message.text,
     createdAt: message.createdAt.toISOString(),
+    updatedAt: message.updatedAt?.toISOString() ?? "",
   };
 }
 
-async function tildeProviders() {
+async function tildeAgentProvider() {
   const config = await tildeEnvironment();
   if (!config) throw new ConnectError("Tilde is not configured", Code.FailedPrecondition);
-  return {
-    agents: new TildeAgentProvider(config),
-    chat: new TildeChatProvider(config),
-  };
+  return new TildeAgentProvider(config);
 }
 
 async function listProviderStatus() {
@@ -154,56 +163,54 @@ async function listProviderStatus() {
   const tilde = await tildeEnvironment();
   const providers = [
     openai,
-    ...(tilde ? [new TildeAgentProvider(tilde), new TildeChatProvider(tilde)] : []),
     env,
     sandbox,
   ];
   const names = await configuredEnvironmentNames(env).catch(() => new Set<string>());
   const context = providerContext();
-  const statuses = await Promise.all(
-    providers.map(async (provider) => {
-      const health = await provider.health(context);
-      const configured =
-        provider.descriptor.id === "openai"
-          ? names.has(environmentNames.openaiApiKey) ||
-            Boolean(process.env[environmentNames.openaiApiKey])
-          : provider.descriptor.kind === "agent" || provider.descriptor.kind === "chat"
-            ? Boolean(tilde)
-            : health.healthy;
-      return {
-        id: provider.descriptor.id,
-        displayName: provider.descriptor.displayName,
-        kind: providerKind(provider.descriptor.kind),
-        configured,
-        healthy: health.healthy,
-        capabilities: [...provider.descriptor.capabilities],
-        message: "message" in health && typeof health.message === "string" ? health.message : "",
-      };
-    }),
-  );
-  if (!tilde) {
-    statuses.push(
-      {
-        id: "tilde-agents",
-        displayName: "Tilde agents",
-        kind: ProviderKind.AGENT,
-        configured: false,
-        healthy: false,
-        capabilities: [],
-        message: "Tilde is not configured",
-      },
-      {
-        id: "tilde-chatkit",
-        displayName: "Tilde ChatKit",
-        kind: ProviderKind.CHAT,
-        configured: false,
-        healthy: false,
-        capabilities: [],
-        message: "Tilde is not configured",
-      },
-    );
-  }
+  const statuses = await Promise.all(providers.map(async (provider) => {
+    const health = await provider.health(context);
+    const configured = provider.descriptor.id === "openai"
+      ? names.has(environmentNames.openaiApiKey) || Boolean(process.env[environmentNames.openaiApiKey])
+      : health.healthy;
+    return {
+      id: provider.descriptor.id,
+      displayName: provider.descriptor.displayName,
+      kind: providerKind(provider.descriptor.kind),
+      configured,
+      healthy: health.healthy,
+      capabilities: [...provider.descriptor.capabilities],
+      message: "message" in health && typeof health.message === "string" ? health.message : "",
+    };
+  }));
+  if (tilde) {
+    const provider = new TildeAgentProvider(tilde);
+    const health = await provider.health(context);
+    statuses.push({
+      id: provider.descriptor.id,
+      displayName: provider.descriptor.displayName,
+      kind: ProviderKind.AGENT,
+      configured: true,
+      healthy: health.healthy,
+      capabilities: [...provider.descriptor.capabilities],
+      message: health.message ?? "",
+    });
+  } else statuses.push({ id: "tilde", displayName: "Tilde", kind: ProviderKind.AGENT, configured: false, healthy: false, capabilities: [], message: "Tilde is not configured" });
   return statuses;
+}
+
+function agentSort(sort: AgentSortOrder) {
+  if (sort === AgentSortOrder.CREATED_AT) return "created_at" as const;
+  if (sort === AgentSortOrder.MANUAL) return "manual" as const;
+  return "updated_at" as const;
+}
+
+function sessionSort(sort: SessionSortOrder) {
+  return sort === SessionSortOrder.CREATED_AT ? "created_at" as const : "updated_at" as const;
+}
+
+function controlContext(context: HandlerContext): AgentProviderCallContext {
+  return providerContext(context.requestHeader.get("x-request-id") ?? crypto.randomUUID(), context.signal);
 }
 
 export function registerServices(router: ConnectRouter): void {
@@ -281,83 +288,139 @@ export function registerServices(router: ConnectRouter): void {
   });
 
   router.service(AgentService, {
-    async listAgents(_request, context) {
+    async listAgents(request, context) {
       authorized(context);
-      const provider = (await tildeProviders()).agents;
-      return {
-        agents: (await provider.list(providerContext(undefined, context.signal))).map(protoAgent),
-      };
+      const result = await (await tildeAgentProvider()).listAgents({
+        ...(request.pageSize ? { pageSize: request.pageSize } : {}),
+        ...(request.nextPageToken ? { nextPageToken: request.nextPageToken } : {}),
+        sort: agentSort(request.sort),
+        ...(request.query ? { query: request.query } : {}),
+      }, controlContext(context));
+      return { agents: result.items.map(protoAgent), nextPageToken: result.nextPageToken ?? "" };
     },
     async getAgent(request, context) {
       authorized(context);
-      return protoAgent(
-        await (
-          await tildeProviders()
-        ).agents.get(request.id, providerContext(undefined, context.signal)),
-      );
+      return protoAgent(await (await tildeAgentProvider()).getAgent(request.id, controlContext(context)));
     },
     async updateAgent(request, context) {
       authorized(context);
-      if (!request.displayName.trim())
-        throw new ConnectError("Agent display name is required", Code.InvalidArgument);
-      return protoAgent(
-        await (
-          await tildeProviders()
-        ).agents.update(
-          request.id,
-          { displayName: request.displayName.trim() },
-          providerContext(undefined, context.signal),
-        ),
-      );
+      if (!request.displayName.trim() && !request.endpointUrl && request.enabled === undefined) {
+        throw new ConnectError("At least one agent update is required", Code.InvalidArgument);
+      }
+      let endpointUrl: URL | undefined;
+      if (request.endpointUrl) endpointUrl = controlUrl(request.endpointUrl, "Agent endpoint URL");
+      return protoAgent(await (await tildeAgentProvider()).updateAgent(
+        request.id,
+        {
+          ...(request.displayName.trim() ? { displayName: request.displayName.trim() } : {}),
+          ...(endpointUrl ? { endpointUrl } : {}),
+          ...(request.enabled !== undefined ? { enabled: request.enabled } : {}),
+        },
+        controlContext(context),
+      ));
+    },
+    async registerAgent(request, context) {
+      authorized(context);
+      if (!request.displayName.trim()) throw new ConnectError("Agent display name is required", Code.InvalidArgument);
+      const endpointUrl = controlUrl(request.endpointUrl, "Agent endpoint URL");
+      const registered = await (await tildeAgentProvider()).registerAgent({
+        ...(request.id ? { id: request.id } : {}),
+        displayName: request.displayName.trim(),
+        endpointUrl,
+        ...(request.streaming !== undefined ? { streaming: request.streaming } : {}),
+        ...(request.timeoutMs ? { timeoutMs: request.timeoutMs } : {}),
+      }, controlContext(context));
+      const suffix = environmentSuffix(request.id || registered.agent.id);
+      await setEnvironment({
+        [`OPENBOT_AGENT_${suffix}_API_KEY`]: registered.credentials.apiKey,
+        [`OPENBOT_AGENT_${suffix}_WEBHOOK_SIGNING_KEY`]: registered.credentials.webhookSigningKey,
+      });
+      return protoAgent(registered.agent);
+    },
+    async unregisterAgent(request, context) {
+      authorized(context);
+      await (await tildeAgentProvider()).unregisterAgent(request.id, controlContext(context));
+      const provider = environmentProvider();
+      const suffix = environmentSuffix(request.id);
+      await Promise.all([
+        provider.delete(`OPENBOT_AGENT_${suffix}_API_KEY`, providerContext()),
+        provider.delete(`OPENBOT_AGENT_${suffix}_WEBHOOK_SIGNING_KEY`, providerContext()),
+      ]);
+      return { unregistered: true };
     },
   });
 
   router.service(ChatService, {
+    async listSessionGroups(request, context) {
+      authorized(context);
+      const result = await (await tildeAgentProvider()).listSessionGroups({
+        ...(request.agentPageSize ? { pageSize: request.agentPageSize } : {}),
+        ...(request.agentNextPageToken ? { nextPageToken: request.agentNextPageToken } : {}),
+        ...(request.sessionsPerAgent ? { sessionsPerAgent: request.sessionsPerAgent } : {}),
+        sort: agentSort(request.agentSort),
+        sessionSort: sessionSort(request.sessionSort),
+        ...(request.query ? { query: request.query } : {}),
+      }, controlContext(context));
+      return {
+        groups: result.items.map((group) => ({
+          agent: protoAgent(group.agent),
+          sessions: group.sessions.items.map(protoSession),
+          nextPageToken: group.sessions.nextPageToken ?? "",
+        })),
+        nextPageToken: result.nextPageToken ?? "",
+      };
+    },
     async listSessions(request, context) {
       authorized(context);
-      const sessions = await (
-        await tildeProviders()
-      ).chat.listSessions(request.agentId, providerContext(undefined, context.signal));
-      return { sessions: sessions.map(protoSession) };
+      const result = await (await tildeAgentProvider()).listSessions({
+        ...(request.agentId ? { agentId: request.agentId } : {}),
+        ...(request.pageSize ? { pageSize: request.pageSize } : {}),
+        ...(request.nextPageToken ? { nextPageToken: request.nextPageToken } : {}),
+        sort: sessionSort(request.sort),
+        ...(request.query ? { query: request.query } : {}),
+      }, controlContext(context));
+      return { sessions: result.items.map(protoSession), nextPageToken: result.nextPageToken ?? "" };
     },
     async createSession(request, context) {
       authorized(context);
-      return protoSession(
-        await (
-          await tildeProviders()
-        ).chat.createSession(
-          request.agentId,
-          request.title || undefined,
-          providerContext(undefined, context.signal),
-        ),
-      );
+      return protoSession(await (await tildeAgentProvider()).createSession(
+        request.agentId,
+        request.title || undefined,
+        controlContext(context),
+      ));
+    },
+    async renameSession(request, context) {
+      authorized(context);
+      if (!request.title.trim()) throw new ConnectError("Session title is required", Code.InvalidArgument);
+      return protoSession(await (await tildeAgentProvider()).renameSession(request.sessionId, request.title.trim(), controlContext(context)));
+    },
+    async markSessionUnread(request, context) {
+      authorized(context);
+      return protoSession(await (await tildeAgentProvider()).markSessionUnread(request.sessionId, controlContext(context)));
     },
     async listMessages(request, context) {
       authorized(context);
-      const messages = await (
-        await tildeProviders()
-      ).chat.listMessages(request.sessionId, providerContext(undefined, context.signal));
-      return { messages: messages.map(protoMessage) };
+      const result = await (await tildeAgentProvider()).listMessages({
+        sessionId: request.sessionId,
+        ...(request.pageSize ? { pageSize: request.pageSize } : {}),
+        ...(request.nextPageToken ? { nextPageToken: request.nextPageToken } : {}),
+      }, controlContext(context));
+      return { messages: result.items.map(protoMessage), nextPageToken: result.nextPageToken ?? "" };
     },
     async sendMessage(request, context) {
       authorized(context);
-      if (!request.text.trim())
-        throw new ConnectError("Message text is required", Code.InvalidArgument);
-      const messages = await (
-        await tildeProviders()
-      ).chat.sendMessage(
+      if (!request.text.trim()) throw new ConnectError("Message text is required", Code.InvalidArgument);
+      const result = await (await tildeAgentProvider()).sendMessage(
         request.agentId,
         request.sessionId,
         request.text.trim(),
-        providerContext(undefined, context.signal),
+        controlContext(context),
       );
-      return { messages: messages.map(protoMessage) };
+      return { messages: result.items.map(protoMessage), nextPageToken: result.nextPageToken ?? "" };
     },
     async interrupt(request, context) {
       authorized(context);
-      await (
-        await tildeProviders()
-      ).chat.interrupt(request.sessionId, providerContext(undefined, context.signal));
+      await (await tildeAgentProvider()).interruptSession(request.sessionId, controlContext(context));
       return { interrupted: true };
     },
   });
@@ -433,6 +496,16 @@ export function registerServices(router: ConnectRouter): void {
       return protoSandbox(handle);
     },
   });
+}
+
+function controlUrl(value: string, label: string): URL {
+  let url: URL;
+  try { url = new URL(value); }
+  catch { throw new ConnectError(`${label} is invalid`, Code.InvalidArgument); }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new ConnectError(`${label} must use HTTP or HTTPS`, Code.InvalidArgument);
+  }
+  return url;
 }
 
 async function sandboxSpec(image?: string) {

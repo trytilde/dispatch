@@ -1,12 +1,7 @@
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
-import {
-  AgentService,
-  ChatService,
-  InstallationService,
-  ProviderService,
-  SandboxService,
-} from "@openbot/contracts";
+import { SandboxService } from "@openbot/contracts";
+import { AgentService, ChatService, InstallationService, ProviderService } from "@openbot/control-service-proto";
 
 const transport = createConnectTransport({
   baseUrl: `${typeof window === "undefined" ? "http://127.0.0.1:4100" : window.location.origin}/rpc`,

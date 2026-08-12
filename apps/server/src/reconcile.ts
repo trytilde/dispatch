@@ -1,13 +1,8 @@
 import { createHash } from "node:crypto";
+import { TildeAgentProvider } from "@openbot/agent-provider";
 import { agentRegistrations, createDatabase, eq, skillRegistrations } from "@openbot/db";
-import type { AgentProvider, SkillProvider } from "@openbot/provider-sdk";
-import {
-  environmentNames,
-  getEnvironment,
-  providerContext,
-  setEnvironment,
-  tildeEnvironment,
-} from "./environment.js";
+import type { SkillProvider } from "@openbot/provider-sdk";
+import { environmentNames, getEnvironment, providerContext, setEnvironment, tildeEnvironment } from "./environment.js";
 import { configuredProvider } from "./provider-registry.js";
 import { loadRepository } from "./repository.js";
 import { ensureInstallation, updateInstallation, withLifecycleLease } from "./store.js";
@@ -143,60 +138,38 @@ async function reconcileAgents(
 ) {
   const db = createDatabase();
   const tilde = await tildeEnvironment();
+  if (!tilde) throw new Error("Tilde is not configured");
+  const provider = new TildeAgentProvider(tilde);
   const existing = await db.select().from(agentRegistrations);
   const existingById = new Map(existing.map((item) => [item.sourceId, item]));
   const desiredIds = new Set(repository.agents.map((agent) => agent.id));
   const output: { id: string; status: string; remoteId?: string; endpointUrl: string }[] = [];
   for (const agent of repository.agents) {
-    const provider = await configuredProvider<AgentProvider>("agent", agent.registration?.provider);
-    const endpointUrl = new URL(
-      `${repository.config.agents.routePrefix}/${agent.id}`,
-      origin,
-    ).toString();
-    const sourceDigest = createHash("sha256")
-      .update(repository.digest)
-      .update("\0")
-      .update(agent.id)
-      .digest("hex");
+    const endpointUrl = new URL(`${repository.config.agents.routePrefix}/${agent.id}`, origin).toString();
+    const sourceDigest = createHash("sha256").update(repository.digest).update("\0").update(agent.id).digest("hex");
     const prior = existingById.get(agent.id);
-    let remoteId =
-      prior?.remoteId ??
-      (agent.id === "openbot" && provider.descriptor.id === "tilde-agents"
-        ? tilde?.agentId
-        : undefined);
+    let remoteId = prior?.remoteId
+      ?? (agent.id === "openbot" ? tilde.agentId : undefined);
     let status = "ready";
     try {
       if (!remoteId) {
-        const registered = await provider.register(
-          {
-            id: agent.id,
-            sourceId: agent.id,
-            sourceDigest,
-            displayName: agent.displayName,
-            endpointUrl: new URL(endpointUrl),
-            streaming: agent.registration?.streaming ?? true,
-            timeoutMs: agent.registration?.timeoutMs ?? 300_000,
-          },
-          providerContext(),
-        );
-        remoteId = registered.id;
-        if (!registered.credentials)
-          throw new Error(
-            `Agent provider ${provider.descriptor.id} did not return initial credentials`,
-          );
+        const registered = await provider.registerAgent({
+          id: agent.id,
+          displayName: agent.displayName,
+          endpointUrl: new URL(endpointUrl),
+          streaming: agent.registration?.streaming ?? true,
+          timeoutMs: agent.registration?.timeoutMs ?? 300_000,
+        }, providerContext());
+        remoteId = registered.agent.id;
         const suffix = environmentSuffix(agent.id);
         await setEnvironment({
           [`OPENBOT_AGENT_${suffix}_API_KEY`]: registered.credentials.apiKey,
           [`OPENBOT_AGENT_${suffix}_WEBHOOK_SIGNING_KEY`]: registered.credentials.webhookSigningKey,
         });
       } else if (prior?.sourceDigest !== sourceDigest || prior.endpointUrl !== endpointUrl) {
-        await provider.update(
-          remoteId,
-          { displayName: agent.displayName, endpointUrl: new URL(endpointUrl) },
-          providerContext(),
-        );
+        await provider.updateAgent(remoteId, { displayName: agent.displayName, endpointUrl: new URL(endpointUrl) }, providerContext());
       } else {
-        await provider.inspect(remoteId, providerContext());
+        await provider.getAgent(remoteId, providerContext());
       }
       await db
         .insert(agentRegistrations)
@@ -250,8 +223,7 @@ async function reconcileAgents(
   for (const stale of existing.filter((item) => !desiredIds.has(item.sourceId))) {
     let status = "orphaned";
     if (prune && stale.remoteId) {
-      const provider = await configuredProvider<AgentProvider>("agent", stale.providerId);
-      await provider.disable(stale.remoteId, providerContext());
+      await provider.updateAgent(stale.remoteId, { enabled: false }, providerContext());
       status = "disabled";
     }
     await db

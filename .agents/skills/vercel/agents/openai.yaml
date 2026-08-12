@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vercel for OpenBot"
+  short_description: "Deploy and operate OpenBot on Vercel"
+  default_prompt: "Use $vercel to deploy or troubleshoot this OpenBot project on Vercel."

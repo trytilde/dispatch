@@ -1,0 +1,37 @@
+{
+  "name": "openbot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.1",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "build": "XDG_CACHE_HOME=.cache pnpm contracts:generate && XDG_CACHE_HOME=.cache turbo run build",
+    "check": "XDG_CACHE_HOME=.cache pnpm contracts:generate && XDG_CACHE_HOME=.cache tsc -p scripts/tsconfig.json && XDG_CACHE_HOME=.cache turbo run typecheck lint test && pnpm vitest run scripts",
+    "contracts:generate": "XDG_CACHE_HOME=.cache pnpm --filter @openbot/contracts generate",
+    "db:migrate": "pnpm --filter @openbot/db migrate",
+    "dev": "tsx scripts/dev.ts",
+    "dev:local": "tsx scripts/dev-local.ts",
+    "deploy:prod": "tsx scripts/deploy-prod.ts",
+    "test": "vitest run scripts && turbo run test",
+    "test:e2e": "playwright test",
+    "typecheck": "XDG_CACHE_HOME=.cache pnpm contracts:generate && XDG_CACHE_HOME=.cache tsc -p scripts/tsconfig.json && XDG_CACHE_HOME=.cache turbo run typecheck"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.0",
+    "@vercel/sandbox": "3.0.0",
+    "@openbot/providers": "workspace:*",
+    "@trytilde/cli": "0.1.0",
+    "@types/node": "24.3.0",
+    "@openbot/db": "workspace:*",
+    "dotenv": "17.2.1",
+    "tsx": "4.20.4",
+    "turbo": "2.5.6",
+    "typescript": "5.9.2",
+    "vercel": "58.9.4",
+    "vitest": "3.2.4",
+    "yaml": "2.9.0"
+  }
+}

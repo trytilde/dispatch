@@ -161,10 +161,6 @@ export interface AgentProviderModelHooks {
 }
 
 export interface AgentProvider extends AgentProviderModelHooks, DeployableProvider {
-  readonly descriptor: AgentProviderDescriptor;
-  health(context: AgentProviderCallContext): Promise<{ healthy: boolean; message?: string }>;
-  verify(context: AgentProviderCallContext): Promise<{ organizationId: string; teamId: string }>;
-
   listAgents(request: ListAgentsRequest, context: AgentProviderCallContext): Promise<Page<Agent>>;
   getAgent(id: string, context: AgentProviderCallContext): Promise<Agent>;
   registerAgent(request: RegisterAgentRequest, context: AgentProviderCallContext): Promise<RegisteredAgent>;

@@ -65,8 +65,6 @@ export interface ToolsPromptContext {
 }
 
 export interface ToolsProvider extends DeployableProvider {
-  readonly descriptor: ToolsProviderDescriptor;
-  health(context: ToolsProviderCallContext): Promise<{ healthy: boolean; message?: string }>;
   listTools(context: ToolsProviderCallContext): Promise<readonly ToolSummary[]>;
   invoke(name: string, input: JsonObject, context: ToolsProviderCallContext): Promise<JsonValue>;
   registerTools(context: ToolsProviderCallContext): Promise<readonly RegisteredTool[]>;

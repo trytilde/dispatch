@@ -8,6 +8,7 @@ import {
   ProviderKind,
   ProviderService,
   SessionSortOrder,
+  SkillsService,
 } from "@openbot/control-service-proto";
 import {
   SandboxService,
@@ -20,6 +21,14 @@ import type {
   AgentSession,
 } from "@openbot/agent-provider-core";
 import { TildeAgentProvider } from "@openbot/agent-provider";
+import type {
+  Skill,
+  SkillAssetManifest,
+  SkillRegistry,
+  SkillsProviderCallContext,
+} from "@openbot/skills-provider-core";
+import { SkillsProviderError } from "@openbot/skills-provider-core";
+import { TildeSkillsProvider } from "@openbot/skills-provider";
 import type {
   ProviderCallContext,
   SandboxHandle,
@@ -150,10 +159,68 @@ function protoMessage(message: AgentMessage) {
   };
 }
 
+function protoSkill(skill: Skill) {
+  return {
+    id: skill.id,
+    name: skill.name,
+    description: skill.description,
+    content: skill.content,
+    version: skill.version,
+    sourceKind: skill.sourceKind,
+    sourcePath: skill.sourcePath ?? "",
+    sourceRepositoryUrl: skill.sourceRepositoryUrl ?? "",
+    sourceCommitHash: skill.sourceCommitHash ?? "",
+    createdAt: skill.createdAt.toISOString(),
+    updatedAt: skill.updatedAt.toISOString(),
+  };
+}
+
+function protoSkillRegistry(registry: SkillRegistry) {
+  return {
+    id: registry.id,
+    name: registry.name,
+    description: registry.description,
+    skills: registry.skills.map((skill) => ({ ...skill })),
+    createdAt: registry.createdAt.toISOString(),
+    updatedAt: registry.updatedAt.toISOString(),
+  };
+}
+
+function protoSkillAssetManifest(manifest: SkillAssetManifest) {
+  return {
+    id: manifest.id,
+    providerId: manifest.providerId,
+    sourcePath: manifest.sourcePath,
+    sourceCommitHash: manifest.sourceCommitHash,
+    contentHash: manifest.contentHash,
+    createdAt: manifest.createdAt.toISOString(),
+    files: manifest.files.map((file) => ({
+      path: file.path,
+      sizeBytes: BigInt(file.sizeBytes),
+      checksumSha256: file.checksumSha256,
+      mediaType: file.mediaType,
+      executable: file.executable,
+    })),
+  };
+}
+
 async function tildeAgentProvider() {
   const config = await tildeEnvironment();
   if (!config) throw new ConnectError("Tilde is not configured", Code.FailedPrecondition);
   return new TildeAgentProvider(config);
+}
+
+async function tildeSkillsProvider() {
+  const config = await tildeEnvironment();
+  if (!config) throw new ConnectError("Tilde is not configured", Code.FailedPrecondition);
+  const registryId = await getEnvironment(environmentNames.tildeSkillRegistryId);
+  return new TildeSkillsProvider({
+    apiKey: config.apiKey,
+    orgId: config.orgId,
+    teamId: config.teamId,
+    ...(registryId ? { registryId } : {}),
+    ...(config.baseUrl ? { baseUrl: config.baseUrl } : {}),
+  });
 }
 
 async function listProviderStatus() {
@@ -195,6 +262,17 @@ async function listProviderStatus() {
       capabilities: [...provider.descriptor.capabilities],
       message: health.message ?? "",
     });
+    const skillsProvider = await tildeSkillsProvider();
+    const skillsHealth = await skillsProvider.health(context);
+    statuses.push({
+      id: skillsProvider.descriptor.id,
+      displayName: skillsProvider.descriptor.displayName,
+      kind: ProviderKind.SKILLS,
+      configured: true,
+      healthy: skillsHealth.healthy,
+      capabilities: [...skillsProvider.descriptor.capabilities],
+      message: skillsHealth.message ?? "",
+    });
   } else statuses.push({ id: "tilde", displayName: "Tilde", kind: ProviderKind.AGENT, configured: false, healthy: false, capabilities: [], message: "Tilde is not configured" });
   return statuses;
 }
@@ -211,6 +289,32 @@ function sessionSort(sort: SessionSortOrder) {
 
 function controlContext(context: HandlerContext): AgentProviderCallContext {
   return providerContext(context.requestHeader.get("x-request-id") ?? crypto.randomUUID(), context.signal);
+}
+
+function skillsContext(context: HandlerContext): SkillsProviderCallContext {
+  return providerContext(context.requestHeader.get("x-request-id") ?? crypto.randomUUID(), context.signal);
+}
+
+async function skillsCall<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (!(error instanceof SkillsProviderError)) throw error;
+    const code = error.code === "invalid_request"
+      ? Code.InvalidArgument
+      : error.code === "invalid_configuration"
+        ? Code.FailedPrecondition
+        : error.code === "not_found"
+          ? Code.NotFound
+          : error.code === "permission_denied"
+            ? Code.PermissionDenied
+            : error.code === "deadline_exceeded"
+              ? Code.DeadlineExceeded
+              : error.code === "provider_unavailable"
+                ? Code.Unavailable
+                : Code.Internal;
+    throw new ConnectError(error.message, code);
+  }
 }
 
 export function registerServices(router: ConnectRouter): void {
@@ -437,6 +541,103 @@ export function registerServices(router: ConnectRouter): void {
       );
       if (!provider) throw new ConnectError("Provider not found", Code.NotFound);
       return provider;
+    },
+  });
+
+  router.service(SkillsService, {
+    async listSkills(request, context) {
+      authorized(context);
+      return skillsCall(async () => {
+        const result = await (await tildeSkillsProvider()).listSkills({
+          ...(request.pageSize ? { pageSize: request.pageSize } : {}),
+          ...(request.nextPageToken ? { nextPageToken: request.nextPageToken } : {}),
+          ...(request.namePrefix ? { namePrefix: request.namePrefix } : {}),
+          ...(request.registryId ? { registryId: request.registryId } : {}),
+        }, skillsContext(context));
+        return { skills: result.items.map(protoSkill), nextPageToken: result.nextPageToken ?? "" };
+      });
+    },
+    async getSkill(request, context) {
+      authorized(context);
+      return skillsCall(async () => protoSkill(await (await tildeSkillsProvider()).getSkill(request.id, skillsContext(context))));
+    },
+    async createSkill(request, context) {
+      authorized(context);
+      if (!request.name.trim()) throw new ConnectError("Skill name is required", Code.InvalidArgument);
+      if (!request.description.trim()) throw new ConnectError("Skill description is required", Code.InvalidArgument);
+      return skillsCall(async () => protoSkill(await (await tildeSkillsProvider()).createSkill({
+        ...(request.id ? { id: request.id } : {}),
+        name: request.name.trim(),
+        description: request.description.trim(),
+        ...(request.content ? { content: request.content } : {}),
+        ...(request.version ? { version: request.version } : {}),
+        ...(request.sourceKind ? { sourceKind: request.sourceKind } : {}),
+        ...(request.sourcePath ? { sourcePath: request.sourcePath } : {}),
+        ...(request.sourceProviderId ? { sourceProviderId: request.sourceProviderId } : {}),
+        ...(request.sourceRepositoryUrl ? { sourceRepositoryUrl: request.sourceRepositoryUrl } : {}),
+        ...(request.sourceCommitHash ? { sourceCommitHash: request.sourceCommitHash } : {}),
+      }, skillsContext(context))));
+    },
+    async updateSkill(request, context) {
+      authorized(context);
+      if (request.name === undefined && request.description === undefined && request.content === undefined) {
+        throw new ConnectError("At least one skill update is required", Code.InvalidArgument);
+      }
+      return skillsCall(async () => protoSkill(await (await tildeSkillsProvider()).updateSkill(request.id, {
+        ...(request.name !== undefined ? { name: request.name } : {}),
+        ...(request.description !== undefined ? { description: request.description } : {}),
+        ...(request.content !== undefined ? { content: request.content } : {}),
+      }, skillsContext(context))));
+    },
+    async listSkillRegistries(request, context) {
+      authorized(context);
+      return skillsCall(async () => {
+        const result = await (await tildeSkillsProvider()).listRegistries({
+          ...(request.pageSize ? { pageSize: request.pageSize } : {}),
+          ...(request.nextPageToken ? { nextPageToken: request.nextPageToken } : {}),
+          ...(request.namePrefix ? { namePrefix: request.namePrefix } : {}),
+        }, skillsContext(context));
+        return { registries: result.items.map(protoSkillRegistry), nextPageToken: result.nextPageToken ?? "" };
+      });
+    },
+    async getSkillRegistry(request, context) {
+      authorized(context);
+      return skillsCall(async () => protoSkillRegistry(await (await tildeSkillsProvider()).getRegistry(request.id, skillsContext(context))));
+    },
+    async registerSkills(request, context) {
+      authorized(context);
+      if (!request.name.trim()) throw new ConnectError("Skill registry name is required", Code.InvalidArgument);
+      if (!request.description.trim()) throw new ConnectError("Skill registry description is required", Code.InvalidArgument);
+      if (request.skillIds.some((id) => !id)) throw new ConnectError("Skill identifiers cannot be empty", Code.InvalidArgument);
+      return skillsCall(async () => protoSkillRegistry(await (await tildeSkillsProvider()).registerSkills({
+        ...(request.registryId ? { registryId: request.registryId } : {}),
+        name: request.name.trim(),
+        description: request.description.trim(),
+        skillIds: request.skillIds,
+      }, skillsContext(context))));
+    },
+    async getSkillAssetManifest(request, context) {
+      authorized(context);
+      return skillsCall(async () => protoSkillAssetManifest(
+        await (await tildeSkillsProvider()).getSkillAssetManifest(request.skillId, skillsContext(context)),
+      ));
+    },
+    async downloadSkillAsset(request, context) {
+      authorized(context);
+      return skillsCall(async () => {
+        const provider = await tildeSkillsProvider();
+        const manifest = await provider.getSkillAssetManifest(request.skillId, skillsContext(context));
+        const asset = manifest.files.find((file) => file.path === request.path);
+        if (!asset) throw new SkillsProviderError("not_found", "Skill asset was not found in the package manifest");
+        const content = await provider.downloadSkillAsset(request.skillId, asset.path, skillsContext(context));
+        return {
+          path: asset.path,
+          content,
+          mediaType: asset.mediaType,
+          checksumSha256: asset.checksumSha256,
+          executable: asset.executable,
+        };
+      });
     },
   });
 

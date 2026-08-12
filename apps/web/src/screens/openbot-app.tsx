@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ApprovalCard, TaskRows, Thinking, ToolChips } from "@openbot/ui";
 import type { Sandbox } from "@openbot/contracts";
-import { InstallationPhase, type Agent, type ChatMessage as OpenBotMessage, type ChatSession, type InstallationStatus } from "@openbot/control-service-proto";
-import { agentClient, chatClient, installationClient, sandboxClient } from "../client.js";
+import { InstallationPhase, type Agent, type ChatMessage as OpenBotMessage, type ChatSession, type InstallationStatus, type Skill } from "@openbot/control-service-proto";
+import { agentClient, chatClient, installationClient, sandboxClient, skillsClient } from "../client.js";
 
 type Gate = "loading" | "locked" | "app";
 
@@ -379,6 +379,7 @@ function Workspace() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState("");
   const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [messages, setMessages] = useState<OpenBotMessage[]>([]);
   const [chatBusy, setChatBusy] = useState(false);
@@ -396,10 +397,8 @@ function Workspace() {
       setAgents(result.agents);
       setSelectedAgentId((current) => current || result.agents[0]?.id || "");
     });
-    void sandboxClient
-      .getSandbox({})
-      .then(setComputer)
-      .catch(() => undefined);
+    void skillsClient.listSkills({ pageSize: 8 }).then((result) => setSkills(result.skills)).catch(() => undefined);
+    void sandboxClient.getSandbox({}).then(setComputer).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -509,6 +508,12 @@ function Workspace() {
               ) : null}
             </div>
           ))}
+          {skills.length ? (
+            <div className="managed-skills">
+              <p>Managed skills</p>
+              {skills.map((skill) => <span key={skill.id} title={skill.description}>{skill.name}</span>)}
+            </div>
+          ) : null}
         </nav>
         <div className="rail-footer">
           <span className="status-dot" /> Tilde ChatKit

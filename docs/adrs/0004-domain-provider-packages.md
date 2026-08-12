@@ -48,6 +48,12 @@ expose AI SDK tools implements `registerTools()`, and a provider that needs to
 contribute instructions implements `injectPromptPart()`. Control-plane agent
 and session operations are not automatically tools.
 
+Managed skill package assets remain owned by the skills provider. It validates
+package paths, sizes, and checksums before writing through a
+`SkillAssetDestination`; a computer provider can adapt its file API to that
+destination when a skill must execute in an isolated computer. Tilde API keys
+and short-lived package download URLs never cross into the computer.
+
 `InferenceModelProvider` returns an AI SDK-compatible model from `model(name)`;
 the runtime supplies the model name rather than fixing it in provider
 construction. The OpenAI implementation supports Platform API keys and

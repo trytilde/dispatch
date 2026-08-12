@@ -1,4 +1,4 @@
-export const DESKTOP_BOOTSTRAP_VERSION = "2026-08-12.2";
+export const DESKTOP_BOOTSTRAP_VERSION = "2026-08-12.3";
 export const CUA_DRIVER_VERSION = "0.19.3";
 export const CHROME_VERSION_AMD64 = "151.0.7922.137-1";
 export const CHROME_SHA256_AMD64 = "e6dabf044cf9cd0279cfe86efa431682c18bfc06d06339ce055aaa87ae871727";
@@ -46,6 +46,9 @@ if [[ ! -f "$MARKER" ]] || [[ "$(cat "$MARKER")" != "$BOOTSTRAP_VERSION" ]]; the
   fi
   rm -f /tmp/cua-driver-install.sh
   cua-driver telemetry disable >/dev/null 2>&1 || true
+  cua_source="$(readlink -f "$(command -v cua-driver)")"
+  install -m 0755 "$cua_source" /usr/local/bin/openbot-cua-driver
+  ln -sfn openbot-cua-driver /usr/local/bin/cua-driver
 
   printf '%s' "$BOOTSTRAP_VERSION" > "$MARKER"
   apt-get clean
@@ -133,6 +136,12 @@ websockify --web=/usr/share/novnc --token-plugin TokenFile \
   --token-source /opt/openbot/novnc.tokens 0.0.0.0:6080 \
   >/var/log/openbot-novnc.log 2>&1 &
 
+CUA_EXECUTABLE=/usr/local/bin/openbot-cua-driver
+if [[ ! -x "$CUA_EXECUTABLE" ]]; then
+  CUA_SOURCE="$(readlink -f "$(command -v cua-driver)")"
+  install -m 0755 "$CUA_SOURCE" "$CUA_EXECUTABLE"
+fi
+ln -sfn openbot-cua-driver /usr/local/bin/cua-driver
 if [[ "$(id -u)" == 0 ]] && getent passwd 1000 >/dev/null 2>&1; then
   CUA_USER="$(id -nu 1000)"
   CUA_GROUP="$(id -gn 1000)"
@@ -141,10 +150,10 @@ if [[ "$(id -u)" == 0 ]] && getent passwd 1000 >/dev/null 2>&1; then
   install -d -o "$CUA_USER" -g "$CUA_GROUP" -m 0700 "$CUA_RUNTIME_DIR"
   runuser -u "$CUA_USER" -- env \
     DISPLAY="$DISPLAY" HOME="$CUA_HOME" XDG_RUNTIME_DIR="$CUA_RUNTIME_DIR" \
-    cua-driver serve --socket "$CUA_DRIVER_SOCKET" \
+    "$CUA_EXECUTABLE" serve --socket "$CUA_DRIVER_SOCKET" --dangerously-bypass-approvals \
     >/var/log/openbot-cua-driver.log 2>&1 &
 else
-  cua-driver serve --socket "$CUA_DRIVER_SOCKET" \
+  "$CUA_EXECUTABLE" serve --socket "$CUA_DRIVER_SOCKET" --dangerously-bypass-approvals \
     >/var/log/openbot-cua-driver.log 2>&1 &
 fi
 for _ in $(seq 1 60); do

@@ -3,53 +3,25 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": {
-    ".": "./src/index.js"
-  },
+  "exports": { ".": "./src/index.js" },
   "scripts": {
     "build": "tsc --noEmit && tsup",
     "dev": "tsx watch src/local.ts",
-    "lint": "vp lint",
+    "lint": "tsc --noEmit",
     "start": "tsx src/local.ts",
-    "test": "vp test run",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/openai": "3.0.94",
-    "@openbot/agent-provider": "workspace:*",
-    "@openbot/agent-provider-core": "workspace:*",
-    "@bufbuild/protobuf": "2.7.0",
     "@connectrpc/connect": "2.1.2",
-    "@connectrpc/connect-node": "2.1.2",
     "@hono/node-server": "1.19.1",
-    "@libsql/client": "0.15.15",
-    "@openbot/config": "workspace:*",
-    "@openbot/contracts": "workspace:*",
-    "@openbot/control-service-proto": "workspace:*",
-    "@openbot/db": "workspace:*",
-    "@openbot/provider-sdk": "workspace:*",
-    "@openbot/providers": "workspace:*",
-    "@openbot/skills-provider": "workspace:*",
-    "@openbot/skills-provider-core": "workspace:*",
-    "@openbot/tools-provider": "workspace:*",
-    "@openbot/tools-provider-core": "workspace:*",
-    "@trytilde/harness-sdk": "0.1.2",
-    "@trytilde/harness-sdk-vercel-ai-node": "0.2.0",
-    "@vercel/sandbox": "3.0.0",
-    "ai": "6.0.250",
-    "drizzle-orm": "0.44.5",
-    "hono": "4.13.1",
-    "microsandbox": "0.6.8",
-    "yaml": "2.9.0",
-    "zod": "4.4.3"
+    "hono": "4.13.1"
   },
   "devDependencies": {
     "@types/node": "24.3.0",
-    "tsup": "8.5.1",
     "tsx": "4.20.4",
+    "tsup": "8.5.1",
     "typescript": "5.9.2",
-    "vite": "catalog:",
-    "vite-plus": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "3.2.4"
   }
 }

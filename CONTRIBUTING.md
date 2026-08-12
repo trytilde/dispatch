@@ -8,7 +8,7 @@ vp run check
 vp run build
 ```
 
-Provider contracts belong in `packages/provider-sdk`; default integrations belong in `packages/providers`; fork-specific integrations belong in `configuration/providers/`. Agent prompts and execution belong in `configuration/agents/`, not the server router. Never commit `.env`, deployment state, or generated credentials.
+Provider contracts belong in their domain `packages/*-provider-core` package; implementations belong in the matching provider package. Fork-specific integrations will live in `configuration/providers/` once that runtime boundary is designed. Agent prompts and execution belong in `configuration/agents/`, not the server router. Never commit `.env`, deployment state, or generated credentials.
 
 When contributing from a fork, separate reusable core changes from private configuration. `.agents/skills/upstream-pr` documents the repository workflow for coding agents.
 

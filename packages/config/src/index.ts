@@ -1,5 +1,9 @@
 import { createHash } from "node:crypto";
-import type { ProviderPlugin } from "@openbot/provider-sdk";
+
+export interface ProviderPluginManifest {
+  readonly id: string;
+  readonly registrations: readonly unknown[];
+}
 
 export interface OpenBotConfig {
   providers: {
@@ -20,7 +24,7 @@ export interface OpenBotConfig {
 
 export interface RepositoryManifest {
   config: OpenBotConfig;
-  providerPlugins: readonly ProviderPlugin[];
+  providerPlugins: readonly ProviderPluginManifest[];
   files: Readonly<Record<string, string>>;
   digest: string;
 }

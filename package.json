@@ -3,38 +3,36 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.33.1",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
-    "build": "XDG_CACHE_HOME=.cache vp run openbot:generate && vp run contracts:generate && XDG_CACHE_HOME=.cache vp run -r build",
+    "build": "pnpm contracts:generate && XDG_CACHE_HOME=.cache turbo run build",
     "changeset": "changeset",
     "changeset:status": "changeset status",
     "changeset:version": "changeset version",
-    "check": "XDG_CACHE_HOME=.cache vp run openbot:generate && vp run contracts:generate && XDG_CACHE_HOME=.cache vp check && vp run --filter @openbot/contracts lint && vp run --filter @openbot/control-service-proto lint && vp run test",
-    "contracts:generate": "XDG_CACHE_HOME=.cache vp run --filter @openbot/contracts generate && XDG_CACHE_HOME=.cache vp run --filter @openbot/control-service-proto generate",
-    "db:migrate": "vp run --filter @openbot/db migrate",
+    "check": "pnpm contracts:generate && XDG_CACHE_HOME=.cache tsc -p scripts/tsconfig.json && XDG_CACHE_HOME=.cache turbo run typecheck lint test && pnpm vitest run scripts",
+    "contracts:generate": "XDG_CACHE_HOME=.cache pnpm --filter @openbot/contracts generate && XDG_CACHE_HOME=.cache pnpm --filter @openbot/control-service-proto generate",
+    "db:migrate": "pnpm --filter @openbot/db migrate",
     "dev": "tsx scripts/dev.ts",
     "dev:local": "tsx scripts/dev-local.ts",
     "deploy:prod": "tsx scripts/deploy-prod.ts",
-    "openbot:generate": "tsx scripts/generate-repository.ts",
     "openbot": "tsx scripts/openbot.tsx",
-    "format": "vp fmt",
-    "format:check": "vp fmt --check",
-    "lint": "vp lint",
-    "test": "vp test run scripts && vp run -r test",
+    "test": "vitest run scripts && turbo run test",
     "test:e2e": "playwright test",
-    "typecheck": "XDG_CACHE_HOME=.cache vp run openbot:generate && vp run contracts:generate && XDG_CACHE_HOME=.cache vp check --no-fmt --no-lint",
-    "prepare": "vp config"
+    "typecheck": "pnpm contracts:generate && XDG_CACHE_HOME=.cache tsc -p scripts/tsconfig.json && XDG_CACHE_HOME=.cache turbo run typecheck"
   },
   "devDependencies": {
-    "@ai-sdk/openai": "3.0.94",
     "@changesets/changelog-github": "0.5.2",
     "@changesets/cli": "2.29.7",
+    "@ai-sdk/openai": "3.0.94",
     "@openbot/agent-provider": "workspace:*",
     "@openbot/agent-provider-core": "workspace:*",
     "@openbot/config": "workspace:*",
     "@openbot/control-service-proto": "workspace:*",
     "@openbot/db": "workspace:*",
     "@openbot/inference-model-provider": "workspace:*",
-    "@openbot/providers": "workspace:*",
     "@openbot/skills-provider": "workspace:*",
     "@openbot/skills-provider-core": "workspace:*",
     "@openbot/tools-provider": "workspace:*",
@@ -51,15 +49,10 @@
     "ink-testing-library": "4.0.0",
     "react": "19.2.8",
     "tsx": "4.20.4",
+    "turbo": "2.5.6",
     "typescript": "5.9.2",
     "vercel": "58.9.4",
-    "vite": "catalog:",
-    "vite-plus": "catalog:",
-    "vitest": "catalog:",
+    "vitest": "3.2.4",
     "yaml": "2.9.0"
-  },
-  "engines": {
-    "node": "24.x"
-  },
-  "packageManager": "pnpm@10.33.1"
+  }
 }

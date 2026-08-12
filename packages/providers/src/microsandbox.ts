@@ -73,6 +73,7 @@ export class MicrosandboxProvider implements SandboxProvider {
         OPENBOT_DESKTOP_CAPABILITY: desktopCapability,
         OPENBOT_EXPOSED_PORTS: "6080,4101",
         OPENBOT_WORKSPACE: "/workspace",
+        ...(spec.repository?.environment ?? {}),
       })
       .scripts({
         "bootstrap-openbot-desktop": desktopBootstrapScript,
@@ -86,10 +87,13 @@ export class MicrosandboxProvider implements SandboxProvider {
       await sandbox.stop().catch(() => undefined);
       throw new ProviderError("provider_unavailable", `Desktop bootstrap failed: ${bootstrap.stderr() || bootstrap.stdout()}`);
     }
-    const start = await sandbox.exec("bash", ["-lc", "nohup /usr/local/bin/start-openbot-desktop >/var/log/openbot-desktop.log 2>&1 </dev/null &"]);
-    if (!start.success) {
+    try {
+      await seedRepository(sandbox, spec);
+      const start = await sandbox.exec("bash", ["-lc", "nohup /usr/local/bin/start-openbot-desktop >/var/log/openbot-desktop.log 2>&1 </dev/null &"]);
+      if (!start.success) throw new ProviderError("provider_unavailable", `Desktop start failed: ${start.stderr() || start.stdout()}`);
+    } catch (error) {
       await sandbox.stop().catch(() => undefined);
-      throw new ProviderError("provider_unavailable", `Desktop start failed: ${start.stderr() || start.stdout()}`);
+      throw error;
     }
     const handle: SandboxHandle = {
       id,
@@ -141,6 +145,23 @@ export class MicrosandboxProvider implements SandboxProvider {
     const stopped = { ...handle, state: "stopped" as const };
     this.#handles.set(id, stopped);
     return stopped;
+  }
+}
+
+async function seedRepository(sandbox: MicroSandbox, spec: SandboxSpec): Promise<void> {
+  if (!spec.repository) return;
+  const fs = sandbox.fs();
+  for (const asset of spec.repository.assets) {
+    const destination = `/workspace/${asset.path}`;
+    await sandbox.exec("mkdir", ["-p", destination.slice(0, destination.lastIndexOf("/")) || "/workspace"]);
+    await fs.write(destination, Buffer.from(asset.contentBase64, "base64"));
+    await sandbox.exec("chmod", [asset.executable ? "0755" : "0644", destination]);
+  }
+  if (spec.repository.bootstrap) {
+    await fs.write("/opt/openbot/repository-bootstrap", spec.repository.bootstrap);
+    await sandbox.exec("chmod", ["0755", "/opt/openbot/repository-bootstrap"]);
+    const result = await sandbox.exec("bash", ["-lc", "cd /workspace && /opt/openbot/repository-bootstrap"]);
+    if (!result.success) throw new ProviderError("provider_unavailable", "Repository sandbox bootstrap failed; inspect the sandbox bootstrap log");
   }
 }
 

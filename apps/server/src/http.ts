@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { secureHeaders } from "hono/secure-headers";
 import { createClient } from "@trytilde/harness-sdk";
 import {
@@ -12,14 +12,20 @@ import {
   WebhookVerificationError,
 } from "@trytilde/harness-sdk-vercel-ai-node";
 import { timingSafeEqual } from "node:crypto";
-import { consumeStream, convertToModelMessages, stepCountIs, streamText } from "ai";
+import { convertToModelMessages } from "ai";
 import { z } from "zod";
-import { defaultSandboxProvider, OpenAiProvider, TildeChatProvider } from "@openbot/providers";
+import type { AiProvider, Provider, SandboxProvider } from "@openbot/provider-sdk";
+import { TildeChatProvider } from "@openbot/providers";
 import { hasValidSession, issueSessionCookie, matchesSetupCode } from "./crypto.js";
 import { publicOrigin, setupCode } from "./config.js";
 import { environmentNames, environmentProvider, getEnvironment, providerContext, tildeEnvironment } from "./environment.js";
 import { ensureInstallation } from "./store.js";
 import { createAgentRuntimeContext } from "./agent-runtime.js";
+import { configuredProvider } from "./provider-registry.js";
+import { loadRepository } from "./repository.js";
+import { environmentSuffix } from "./reconcile.js";
+import { reconcileRepository } from "./reconcile.js";
+import { getAgentPublication, publishAgent } from "./publishing.js";
 
 export const httpApp = new Hono();
 
@@ -35,6 +41,34 @@ httpApp.post("/api/setup/unlock", async (context) => {
   await ensureInstallation(publicOrigin(context.req.raw));
   context.header("Set-Cookie", issueSessionCookie(setupCode(), new URL(context.req.url).protocol === "https:"));
   return context.json({ ok: true });
+});
+
+httpApp.get("/api/configuration", async (context) => {
+  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode())) return context.json({ error: "Setup session required" }, 401);
+  const repository = await loadRepository();
+  return context.json({ digest: repository.digest, agents: repository.agents.map(({ id, displayName }) => ({ id, displayName })), skills: repository.skills.map(({ name, description }) => ({ name, description })) });
+});
+
+httpApp.post("/api/admin/reconcile", async (context) => {
+  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode())) return context.json({ error: "Setup session required" }, 401);
+  const report = await reconcileRepository({ origin: publicOrigin(context.req.raw) });
+  return context.json(report, report.errors.length ? 502 : 200);
+});
+
+httpApp.post("/api/agent-publications", async (context) => {
+  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode())) return context.json({ error: "Setup session required" }, 401);
+  try {
+    const body = await context.req.json<{ id: string; displayName: string; description?: string }>();
+    return context.json(await publishAgent(body, context.req.raw.signal), 202);
+  } catch (error) {
+    return context.json({ error: error instanceof Error ? error.message : "Unable to publish agent" }, 400);
+  }
+});
+
+httpApp.get("/api/agent-publications/:id", async (context) => {
+  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode())) return context.json({ error: "Setup session required" }, 401);
+  const publication = await getAgentPublication(context.req.param("id"));
+  return publication ? context.json(publication) : context.json({ error: "Publication not found" }, 404);
 });
 
 httpApp.use("/api/chat", async (context, next) => {
@@ -61,11 +95,17 @@ httpApp.post("/api/chat", async (context) => {
   });
 });
 
-httpApp.all("/api/tilde/chatkit", async (context) => {
+httpApp.all("/api/agents/:agentId", (context) => handleAgentEndpoint(context, context.req.param("agentId")));
+httpApp.all("/api/tilde/chatkit", (context) => handleAgentEndpoint(context, "openbot"));
+
+async function handleAgentEndpoint(context: Context, agentId: string) {
   if (context.req.method !== "POST") return context.json({ error: "Method not allowed" }, 405);
+  const repository = await loadRepository();
+  const agent = repository.agents.find((candidate) => candidate.id === agentId);
+  if (!agent) return context.json({ error: "Agent endpoint not found" }, 404);
   const base = await tildeSecrets();
   if (!base) return context.json({ error: "Tilde is not configured" }, 503);
-  const secrets = await matchingTildeAgentCredentials(context.req.raw, base);
+  const secrets = await matchingTildeAgentCredentials(context.req.raw, base, agentId);
   if (!secrets) return context.json({ error: "Invalid webhook signature" }, 401);
   const client = createClient({ apiKey: secrets.apiKey, orgId: secrets.orgId, teamId: secrets.teamId, baseUrl: process.env.TILDE_BASE_URL });
   const endpoint = chatKitEndpoint({
@@ -77,10 +117,11 @@ httpApp.all("/api/tilde/chatkit", async (context) => {
       const openaiApiKey = await getEnvironment(environmentNames.openaiApiKey);
       if (!openaiApiKey) return Response.json({ error: "OpenAI is not configured" }, { status: 503 });
       const model = (await getEnvironment(environmentNames.openaiModel)) ?? "gpt-5.4";
-      const aiProvider = new OpenAiProvider();
+      const aiProvider = await configuredProvider<AiProvider>("ai");
+      const sandboxProvider = await configuredProvider<SandboxProvider>("sandbox");
       const runtime = await createAgentRuntimeContext({
-        agentId: secrets.agentId ?? "openbot-gateway",
-        displayName: "OpenBot",
+        agentId: agent.id,
+        displayName: agent.displayName,
         sessionId: endpointContext.sessionId,
         ...(endpointContext.userId ? { userId: endpointContext.userId } : {}),
         client,
@@ -91,18 +132,23 @@ httpApp.all("/api/tilde/chatkit", async (context) => {
         signal: request.signal,
       });
       try {
-        const result = streamText({
-          model: aiProvider.languageModel(model, { mode: "api_key", apiKey: openaiApiKey }),
-          system: runtime.system,
+        return await agent.run({
+          request,
+          agent,
+          sessionId: endpointContext.sessionId,
+          ...(endpointContext.userId ? { userId: endpointContext.userId } : {}),
           messages: await convertToModelMessages(messages),
+          model: aiProvider.languageModel(model, { mode: "api_key", apiKey: openaiApiKey }),
+          modelId: model,
+          baseSystemPrompt: runtime.system,
           tools: runtime.tools,
-          stopWhen: stepCountIs(12),
-          abortSignal: request.signal,
-          onFinish: runtime.close,
-          onAbort: runtime.close,
-          onError: runtime.close,
+          providers: new Map<string, Provider>([
+            [aiProvider.descriptor.id, aiProvider],
+            [sandboxProvider.descriptor.id, sandboxProvider],
+          ]),
+          signal: request.signal,
+          close: runtime.close,
         });
-        return result.toUIMessageStreamResponse({ consumeSseStream: consumeStream });
       } catch (error) {
         await runtime.close();
         throw error;
@@ -110,7 +156,7 @@ httpApp.all("/api/tilde/chatkit", async (context) => {
     },
   });
   return endpoint(context.req.raw);
-});
+}
 
 httpApp.all("/api/tilde/tools/sandbox", async (context) => {
   const secrets = await tildeSecrets();
@@ -166,7 +212,7 @@ export async function sandboxToolEndpoint(request: Request, webhookSigningKey: s
     if (!installation.sandboxInstanceId) {
       return Response.json({ type: "error", message: "The OpenBot computer has not been started" });
     }
-    const output = await defaultSandboxProvider().exec(
+    const output = await (await configuredProvider<SandboxProvider>("sandbox")).exec(
       installation.sandboxInstanceId,
       input.data.command,
       input.data.arguments,
@@ -209,23 +255,22 @@ async function tildeSecrets() {
 async function matchingTildeAgentCredentials(
   request: Request,
   base: NonNullable<Awaited<ReturnType<typeof tildeEnvironment>>>,
+  agentId: string,
 ) {
-  const candidates = [{ apiKey: base.apiKey, webhookSigningKey: base.webhookSigningKey }];
   const provider = environmentProvider();
-  const entries = await provider.list("OPENBOT_TILDE_AGENT_", providerContext());
-  const signingEntries = entries.filter((entry) => entry.name.endsWith("_WEBHOOK_SIGNING_KEY"));
-  for (const signingEntry of signingEntries) {
-    const prefix = signingEntry.name.slice(0, -"_WEBHOOK_SIGNING_KEY".length);
-    const [apiKey, webhookSigningKey] = await Promise.all([
-      provider.get(`${prefix}_API_KEY`, providerContext()),
-      provider.get(signingEntry.name, providerContext()),
-    ]);
-    if (apiKey && webhookSigningKey) candidates.push({ apiKey, webhookSigningKey });
-  }
+  const prefix = `OPENBOT_AGENT_${environmentSuffix(agentId)}`;
+  const [apiKey, webhookSigningKey] = await Promise.all([
+    provider.get(`${prefix}_API_KEY`, providerContext()),
+    provider.get(`${prefix}_WEBHOOK_SIGNING_KEY`, providerContext()),
+  ]);
+  const candidates = [
+    ...(apiKey && webhookSigningKey ? [{ apiKey, webhookSigningKey }] : []),
+    ...(agentId === "openbot" ? [{ apiKey: base.apiKey, webhookSigningKey: base.webhookSigningKey }] : []),
+  ];
   for (const candidate of candidates) {
     try {
       await verifyWebhookRequest(request.clone(), { webhookSigningKey: candidate.webhookSigningKey });
-      return { ...base, ...candidate };
+      return { ...base, ...candidate, agentId };
     } catch (error) {
       if (!(error instanceof WebhookVerificationError)) throw error;
     }

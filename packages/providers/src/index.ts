@@ -1,11 +1,13 @@
 export * from "./microsandbox.js";
 export * from "./capabilities.js";
 export * from "./env.js";
+export * from "./github.js";
 export * from "./openai.js";
 export * from "./prompt.js";
 export * from "./sandbox-bootstrap.js";
 export * from "./tilde.js";
 export * from "./vercel-sandbox.js";
+export * from "./vercel.js";
 
 import type { SandboxProvider } from "@openbot/provider-sdk";
 import { MicrosandboxProvider } from "./microsandbox.js";

@@ -3,5 +3,5 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["./*.ts"]
+  "include": ["./*.ts", "../openbot.config.ts", "../agents/**/*.ts", "../providers/**/*.ts"]
 }

@@ -9,7 +9,7 @@ export default defineConfig({
     skills: "tilde-skills",
     sandbox: "auto",
     environment: "auto",
-    deployment: "vercel",
+    runtime: "vercel",
   },
   skills: {
     directory: "configuration/skills",

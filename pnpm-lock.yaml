@@ -250,6 +250,15 @@ importers:
       '@hono/node-server':
         specifier: 1.19.1
         version: 1.19.1(hono@4.13.1)
+      '@openbot/config':
+        specifier: workspace:*
+        version: link:../packages/config
+      '@openbot/runtime-provider':
+        specifier: workspace:*
+        version: link:../packages/runtime-provider
+      '@openbot/runtime-provider-core':
+        specifier: workspace:*
+        version: link:../packages/runtime-provider-core
       '@openbot/server':
         specifier: workspace:*
         version: link:../apps/server
@@ -306,6 +315,9 @@ importers:
 
   packages/agent-provider-core:
     dependencies:
+      '@openbot/runtime-provider-core':
+        specifier: workspace:*
+        version: link:../runtime-provider-core
       ai:
         specifier: 6.0.250
         version: 6.0.250(zod@4.4.3)
@@ -322,6 +334,9 @@ importers:
 
   packages/computer-provider-core:
     dependencies:
+      '@openbot/runtime-provider-core':
+        specifier: workspace:*
+        version: link:../runtime-provider-core
       ai:
         specifier: 6.0.250
         version: 6.0.250(zod@4.4.3)
@@ -497,6 +512,40 @@ importers:
       '@ai-sdk/provider':
         specifier: 3.0.15
         version: 3.0.15
+      '@openbot/runtime-provider-core':
+        specifier: workspace:*
+        version: link:../runtime-provider-core
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
+
+  packages/runtime-provider:
+    dependencies:
+      '@openbot/runtime-provider-core':
+        specifier: workspace:*
+        version: link:../runtime-provider-core
+      vercel:
+        specifier: 58.9.4
+        version: 58.9.4(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)(rollup@4.62.4)
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
+
+  packages/runtime-provider-core:
     devDependencies:
       '@types/node':
         specifier: 24.3.0
@@ -538,6 +587,9 @@ importers:
 
   packages/skills-provider-core:
     dependencies:
+      '@openbot/runtime-provider-core':
+        specifier: workspace:*
+        version: link:../runtime-provider-core
       ai:
         specifier: 6.0.250
         version: 6.0.250(zod@4.4.3)
@@ -579,6 +631,9 @@ importers:
 
   packages/tools-provider-core:
     dependencies:
+      '@openbot/runtime-provider-core':
+        specifier: workspace:*
+        version: link:../runtime-provider-core
       ai:
         specifier: 6.0.250
         version: 6.0.250(zod@4.4.3)

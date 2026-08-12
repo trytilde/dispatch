@@ -17,7 +17,6 @@
     "db:migrate": "pnpm --filter @openbot/db migrate",
     "dev": "pnpm --filter @openbot/cli dev",
     "deploy:prod": "pnpm --filter @openbot/cli run deploy --",
-    "local": "pnpm --filter @openbot/cli local",
     "openbot": "pnpm --filter @openbot/cli start --",
     "test": "turbo run test",
     "test:e2e": "playwright test",

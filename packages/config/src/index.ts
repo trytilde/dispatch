@@ -14,7 +14,7 @@ export interface OpenBotConfig {
     skills: string;
     sandbox: string;
     environment: string;
-    deployment: string;
+    runtime: string;
     options?: Readonly<Record<string, unknown>>;
   };
   skills: { directory: string; registryName: string; registryDescription?: string };

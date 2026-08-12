@@ -10,7 +10,7 @@ const config: OpenBotConfig = {
     skills: "tilde-skills",
     sandbox: "auto",
     environment: "auto",
-    deployment: "vercel",
+    runtime: "vercel",
   },
   skills: { directory: "configuration/skills", registryName: "OpenBot" },
   agents: { directory: "configuration/agents", routePrefix: "/api/agents" },

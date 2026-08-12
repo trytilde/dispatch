@@ -1,9 +1,9 @@
 {
-  "name": "@openbot/inference-model-provider-core",
+  "name": "@openbot/runtime-provider",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.js" },
+  "exports": { ".": "./src/index.ts" },
   "scripts": {
     "build": "tsc --noEmit",
     "lint": "tsc --noEmit",
@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/provider": "3.0.15",
-    "@openbot/runtime-provider-core": "workspace:*"
+    "@openbot/runtime-provider-core": "workspace:*",
+    "vercel": "58.9.4"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

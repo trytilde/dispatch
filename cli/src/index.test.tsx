@@ -11,12 +11,13 @@ describe("OpenBot CLI", () => {
     const { lastFrame } = render(<Help />);
     expect(lastFrame()).toContain("Fork it. Configure it. Run it.");
     expect(lastFrame()).toContain("deploy --yes");
+    expect(lastFrame()).not.toContain("Run the built OpenBot app");
   });
   it("supports keyboard navigation in the launcher", () => {
     let selected = "";
     const { stdin } = render(<CommandMenu onSelect={(command) => { selected = command; }} />);
     stdin.write("j");
     stdin.write("\r");
-    expect(selected).toBe("local");
+    expect(selected).toBe("check");
   });
 });

@@ -28,7 +28,6 @@ export interface SyncReportView {
 
 const commands = [
   ["dev", "Start the local OpenBot development environment"],
-  ["local", "Run the built OpenBot app from one Hono origin"],
   ["check", "Run repository validation"],
   ["build", "Build the deployable application shell"],
   ["test", "Run repository tests"],
@@ -37,7 +36,6 @@ const commands = [
 
 const menuItems = [
   { command: "dev", description: "Start local development" },
-  { command: "local", description: "Run the built app locally" },
   { command: "check", description: "Validate the repository" },
   { command: "build", description: "Build the application" },
   { command: "help", description: "Show every command" },

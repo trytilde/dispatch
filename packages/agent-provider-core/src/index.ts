@@ -1,4 +1,5 @@
 import type { Tool } from "ai";
+import type { DeployableProvider } from "@openbot/runtime-provider-core";
 
 export interface AgentProviderCallContext {
   requestId: string;
@@ -158,7 +159,7 @@ export interface AgentProviderModelHooks {
   ): string | undefined | Promise<string | undefined>;
 }
 
-export interface AgentProvider extends AgentProviderModelHooks {
+export interface AgentProvider extends AgentProviderModelHooks, DeployableProvider {
   readonly descriptor: AgentProviderDescriptor;
   health(context: AgentProviderCallContext): Promise<{ healthy: boolean; message?: string }>;
   verify(context: AgentProviderCallContext): Promise<{ organizationId: string; teamId: string }>;

@@ -20,7 +20,7 @@ OpenBot uses ConnectRPC for authenticated control operations and Hono for protoc
 3. For Hono, edit `apps/server/src/http.ts`; update `apps/server/src/fetch-handler.ts` only when dispatch behavior changes.
 4. Validate input at the edge. Use protobuf types for Connect and Zod or narrow parsing for untyped HTTP payloads.
 5. Apply the existing authorization mechanism before business work.
-6. Delegate external behavior to `packages/provider-sdk` interfaces and `packages/providers` adapters. Keep route code provider-neutral.
+6. Delegate external behavior to the owning `*-provider-core` interface and matching provider adapter. Keep route code provider-neutral.
 7. Preserve `Request.signal` through `ProviderCallContext`.
 8. Add focused tests beside the server surface. Test status/code, response shape, authorization, and the owning provider call.
 
@@ -41,10 +41,9 @@ Add pagination only when the backing provider supports a stable cursor contract.
 - [ ] Correct Hono or ConnectRPC surface chosen.
 - [ ] Handler remains thin and Web-standard.
 - [ ] Authentication or signature verification preserved.
-- [ ] Provider work stays behind `provider-sdk`.
+- [ ] Provider work stays behind its domain `*-provider-core` contract.
 - [ ] Proto regenerated when changed; generated files not hand-edited.
 - [ ] Local and Vercel routing still agree with `vercel.json`.
 - [ ] Focused server/provider tests pass.
 - [ ] `pnpm check` and `pnpm build` pass.
 - [ ] Browser flow tested when user-visible behavior changed.
-

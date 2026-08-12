@@ -18,6 +18,8 @@
     "@openbot/desktop",
     "@openbot/inference-model-provider",
     "@openbot/inference-model-provider-core",
+    "@openbot/runtime-provider",
+    "@openbot/runtime-provider-core",
     "@openbot/server",
     "@openbot/skills-provider",
     "@openbot/skills-provider-core",

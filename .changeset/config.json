@@ -2,20 +2,21 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.4/schema.json",
   "changelog": ["@changesets/changelog-github", { "repo": "trytilde/openbot" }],
   "commit": false,
-  "fixed": [
-    [
-      "@openbot/box-host",
-      "@openbot/config",
-      "@openbot/contracts",
-      "@openbot/db",
-      "@openbot/desktop",
-      "@openbot/provider-sdk",
-      "@openbot/providers",
-      "@openbot/server",
-      "@openbot/ui",
-      "@openbot/web"
-    ]
-  ],
+  "fixed": [[
+    "@openbot/agent-provider",
+    "@openbot/agent-provider-core",
+    "@openbot/box-host",
+    "@openbot/config",
+    "@openbot/contracts",
+    "@openbot/control-service-proto",
+    "@openbot/db",
+    "@openbot/desktop",
+    "@openbot/provider-sdk",
+    "@openbot/providers",
+    "@openbot/server",
+    "@openbot/ui",
+    "@openbot/web"
+  ]],
   "linked": [],
   "access": "restricted",
   "baseBranch": "main",

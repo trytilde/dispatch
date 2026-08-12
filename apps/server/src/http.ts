@@ -10,8 +10,8 @@ import {
 } from "@trytilde/harness-sdk-vercel-ai-node";
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
+import { TildeAgentProvider } from "@openbot/agent-provider";
 import type { SandboxProvider } from "@openbot/provider-sdk";
-import { TildeChatProvider } from "@openbot/providers";
 import { hasValidSession, issueSessionCookie, matchesSetupCode } from "./crypto.js";
 import { publicOrigin, setupCode } from "./config.js";
 import { providerContext, tildeEnvironment } from "./environment.js";
@@ -80,7 +80,7 @@ httpApp.post("/api/chat", async (context) => {
   if (!agentId) return context.json({ error: "A Tilde agent is required" }, 400);
   const text = body.text?.trim() || lastUserText(body.messages);
   if (!text) return context.json({ error: "A user message is required" }, 400);
-  const provider = new TildeChatProvider(tilde);
+  const provider = new TildeAgentProvider(tilde);
   const session = body.sessionId
     ? { id: body.sessionId }
     : await provider.createSession(
@@ -96,10 +96,7 @@ httpApp.post("/api/chat", async (context) => {
   );
   return context.json({
     sessionId: session.id,
-    messages: messages.map((message) => ({
-      ...message,
-      createdAt: message.createdAt.toISOString(),
-    })),
+    messages: messages.items.map((message) => ({ ...message, createdAt: message.createdAt.toISOString() })),
   });
 });
 

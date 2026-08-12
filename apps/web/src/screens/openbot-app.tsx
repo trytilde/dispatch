@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ApprovalCard, TaskRows, Thinking, ToolChips } from "@openbot/ui";
-import type {
-  Agent,
-  ChatMessage as OpenBotMessage,
-  ChatSession,
-  InstallationStatus,
-  Sandbox,
-} from "@openbot/contracts";
-import { InstallationPhase } from "@openbot/contracts";
+import type { Sandbox } from "@openbot/contracts";
+import { InstallationPhase, type Agent, type ChatMessage as OpenBotMessage, type ChatSession, type InstallationStatus } from "@openbot/control-service-proto";
 import { agentClient, chatClient, installationClient, sandboxClient } from "../client.js";
 
 type Gate = "loading" | "locked" | "app";

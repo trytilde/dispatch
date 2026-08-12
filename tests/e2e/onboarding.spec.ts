@@ -56,7 +56,7 @@ async function mockOnboarding(page: Page): Promise<void> {
     createdAt: new Date(0).toISOString(),
     updatedAt: new Date(0).toISOString(),
   };
-  await page.route("**/rpc/openbot.v1.*/*", async (route: Route) => {
+  await page.route("**/rpc/openbot.control.v1.*/*", async (route: Route) => {
     const url = route.request().url();
     let body: Record<string, unknown>;
     if (url.endsWith("/GetStatus")) {

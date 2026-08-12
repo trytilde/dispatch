@@ -22,11 +22,18 @@ No setup or pairing code is required. The web app is a disconnected UX shell and
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftrytilde%2Fopenbot&project-name=openbot&repository-name=openbot)
 
 ```bash
+pnpm openbot init
 pnpm deploy:prod -- --dry-run --json
 pnpm deploy:prod -- --yes
 ```
 
-The CLI validates once, plans every provider that exposes `deployable`, runs optional provider configuration, deploys non-runtime providers, and deploys the runtime last. Providers without `deployable` are skipped. Provider deployment results contribute named outputs, environment variables, and secrets; the runtime receives the aggregate without requiring a second operator command or redeployment loop.
+`openbot init` creates `configuration/.env`, configures SOPS, generates a dedicated age identity for the trusted development sandbox, and asks for an independent owner identity. Managed owner identities support HashiCorp Vault Transit, Azure Key Vault, Google Cloud KMS, and AWS KMS. Local fallbacks store a generated owner age identity in 1Password or the native operating-system keychain. Provider-contributed questions are saved either to `.env` or `configuration/secrets.enc.yaml`; secret input is never written to command arguments. Deployment credentials such as `VERCEL_TOKEN` are available to providers and the trusted development sandbox but are excluded from the final runtime environment.
+
+Use `pnpm openbot secrets set NAME` and `pnpm openbot secrets unset NAME` to maintain encrypted values without learning SOPS commands. Setting a value requires a current SOPS release with `set --value-stdin` support so plaintext never appears in the process list.
+
+Commit `.sops.yaml`, `sops.identity.json`, and `secrets.enc.yaml` after initialization. Never commit `configuration/.env`. The sandbox age private key is encrypted at `openbot.sandbox.sops_age_key` and is reserved for the trusted development-sandbox deployment participant.
+
+The CLI validates once, plans every provider that exposes `deployable`, runs optional provider configuration, deploys ordinary providers, then any registered development-sandbox participant, and deploys the runtime last. Providers without `deployable` are skipped. Provider deployment results contribute named outputs, environment variables, and secrets; the runtime receives the aggregate without requiring a second operator command or redeployment loop. Sandbox-only secrets are available to the sandbox environment helper but excluded from the runtime.
 
 `providers.runtime` in `openbot.config.ts` selects the runtime:
 

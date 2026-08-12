@@ -27,6 +27,9 @@ export interface SyncReportView {
 }
 
 const commands = [
+  ["init", "Initialize OpenBot configuration and encrypted secrets"],
+  ["secrets set NAME", "Set an encrypted configuration secret"],
+  ["secrets unset NAME", "Remove an encrypted configuration secret"],
   ["dev", "Start the local OpenBot development environment"],
   ["check", "Run repository validation"],
   ["build", "Build the deployable application shell"],
@@ -35,6 +38,7 @@ const commands = [
 ] as const;
 
 const menuItems = [
+  { command: "init", description: "Initialize configuration" },
   { command: "dev", description: "Start local development" },
   { command: "check", description: "Validate the repository" },
   { command: "build", description: "Build the application" },

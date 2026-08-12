@@ -34,10 +34,14 @@ describe("Vercel runtime provider", () => {
       target: "production",
       dryRun: false,
       repositoryRoot: "/repo",
+      environment: { VERCEL_TOKEN: "deployment-only" },
+      initialInputs: { deploymentSecrets: { VERCEL_TOKEN: "deployment-only" } },
     });
     expect(run).toHaveBeenCalledWith("pnpm", expect.arrayContaining(["vercel", "deploy", "--prod"]), expect.anything());
     expect(run).toHaveBeenCalledWith("pnpm", expect.arrayContaining(["vercel", "env", "add", "OPENBOT_PUBLIC_ORIGIN", "production", "--force", "--yes", "--no-sensitive"]), expect.objectContaining({ input: "https://openbot.vercel.app" }));
     expect(run).toHaveBeenCalledWith("pnpm", expect.arrayContaining(["vercel", "env", "add", "TILDE_PRIVATE_KEY", "production", "--force", "--yes", "--sensitive"]), expect.objectContaining({ input: "private-value" }));
+    expect(run).not.toHaveBeenCalledWith("pnpm", expect.arrayContaining(["vercel", "env", "add", "VERCEL_TOKEN"]), expect.anything());
+    expect(run).toHaveBeenCalledWith("pnpm", expect.arrayContaining(["vercel", "deploy", "--prod"]), expect.objectContaining({ environment: expect.objectContaining({ VERCEL_TOKEN: "deployment-only" }) }));
     expect(outputs.require("runtime.origin")).toBe("https://openbot.vercel.app");
     expect(outputs.require("runtime.deployment-url")).toBe("https://openbot.example.vercel.app");
     expect(request).toHaveBeenCalledWith("https://openbot.example.vercel.app/healthz", expect.anything());

@@ -6,6 +6,7 @@ import { config as loadDotenv } from "dotenv";
 import type { OpenBotConfig } from "@openbot/config";
 import { createRuntimeProvider } from "@openbot/runtime-provider";
 import { deployProviders, type DeploymentEvent } from "@openbot/runtime-provider-core";
+import { loadDeploymentConfiguration } from "./initialization.js";
 import { repositoryRoot } from "./paths.js";
 
 export interface DeployOptions {
@@ -38,7 +39,6 @@ export function redact(value: string, secrets: Iterable<string>): string {
 
 export async function runProductionDeploy(argv: readonly string[]): Promise<void> {
   loadDotenv({ path: resolve(repositoryRoot, ".env.local"), override: false, quiet: true });
-  loadDotenv({ path: resolve(repositoryRoot, ".env"), override: false, quiet: true });
   const options = parseOptions(argv);
   if (!options.yes && !options.dryRun) throw new Error("Production deployment requires --yes (or use --dry-run)");
 
@@ -52,12 +52,15 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
   report({ event: "validate.complete" });
 
   const config = await loadRepositoryConfig();
-  const runtime = createRuntimeProvider(config.providers.runtime);
-  await deployProviders([{ id: `runtime:${config.providers.runtime}`, role: "runtime", provider: { deployable: runtime } }], {
+  const deploymentConfiguration = await loadDeploymentConfiguration(repositoryRoot, { environment: process.env });
+  const runtimeId = deploymentConfiguration.environment.OPENBOT_RUNTIME_PROVIDER ?? config.providers.runtime;
+  const runtime = createRuntimeProvider(runtimeId);
+  await deployProviders([{ id: `runtime:${runtimeId}`, role: "runtime", provider: { deployable: runtime } }], {
     target: "production",
     dryRun: options.dryRun,
     repositoryRoot,
-    environment: process.env,
+    environment: deploymentConfiguration.environment,
+    initialInputs: deploymentConfiguration.inputs,
     report,
   });
 }

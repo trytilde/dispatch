@@ -2,7 +2,7 @@ import { realpathSync } from "node:fs";
 import { chmod, mkdir, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
-import type { Deployable, DeploymentContext, DeploymentPlan, DeploymentResult } from "@openbot/runtime-provider-core";
+import type { Deployable, DeploymentContext, DeploymentPlan, DeploymentResult, InitializableProvider, ProviderInitialization } from "@openbot/runtime-provider-core";
 import { processRunner, type RuntimeCommandRunner } from "./vercel.js";
 
 export interface LocalRuntimeProviderOptions {
@@ -14,7 +14,13 @@ export interface LocalRuntimeProviderOptions {
   command?: readonly string[];
 }
 
-export class LocalRuntimeProvider implements Deployable {
+export class LocalRuntimeProvider implements Deployable, InitializableProvider {
+  readonly initialization: ProviderInitialization = {
+    id: "local",
+    label: "Local",
+    description: "Run OpenBot as a user service on this computer.",
+    questions: [],
+  };
   readonly #platform: NodeJS.Platform;
   readonly #homeDirectory: string;
   readonly #uid: number | undefined;

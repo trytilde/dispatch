@@ -10,19 +10,57 @@ export type DeploymentReporter = (event: DeploymentEvent) => void;
 export interface DeploymentResult {
   outputs?: Readonly<Record<string, string>>;
   secrets?: Readonly<Record<string, string>>;
+  /** Credentials used by deployment participants but never installed in the final runtime. */
+  deploymentSecrets?: Readonly<Record<string, string>>;
+  /** Secrets consumed only while provisioning the trusted development sandbox. */
+  sandboxSecrets?: Readonly<Record<string, string>>;
   environmentVariables?: Readonly<Record<string, string>>;
+}
+
+export type InitializationValueDestination = "environment" | "secret" | "deployment-secret";
+
+export interface ProviderInitializationQuestion {
+  id: string;
+  prompt: string;
+  input: "text" | "secret" | "select";
+  required?: boolean;
+  choices?: readonly { value: string; label: string; description?: string }[];
+  destination: {
+    kind: InitializationValueDestination;
+    key: string;
+  };
+  validation?: {
+    pattern: string;
+    message: string;
+  };
+}
+
+/** Serializable provider onboarding metadata. Renderers remain CLI/browser agnostic. */
+export interface ProviderInitialization {
+  id: string;
+  label: string;
+  description?: string;
+  questions: readonly ProviderInitializationQuestion[];
+}
+
+export interface InitializableProvider {
+  readonly initialization?: ProviderInitialization;
 }
 
 /** Shared, in-memory deployment data. Secret values must never be reported. */
 export class DeploymentOutputs {
   readonly #outputs = new Map<string, string>();
   readonly #secrets = new Map<string, string>();
+  readonly #deploymentSecrets = new Map<string, string>();
+  readonly #sandboxSecrets = new Map<string, string>();
   readonly #environmentVariables = new Map<string, string>();
 
   merge(result: DeploymentResult | void): void {
     if (!result) return;
     this.#mergeMap(this.#outputs, result.outputs, "output", false);
     this.#mergeMap(this.#secrets, result.secrets, "secret", true);
+    this.#mergeMap(this.#deploymentSecrets, result.deploymentSecrets, "deployment secret", true);
+    this.#mergeMap(this.#sandboxSecrets, result.sandboxSecrets, "sandbox secret", true);
     this.#mergeMap(this.#environmentVariables, result.environmentVariables, "environment variable", true);
   }
 
@@ -44,6 +82,14 @@ export class DeploymentOutputs {
     return Object.fromEntries(this.#secrets);
   }
 
+  deploymentSecrets(): Readonly<Record<string, string>> {
+    return Object.fromEntries(this.#deploymentSecrets);
+  }
+
+  sandboxSecrets(): Readonly<Record<string, string>> {
+    return Object.fromEntries(this.#sandboxSecrets);
+  }
+
   environmentVariables(): Readonly<Record<string, string>> {
     return Object.fromEntries(this.#environmentVariables);
   }
@@ -57,6 +103,19 @@ export class DeploymentOutputs {
       target.set(name, value);
     }
   }
+}
+
+/** Values installed in the trusted development sandbox, including its SOPS identity. */
+export function sandboxDeploymentEnvironment(inputs: DeploymentOutputs): Readonly<Record<string, string>> {
+  const values = new Map<string, string>();
+  for (const source of [inputs.environmentVariables(), inputs.secrets(), inputs.deploymentSecrets(), inputs.sandboxSecrets()]) {
+    for (const [name, value] of Object.entries(source)) {
+      const existing = values.get(name);
+      if (existing !== undefined && existing !== value) throw new Error(`Conflicting sandbox environment value: ${name}`);
+      values.set(name, value);
+    }
+  }
+  return Object.fromEntries(values);
 }
 
 export interface DeploymentContext {
@@ -80,13 +139,13 @@ export interface Deployable {
 }
 
 /** Provider domains expose a deployment lifecycle only when they need one. */
-export interface DeployableProvider {
+export interface DeployableProvider extends InitializableProvider {
   readonly deployable?: Deployable;
 }
 
 export interface DeploymentParticipant {
   id: string;
-  role?: "provider" | "runtime";
+  role?: "provider" | "sandbox" | "runtime";
   provider: DeployableProvider;
 }
 
@@ -95,6 +154,7 @@ export interface DeploymentRunOptions {
   dryRun: boolean;
   repositoryRoot: string;
   environment?: NodeJS.ProcessEnv;
+  initialInputs?: DeploymentResult;
   report?: DeploymentReporter;
 }
 
@@ -115,6 +175,7 @@ export async function deployProviders(
   if (runtime.length > 1) throw new Error("Only one runtime deployment participant may be registered");
 
   const inputs = new DeploymentOutputs();
+  inputs.merge(options.initialInputs);
   const report = options.report ?? (() => undefined);
   const context: DeploymentContext = {
     target: options.target,
@@ -123,10 +184,13 @@ export async function deployProviders(
     inputs,
     report,
   };
+  const contextFor = (participant: { role?: DeploymentParticipant["role"] }): DeploymentContext => participant.role === "sandbox"
+    ? context
+    : { ...context, inputs: withoutSandboxSecrets(inputs) };
 
   for (const participant of deployable) {
     report({ event: "deployment.provider.plan.started", details: { providerId: participant.id } });
-    const plan = await participant.deployable.plan(context);
+    const plan = await participant.deployable.plan(contextFor(participant));
     report({ event: "deployment.provider.plan.complete", details: { providerId: participant.id, summary: plan.summary, steps: plan.steps ?? [] } });
   }
   if (options.dryRun) return inputs;
@@ -134,18 +198,30 @@ export async function deployProviders(
   for (const participant of deployable) {
     if (!participant.deployable.configure) continue;
     report({ event: "deployment.provider.configure.started", details: { providerId: participant.id } });
-    inputs.merge(await participant.deployable.configure(context));
+    inputs.merge(await participant.deployable.configure(contextFor(participant)));
     report({ event: "deployment.provider.configure.complete", details: { providerId: participant.id } });
   }
 
   const ordered = [
-    ...deployable.filter((participant) => participant.role !== "runtime"),
+    ...deployable.filter((participant) => participant.role !== "runtime" && participant.role !== "sandbox"),
+    ...deployable.filter((participant) => participant.role === "sandbox"),
     ...runtime,
   ];
   for (const participant of ordered) {
     report({ event: "deployment.provider.deploy.started", details: { providerId: participant.id, role: participant.role ?? "provider" } });
-    inputs.merge(await participant.deployable.deploy(context));
+    inputs.merge(await participant.deployable.deploy(contextFor(participant)));
     report({ event: "deployment.provider.deploy.complete", details: { providerId: participant.id, role: participant.role ?? "provider" } });
   }
   return inputs;
+}
+
+function withoutSandboxSecrets(inputs: DeploymentOutputs): DeploymentOutputs {
+  const scoped = new DeploymentOutputs();
+  scoped.merge({
+    outputs: inputs.outputs(),
+    secrets: inputs.secrets(),
+    deploymentSecrets: inputs.deploymentSecrets(),
+    environmentVariables: inputs.environmentVariables(),
+  });
+  return scoped;
 }

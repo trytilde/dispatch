@@ -12,7 +12,7 @@ export default defineConfig({
     deployment: "vercel",
   },
   skills: {
-    directory: "skills",
+    directory: "configuration/skills",
     registryName: "OpenBot",
     registryDescription: "Skills committed with this OpenBot fork.",
   },

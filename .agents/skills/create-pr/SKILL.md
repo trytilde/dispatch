@@ -12,7 +12,7 @@ Use when the user asks to open, publish, prepare, or update a PR for the current
 1. Inspect branch, remotes, worktree, stashes, and existing PRs.
 2. Review the full diff against the actual default branch. Preserve unrelated user changes.
 3. Run `pre-commit-checks` and fix in-scope failures.
-4. Review protobuf, database, `tilde.state.yaml`, environment, deployment, and public documentation impact.
+4. Review protobuf, database, `tilde.state.yaml`, environment, deployment, public documentation, and Changesets impact.
 5. Run the architecture and ADR gate. Resolve any user decision before publishing.
 6. Use a Conventional Commits title and intentional file selection.
 7. Commit, push, and open or update a draft PR only when requested.
@@ -95,8 +95,11 @@ Use a checked-in template when present; otherwise include:
 - ADR review result and links to any new or governing ADRs
 - screenshots for user-visible changes when captured
 - known limitations or follow-ups
+- changeset added, or why none is required
 
-OpenBot does not currently require Changie or blank changesets.
+## Changesets Gate
+
+OpenBot uses Changesets and versions all workspace packages as one fixed group. Follow `add-changeset` when a PR changes owner-visible behavior or a package API. Do not edit package versions or changelogs directly; the Changesets workflow owns the unified version pull request. Documentation-only, test-only, CI-only, and internal refactors need no placeholder changeset.
 
 ## Frontend Verification
 

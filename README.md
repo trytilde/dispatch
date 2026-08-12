@@ -35,7 +35,8 @@ Deployment validates and builds the fork, provisions or reuses its resources, de
 ```text
 openbot.config.ts       provider selection and repository paths
 agents/<id>.ts          one code-owned agent and endpoint per file
-skills/<name>/SKILL.md  skills registered by the selected skill provider
+configuration/skills/<name>/SKILL.md
+                        runtime skills registered by the selected skill provider
 providers/<id>/         fork-owned provider plugin implementations
 sandbox/assets/         files copied to /workspace on every sandbox start
 sandbox/bootstrap.sh    idempotent script run after those files are copied
@@ -72,3 +73,5 @@ pnpm test:e2e
 ```
 
 OpenBot is MIT licensed. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [PROVENANCE.md](PROVENANCE.md).
+
+Changesets records release impact and maintains one version across all workspace packages. Contributors add a `.changeset/*.md` entry for owner-visible behavior or package API changes; GitHub Actions opens the unified version pull request. Packages and changelogs are never versioned independently.

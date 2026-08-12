@@ -1,14 +1,13 @@
 import { spawn } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import React, { type ReactElement } from "react";
-import { createDatabase, agentPublications, agentRegistrations, skillRegistrations } from "@openbot/db";
+import { createDatabase, agentRegistrations, skillRegistrations } from "@openbot/db";
 import { render, Text } from "ink";
 import config from "../openbot.config.js";
 import { loadRepository } from "../apps/server/src/repository.js";
 import { providerStatuses } from "../apps/server/src/provider-registry.js";
 import { reconcileRepository } from "../apps/server/src/reconcile.js";
-import { agentSource, publishAgent } from "../apps/server/src/publishing.js";
 import { CommandMenu, DoctorResult, Failure, Help, Progress, ProviderTable, RepositorySummary, StatusResult, Success, SyncResult, type RepositoryCounts } from "./openbot-ui.js";
 
 export interface CliInvocation { command: string; rest: string[] }
@@ -38,7 +37,6 @@ async function main(): Promise<void> {
   if (invocation.command === "sync") return sync(invocation.rest);
   if (invocation.command === "status") return status(invocation.rest);
   if (invocation.command === "providers") return providers(invocation.rest);
-  if (invocation.command === "agent" && invocation.rest[0] === "create") return createAgent(invocation.rest.slice(1));
   throw new Error(`Unknown command: ${[invocation.command, ...invocation.rest].join(" ")}`);
 }
 
@@ -50,7 +48,7 @@ async function interactiveCommand(): Promise<string> {
 }
 
 async function setup(rest: readonly string[]): Promise<void> {
-  const directories = [config.agents.directory, "providers", config.skills.directory, config.sandbox.assetsDirectory];
+  const directories = [config.agents.directory, config.providers.directory, config.skills.directory, config.sandbox.assetsDirectory];
   await withProgress("Preparing repository directories", () => Promise.all(directories.map((directory) => mkdir(resolve(directory), { recursive: true }))));
   const result = { directories, next: "Configure .env, then run `pnpm openbot doctor` and `pnpm openbot dev`." };
   if (wantsJson(rest)) return printJson(result);
@@ -91,31 +89,11 @@ async function sync(rest: string[]): Promise<void> {
 async function status(rest: readonly string[]): Promise<void> {
   const db = createDatabase();
   const result = await withProgress("Loading repository registrations", async () => {
-    const [agents, skills, publications] = await Promise.all([db.select().from(agentRegistrations), db.select().from(skillRegistrations), db.select().from(agentPublications)]);
-    return { agents, skills, publications };
+    const [agents, skills] = await Promise.all([db.select().from(agentRegistrations), db.select().from(skillRegistrations)]);
+    return { agents, skills };
   });
   if (wantsJson(rest)) return printJson(result);
   show(<StatusResult {...result} />);
-}
-
-async function createAgent(rest: string[]): Promise<void> {
-  const id = option(rest, "--id");
-  const displayName = option(rest, "--name");
-  const description = option(rest, "--description");
-  if (!id || !displayName) throw new Error("agent create requires --id and --name");
-  const input = { id, displayName, ...(description ? { description } : {}) };
-  if (rest.includes("--publish")) {
-    const publication = await withProgress(`Publishing ${id}`, () => publishAgent(input));
-    if (wantsJson(rest)) return printJson(publication);
-    show(<Success title={`Published ${displayName}`}><TextLines lines={[`Agent: ${id}`, "A pull request and deployment have been requested."]} /></Success>);
-    return;
-  }
-  const repository = await withProgress("Loading repository configuration", loadRepository);
-  const target = resolve(repository.config.agents.directory, `${id}.ts`);
-  await writeFile(target, agentSource(input), { encoding: "utf8", flag: "wx" });
-  const result = { id, path: target };
-  if (wantsJson(rest)) return printJson(result);
-  show(<Success title={`Created ${displayName}`}><TextLines lines={[target, "Review it, run `pnpm openbot check`, then commit it."]} /></Success>);
 }
 
 function TextLines({ lines }: { lines: readonly string[] }) {
@@ -124,11 +102,6 @@ function TextLines({ lines }: { lines: readonly string[] }) {
 
 function repositorySummary(repository: Awaited<ReturnType<typeof loadRepository>>): RepositoryCounts {
   return { digest: repository.digest, agents: repository.agents.length, skills: repository.skills.length, providers: repository.providerPlugins.length };
-}
-
-function option(args: readonly string[], name: string): string | undefined {
-  const index = args.indexOf(name);
-  return index >= 0 ? args[index + 1] : undefined;
 }
 
 function show(view: ReactElement): void {

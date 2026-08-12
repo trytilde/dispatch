@@ -31,10 +31,9 @@ const commands = [
   ["check", "Validate committed repository configuration"],
   ["doctor", "Validate configuration and provider connectivity"],
   ["dev", "Start the local OpenBot development environment"],
-  ["status", "Show registered agents, skills, and publications"],
+  ["status", "Show registered agents and skills"],
   ["sync", "Reconcile committed configuration with providers"],
   ["providers list", "Inspect every configured provider"],
-  ["agent create", "Create a new agent endpoint source file"],
   ["deploy --yes", "Deploy the current fork to production"],
 ] as const;
 
@@ -154,10 +153,10 @@ export function DoctorResult({ repository, providers }: { repository: Repository
   </Box>;
 }
 
-export function StatusResult({ agents, skills, publications }: { agents: readonly { sourceId: string; status: string }[]; skills: readonly { name: string; status: string }[]; publications: readonly unknown[] }) {
+export function StatusResult({ agents, skills }: { agents: readonly { sourceId: string; status: string }[]; skills: readonly { name: string; status: string }[] }) {
   return <Box flexDirection="column">
     <Brand subtitle="Repository registrations" />
-    <Text><Text color="cyan">{agents.length}</Text> agents · <Text color="cyan">{skills.length}</Text> skills · <Text color="cyan">{publications.length}</Text> publications</Text>
+    <Text><Text color="cyan">{agents.length}</Text> agents · <Text color="cyan">{skills.length}</Text> skills</Text>
     {agents.map((agent) => <Text key={agent.sourceId}><Text color={agent.status === "ready" ? "green" : "yellow"}>●</Text> agent  {agent.sourceId} <Text dimColor>({agent.status})</Text></Text>)}
     {skills.map((skill) => <Text key={skill.name}><Text color={skill.status === "ready" ? "green" : "yellow"}>●</Text> skill  {skill.name} <Text dimColor>({skill.status})</Text></Text>)}
   </Box>;

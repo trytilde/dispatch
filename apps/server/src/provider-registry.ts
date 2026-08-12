@@ -1,5 +1,5 @@
 import type { Provider, ProviderFactoryContext, ProviderKind } from "@openbot/provider-sdk";
-import { GitHubSourceControlProvider, OpenAiProvider, TildeAgentProvider, TildeChatProvider, TildeManagedSkillProvider, VercelDeploymentProvider, defaultSandboxProvider } from "@openbot/providers";
+import { OpenAiProvider, TildeAgentProvider, TildeChatProvider, TildeManagedSkillProvider, VercelDeploymentProvider, defaultSandboxProvider } from "@openbot/providers";
 import { environmentNames, environmentProvider, getEnvironment, providerContext, tildeEnvironment } from "./environment.js";
 import { loadRepository } from "./repository.js";
 
@@ -10,7 +10,6 @@ const builtins = new Set([
   "skill:tilde-skills",
   "sandbox:auto",
   "environment:auto",
-  "source-control:github",
   "deployment:vercel",
 ]);
 
@@ -33,13 +32,6 @@ export async function configuredProvider<T extends Provider>(kind: ProviderKind,
   if (key === "ai:openai") return new OpenAiProvider() as unknown as T;
   if (key === "sandbox:auto") return defaultSandboxProvider() as unknown as T;
   if (key === "environment:auto") return environmentProvider() as unknown as T;
-  if (key === "source-control:github") {
-    const repositoryName = await getEnvironment("OPENBOT_GITHUB_REPOSITORY")
-      ?? (process.env.VERCEL_GIT_REPO_OWNER && process.env.VERCEL_GIT_REPO_SLUG ? `${process.env.VERCEL_GIT_REPO_OWNER}/${process.env.VERCEL_GIT_REPO_SLUG}` : undefined);
-    const token = await getEnvironment("OPENBOT_GITHUB_TOKEN");
-    if (!repositoryName || !token) throw new Error("GitHub publishing requires OPENBOT_GITHUB_REPOSITORY and OPENBOT_GITHUB_TOKEN");
-    return new GitHubSourceControlProvider({ repository: repositoryName, token }) as unknown as T;
-  }
   if (key === "deployment:vercel") {
     const token = await getEnvironment(environmentNames.vercelApiToken);
     const projectId = await getEnvironment("OPENBOT_VERCEL_PROJECT_ID") ?? process.env.VERCEL_PROJECT_ID;
@@ -67,7 +59,6 @@ export async function providerStatuses() {
     ["skill", repository.config.providers.skills],
     ["sandbox", repository.config.providers.sandbox],
     ["environment", repository.config.providers.environment],
-    ["source-control", repository.config.providers.sourceControl],
     ["deployment", repository.config.providers.deployment],
   ] as const;
   return Promise.all(selected.map(async ([kind, id]) => {
@@ -88,7 +79,6 @@ function configuredId(providers: Awaited<ReturnType<typeof loadRepository>>["con
   if (kind === "skill") return providers.skills;
   if (kind === "sandbox") return providers.sandbox;
   if (kind === "environment") return providers.environment;
-  if (kind === "source-control") return providers.sourceControl;
   if (kind === "deployment") return providers.deployment;
   throw new Error(`No repository provider selector for ${kind}`);
 }

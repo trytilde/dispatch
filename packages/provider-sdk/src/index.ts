@@ -11,7 +11,6 @@ export type ProviderKind =
   | "environment"
   | "tool"
   | "workspace-storage"
-  | "source-control"
   | "deployment";
 
 export type ExtensionProviderKind = ProviderKind;
@@ -288,29 +287,6 @@ export interface WorkspaceStorageProvider extends SystemPromptInjectingProvider 
   write(path: string, content: Uint8Array, context: ProviderCallContext): Promise<void>;
 }
 
-export interface SourceFileChange {
-  path: string;
-  content: string;
-}
-
-export interface PullRequestPublication {
-  id: string;
-  branch: string;
-  url: URL;
-  status: "open" | "merged" | "closed";
-}
-
-export interface SourceControlProvider extends Provider {
-  publishPullRequest(input: {
-    branch: string;
-    title: string;
-    body: string;
-    baseBranch: string;
-    files: readonly SourceFileChange[];
-  }, context: ProviderCallContext): Promise<PullRequestPublication>;
-  inspectPullRequest(id: string, context: ProviderCallContext): Promise<PullRequestPublication>;
-}
-
 export interface DeploymentProvider extends Provider {
   deploymentForCommit(commitSha: string, context: ProviderCallContext): Promise<{
     id: string;
@@ -347,7 +323,6 @@ export interface ProviderPluginBuilder {
   skills(id: string, create: ProviderFactory<SkillProvider>): void;
   sandbox(id: string, create: ProviderFactory<SandboxProvider>): void;
   environment(id: string, create: ProviderFactory<EnvProvider>): void;
-  sourceControl(id: string, create: ProviderFactory<SourceControlProvider>): void;
   deployment(id: string, create: ProviderFactory<DeploymentProvider>): void;
 }
 
@@ -367,7 +342,6 @@ export function defineProviderPlugin(input: {
     skills: (id, create) => add("skill", id, create),
     sandbox: (id, create) => add("sandbox", id, create),
     environment: (id, create) => add("environment", id, create),
-    sourceControl: (id, create) => add("source-control", id, create),
     deployment: (id, create) => add("deployment", id, create),
   };
   input.register(builder);

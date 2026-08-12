@@ -77,7 +77,7 @@ Use an isolated local database for manual migration checks. Never test migration
 
 ## Release Notes
 
-OpenBot does not currently use Changie. Follow `changie` to review documentation impact; do not create `.changes` files.
+OpenBot uses Changesets with one fixed group for every workspace package. Follow `add-changeset` for owner-visible behavior or package API changes. Do not edit versions or changelogs directly. Documentation-only, test-only, CI-only, and internal refactors need no placeholder changeset.
 
 ## Fix Before Commit
 
@@ -86,4 +86,4 @@ OpenBot does not currently use Changie. Follow `changie` to review documentation
 - E2E or desktop packaging was run when relevant, or the handoff names what was not run.
 - Generated contracts match protobuf sources.
 - Diff contains no secrets, local state, generated noise, or unrelated edits.
-
+- A valid changeset is present when release impact requires one, or the handoff explains why none is needed.

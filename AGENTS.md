@@ -8,7 +8,7 @@ OpenBot is a TypeScript monorepo for a local or Vercel-hosted agent workspace. I
 2. Inspect `git status --short --branch`; preserve unrelated work.
 3. Read the owning package and its tests before editing.
 4. Read relevant records under `docs/adrs/` before changing a recorded decision.
-5. Use `.agents/skills/<name>/SKILL.md` for repository workflows. Runtime agent skills under `skills/` serve OpenBot agents, not coding-agent process.
+5. Use `.agents/skills/<name>/SKILL.md` for repository workflows. Runtime agent skills under `configuration/skills/` serve OpenBot agents, not coding-agent process.
 
 ## Toolchain and commands
 
@@ -71,7 +71,7 @@ pnpm --filter @openbot/db test
 
 ### Database
 
-- The database stores OpenBot control state only: installation, onboarding, sandbox lease, and deployment checkpoints.
+- The database stores OpenBot control state only: installation, onboarding, sandbox lease, deployment checkpoints, repository reconciliation mappings, and source-publication progress.
 - Tilde remains authoritative for agents, sessions, messages, skills, tools, and memory.
 - Secrets belong in `EnvProvider`, never database tables.
 - Edit `packages/db/src/schema.ts` and append compatible statements in `packages/db/src/migrations.ts`.
@@ -142,6 +142,7 @@ For browser-visible changes, verify the real route, console, network, and visibl
 
 - `pre-commit-checks`: validation before commit or handoff.
 - `create-pr`: commit, push, and draft PR workflow.
+- `add-changeset`, `setup-changesets`: unified workspace version notes and release automation.
 - `add-api-endpoint`: Hono or ConnectRPC endpoint changes.
 - `add-db-changes`: Drizzle/libSQL schema and migrations.
 - `e2e-debug-and-qa`: running browser evidence.

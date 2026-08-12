@@ -36,7 +36,7 @@ The isolated, resumable computer an agent can use for files, commands, browser w
 _Avoid_: host, server
 
 **Control State**:
-OpenBot-owned installation, onboarding, computer lease, and deployment progress.
+OpenBot-owned installation, onboarding, computer lease, deployment progress, repository reconciliation mappings, and source-publication progress.
 _Avoid_: agent state, chat state
 
 **Portable Tilde State**:

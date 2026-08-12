@@ -6,8 +6,10 @@ import React, { type ReactElement } from "react";
 import { render } from "ink";
 import { runProductionDeploy, redact } from "./deploy.js";
 import { runDevelopment } from "./dev.js";
+import { runInitialization } from "./init-ui.js";
 import { runDevelopmentServer } from "./server.js";
 import { repositoryRoot } from "./paths.js";
+import { runSecrets } from "./secrets.js";
 import { CommandMenu, Failure, Help, Success } from "./ui.js";
 
 export interface CliInvocation { command: string; rest: string[] }
@@ -32,6 +34,11 @@ async function main(): Promise<void> {
     : parseInvocation(argv);
   if (!invocation.command) return;
   if (["help", "--help", "-h"].includes(invocation.command)) return show(<Help />);
+  if (invocation.command === "init") {
+    rejectArguments("init", invocation.rest);
+    await runInitialization();
+    return show(<Success title="OpenBot configuration initialized" />);
+  }
   if (invocation.command === "dev") {
     rejectArguments("dev", invocation.rest);
     if (process.stdout.isTTY) show(<Success title="Starting OpenBot development" />);
@@ -42,6 +49,7 @@ async function main(): Promise<void> {
     return runDevelopmentServer();
   }
   if (invocation.command === "deploy") return runProductionDeploy(invocation.rest);
+  if (invocation.command === "secrets") return runSecrets(invocation.rest);
   if (invocation.command === "check") return delegate("check", invocation.rest);
   if (invocation.command === "build") return delegate("build", invocation.rest);
   if (invocation.command === "test") return delegate("test", invocation.rest);

@@ -3,12 +3,18 @@ export type { RuntimeCommandResult, RuntimeCommandRunner, VercelRuntimeProviderO
 export { LocalRuntimeProvider, createLocalRuntimeProvider } from "./local.js";
 export type { LocalRuntimeProviderOptions } from "./local.js";
 
-import type { Deployable } from "@openbot/runtime-provider-core";
+import type { Deployable, InitializableProvider } from "@openbot/runtime-provider-core";
 import { createLocalRuntimeProvider } from "./local.js";
 import { createVercelRuntimeProvider } from "./vercel.js";
 
-export function createRuntimeProvider(id: string): Deployable {
+export type RuntimeProvider = Deployable & InitializableProvider;
+
+export function createRuntimeProvider(id: string): RuntimeProvider {
   if (id === "local") return createLocalRuntimeProvider();
   if (id === "vercel") return createVercelRuntimeProvider();
   throw new Error(`Unsupported runtime provider: ${id}`);
+}
+
+export function runtimeProviderInitializations() {
+  return [createLocalRuntimeProvider().initialization, createVercelRuntimeProvider().initialization] as const;
 }

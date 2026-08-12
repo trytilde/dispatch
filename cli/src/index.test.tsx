@@ -10,6 +10,7 @@ describe("OpenBot CLI", () => {
   it("renders discoverable command help", () => {
     const { lastFrame } = render(<Help />);
     expect(lastFrame()).toContain("Fork it. Configure it. Run it.");
+    expect(lastFrame()).toContain("init");
     expect(lastFrame()).toContain("deploy --yes");
     expect(lastFrame()).not.toContain("Run the built OpenBot app");
   });
@@ -18,6 +19,6 @@ describe("OpenBot CLI", () => {
     const { stdin } = render(<CommandMenu onSelect={(command) => { selected = command; }} />);
     stdin.write("j");
     stdin.write("\r");
-    expect(selected).toBe("check");
+    expect(selected).toBe("dev");
   });
 });

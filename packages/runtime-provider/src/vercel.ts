@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { Deployable, DeploymentContext, DeploymentPlan, DeploymentResult } from "@openbot/runtime-provider-core";
+import type { Deployable, DeploymentContext, DeploymentPlan, DeploymentResult, InitializableProvider, ProviderInitialization } from "@openbot/runtime-provider-core";
 
 export interface RuntimeCommandResult {
   stdout: string;
@@ -18,7 +18,19 @@ export interface VercelRuntimeProviderOptions {
   request?: typeof fetch;
 }
 
-export class VercelRuntimeProvider implements Deployable {
+export class VercelRuntimeProvider implements Deployable, InitializableProvider {
+  readonly initialization: ProviderInitialization = {
+    id: "vercel",
+    label: "Vercel",
+    description: "Deploy OpenBot's control service and web UI to Vercel.",
+    questions: [{
+      id: "vercel-token",
+      prompt: "Vercel token",
+      input: "secret",
+      required: true,
+      destination: { kind: "deployment-secret", key: "VERCEL_TOKEN" },
+    }],
+  };
   readonly #runner: RuntimeCommandRunner;
   readonly #readProject: (repositoryRoot: string) => Promise<{ projectName?: string }>;
   readonly #request: typeof fetch;

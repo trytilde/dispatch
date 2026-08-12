@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { deployProviders, DeploymentOutputs } from "./index.js";
+import { deployProviders, DeploymentOutputs, sandboxDeploymentEnvironment } from "./index.js";
 
 describe("provider deployment", () => {
-  it("plans all providers, configures optionally, and deploys the runtime last", async () => {
+  it("plans all providers, configures optionally, then deploys the sandbox before the runtime", async () => {
     const calls: string[] = [];
     const outputs = await deployProviders([
       { id: "runtime:vercel", role: "runtime", provider: { deployable: {
@@ -14,6 +14,7 @@ describe("provider deployment", () => {
         deploy: async ({ inputs }) => {
           calls.push("runtime.deploy");
           expect(inputs.secrets().TILDE_KEY).toBe("private-value");
+          expect(inputs.sandboxSecrets()).toEqual({});
         },
       } } },
       { id: "skills:tilde", provider: { deployable: {
@@ -24,10 +25,24 @@ describe("provider deployment", () => {
           return { secrets: { TILDE_KEY: "private-value" } };
         },
       } } },
-    ], { target: "production", dryRun: false, repositoryRoot: "/repo" });
+      { id: "sandbox:development", role: "sandbox", provider: { deployable: {
+        plan: async () => ({ summary: "sandbox" }),
+        deploy: async ({ inputs }) => {
+          calls.push("sandbox.deploy");
+          expect(inputs.secrets().TILDE_KEY).toBe("private-value");
+          expect(inputs.sandboxSecrets().SOPS_AGE_KEY).toBe("sandbox-identity");
+        },
+      } } },
+    ], {
+      target: "production",
+      dryRun: false,
+      repositoryRoot: "/repo",
+      initialInputs: { sandboxSecrets: { SOPS_AGE_KEY: "sandbox-identity" } },
+    });
 
-    expect(calls).toEqual(["runtime.configure", "skills.deploy", "runtime.deploy"]);
+    expect(calls).toEqual(["runtime.configure", "skills.deploy", "sandbox.deploy", "runtime.deploy"]);
     expect(outputs.secrets()).toEqual({ TILDE_KEY: "private-value" });
+    expect(outputs.sandboxSecrets()).toEqual({ SOPS_AGE_KEY: "sandbox-identity" });
   });
 
   it("only plans during a dry run", async () => {
@@ -67,6 +82,24 @@ describe("provider deployment", () => {
     expect(() => outputs.merge({ environmentVariables: { OPENBOT_PORT: "4200" } }))
       .toThrow("Conflicting deployment environment variable: OPENBOT_PORT");
     expect(() => outputs.require("missing")).toThrow("Required deployment output is unavailable: missing");
+  });
+
+  it("builds the trusted sandbox environment without changing runtime secrets", () => {
+    const outputs = new DeploymentOutputs();
+    outputs.merge({
+      environmentVariables: { OPENAI_MODEL: "gpt-test" },
+      secrets: { VERCEL_TOKEN: "runtime-secret" },
+      deploymentSecrets: { AWS_ACCESS_KEY_ID: "deployment-credential" },
+      sandboxSecrets: { SOPS_AGE_KEY: "sandbox-identity" },
+    });
+    expect(sandboxDeploymentEnvironment(outputs)).toEqual({
+      OPENAI_MODEL: "gpt-test",
+      VERCEL_TOKEN: "runtime-secret",
+      AWS_ACCESS_KEY_ID: "deployment-credential",
+      SOPS_AGE_KEY: "sandbox-identity",
+    });
+    expect(outputs.secrets()).not.toHaveProperty("SOPS_AGE_KEY");
+    expect(outputs.secrets()).not.toHaveProperty("AWS_ACCESS_KEY_ID");
   });
 
   it("keeps secret values private from deployment events", async () => {

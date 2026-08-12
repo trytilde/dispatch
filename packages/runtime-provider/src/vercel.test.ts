@@ -6,7 +6,7 @@ describe("Vercel runtime provider", () => {
   it("plans without mutating Vercel", async () => {
     const run = vi.fn();
     const events: unknown[] = [];
-    await deployProviders([{ id: "runtime", role: "runtime", provider: createVercelRuntimeProvider({ runner: { run } as RuntimeCommandRunner }) }], {
+    await deployProviders([{ id: "runtime", role: "runtime", provider: { deployable: createVercelRuntimeProvider({ runner: { run } as RuntimeCommandRunner }) } }], {
       target: "production",
       dryRun: true,
       repositoryRoot: "/repo",
@@ -28,8 +28,8 @@ describe("Vercel runtime provider", () => {
       request: request as typeof fetch,
     });
     const outputs = await deployProviders([
-      { id: "tilde", provider: { deploy: async () => ({ secrets: { TILDE_PRIVATE_KEY: "private-value" } }) } },
-      { id: "runtime", role: "runtime", provider },
+      { id: "tilde", provider: { deployable: { plan: async () => ({ summary: "tilde" }), deploy: async () => ({ secrets: { TILDE_PRIVATE_KEY: "private-value" } }) } } },
+      { id: "runtime", role: "runtime", provider: { deployable: provider } },
     ], {
       target: "production",
       dryRun: false,

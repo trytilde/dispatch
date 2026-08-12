@@ -21,8 +21,8 @@ describe("local runtime provider", () => {
       command: ["/usr/bin/node", "/opt/openbot/server.js"],
     });
     await deployProviders([
-      { id: "tilde", provider: { deploy: async () => ({ secrets: { TILDE_KEY: "private-value" } }) } },
-      { id: "runtime:local", role: "runtime", provider },
+      { id: "tilde", provider: { deployable: { plan: async () => ({ summary: "tilde" }), deploy: async () => ({ secrets: { TILDE_KEY: "private-value" } }) } } },
+      { id: "runtime:local", role: "runtime", provider: { deployable: provider } },
     ], deployOptions(root));
 
     const unit = await readFile(join(root, "home/.config/systemd/user/openbot.service"), "utf8");
@@ -49,7 +49,7 @@ describe("local runtime provider", () => {
       request: healthyRequest(),
       command: ["/usr/bin/node", "/opt/openbot/server.js"],
     });
-    await deployProviders([{ id: "runtime:local", role: "runtime", provider }], deployOptions(root));
+    await deployProviders([{ id: "runtime:local", role: "runtime", provider: { deployable: provider } }], deployOptions(root));
 
     const plist = await readFile(join(root, "home/Library/LaunchAgents/ai.openbot.runtime.plist"), "utf8");
     expect(plist).toContain("ai.openbot.runtime");

@@ -2,7 +2,8 @@
 
 ## In brief
 
-- One `openbot deploy` plans, optionally configures, then deploys providers.
+- One `openbot deploy` plans, optionally configures, then deploys opted-in providers.
+- Providers without an exposed `deployable` are skipped entirely.
 - `configure()` is optional. Use it only for stable identity or prerequisites.
 - Each configured provider deploys independently, even when two use the same vendor.
 - Non-runtime providers deploy first. Runtime deploys last with their environment and secrets.
@@ -16,7 +17,7 @@ There is also an ordering cycle: a provider such as Tilde can need the runtime's
 
 ## Decision
 
-`runtime-provider-core` defines a `Deployable` lifecycle with required `plan()` and `deploy()` methods and an optional `configure()` method. Domain provider-core packages re-export this contract and let their providers implement it optionally.
+`runtime-provider-core` defines a `Deployable` lifecycle with required `plan()` and `deploy()` methods and an optional `configure()` method. Domain provider-core packages re-export this contract and let a provider expose it through an optional `deployable` property. A provider without that property is not a deployment participant and is skipped without lifecycle events.
 
 `plan()` is read-only and is the only lifecycle method called during a dry run. `configure()` may establish stable identities or remote prerequisites that downstream providers require, but it is not required for providers that can deploy directly. Both `configure()` and `deploy()` may return named outputs, secrets, and environment variables.
 

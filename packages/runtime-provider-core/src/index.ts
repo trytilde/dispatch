@@ -79,17 +79,15 @@ export interface Deployable {
   deploy(context: DeploymentContext): Promise<DeploymentResult | void>;
 }
 
-/** Provider domains may implement the deployment lifecycle only when needed. */
-export interface OptionalDeployable {
-  plan?: Deployable["plan"];
-  configure?: Deployable["configure"];
-  deploy?: Deployable["deploy"];
+/** Provider domains expose a deployment lifecycle only when they need one. */
+export interface DeployableProvider {
+  readonly deployable?: Deployable;
 }
 
 export interface DeploymentParticipant {
   id: string;
   role?: "provider" | "runtime";
-  provider: OptionalDeployable;
+  provider: DeployableProvider;
 }
 
 export interface DeploymentRunOptions {
@@ -104,7 +102,9 @@ export async function deployProviders(
   participants: readonly DeploymentParticipant[],
   options: DeploymentRunOptions,
 ): Promise<DeploymentOutputs> {
-  const deployable = participants.filter((participant) => participant.provider.plan || participant.provider.configure || participant.provider.deploy);
+  const deployable = participants.flatMap((participant) => participant.provider.deployable
+    ? [{ ...participant, deployable: participant.provider.deployable }]
+    : []);
   const ids = new Set<string>();
   for (const participant of deployable) {
     if (!participant.id) throw new Error("Deployment participant id must not be empty");
@@ -126,17 +126,15 @@ export async function deployProviders(
 
   for (const participant of deployable) {
     report({ event: "deployment.provider.plan.started", details: { providerId: participant.id } });
-    const plan = participant.provider.plan
-      ? await participant.provider.plan(context)
-      : { summary: `${participant.id} does not provide a plan` };
+    const plan = await participant.deployable.plan(context);
     report({ event: "deployment.provider.plan.complete", details: { providerId: participant.id, summary: plan.summary, steps: plan.steps ?? [] } });
   }
   if (options.dryRun) return inputs;
 
   for (const participant of deployable) {
-    if (!participant.provider.configure) continue;
+    if (!participant.deployable.configure) continue;
     report({ event: "deployment.provider.configure.started", details: { providerId: participant.id } });
-    inputs.merge(await participant.provider.configure(context));
+    inputs.merge(await participant.deployable.configure(context));
     report({ event: "deployment.provider.configure.complete", details: { providerId: participant.id } });
   }
 
@@ -145,9 +143,8 @@ export async function deployProviders(
     ...runtime,
   ];
   for (const participant of ordered) {
-    if (!participant.provider.deploy) continue;
     report({ event: "deployment.provider.deploy.started", details: { providerId: participant.id, role: participant.role ?? "provider" } });
-    inputs.merge(await participant.provider.deploy(context));
+    inputs.merge(await participant.deployable.deploy(context));
     report({ event: "deployment.provider.deploy.complete", details: { providerId: participant.id, role: participant.role ?? "provider" } });
   }
   return inputs;

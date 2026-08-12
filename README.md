@@ -26,7 +26,7 @@ pnpm deploy:prod -- --dry-run --json
 pnpm deploy:prod -- --yes
 ```
 
-The CLI validates once, plans every configured provider, runs optional provider configuration, deploys non-runtime providers, and deploys the runtime last. Provider deployment results contribute named outputs, environment variables, and secrets; the runtime receives the aggregate without requiring a second operator command or redeployment loop.
+The CLI validates once, plans every provider that exposes `deployable`, runs optional provider configuration, deploys non-runtime providers, and deploys the runtime last. Providers without `deployable` are skipped. Provider deployment results contribute named outputs, environment variables, and secrets; the runtime receives the aggregate without requiring a second operator command or redeployment loop.
 
 `providers.runtime` in `openbot.config.ts` selects the runtime:
 

@@ -1,6 +1,3 @@
-export const deploymentPhases = ["prepare", "configure", "release"] as const;
-
-export type DeploymentPhase = typeof deploymentPhases[number];
 export type DeploymentTarget = "preview" | "production";
 
 export interface DeploymentEvent {
@@ -10,18 +7,27 @@ export interface DeploymentEvent {
 
 export type DeploymentReporter = (event: DeploymentEvent) => void;
 
-/** Shared, in-memory outputs. Providers must never report secret values. */
-export class DeploymentOutputs {
-  readonly #values = new Map<string, string>();
-  readonly #runtimeEnvironment = new Map<string, { value: string; sensitive: boolean }>();
+export interface DeploymentResult {
+  outputs?: Readonly<Record<string, string>>;
+  secrets?: Readonly<Record<string, string>>;
+  environmentVariables?: Readonly<Record<string, string>>;
+}
 
-  set(name: string, value: string): void {
-    if (!name || !value) throw new Error("Deployment output names and values must not be empty");
-    this.#values.set(name, value);
+/** Shared, in-memory deployment data. Secret values must never be reported. */
+export class DeploymentOutputs {
+  readonly #outputs = new Map<string, string>();
+  readonly #secrets = new Map<string, string>();
+  readonly #environmentVariables = new Map<string, string>();
+
+  merge(result: DeploymentResult | void): void {
+    if (!result) return;
+    this.#mergeMap(this.#outputs, result.outputs, "output", false);
+    this.#mergeMap(this.#secrets, result.secrets, "secret", true);
+    this.#mergeMap(this.#environmentVariables, result.environmentVariables, "environment variable", true);
   }
 
   get(name: string): string | undefined {
-    return this.#values.get(name);
+    return this.#outputs.get(name);
   }
 
   require(name: string): string {
@@ -30,36 +36,60 @@ export class DeploymentOutputs {
     return value;
   }
 
-  setRuntimeEnvironment(name: string, value: string, options: { sensitive?: boolean } = {}): void {
-    if (!/^[A-Z][A-Z0-9_]*$/.test(name)) throw new Error(`Invalid runtime environment variable name: ${name}`);
-    if (!value) throw new Error(`Runtime environment variable must not be empty: ${name}`);
-    this.#runtimeEnvironment.set(name, { value, sensitive: options.sensitive ?? true });
+  outputs(): Readonly<Record<string, string>> {
+    return Object.fromEntries(this.#outputs);
   }
 
-  runtimeEnvironment(): readonly { name: string; value: string; sensitive: boolean }[] {
-    return [...this.#runtimeEnvironment].map(([name, entry]) => ({ name, ...entry }));
+  secrets(): Readonly<Record<string, string>> {
+    return Object.fromEntries(this.#secrets);
+  }
+
+  environmentVariables(): Readonly<Record<string, string>> {
+    return Object.fromEntries(this.#environmentVariables);
+  }
+
+  #mergeMap(target: Map<string, string>, values: Readonly<Record<string, string>> | undefined, kind: string, environmentName: boolean): void {
+    for (const [name, value] of Object.entries(values ?? {})) {
+      if (!name || !value) throw new Error(`Deployment ${kind} names and values must not be empty`);
+      if (environmentName && !/^[A-Z][A-Z0-9_]*$/.test(name)) throw new Error(`Invalid ${kind} name: ${name}`);
+      const existing = target.get(name);
+      if (existing !== undefined && existing !== value) throw new Error(`Conflicting deployment ${kind}: ${name}`);
+      target.set(name, value);
+    }
   }
 }
 
-export interface ProviderDeployContext {
-  phase: DeploymentPhase;
+export interface DeploymentContext {
   target: DeploymentTarget;
-  dryRun: boolean;
   repositoryRoot: string;
   environment: NodeJS.ProcessEnv;
-  outputs: DeploymentOutputs;
+  inputs: DeploymentOutputs;
   report: DeploymentReporter;
 }
 
-/** Optional lifecycle hook shared by every provider domain. */
-export interface DeployableProvider {
-  deploy?(context: ProviderDeployContext): Promise<void>;
+export interface DeploymentPlan {
+  summary: string;
+  steps?: readonly string[];
+}
+
+/** A provider-owned deployment lifecycle. Configuration is optional. */
+export interface Deployable {
+  plan(context: DeploymentContext): Promise<DeploymentPlan>;
+  configure?(context: DeploymentContext): Promise<DeploymentResult | void>;
+  deploy(context: DeploymentContext): Promise<DeploymentResult | void>;
+}
+
+/** Provider domains may implement the deployment lifecycle only when needed. */
+export interface OptionalDeployable {
+  plan?: Deployable["plan"];
+  configure?: Deployable["configure"];
+  deploy?: Deployable["deploy"];
 }
 
 export interface DeploymentParticipant {
-  /** One owner per deployable unit, regardless of how many adapters use it. */
   id: string;
-  provider: DeployableProvider;
+  role?: "provider" | "runtime";
+  provider: OptionalDeployable;
 }
 
 export interface DeploymentRunOptions {
@@ -74,31 +104,51 @@ export async function deployProviders(
   participants: readonly DeploymentParticipant[],
   options: DeploymentRunOptions,
 ): Promise<DeploymentOutputs> {
-  const unique = new Map<string, DeployableProvider>();
-  for (const participant of participants) {
+  const deployable = participants.filter((participant) => participant.provider.plan || participant.provider.configure || participant.provider.deploy);
+  const ids = new Set<string>();
+  for (const participant of deployable) {
     if (!participant.id) throw new Error("Deployment participant id must not be empty");
-    if (!participant.provider.deploy || unique.has(participant.id)) continue;
-    unique.set(participant.id, participant.provider);
+    if (ids.has(participant.id)) throw new Error(`Duplicate deployment participant id: ${participant.id}`);
+    ids.add(participant.id);
+  }
+  const runtime = deployable.filter((participant) => participant.role === "runtime");
+  if (runtime.length > 1) throw new Error("Only one runtime deployment participant may be registered");
+
+  const inputs = new DeploymentOutputs();
+  const report = options.report ?? (() => undefined);
+  const context: DeploymentContext = {
+    target: options.target,
+    repositoryRoot: options.repositoryRoot,
+    environment: options.environment ?? process.env,
+    inputs,
+    report,
+  };
+
+  for (const participant of deployable) {
+    report({ event: "deployment.provider.plan.started", details: { providerId: participant.id } });
+    const plan = participant.provider.plan
+      ? await participant.provider.plan(context)
+      : { summary: `${participant.id} does not provide a plan` };
+    report({ event: "deployment.provider.plan.complete", details: { providerId: participant.id, summary: plan.summary, steps: plan.steps ?? [] } });
+  }
+  if (options.dryRun) return inputs;
+
+  for (const participant of deployable) {
+    if (!participant.provider.configure) continue;
+    report({ event: "deployment.provider.configure.started", details: { providerId: participant.id } });
+    inputs.merge(await participant.provider.configure(context));
+    report({ event: "deployment.provider.configure.complete", details: { providerId: participant.id } });
   }
 
-  const outputs = new DeploymentOutputs();
-  const report = options.report ?? (() => undefined);
-  for (const phase of deploymentPhases) {
-    report({ event: "deployment.phase.started", details: { phase } });
-    for (const [providerId, provider] of unique) {
-      report({ event: "deployment.provider.started", details: { phase, providerId } });
-      await provider.deploy!({
-        phase,
-        target: options.target,
-        dryRun: options.dryRun,
-        repositoryRoot: options.repositoryRoot,
-        environment: options.environment ?? process.env,
-        outputs,
-        report,
-      });
-      report({ event: "deployment.provider.complete", details: { phase, providerId } });
-    }
-    report({ event: "deployment.phase.complete", details: { phase } });
+  const ordered = [
+    ...deployable.filter((participant) => participant.role !== "runtime"),
+    ...runtime,
+  ];
+  for (const participant of ordered) {
+    if (!participant.provider.deploy) continue;
+    report({ event: "deployment.provider.deploy.started", details: { providerId: participant.id, role: participant.role ?? "provider" } });
+    inputs.merge(await participant.provider.deploy(context));
+    report({ event: "deployment.provider.deploy.complete", details: { providerId: participant.id, role: participant.role ?? "provider" } });
   }
-  return outputs;
+  return inputs;
 }

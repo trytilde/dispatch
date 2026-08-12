@@ -3,21 +3,20 @@ import { deployProviders } from "@openbot/runtime-provider-core";
 import { createVercelRuntimeProvider, vercelDeploymentUrl, type RuntimeCommandRunner } from "./vercel.js";
 
 describe("Vercel runtime provider", () => {
-  it("plans one release without mutating Vercel", async () => {
+  it("plans without mutating Vercel", async () => {
     const run = vi.fn();
-    const events: string[] = [];
-    await deployProviders([{ id: "runtime", provider: createVercelRuntimeProvider({ runner: { run } as RuntimeCommandRunner }) }], {
+    const events: unknown[] = [];
+    await deployProviders([{ id: "runtime", role: "runtime", provider: createVercelRuntimeProvider({ runner: { run } as RuntimeCommandRunner }) }], {
       target: "production",
       dryRun: true,
       repositoryRoot: "/repo",
-      report: ({ event }) => events.push(event),
+      report: (event) => events.push(event),
     });
     expect(run).not.toHaveBeenCalled();
-    expect(events).toContain("vercel.project.planned");
-    expect(events).toContain("vercel.deploy.planned");
+    expect(JSON.stringify(events)).toContain("Deploy the OpenBot runtime and web UI to Vercel");
   });
 
-  it("deploys and smokes the complete runtime", async () => {
+  it("installs aggregated values, deploys, and smokes the runtime", async () => {
     const run = vi.fn(async (_command: string, args: readonly string[]) => ({
       stdout: args.includes("deploy") ? '{"url":"openbot.example.vercel.app"}\n' : "",
       stderr: "",
@@ -28,13 +27,17 @@ describe("Vercel runtime provider", () => {
       readProject: async () => ({ projectName: "openbot" }),
       request: request as typeof fetch,
     });
-    const outputs = await deployProviders([{ id: "runtime", provider }], {
+    const outputs = await deployProviders([
+      { id: "tilde", provider: { deploy: async () => ({ secrets: { TILDE_PRIVATE_KEY: "private-value" } }) } },
+      { id: "runtime", role: "runtime", provider },
+    ], {
       target: "production",
       dryRun: false,
       repositoryRoot: "/repo",
     });
     expect(run).toHaveBeenCalledWith("pnpm", expect.arrayContaining(["vercel", "deploy", "--prod"]), expect.anything());
-    expect(run).toHaveBeenCalledWith("pnpm", expect.arrayContaining(["vercel", "env", "add", "OPENBOT_PUBLIC_ORIGIN"]), expect.objectContaining({ input: "https://openbot.vercel.app" }));
+    expect(run).toHaveBeenCalledWith("pnpm", expect.arrayContaining(["vercel", "env", "add", "OPENBOT_PUBLIC_ORIGIN", "production", "--force", "--yes", "--no-sensitive"]), expect.objectContaining({ input: "https://openbot.vercel.app" }));
+    expect(run).toHaveBeenCalledWith("pnpm", expect.arrayContaining(["vercel", "env", "add", "TILDE_PRIVATE_KEY", "production", "--force", "--yes", "--sensitive"]), expect.objectContaining({ input: "private-value" }));
     expect(outputs.require("runtime.origin")).toBe("https://openbot.vercel.app");
     expect(outputs.require("runtime.deployment-url")).toBe("https://openbot.example.vercel.app");
     expect(request).toHaveBeenCalledWith("https://openbot.example.vercel.app/healthz", expect.anything());

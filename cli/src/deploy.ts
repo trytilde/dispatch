@@ -53,7 +53,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
 
   const config = await loadRepositoryConfig();
   const runtime = createRuntimeProvider(config.providers.runtime);
-  await deployProviders([{ id: `runtime:${config.providers.runtime}`, provider: runtime }], {
+  await deployProviders([{ id: `runtime:${config.providers.runtime}`, role: "runtime", provider: runtime }], {
     target: "production",
     dryRun: options.dryRun,
     repositoryRoot,

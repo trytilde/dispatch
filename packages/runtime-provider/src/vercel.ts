@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { DeployableProvider, ProviderDeployContext } from "@openbot/runtime-provider-core";
+import type { Deployable, DeploymentContext, DeploymentPlan, DeploymentResult } from "@openbot/runtime-provider-core";
 
 export interface RuntimeCommandResult {
   stdout: string;
@@ -18,7 +18,7 @@ export interface VercelRuntimeProviderOptions {
   request?: typeof fetch;
 }
 
-export class VercelRuntimeProvider implements DeployableProvider {
+export class VercelRuntimeProvider implements Deployable {
   readonly #runner: RuntimeCommandRunner;
   readonly #readProject: (repositoryRoot: string) => Promise<{ projectName?: string }>;
   readonly #request: typeof fetch;
@@ -29,23 +29,21 @@ export class VercelRuntimeProvider implements DeployableProvider {
     this.#request = options.request ?? fetch;
   }
 
-  async deploy(context: ProviderDeployContext): Promise<void> {
-    if (context.phase === "prepare") return this.#prepare(context);
-    if (context.phase === "release") return this.#release(context);
+  async plan(context: DeploymentContext): Promise<DeploymentPlan> {
+    const configuredOrigin = publicOrigin(context.environment);
+    return {
+      summary: "Deploy the OpenBot runtime and web UI to Vercel",
+      steps: [
+        configuredOrigin ? `Use configured public origin ${configuredOrigin}` : "Link or discover the Vercel project",
+        `Install ${Object.keys(context.inputs.environmentVariables()).length} environment variables and ${Object.keys(context.inputs.secrets()).length} secrets`,
+        `Deploy to ${context.target} and smoke-test /healthz`,
+      ],
+    };
   }
 
-  async #prepare(context: ProviderDeployContext): Promise<void> {
+  async configure(context: DeploymentContext): Promise<DeploymentResult> {
     const configuredOrigin = publicOrigin(context.environment);
-    if (configuredOrigin) {
-      context.outputs.set("runtime.origin", configuredOrigin);
-      context.outputs.setRuntimeEnvironment("OPENBOT_PUBLIC_ORIGIN", configuredOrigin, { sensitive: false });
-      context.report({ event: "vercel.origin.ready", details: { origin: configuredOrigin } });
-      return;
-    }
-    if (context.dryRun) {
-      context.report({ event: "vercel.project.planned" });
-      return;
-    }
+    if (configuredOrigin) return originResult(configuredOrigin, context);
 
     let project = await this.#readProject(context.repositoryRoot);
     if (!project.projectName) {
@@ -61,25 +59,16 @@ export class VercelRuntimeProvider implements DeployableProvider {
       project = await this.#readProject(context.repositoryRoot);
     }
     if (!project.projectName) throw new Error("Vercel project linking did not provide a project name");
-    const origin = `https://${project.projectName}.vercel.app`;
-    context.outputs.set("runtime.origin", origin);
-    context.outputs.setRuntimeEnvironment("OPENBOT_PUBLIC_ORIGIN", origin, { sensitive: false });
-    context.report({ event: "vercel.origin.ready", details: { origin } });
+    return originResult(`https://${project.projectName}.vercel.app`, context);
   }
 
-  async #release(context: ProviderDeployContext): Promise<void> {
-    if (context.dryRun) {
-      context.report({
-        event: "vercel.deploy.planned",
-        details: { target: context.target, environmentVariables: context.outputs.runtimeEnvironment().length },
-      });
-      return;
-    }
+  async deploy(context: DeploymentContext): Promise<DeploymentResult> {
     const environmentTarget = context.target === "production" ? "production" : "preview";
-    for (const variable of context.outputs.runtimeEnvironment()) {
-      const sensitivity = variable.sensitive ? "--sensitive" : "--no-sensitive";
+    const variables = runtimeVariables(context);
+    for (const variable of variables) {
       await this.#runner.run("pnpm", [
-        "exec", "vercel", "env", "add", variable.name, environmentTarget, "--force", "--yes", sensitivity,
+        "exec", "vercel", "env", "add", variable.name, environmentTarget, "--force", "--yes",
+        variable.sensitive ? "--sensitive" : "--no-sensitive",
         ...projectArguments(context.environment),
         ...scopeArguments(context.environment),
       ], {
@@ -87,7 +76,7 @@ export class VercelRuntimeProvider implements DeployableProvider {
         environment: context.environment,
         input: variable.value,
       });
-      context.report({ event: "vercel.environment.configured", details: { name: variable.name, target: environmentTarget } });
+      context.report({ event: "vercel.environment.configured", details: { name: variable.name, target: environmentTarget, sensitive: variable.sensitive } });
     }
     const args = [
       "exec", "vercel", "deploy", "--yes", "--json",
@@ -100,7 +89,6 @@ export class VercelRuntimeProvider implements DeployableProvider {
       environment: context.environment,
     });
     const deploymentUrl = vercelDeploymentUrl(`${deployed.stdout}\n${deployed.stderr}`);
-    context.outputs.set("runtime.deployment-url", deploymentUrl);
     context.report({ event: "vercel.deploy.complete", details: { url: deploymentUrl } });
 
     const health = await this.#request(`${deploymentUrl}/healthz`, { signal: AbortSignal.timeout(30_000) });
@@ -108,6 +96,7 @@ export class VercelRuntimeProvider implements DeployableProvider {
     const body = await health.json() as { ok?: unknown };
     if (body.ok !== true) throw new Error("Health smoke returned an invalid response");
     context.report({ event: "vercel.smoke.complete", details: { url: `${deploymentUrl}/healthz` } });
+    return { outputs: { "runtime.deployment-url": deploymentUrl } };
   }
 }
 
@@ -127,6 +116,25 @@ export function vercelDeploymentUrl(output: string): string {
     }
   }
   throw new Error("Vercel did not return a deployment URL");
+}
+
+function originResult(origin: string, context: DeploymentContext): DeploymentResult {
+  context.report({ event: "vercel.origin.ready", details: { origin } });
+  return {
+    outputs: { "runtime.origin": origin },
+    environmentVariables: { OPENBOT_PUBLIC_ORIGIN: origin },
+  };
+}
+
+function runtimeVariables(context: DeploymentContext): readonly { name: string; value: string; sensitive: boolean }[] {
+  const variables = new Map<string, { value: string; sensitive: boolean }>();
+  for (const [name, value] of Object.entries(context.inputs.environmentVariables())) variables.set(name, { value, sensitive: false });
+  for (const [name, value] of Object.entries(context.inputs.secrets())) {
+    const existing = variables.get(name);
+    if (existing && existing.value !== value) throw new Error(`Conflicting runtime value: ${name}`);
+    variables.set(name, { value, sensitive: true });
+  }
+  return [...variables].map(([name, value]) => ({ name, ...value }));
 }
 
 function publicOrigin(environment: NodeJS.ProcessEnv): string | undefined {
@@ -158,7 +166,7 @@ async function readLinkedProject(repositoryRoot: string): Promise<{ projectName?
   }
 }
 
-const processRunner: RuntimeCommandRunner = {
+export const processRunner: RuntimeCommandRunner = {
   run(command, args, options) {
     return new Promise((resolvePromise, reject) => {
       const child = spawn(command, [...args], {

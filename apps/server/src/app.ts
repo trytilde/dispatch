@@ -20,3 +20,5 @@ app.all("/rpc/*", (context) => {
   return handler ? handler(context.req.raw) : context.json({ error: "Control method not found" }, 404);
 });
 app.all("/api/*", (context) => context.json({ error: "API route not found" }, 404));
+
+export default app;

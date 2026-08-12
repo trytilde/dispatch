@@ -10,14 +10,12 @@ export interface OpenBotConfig {
     skills: string;
     sandbox: string;
     environment: string;
-    sourceControl: string;
     deployment: string;
     options?: Readonly<Record<string, unknown>>;
   };
   skills: { directory: string; registryName: string; registryDescription?: string };
   agents: { directory: string; routePrefix: string };
   sandbox: { assetsDirectory: string; bootstrap: string; secretsManifest: string };
-  publishing: { mode: "pull-request"; deploymentBranch: string };
 }
 
 export interface RepositoryManifest {

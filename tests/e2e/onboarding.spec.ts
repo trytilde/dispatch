@@ -63,7 +63,7 @@ async function mockOnboarding(page: Page): Promise<void> {
       const input = route.request().postDataJSON() as { step: string };
       step = input.step;
       body = status(step);
-    } else if (url.endsWith("/UpdateAgent") || url.endsWith("/CreateAgent")) {
+    } else if (url.endsWith("/UpdateAgent")) {
       body = agent;
     } else if (url.endsWith("/ListAgents")) {
       body = { agents: [agent] };

@@ -57,8 +57,6 @@ Run `pnpm openbot` in a terminal for an interactive launcher with arrow-key navi
 ```bash
 pnpm openbot check
 pnpm openbot doctor
-pnpm openbot agent create --id researcher --name "Researcher"
-pnpm openbot agent create --id researcher --name "Researcher" --publish
 pnpm openbot providers list
 pnpm openbot sync
 pnpm openbot status
@@ -66,7 +64,7 @@ pnpm openbot status
 
 Long-running operations show live progress and finish with compact status tables. Add `--json` to `check`, `doctor`, `providers list`, `sync`, or `status` when another tool needs stable machine-readable output.
 
-`agent create` writes a local module by default. With `--publish`, OpenBot creates a branch and pull request through the configured source-control provider. A human merges it; the normal deployment then federates and registers the new endpoint. Runtime code never commits directly to the deployment branch.
+Create and edit agent endpoint modules directly under `configuration/agents/`. OpenBot discovers committed modules during the build and reconciles them during deployment; it does not generate TypeScript or publish source-code changes at runtime.
 
 See [configuration](docs/configuration.md), [agents](docs/agents.md), [provider plugins](docs/providers.md), [sandbox setup](docs/sandbox.md), and [fork maintenance](docs/forks.md). Contributor agents can use the repository skills in `.agents/skills/` for running, customizing, updating, and contributing OpenBot.
 

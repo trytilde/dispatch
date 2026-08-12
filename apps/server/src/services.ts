@@ -36,7 +36,6 @@ import {
   tildeEnvironment,
 } from "./environment.js";
 import { configuredProvider } from "./provider-registry.js";
-import { publishAgent } from "./publishing.js";
 import {
   clearSandbox,
   ensureInstallation,
@@ -244,13 +243,6 @@ export function registerServices(router: ConnectRouter): void {
       authorized(context);
       const provider = (await tildeProviders()).agents;
       return { agents: (await provider.list(providerContext(undefined, context.signal))).map(protoAgent) };
-    },
-    async createAgent(request, context) {
-      authorized(context);
-      if (!request.displayName.trim()) throw new ConnectError("Agent display name is required", Code.InvalidArgument);
-      const id = `${request.displayName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 48) || "agent"}-${crypto.randomUUID().slice(0, 6)}`;
-      const publication = await publishAgent({ id, displayName: request.displayName.trim() }, context.signal);
-      return protoAgent({ id, displayName: request.displayName.trim(), status: "pull_request", endpointUrl: publication.pullRequestUrl, createdAt: new Date(), updatedAt: new Date() });
     },
     async getAgent(request, context) {
       authorized(context);

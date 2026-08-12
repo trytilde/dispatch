@@ -72,6 +72,12 @@ See [configuration](docs/configuration.md), [agents](docs/agents.md), [provider 
 
 The Hono server serves signed agent endpoints and Connect control APIs. Tilde owns remote agents, skill registries, ChatKit sessions, and runtime MCP tools. Turso/libSQL stores reconciliation leases and non-secret control state. Provider secrets stay behind `EnvProvider`; sandbox browser state remains sensitive.
 
+`packages/control-service-proto` defines the browser/Electron control protocol.
+`packages/agent-provider-core` defines the internal agent, session, and message
+boundary, and `packages/agent-provider` contains its Tilde implementation. The
+legacy cross-domain `contracts`, `provider-sdk`, and `providers` packages remain
+available while computer, skills, and tools migrate independently.
+
 ```bash
 pnpm check
 pnpm build

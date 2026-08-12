@@ -1,0 +1,219 @@
+syntax = "proto3";
+
+package openbot.control.v1;
+
+service InstallationService {
+  rpc GetStatus(GetInstallationStatusRequest) returns (InstallationStatus);
+  rpc Configure(ConfigureInstallationRequest) returns (InstallationStatus);
+  rpc SetOnboardingStep(SetOnboardingStepRequest) returns (InstallationStatus);
+}
+
+service AgentService {
+  rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
+  rpc GetAgent(GetAgentRequest) returns (Agent);
+  rpc UpdateAgent(UpdateAgentRequest) returns (Agent);
+  rpc RegisterAgent(RegisterAgentRequest) returns (Agent);
+  rpc UnregisterAgent(UnregisterAgentRequest) returns (UnregisterAgentResponse);
+}
+
+service ChatService {
+  rpc ListSessionGroups(ListSessionGroupsRequest) returns (ListSessionGroupsResponse);
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc CreateSession(CreateSessionRequest) returns (ChatSession);
+  rpc RenameSession(RenameSessionRequest) returns (ChatSession);
+  rpc MarkSessionUnread(MarkSessionUnreadRequest) returns (ChatSession);
+  rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse);
+  rpc SendMessage(SendMessageRequest) returns (ListMessagesResponse);
+  rpc Interrupt(InterruptChatRequest) returns (InterruptChatResponse);
+}
+
+service ProviderService {
+  rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
+  rpc CheckProvider(CheckProviderRequest) returns (ProviderStatus);
+}
+
+message GetInstallationStatusRequest {}
+
+enum InstallationPhase {
+  INSTALLATION_PHASE_UNSPECIFIED = 0;
+  INSTALLATION_PHASE_LOCKED = 1;
+  INSTALLATION_PHASE_TILDE = 2;
+  INSTALLATION_PHASE_ONBOARDING = 3;
+  INSTALLATION_PHASE_READY = 4;
+}
+
+message InstallationStatus {
+  InstallationPhase phase = 1;
+  string onboarding_step = 2;
+  bool tilde_configured = 3;
+  bool model_configured = 4;
+  string public_origin = 5;
+  string environment_provider = 6;
+  bool environment_provider_configured = 7;
+}
+
+message ConfigureInstallationRequest {
+  string tilde_api_key = 1;
+  string tilde_webhook_signing_key = 2;
+  string tilde_org_id = 3;
+  string tilde_team_id = 4;
+  string tilde_agent_id = 5;
+  string tilde_ui_provider_id = 6;
+  string openai_api_key = 7;
+  string openai_model = 8;
+  string vercel_api_token = 9;
+  string tilde_runtime_mcp_server_id = 10;
+  string tilde_skill_registry_id = 11;
+}
+
+message SetOnboardingStepRequest { string step = 1; }
+
+enum AgentSortOrder {
+  AGENT_SORT_ORDER_UNSPECIFIED = 0;
+  AGENT_SORT_ORDER_UPDATED_AT = 1;
+  AGENT_SORT_ORDER_CREATED_AT = 2;
+  AGENT_SORT_ORDER_MANUAL = 3;
+}
+
+enum SessionSortOrder {
+  SESSION_SORT_ORDER_UNSPECIFIED = 0;
+  SESSION_SORT_ORDER_UPDATED_AT = 1;
+  SESSION_SORT_ORDER_CREATED_AT = 2;
+}
+
+message Agent {
+  string id = 1;
+  string display_name = 2;
+  string provider_id = 3;
+  string status = 4;
+  bool has_ui_endpoint = 5;
+  string endpoint_url = 6;
+  string created_at = 7;
+  string updated_at = 8;
+  string last_user_message_at = 9;
+}
+
+message ListAgentsRequest {
+  uint32 page_size = 1;
+  string next_page_token = 2;
+  AgentSortOrder sort = 3;
+  string query = 4;
+}
+message ListAgentsResponse {
+  repeated Agent agents = 1;
+  string next_page_token = 2;
+}
+message GetAgentRequest { string id = 1; }
+message UpdateAgentRequest {
+  string id = 1;
+  string display_name = 2;
+  string endpoint_url = 3;
+  optional bool enabled = 4;
+}
+message RegisterAgentRequest {
+  string id = 1;
+  string display_name = 2;
+  string endpoint_url = 3;
+  optional bool streaming = 4;
+  uint32 timeout_ms = 5;
+}
+message UnregisterAgentRequest { string id = 1; }
+message UnregisterAgentResponse { bool unregistered = 1; }
+
+message ChatSession {
+  string id = 1;
+  string agent_id = 2;
+  string title = 3;
+  bool unread = 4;
+  string created_at = 5;
+  string updated_at = 6;
+  string last_user_message_at = 7;
+}
+
+message SessionGroup {
+  Agent agent = 1;
+  repeated ChatSession sessions = 2;
+  string next_page_token = 3;
+}
+
+message ListSessionGroupsRequest {
+  uint32 agent_page_size = 1;
+  string agent_next_page_token = 2;
+  uint32 sessions_per_agent = 3;
+  AgentSortOrder agent_sort = 4;
+  SessionSortOrder session_sort = 5;
+  string query = 6;
+}
+message ListSessionGroupsResponse {
+  repeated SessionGroup groups = 1;
+  string next_page_token = 2;
+}
+
+message ListSessionsRequest {
+  string agent_id = 1;
+  uint32 page_size = 2;
+  string next_page_token = 3;
+  SessionSortOrder sort = 4;
+  string query = 5;
+}
+message ListSessionsResponse {
+  repeated ChatSession sessions = 1;
+  string next_page_token = 2;
+}
+message CreateSessionRequest {
+  string agent_id = 1;
+  string title = 2;
+}
+message RenameSessionRequest {
+  string session_id = 1;
+  string title = 2;
+}
+message MarkSessionUnreadRequest { string session_id = 1; }
+
+message ChatMessage {
+  string id = 1;
+  string session_id = 2;
+  string role = 3;
+  string text = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+message ListMessagesRequest {
+  string session_id = 1;
+  uint32 page_size = 2;
+  string next_page_token = 3;
+}
+message ListMessagesResponse {
+  repeated ChatMessage messages = 1;
+  string next_page_token = 2;
+}
+message SendMessageRequest {
+  string agent_id = 1;
+  string session_id = 2;
+  string text = 3;
+}
+message InterruptChatRequest { string session_id = 1; }
+message InterruptChatResponse { bool interrupted = 1; }
+
+enum ProviderKind {
+  PROVIDER_KIND_UNSPECIFIED = 0;
+  PROVIDER_KIND_AI = 1;
+  PROVIDER_KIND_COMPUTER = 2;
+  PROVIDER_KIND_AGENT = 3;
+  PROVIDER_KIND_ENVIRONMENT = 4;
+  PROVIDER_KIND_TOOL = 5;
+  PROVIDER_KIND_SKILLS = 6;
+}
+
+message ProviderStatus {
+  string id = 1;
+  string display_name = 2;
+  ProviderKind kind = 3;
+  bool configured = 4;
+  bool healthy = 5;
+  repeated string capabilities = 6;
+  string message = 7;
+}
+message ListProvidersRequest {}
+message ListProvidersResponse { repeated ProviderStatus providers = 1; }
+message CheckProviderRequest { string id = 1; }

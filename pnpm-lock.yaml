@@ -32,6 +32,9 @@ importers:
       '@openbot/db':
         specifier: workspace:*
         version: link:packages/db
+      '@openbot/inference-model-provider':
+        specifier: workspace:*
+        version: link:packages/inference-model-provider
       '@openbot/providers':
         specifier: workspace:*
         version: link:packages/providers
@@ -392,6 +395,44 @@ importers:
       vitest:
         specifier: 3.2.4
         version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.20.4)(yaml@2.9.0)
+
+  packages/inference-model-provider:
+    dependencies:
+      '@ai-sdk/openai':
+        specifier: 3.0.94
+        version: 3.0.94(zod@4.4.3)
+      '@openbot/inference-model-provider-core':
+        specifier: workspace:*
+        version: link:../inference-model-provider-core
+      ai:
+        specifier: 6.0.250
+        version: 6.0.250(zod@4.4.3)
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
+
+  packages/inference-model-provider-core:
+    dependencies:
+      '@ai-sdk/provider':
+        specifier: 3.0.15
+        version: 3.0.15
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
 
   packages/provider-sdk:
     dependencies:

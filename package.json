@@ -33,6 +33,7 @@
     "@openbot/config": "workspace:*",
     "@openbot/control-service-proto": "workspace:*",
     "@openbot/db": "workspace:*",
+    "@openbot/inference-model-provider": "workspace:*",
     "@openbot/providers": "workspace:*",
     "@playwright/test": "1.55.0",
     "@trytilde/cli": "0.1.0",

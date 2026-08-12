@@ -137,6 +137,34 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(@voidzero-dev/vite-plus-core@0.2.9(@types/node@24.3.0)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.20.4)(typescript@5.9.2)(yaml@2.9.0))
 
+  apps/computer-service:
+    dependencies:
+      '@connectrpc/connect':
+        specifier: 2.1.2
+        version: 2.1.2(@bufbuild/protobuf@2.7.0)
+      '@connectrpc/connect-node':
+        specifier: 2.1.2
+        version: 2.1.2(@bufbuild/protobuf@2.7.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.7.0))
+      '@openbot/computer-service-proto':
+        specifier: workspace:*
+        version: link:../../packages/computer-service-proto
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      tsup:
+        specifier: 8.5.1
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(tsx@4.20.4)(typescript@5.9.2)(yaml@2.9.0)
+      tsx:
+        specifier: 4.20.4
+        version: 4.20.4
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.20.4)(yaml@2.9.0)
+
   apps/desktop:
     devDependencies:
       '@types/node':
@@ -344,6 +372,72 @@ importers:
       vitest:
         specifier: 4.1.10
         version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(@voidzero-dev/vite-plus-core@0.2.9(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(typescript@5.9.2)(yaml@2.9.0))
+
+  packages/computer-provider-core:
+    dependencies:
+      ai:
+        specifier: 6.0.250
+        version: 6.0.250(zod@4.4.3)
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
+
+  packages/computer-providers:
+    dependencies:
+      '@openbot/computer-provider-core':
+        specifier: workspace:*
+        version: link:../computer-provider-core
+      '@vercel/sandbox':
+        specifier: 3.0.0
+        version: 3.0.0
+      ai:
+        specifier: 6.0.250
+        version: 6.0.250(zod@4.4.3)
+      microsandbox:
+        specifier: 0.6.8
+        version: 0.6.8
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
+
+  packages/computer-service-proto:
+    dependencies:
+      '@bufbuild/protobuf':
+        specifier: 2.7.0
+        version: 2.7.0
+    devDependencies:
+      '@bufbuild/buf':
+        specifier: 1.57.2
+        version: 1.57.2
+      '@bufbuild/protoc-gen-es':
+        specifier: 2.7.0
+        version: 2.7.0(@bufbuild/protobuf@2.7.0)
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
 
   packages/config:
     dependencies:

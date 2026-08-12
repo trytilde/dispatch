@@ -12,4 +12,4 @@
 "@openbot/web": minor
 ---
 
-Add fork-owned configuration for agents, runtime skills, sandbox setup, and provider integrations.
+Add fork-owned configuration for agents, runtime skills, sandbox setup, and provider integrations, with an interactive terminal CLI for setup and operation.

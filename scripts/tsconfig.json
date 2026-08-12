@@ -1,7 +1,8 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
+    "jsx": "react-jsx",
     "noEmit": true
   },
-  "include": ["./*.ts", "../openbot.config.ts", "../agents/**/*.ts", "../providers/**/*.ts"]
+  "include": ["./*.ts", "./*.tsx", "../openbot.config.ts", "../agents/**/*.ts", "../providers/**/*.ts"]
 }

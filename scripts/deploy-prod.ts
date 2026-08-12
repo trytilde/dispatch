@@ -974,10 +974,10 @@ async function productionSmoke(origin: string, setupCode: string): Promise<void>
           "DISPLAY=:1 cua-driver call --socket /tmp/openbot-cua-driver.sock start_session '{\"session\":\"openbot-deploy-smoke\",\"capture_scope\":\"desktop\"}' >/dev/null && cua_result=$(DISPLAY=:1 cua-driver call --socket /tmp/openbot-cua-driver.sock click '{\"scope\":\"desktop\",\"x\":80,\"y\":80,\"session\":\"openbot-deploy-smoke\"}') && printf '%s\\n' \"$cua_result\" && printf '%s' \"$cua_result\" | jq -e '.route == \"global_input\"' >/dev/null && printf '\\nopenbot-cua-ok\\n'",
         ],
       }, cookie);
-      if (action.exitCode === 0 && String(action.stdout ?? "").includes("openbot-cua-ok")) break;
+      if ((action.exitCode ?? 0) === 0 && String(action.stdout ?? "").includes("openbot-cua-ok")) break;
       await new Promise((resolvePromise) => setTimeout(resolvePromise, 1_000));
     }
-    if (!action || action.exitCode !== 0 || !String(action.stdout ?? "").includes("openbot-cua-ok")) {
+    if (!action || (action.exitCode ?? 0) !== 0 || !String(action.stdout ?? "").includes("openbot-cua-ok")) {
       throw new Error(`Cua Driver action smoke failed: ${JSON.stringify(action)}`);
     }
     const desktop = await connectJson(origin, "SandboxService", "GetDesktop", {}, cookie);

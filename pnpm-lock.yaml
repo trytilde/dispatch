@@ -17,9 +17,18 @@ importers:
       '@changesets/cli':
         specifier: 2.29.7
         version: 2.29.7(@types/node@24.3.0)
+      '@openbot/agent-provider':
+        specifier: workspace:*
+        version: link:packages/agent-provider
+      '@openbot/agent-provider-core':
+        specifier: workspace:*
+        version: link:packages/agent-provider-core
       '@openbot/config':
         specifier: workspace:*
         version: link:packages/config
+      '@openbot/control-service-proto':
+        specifier: workspace:*
+        version: link:packages/control-service-proto
       '@openbot/db':
         specifier: workspace:*
         version: link:packages/db
@@ -147,12 +156,21 @@ importers:
       '@libsql/client':
         specifier: 0.15.15
         version: 0.15.15
+      '@openbot/agent-provider':
+        specifier: workspace:*
+        version: link:../../packages/agent-provider
+      '@openbot/agent-provider-core':
+        specifier: workspace:*
+        version: link:../../packages/agent-provider-core
       '@openbot/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@openbot/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@openbot/control-service-proto':
+        specifier: workspace:*
+        version: link:../../packages/control-service-proto
       '@openbot/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -214,6 +232,9 @@ importers:
       '@openbot/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@openbot/control-service-proto':
+        specifier: workspace:*
+        version: link:../../packages/control-service-proto
       '@openbot/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -255,6 +276,38 @@ importers:
         specifier: 3.2.4
         version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
 
+  packages/agent-provider:
+    dependencies:
+      '@openbot/agent-provider-core':
+        specifier: workspace:*
+        version: link:../agent-provider-core
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
+
+  packages/agent-provider-core:
+    dependencies:
+      ai:
+        specifier: 6.0.250
+        version: 6.0.250(zod@4.4.3)
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
+
   packages/config:
     dependencies:
       '@openbot/provider-sdk':
@@ -272,6 +325,28 @@ importers:
         version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
 
   packages/contracts:
+    dependencies:
+      '@bufbuild/protobuf':
+        specifier: 2.7.0
+        version: 2.7.0
+    devDependencies:
+      '@bufbuild/buf':
+        specifier: 1.57.2
+        version: 1.57.2
+      '@bufbuild/protoc-gen-es':
+        specifier: 2.7.0
+        version: 2.7.0(@bufbuild/protobuf@2.7.0)
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
+
+  packages/control-service-proto:
     dependencies:
       '@bufbuild/protobuf':
         specifier: 2.7.0
@@ -6977,6 +7052,14 @@ snapshots:
     optionalDependencies:
       vite: 7.3.6(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.20.4)(yaml@2.9.0)
 
+  '@vitest/mocker@3.2.4(vite@7.3.6(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0))':
+    dependencies:
+      '@vitest/spy': 3.2.4
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 7.3.6(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
+
   '@vitest/pretty-format@3.2.4':
     dependencies:
       tinyrainbow: 2.0.0
@@ -9673,7 +9756,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.3.6(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.20.4)(yaml@2.9.0))
+      '@vitest/mocker': 3.2.4(vite@7.3.6(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0))
       '@vitest/pretty-format': 3.2.7
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4

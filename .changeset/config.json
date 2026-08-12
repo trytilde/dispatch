@@ -3,9 +3,12 @@
   "changelog": ["@changesets/changelog-github", { "repo": "trytilde/openbot" }],
   "commit": false,
   "fixed": [[
+    "@openbot/agent-provider",
+    "@openbot/agent-provider-core",
     "@openbot/box-host",
     "@openbot/config",
     "@openbot/contracts",
+    "@openbot/control-service-proto",
     "@openbot/db",
     "@openbot/desktop",
     "@openbot/provider-sdk",

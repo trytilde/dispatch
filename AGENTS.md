@@ -14,7 +14,7 @@ OpenBot is a TypeScript monorepo for a local or Vercel-hosted agent workspace. I
 
 - Node.js 24, pnpm 10, TypeScript ESM, strict mode.
 - Use repository-pinned tools through `pnpm`; do not install global substitutes.
-- Do not hand-edit generated files under `packages/contracts/src/gen/` or `apps/web/src/routeTree.gen.ts`.
+- Do not hand-edit generated files under `packages/contracts/src/gen/`, `packages/control-service-proto/src/gen/`, or `apps/web/src/routeTree.gen.ts`.
 
 ```bash
 pnpm install
@@ -40,10 +40,11 @@ pnpm --filter @openbot/db test
 - `apps/server`: Hono HTTP routes, ConnectRPC services, Tilde agent runtime.
 - `apps/desktop`: Electron main/preload shell and packaged local server.
 - `apps/box-host`: capability-protected ConnectRPC service inside sandboxes.
-- `packages/contracts`: protobuf source and generated Connect types.
+- `packages/control-service-proto`: browser/Electron control protobuf and generated Connect types.
+- `packages/agent-provider-core`: internal agent, session, and message interfaces.
+- `packages/agent-provider`: Tilde implementation of the agent provider interface.
+- `packages/contracts`, `packages/provider-sdk`, `packages/providers`: legacy cross-domain packages retained during the domain-package migration.
 - `configuration`: fork-owned Vercel AI SDK agent endpoints, runtime skills, sandbox seed, and provider plugins.
-- `packages/provider-sdk`: stable provider interfaces and shared errors.
-- `packages/providers`: OpenAI, Tilde, environment, Microsandbox, and Vercel adapters.
 - `packages/db`: Drizzle over local SQLite or remote libSQL/Turso.
 - `packages/ui`: shared React UI and vendored Beautiful UI components.
 - `api/index.ts`: Vercel Function entrypoint.
@@ -57,14 +58,14 @@ pnpm --filter @openbot/db test
 
 - Prefer ConnectRPC for authenticated control-plane operations.
 - Keep Hono routes for protocol-native HTTP surfaces: setup unlock, ChatKit compatibility, signed Tilde callbacks/tools, and health.
-- Edit `packages/contracts/proto/openbot/v1/openbot.proto`, then run `pnpm contracts:generate`.
+- Edit `packages/control-service-proto/proto/openbot/control/v1/control.proto` for control RPCs, then run `pnpm contracts:generate`. The legacy contracts package continues to own the box/computer protocol until that domain migrates.
 - Keep handlers thin: validate input, authorize, call the owning provider/store, map to protobuf or HTTP response.
 - Preserve Web-standard `Request`/`Response` behavior so the same server works locally and in Vercel Functions.
 - Preserve raw request bodies and webhook verification on signed Tilde routes.
 
 ### Providers
 
-- Define cross-provider contracts in `packages/provider-sdk`; implement adapters in `packages/providers`.
+- Define provider contracts in their domain `*-provider-core` package and implementations in the matching provider package. Do not expose internal provider interfaces over RPC by default.
 - Pass `ProviderCallContext` through calls so cancellation, deadlines, request IDs, and idempotency remain available.
 - Convert provider-specific failures to `ProviderError` at the adapter boundary.
 - Keep provider selection in composition code, not UI branches.

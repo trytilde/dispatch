@@ -28,6 +28,7 @@ package shape is:
 - `skills-provider-core` and `skills-provider`
 - `tools-provider-core` and `tools-provider`
 - `agent-provider-core` and `agent-provider`
+- `inference-model-provider-core` and `inference-model-provider`
 
 The first migration slice adds the control proto plus the agent core and Tilde
 implementation. `AgentProvider` owns agent registration and lifecycle as well
@@ -47,6 +48,13 @@ expose AI SDK tools implements `registerTools()`, and a provider that needs to
 contribute instructions implements `injectPromptPart()`. Control-plane agent
 and session operations are not automatically tools.
 
+`InferenceModelProvider` returns an AI SDK-compatible model from `model(name)`;
+the runtime supplies the model name rather than fixing it in provider
+construction. The OpenAI implementation supports Platform API keys and
+ChatGPT/Codex OAuth as separate adapters. OAuth acquisition, refresh, and
+persistence remain outside inference; the OAuth adapter receives resolved
+credentials and applies the account-scoped ChatGPT transport requirements.
+
 ```mermaid
 flowchart LR
   W["Web and Electron"] --> C["control-service-proto"]
@@ -54,6 +62,8 @@ flowchart LR
   S --> A["agent-provider-core"]
   A --> T["agent-provider: Tilde"]
   T --> M["Tilde agents and Mission Control"]
+  S --> I["inference-model-provider-core"]
+  I --> O["inference-model-provider: OpenAI"]
 ```
 
 The legacy `contracts`, `provider-sdk`, and `providers` packages remain in place

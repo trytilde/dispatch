@@ -11,6 +11,8 @@
     "@openbot/control-service-proto",
     "@openbot/db",
     "@openbot/desktop",
+    "@openbot/inference-model-provider",
+    "@openbot/inference-model-provider-core",
     "@openbot/provider-sdk",
     "@openbot/providers",
     "@openbot/server",

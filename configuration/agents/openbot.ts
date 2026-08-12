@@ -1,10 +1,5 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import {
-  chatKitEndpoint,
-  convertToAiSdkMessages,
-  createClient,
-  createMCPClient,
-} from "@trytilde/harness-sdk-vercel-ai-node";
+import { OpenAIApiKeyInferenceModelProvider } from "@openbot/inference-model-provider";
+import { chatKitEndpoint, convertToAiSdkMessages, createClient, createMCPClient } from "@trytilde/harness-sdk-vercel-ai-node";
 import { consumeStream, convertToModelMessages, stepCountIs, streamText } from "ai";
 
 export const displayName = "OpenBot";
@@ -32,7 +27,7 @@ function createAgentHandler() {
     orgSubdomain: false,
     teamId: requiredEnv("OPENBOT_TILDE_TEAM_ID"),
   });
-  const openai = createOpenAI({ apiKey: requiredEnv("OPENBOT_OPENAI_API_KEY") });
+  const inferenceModelProvider = new OpenAIApiKeyInferenceModelProvider({ apiKey: requiredEnv("OPENBOT_OPENAI_API_KEY") });
 
   return chatKitEndpoint({
     client,
@@ -54,7 +49,7 @@ function createAgentHandler() {
         const result = streamText({
           abortSignal: request.signal,
           messages: await convertToModelMessages(messages),
-          model: openai(process.env.OPENBOT_OPENAI_MODEL ?? "gpt-5.4"),
+          model: inferenceModelProvider.model(process.env.OPENBOT_OPENAI_MODEL ?? "gpt-5.4"),
           stopWhen: stepCountIs(12),
           system:
             "You are OpenBot, a concise and capable assistant. Explain actions before using a computer or external tool.",

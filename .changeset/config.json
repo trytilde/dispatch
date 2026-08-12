@@ -22,6 +22,8 @@
     "@openbot/server",
     "@openbot/skills-provider",
     "@openbot/skills-provider-core",
+    "@openbot/tools-provider",
+    "@openbot/tools-provider-core",
     "@openbot/ui",
     "@openbot/web"
   ]],

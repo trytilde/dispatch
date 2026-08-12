@@ -31,6 +31,8 @@
     "@openbot/providers": "workspace:*",
     "@openbot/skills-provider": "workspace:*",
     "@openbot/skills-provider-core": "workspace:*",
+    "@openbot/tools-provider": "workspace:*",
+    "@openbot/tools-provider-core": "workspace:*",
     "@trytilde/harness-sdk": "0.1.2",
     "@trytilde/harness-sdk-vercel-ai-node": "0.2.0",
     "@vercel/sandbox": "3.0.0",

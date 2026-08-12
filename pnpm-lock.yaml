@@ -54,6 +54,12 @@ importers:
       '@openbot/skills-provider-core':
         specifier: workspace:*
         version: link:packages/skills-provider-core
+      '@openbot/tools-provider':
+        specifier: workspace:*
+        version: link:packages/tools-provider
+      '@openbot/tools-provider-core':
+        specifier: workspace:*
+        version: link:packages/tools-provider-core
       '@playwright/test':
         specifier: 1.55.0
         version: 1.55.0
@@ -245,6 +251,12 @@ importers:
       '@openbot/skills-provider-core':
         specifier: workspace:*
         version: link:../../packages/skills-provider-core
+      '@openbot/tools-provider':
+        specifier: workspace:*
+        version: link:../../packages/tools-provider
+      '@openbot/tools-provider-core':
+        specifier: workspace:*
+        version: link:../../packages/tools-provider-core
       '@trytilde/harness-sdk':
         specifier: 0.1.2
         version: 0.1.2
@@ -682,6 +694,47 @@ importers:
       vitest:
         specifier: 4.1.10
         version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
+
+  packages/tools-provider:
+    dependencies:
+      '@openbot/tools-provider-core':
+        specifier: workspace:*
+        version: link:../tools-provider-core
+      '@trytilde/harness-sdk':
+        specifier: 0.1.2
+        version: 0.1.2
+      '@trytilde/harness-sdk-vercel-ai-node':
+        specifier: 0.2.0
+        version: 0.2.0(@ai-sdk/mcp@1.0.70(zod@4.4.3))(@trytilde/harness-sdk@0.1.2)(ai@6.0.250(zod@4.4.3))
+      ai:
+        specifier: 6.0.250
+        version: 6.0.250(zod@4.4.3)
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
+
+  packages/tools-provider-core:
+    dependencies:
+      ai:
+        specifier: 6.0.250
+        version: 6.0.250(zod@4.4.3)
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@edge-runtime/vm@3.2.0)(@types/debug@4.1.13)(@types/node@24.3.0)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.21.0)(yaml@2.9.0)
 
   packages/ui:
     dependencies:

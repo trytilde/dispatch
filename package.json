@@ -8,7 +8,7 @@
     "node": "24.x"
   },
   "scripts": {
-    "build": "pnpm contracts:generate && XDG_CACHE_HOME=.cache turbo run build",
+    "build": "pnpm contracts:generate && XDG_CACHE_HOME=.cache turbo run build && node scripts/stage-web-assets.mjs",
     "changeset": "changeset",
     "changeset:status": "changeset status",
     "changeset:version": "changeset version",

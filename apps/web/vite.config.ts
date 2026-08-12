@@ -9,7 +9,6 @@ export default defineConfig({
   plugins: lazyPlugins(() => [react(), tailwindcss()]),
   server: {
     proxy: {
-      "/api": controlOrigin,
       "/healthz": controlOrigin,
       "/rpc": controlOrigin,
     },

@@ -3,17 +3,10 @@
   "buildCommand": "vp run build",
   "devCommand": "vp -C apps/web dev --host 127.0.0.1 --port $PORT",
   "installCommand": "pnpm install --frozen-lockfile",
-  "outputDirectory": "apps/web/dist",
   "functions": {
-    "api/index.ts": {
+    "server.ts": {
       "maxDuration": 300,
-      "includeFiles": "apps/server/dist/**/*"
+      "includeFiles": "{apps/server/dist,apps/web/dist}/**/*"
     }
-  },
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "/api" },
-    { "source": "/rpc/:path*", "destination": "/api" },
-    { "source": "/healthz", "destination": "/api" },
-    { "source": "/((?!api/|rpc/|healthz|assets/).*)", "destination": "/index.html" }
-  ]
+  }
 }

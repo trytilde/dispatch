@@ -41,6 +41,9 @@ describe("Electron renderer server", () => {
       headers: { cookie: "client=value" },
     });
     expect(await proxied.text()).toBe("/healthz:client=value");
+
+    const frontendRoute = await fetch(`${renderer.origin}/api/setup/unlock`);
+    expect(await frontendRoute.text()).toBe("<main>OpenBot renderer</main>");
     expect(proxied.headers.get("set-cookie")).toContain("HttpOnly");
     expect(proxied.headers.get("set-cookie")).not.toContain("Secure");
   });

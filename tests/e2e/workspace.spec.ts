@@ -5,6 +5,9 @@ test("loads the bare workspace without setup", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "What should OpenBot become?" })).toBeVisible();
   await expect(page.getByText("Workspace preview")).toBeVisible();
   await expect(page.getByLabel("Setup code")).toHaveCount(0);
+
+  await page.goto("/api/setup/unlock");
+  await expect(page.getByRole("heading", { name: "What should OpenBot become?" })).toBeVisible();
 });
 
 test("keeps the server healthy and control namespace empty", async ({ request }) => {

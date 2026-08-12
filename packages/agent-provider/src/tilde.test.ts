@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { TildeAgentProvider } from "./index.js";
+import { TildeAgentProvider } from "./tilde.js";
 
 const config = { apiKey: "secret", orgId: "org-one", teamId: "team-one", baseUrl: "https://tilde.test" };
 const context = { requestId: "request-one" };

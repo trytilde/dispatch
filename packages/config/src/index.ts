@@ -15,7 +15,7 @@ export interface OpenBotConfig {
   };
   skills: { directory: string; registryName: string; registryDescription?: string };
   agents: { directory: string; routePrefix: string };
-  sandbox: { assetsDirectory: string; bootstrap: string; secretsManifest: string };
+  sandbox: { assetsDirectory: string; bootstrap: string };
 }
 
 export interface RepositoryManifest {
@@ -39,7 +39,7 @@ export function repositoryDigest(files: Readonly<Record<string, string>>): strin
 
 export function validateConfig(config: OpenBotConfig): string[] {
   const errors: string[] = [];
-  const paths = [config.providers.directory, config.skills.directory, config.agents.directory, config.sandbox.assetsDirectory, config.sandbox.bootstrap, config.sandbox.secretsManifest];
+  const paths = [config.providers.directory, config.skills.directory, config.agents.directory, config.sandbox.assetsDirectory, config.sandbox.bootstrap];
   for (const path of paths) {
     if (!path || path.startsWith("/") || path.split(/[\\/]/).includes("..")) errors.push(`Configuration path must stay inside the repository: ${path}`);
   }

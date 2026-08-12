@@ -48,7 +48,7 @@ configuration/sandbox/bootstrap.sh
 
 Agent route modules export `POST` using Tilde `chatKitEndpoint` and the Vercel AI SDK. OpenBot serves each module at `/api/agents/<id>`. Skills are reconciled into the configured Tilde registry. Removed agents remain orphaned by default; `pnpm openbot sync --prune --yes` explicitly disables them remotely.
 
-When a fork needs sandbox-only secrets, create `configuration/sandbox/secrets.example.yaml` to declare their names. Set values as `OPENBOT_SANDBOX_SECRET_<NAME>` or, for local development only, in ignored `configuration/sandbox/secrets.yaml`. Provider and control-plane credentials are never implicitly copied into a sandbox. SOPS portability is intentionally deferred from this first version.
+OpenBot does not load sandbox secrets from repository configuration or copy control-plane credentials into a sandbox.
 
 ## Common commands
 

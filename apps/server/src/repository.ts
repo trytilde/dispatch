@@ -1,5 +1,5 @@
 import { lstat, readFile } from "node:fs/promises";
-import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { repositoryDigest, validateConfig, type OpenBotConfig } from "@openbot/config";
 import type { ProviderPlugin, SandboxAsset, SkillRegistration } from "@openbot/provider-sdk";
@@ -22,7 +22,6 @@ export interface LoadedRepository {
   sandbox: {
     assets: readonly SandboxAsset[];
     bootstrap?: string;
-    secrets: Readonly<Record<string, string>>;
   };
 }
 
@@ -136,30 +135,7 @@ async function loadSandbox(root: string, config: OpenBotConfig): Promise<LoadedR
     });
   }
   const bootstrap = await optionalText(root, config.sandbox.bootstrap);
-  const declared = parseSecretManifest(await optionalText(root, config.sandbox.secretsManifest));
-  const localValues = parseLocalSecrets(await optionalText(root, join(dirname(config.sandbox.secretsManifest), "secrets.yaml")));
-  const secrets: Record<string, string> = {};
-  for (const name of declared) {
-    const value = process.env[`OPENBOT_SANDBOX_SECRET_${name}`] ?? localValues[name];
-    if (value !== undefined) secrets[name] = value;
-  }
-  return { assets, ...(bootstrap ? { bootstrap } : {}), secrets };
-}
-
-function parseSecretManifest(content: string | undefined): string[] {
-  if (!content) return [];
-  const value = parseYaml(content) as { secrets?: unknown };
-  if (!value?.secrets || typeof value.secrets !== "object" || Array.isArray(value.secrets)) return [];
-  const names = Object.keys(value.secrets);
-  for (const name of names) if (!/^[A-Z][A-Z0-9_]{0,126}$/.test(name)) throw new Error(`Invalid sandbox secret name: ${name}`);
-  return names.sort();
-}
-
-function parseLocalSecrets(content: string | undefined): Record<string, string> {
-  if (!content) return {};
-  const value = parseYaml(content) as { secrets?: unknown };
-  if (!value?.secrets || typeof value.secrets !== "object" || Array.isArray(value.secrets)) return {};
-  return Object.fromEntries(Object.entries(value.secrets).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+  return { assets, ...(bootstrap ? { bootstrap } : {}) };
 }
 
 async function optionalText(root: string, path: string): Promise<string | undefined> {

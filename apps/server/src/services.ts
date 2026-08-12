@@ -361,7 +361,6 @@ async function sandboxSpec(image?: string) {
       digest: repository.digest,
       assets: repository.sandbox.assets,
       ...(repository.sandbox.bootstrap ? { bootstrap: repository.sandbox.bootstrap } : {}),
-      environment: repository.sandbox.secrets,
     },
   };
 }

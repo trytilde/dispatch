@@ -56,69 +56,74 @@ export class VercelSandboxProvider implements SandboxProvider {
       timeout: 45 * 60 * 1000,
       env: { CUA_DRIVER_SOCKET: "/tmp/openbot-cua-driver.sock" },
     });
-    const desktopCapability = sandboxCapability("desktop", sandbox.name);
-    const boxCapability = sandboxCapability("box", sandbox.name);
-    const bundlePath = fileURLToPath(new URL("../../../apps/box-host/dist/index.js", import.meta.url));
-    const boxHostBundle = await readFile(bundlePath);
-    await sandbox.writeFiles([
-      { path: "/opt/openbot/bootstrap-openbot-desktop", content: desktopBootstrapScript, mode: 0o755 },
-      { path: "/opt/openbot/start-openbot-desktop", content: desktopStartScript, mode: 0o755 },
-      { path: "/opt/openbot/box-host.mjs", content: boxHostBundle, mode: 0o755 },
-      ...(spec.repository?.bootstrap ? [{ path: "/opt/openbot/repository-bootstrap", content: spec.repository.bootstrap, mode: 0o755 }] : []),
-      ...(spec.repository?.assets.map((asset) => ({ path: `/workspace/${asset.path}`, content: Buffer.from(asset.contentBase64, "base64"), mode: asset.executable ? 0o755 : 0o644 })) ?? []),
-    ]);
-    if (!snapshotId) {
-      const bootstrap = await sandbox.runCommand({
-        cmd: "bash",
-        args: ["/opt/openbot/bootstrap-openbot-desktop"],
-        sudo: true,
-        signal: _context.signal,
-        timeoutMs: 20 * 60 * 1000,
-      });
-      if (bootstrap.exitCode !== 0) {
-        const stdout = (await bootstrap.stdout()).trim();
-        const stderr = (await bootstrap.stderr()).trim();
-        throw new ProviderError(
-          "provider_unavailable",
-          `Desktop bootstrap failed: ${[stdout, stderr].filter(Boolean).join("\n").slice(-12_000)}`,
-        );
+    try {
+      const desktopCapability = sandboxCapability("desktop", sandbox.name);
+      const boxCapability = sandboxCapability("box", sandbox.name);
+      const bundlePath = fileURLToPath(new URL("../../../apps/box-host/dist/index.js", import.meta.url));
+      const boxHostBundle = await readFile(bundlePath);
+      await sandbox.writeFiles([
+        { path: "/opt/openbot/bootstrap-openbot-desktop", content: desktopBootstrapScript, mode: 0o755 },
+        { path: "/opt/openbot/start-openbot-desktop", content: desktopStartScript, mode: 0o755 },
+        { path: "/opt/openbot/box-host.mjs", content: boxHostBundle, mode: 0o755 },
+        ...(spec.repository?.bootstrap ? [{ path: "/opt/openbot/repository-bootstrap", content: spec.repository.bootstrap, mode: 0o755 }] : []),
+        ...(spec.repository?.assets.map((asset) => ({ path: `/workspace/${asset.path}`, content: Buffer.from(asset.contentBase64, "base64"), mode: asset.executable ? 0o755 : 0o644 })) ?? []),
+      ]);
+      if (!snapshotId) {
+        const bootstrap = await sandbox.runCommand({
+          cmd: "bash",
+          args: ["/opt/openbot/bootstrap-openbot-desktop"],
+          sudo: true,
+          signal: _context.signal,
+          timeoutMs: 20 * 60 * 1000,
+        });
+        if (bootstrap.exitCode !== 0) {
+          const stdout = (await bootstrap.stdout()).trim();
+          const stderr = (await bootstrap.stderr()).trim();
+          throw new ProviderError(
+            "provider_unavailable",
+            `Desktop bootstrap failed: ${[stdout, stderr].filter(Boolean).join("\n").slice(-12_000)}`,
+          );
+        }
       }
-    }
-    if (spec.repository?.bootstrap) {
-      const repositoryBootstrap = await sandbox.runCommand({
+      if (spec.repository?.bootstrap) {
+        const repositoryBootstrap = await sandbox.runCommand({
+          cmd: "bash",
+          args: ["-lc", "cd /workspace && /opt/openbot/repository-bootstrap"],
+          signal: _context.signal,
+          env: { ...(spec.repository.environment ?? {}) },
+        });
+        if (repositoryBootstrap.exitCode !== 0) throw new ProviderError("provider_unavailable", "Repository sandbox bootstrap failed; inspect the sandbox bootstrap log");
+      }
+      await sandbox.runCommand({
         cmd: "bash",
-        args: ["-lc", "cd /workspace && /opt/openbot/repository-bootstrap"],
-        signal: _context.signal,
-        env: { ...(spec.repository.environment ?? {}) },
+        args: ["/opt/openbot/start-openbot-desktop"],
+        detached: true,
+        sudo: true,
+        env: {
+          DISPLAY: ":1",
+          OPENBOT_BOX_CAPABILITY: boxCapability,
+          OPENBOT_BOX_PORT: "4101",
+          OPENBOT_DESKTOP_CAPABILITY: desktopCapability,
+          OPENBOT_EXPOSED_PORTS: "6080,4101",
+          OPENBOT_WORKSPACE: "/workspace",
+          ...(spec.repository?.environment ?? {}),
+        },
       });
-      if (repositoryBootstrap.exitCode !== 0) throw new ProviderError("provider_unavailable", "Repository sandbox bootstrap failed; inspect the sandbox bootstrap log");
+      const id = sandbox.name;
+      const handle: SandboxHandle = {
+        id,
+        providerId: this.descriptor.id,
+        state: "running",
+        createdAt: new Date(),
+      };
+      this.#instances.set(id, sandbox);
+      this.#handles.set(id, handle);
+      this.#desktopCapabilities.set(id, desktopCapability);
+      return handle;
+    } catch (error) {
+      await sandbox.stop().catch(() => undefined);
+      throw error;
     }
-    await sandbox.runCommand({
-      cmd: "bash",
-      args: ["/opt/openbot/start-openbot-desktop"],
-      detached: true,
-      sudo: true,
-      env: {
-        DISPLAY: ":1",
-        OPENBOT_BOX_CAPABILITY: boxCapability,
-        OPENBOT_BOX_PORT: "4101",
-        OPENBOT_DESKTOP_CAPABILITY: desktopCapability,
-        OPENBOT_EXPOSED_PORTS: "6080,4101",
-        OPENBOT_WORKSPACE: "/workspace",
-        ...(spec.repository?.environment ?? {}),
-      },
-    });
-    const id = sandbox.name;
-    const handle: SandboxHandle = {
-      id,
-      providerId: this.descriptor.id,
-      state: "running",
-      createdAt: new Date(),
-    };
-    this.#instances.set(id, sandbox);
-    this.#handles.set(id, handle);
-    this.#desktopCapabilities.set(id, desktopCapability);
-    return handle;
   }
 
   async get(id: string, _context: ProviderCallContext): Promise<SandboxHandle> {
@@ -191,7 +196,6 @@ export class VercelSandboxProvider implements SandboxProvider {
           await resumed.runCommand({
             cmd: "bash",
             args: ["-lc", "if [[ -x /opt/openbot/repository-bootstrap ]]; then cd /workspace && /opt/openbot/repository-bootstrap; fi"],
-            env: repositoryEnvironmentFromProcess(),
           });
           await resumed.runCommand({
             cmd: "bash",
@@ -205,7 +209,6 @@ export class VercelSandboxProvider implements SandboxProvider {
               OPENBOT_DESKTOP_CAPABILITY: sandboxCapability("desktop", id),
               OPENBOT_EXPOSED_PORTS: "6080,4101",
               OPENBOT_WORKSPACE: "/workspace",
-              ...repositoryEnvironmentFromProcess(),
             },
           });
         },
@@ -217,10 +220,4 @@ export class VercelSandboxProvider implements SandboxProvider {
       throw new ProviderError("not_found", `Sandbox ${id} could not be resumed: ${error instanceof Error ? error.message : "unknown error"}`);
     }
   }
-}
-
-function repositoryEnvironmentFromProcess(): Record<string, string> {
-  return Object.fromEntries(Object.entries(process.env)
-    .filter(([name, value]) => name.startsWith("OPENBOT_SANDBOX_SECRET_") && value !== undefined)
-    .map(([name, value]) => [name.slice("OPENBOT_SANDBOX_SECRET_".length), value!]));
 }

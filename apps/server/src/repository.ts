@@ -1,7 +1,6 @@
 import { lstat, readFile } from "node:fs/promises";
-import { basename, relative, resolve, sep } from "node:path";
+import { basename, dirname, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
-import type { AgentDefinition } from "@openbot/agent-sdk";
 import { repositoryDigest, validateConfig, type OpenBotConfig } from "@openbot/config";
 import type { ProviderPlugin, SandboxAsset, SkillRegistration } from "@openbot/provider-sdk";
 import {
@@ -17,14 +16,25 @@ export interface LoadedRepository {
   root: string;
   config: OpenBotConfig;
   digest: string;
-  agents: readonly AgentDefinition[];
+  agents: readonly RepositoryAgent[];
   providerPlugins: readonly ProviderPlugin[];
   skills: readonly SkillRegistration[];
   sandbox: {
     assets: readonly SandboxAsset[];
     bootstrap?: string;
-    secrets: Readonly<Record<string, string>>;
   };
+}
+
+export interface RepositoryAgentModule {
+  POST(request: Request): Promise<Response> | Response;
+  displayName?: string;
+  description?: string;
+  registration?: { provider?: string; streaming?: boolean; timeoutMs?: number };
+}
+
+export interface RepositoryAgent extends RepositoryAgentModule {
+  id: string;
+  displayName: string;
 }
 
 let loaded: Promise<LoadedRepository> | undefined;
@@ -38,7 +48,7 @@ export function loadRepository(): Promise<LoadedRepository> {
 export async function loadRepositoryAt(root: string): Promise<LoadedRepository> {
   const configErrors = validateConfig(repositoryConfig);
   if (configErrors.length) throw new Error(configErrors.join("\n"));
-  validateAgents(repositoryAgents, repositoryAgentPaths);
+  const agents = loadAgents(repositoryAgents, repositoryAgentPaths);
   validateProviderPlugins(repositoryProviderPlugins, repositoryProviderPaths);
   const fileContents: Record<string, string> = {};
   for (const path of repositoryFilePaths) {
@@ -49,30 +59,33 @@ export async function loadRepositoryAt(root: string): Promise<LoadedRepository> 
     root,
     config: repositoryConfig,
     digest: repositoryDigest(fileContents),
-    agents: repositoryAgents,
+    agents,
     providerPlugins: repositoryProviderPlugins,
     skills: await loadSkills(root, repositoryConfig.skills.directory),
     sandbox: await loadSandbox(root, repositoryConfig),
   };
 }
 
-function validateAgents(agents: readonly AgentDefinition[], paths: readonly string[]): void {
+function loadAgents(modules: readonly RepositoryAgentModule[], paths: readonly string[]): RepositoryAgent[] {
   const ids = new Set<string>();
-  for (const [index, agent] of agents.entries()) {
-    if (!/^[a-z][a-z0-9-]{0,62}$/.test(agent.id)) throw new Error(`Invalid agent id: ${agent.id}`);
-    const expected = basename(paths[index] ?? "").replace(/\.[^.]+$/, "");
-    if (agent.id !== expected) throw new Error(`Agent id ${agent.id} must match filename ${expected}`);
-    if (ids.has(agent.id)) throw new Error(`Duplicate agent id: ${agent.id}`);
-    ids.add(agent.id);
-  }
-  if (!agents.length) throw new Error("At least one agents/<id>.ts module is required");
+  const agents = modules.map((module, index) => {
+    const id = basename(paths[index] ?? "").replace(/\.[^.]+$/, "");
+    if (!/^[a-z][a-z0-9-]{0,62}$/.test(id)) throw new Error(`Invalid agent filename: ${paths[index]}`);
+    if (typeof module.POST !== "function") throw new Error(`Agent ${id} must export a POST(request) endpoint`);
+    if (ids.has(id)) throw new Error(`Duplicate agent id: ${id}`);
+    ids.add(id);
+    const displayName = module.displayName?.trim() || id.split("-").map((part) => part[0]?.toUpperCase() + part.slice(1)).join(" ");
+    return { ...module, id, displayName };
+  });
+  if (!agents.length) throw new Error("At least one configuration/agents/<id>.ts endpoint is required");
+  return agents;
 }
 
 function validateProviderPlugins(plugins: readonly ProviderPlugin[], paths: readonly string[]): void {
   const pluginIds = new Set<string>();
   const providerIds = new Set<string>();
   for (const [index, plugin] of plugins.entries()) {
-    const expected = paths[index]?.split("/")[1];
+    const expected = basename(dirname(paths[index] ?? ""));
     if (!plugin.id || plugin.id !== expected) throw new Error(`Provider plugin id ${plugin.id || "<empty>"} must match directory ${expected}`);
     if (pluginIds.has(plugin.id)) throw new Error(`Duplicate provider plugin id: ${plugin.id}`);
     pluginIds.add(plugin.id);
@@ -122,30 +135,7 @@ async function loadSandbox(root: string, config: OpenBotConfig): Promise<LoadedR
     });
   }
   const bootstrap = await optionalText(root, config.sandbox.bootstrap);
-  const declared = parseSecretManifest(await optionalText(root, config.sandbox.secretsManifest));
-  const localValues = parseLocalSecrets(await optionalText(root, "sandbox/secrets.yaml"));
-  const secrets: Record<string, string> = {};
-  for (const name of declared) {
-    const value = process.env[`OPENBOT_SANDBOX_SECRET_${name}`] ?? localValues[name];
-    if (value !== undefined) secrets[name] = value;
-  }
-  return { assets, ...(bootstrap ? { bootstrap } : {}), secrets };
-}
-
-function parseSecretManifest(content: string | undefined): string[] {
-  if (!content) return [];
-  const value = parseYaml(content) as { secrets?: unknown };
-  if (!value?.secrets || typeof value.secrets !== "object" || Array.isArray(value.secrets)) return [];
-  const names = Object.keys(value.secrets);
-  for (const name of names) if (!/^[A-Z][A-Z0-9_]{0,126}$/.test(name)) throw new Error(`Invalid sandbox secret name: ${name}`);
-  return names.sort();
-}
-
-function parseLocalSecrets(content: string | undefined): Record<string, string> {
-  if (!content) return {};
-  const value = parseYaml(content) as { secrets?: unknown };
-  if (!value?.secrets || typeof value.secrets !== "object" || Array.isArray(value.secrets)) return {};
-  return Object.fromEntries(Object.entries(value.secrets).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+  return { assets, ...(bootstrap ? { bootstrap } : {}) };
 }
 
 async function optionalText(root: string, path: string): Promise<string | undefined> {

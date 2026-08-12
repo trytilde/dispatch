@@ -9,7 +9,6 @@ const migrations = [
   `CREATE TABLE IF NOT EXISTS agent_registrations (source_id TEXT PRIMARY KEY NOT NULL, provider_id TEXT NOT NULL, remote_id TEXT, source_digest TEXT NOT NULL, status TEXT NOT NULL, endpoint_url TEXT NOT NULL, last_error TEXT, updated_at INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS skill_registrations (name TEXT PRIMARY KEY NOT NULL, provider_id TEXT NOT NULL, remote_id TEXT, registry_id TEXT, digest TEXT NOT NULL, status TEXT NOT NULL, last_error TEXT, updated_at INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS lifecycle_leases (id TEXT PRIMARY KEY NOT NULL, holder TEXT NOT NULL, expires_at INTEGER NOT NULL)`,
-  `CREATE TABLE IF NOT EXISTS agent_publications (id TEXT PRIMARY KEY NOT NULL, agent_id TEXT NOT NULL, status TEXT NOT NULL, branch TEXT NOT NULL, pull_request_url TEXT, commit_sha TEXT, last_error TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
 ];
 
 const legacyTables = ["chat_sessions", "sandboxes", "agents", "encrypted_secrets", "provider_instances"];

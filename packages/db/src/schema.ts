@@ -43,18 +43,6 @@ export const lifecycleLeases = sqliteTable("lifecycle_leases", {
   expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 });
 
-export const agentPublications = sqliteTable("agent_publications", {
-  id: text("id").primaryKey(),
-  agentId: text("agent_id").notNull(),
-  status: text("status").notNull(),
-  branch: text("branch").notNull(),
-  pullRequestUrl: text("pull_request_url"),
-  commitSha: text("commit_sha"),
-  lastError: text("last_error"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
-});
-
 export const deploymentSteps = sqliteTable("deployment_steps", {
   id: text("id").primaryKey(),
   status: text("status").notNull(),

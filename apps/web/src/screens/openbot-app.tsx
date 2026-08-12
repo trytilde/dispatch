@@ -210,9 +210,8 @@ function Onboarding({ status, onChanged }: { status: InstallationStatus; onChang
     setBusy(true);
     try {
       if (item.id === "create") {
-        const agent = primaryAgent
-          ? await agentClient.updateAgent({ id: primaryAgent.id, displayName: name })
-          : await agentClient.createAgent({ displayName: name });
+        if (!primaryAgent) throw new Error("The configured Tilde agent is not available");
+        const agent = await agentClient.updateAgent({ id: primaryAgent.id, displayName: name });
         setPrimaryAgent(agent);
       }
       if (last) {

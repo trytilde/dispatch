@@ -34,17 +34,21 @@ Deployment validates and builds the fork, provisions or reuses its resources, de
 
 ```text
 openbot.config.ts       provider selection and repository paths
-agents/<id>.ts          one code-owned agent and endpoint per file
+configuration/agents/<id>.ts
+                        one Vercel AI SDK-compatible agent endpoint per file
 configuration/skills/<name>/SKILL.md
                         runtime skills registered by the selected skill provider
-providers/<id>/         fork-owned provider plugin implementations
-sandbox/assets/         files copied to /workspace on every sandbox start
-sandbox/bootstrap.sh    idempotent script run after those files are copied
+configuration/providers/<id>/
+                        fork-owned provider plugin implementations
+configuration/sandbox/assets/
+                        files copied to /workspace on every sandbox start
+configuration/sandbox/bootstrap.sh
+                        optional idempotent script run after files are copied
 ```
 
-Agent modules own their prompts and execution logic. They are served at `/api/agents/<id>`. Skills are reconciled into the configured Tilde registry. Removed agents remain orphaned by default; `pnpm openbot sync --prune --yes` explicitly disables them remotely.
+Agent route modules export `POST` using Tilde `chatKitEndpoint` and the Vercel AI SDK. OpenBot serves each module at `/api/agents/<id>`. Skills are reconciled into the configured Tilde registry. Removed agents remain orphaned by default; `pnpm openbot sync --prune --yes` explicitly disables them remotely.
 
-Only sandbox-specific secrets declared in `sandbox/secrets.example.yaml` are injected. Set them as `OPENBOT_SANDBOX_SECRET_<NAME>` or, for local development only, in ignored `sandbox/secrets.yaml`. Provider and control-plane credentials are never implicitly copied into a sandbox. SOPS portability is intentionally deferred from this first version.
+OpenBot does not load sandbox secrets from repository configuration or copy control-plane credentials into a sandbox.
 
 ## Common commands
 
@@ -53,8 +57,6 @@ Run `pnpm openbot` in a terminal for an interactive launcher with arrow-key navi
 ```bash
 pnpm openbot check
 pnpm openbot doctor
-pnpm openbot agent create --id researcher --name "Researcher"
-pnpm openbot agent create --id researcher --name "Researcher" --publish
 pnpm openbot providers list
 pnpm openbot sync
 pnpm openbot status
@@ -62,7 +64,7 @@ pnpm openbot status
 
 Long-running operations show live progress and finish with compact status tables. Add `--json` to `check`, `doctor`, `providers list`, `sync`, or `status` when another tool needs stable machine-readable output.
 
-`agent create` writes a local module by default. With `--publish`, OpenBot creates a branch and pull request through the configured source-control provider. A human merges it; the normal deployment then federates and registers the new endpoint. Runtime code never commits directly to the deployment branch.
+Create and edit agent endpoint modules directly under `configuration/agents/`. OpenBot discovers committed modules during the build and reconciles them during deployment; it does not generate TypeScript or publish source-code changes at runtime.
 
 See [configuration](docs/configuration.md), [agents](docs/agents.md), [provider plugins](docs/providers.md), [sandbox setup](docs/sandbox.md), and [fork maintenance](docs/forks.md). Contributor agents can use the repository skills in `.agents/skills/` for running, customizing, updating, and contributing OpenBot.
 

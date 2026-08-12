@@ -10,7 +10,7 @@ export function parsePort(value: string | undefined): number {
   return port;
 }
 
-export async function runLocalServer(): Promise<void> {
+export async function runDevelopmentServer(): Promise<void> {
   const environment = await loadLocalEnvironment();
   const port = parsePort(environment.OPENBOT_PORT);
   await new Promise<void>((resolvePromise, reject) => {

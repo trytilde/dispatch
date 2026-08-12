@@ -1,4 +1,5 @@
 import type { LanguageModelV3 } from "@ai-sdk/provider";
+import type { DeployableProvider } from "@openbot/runtime-provider-core";
 
 export interface InferenceModelPromptContext {
   agentId: string;
@@ -7,7 +8,7 @@ export interface InferenceModelPromptContext {
 }
 
 /** Internal inference boundary used by agents and application-owned model calls. */
-export interface InferenceModelProvider {
+export interface InferenceModelProvider extends DeployableProvider {
   model(name: string): LanguageModelV3;
   injectPromptPart?(
     context: InferenceModelPromptContext,

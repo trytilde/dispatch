@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deploymentUrl, parseOptions, redact } from "./deploy.js";
+import { parseOptions, redact } from "./deploy.js";
 
 describe("deploy-prod", () => {
   it("parses the minimal deployment options", () => {
@@ -12,7 +12,4 @@ describe("deploy-prod", () => {
     expect(redact("VERCEL_TOKEN=secret-value", ["secret-value"])).toBe("VERCEL_TOKEN=[REDACTED]");
   });
 
-  it("extracts the final Vercel deployment URL", () => {
-    expect(deploymentUrl("Preview: https://preview.example\nProduction: https://openbot.example\n")).toBe("https://openbot.example");
-  });
 });

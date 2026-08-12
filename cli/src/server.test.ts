@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parsePort } from "./local.js";
+import { parsePort } from "./server.js";
 
-describe("local OpenBot server", () => {
+describe("OpenBot development server", () => {
   it("uses the default control port", () => expect(parsePort(undefined)).toBe(4100));
   it("accepts a valid configured port", () => expect(parsePort("5123")).toBe(5123));
   it("rejects invalid ports", () => {

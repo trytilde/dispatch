@@ -6,7 +6,7 @@ import React, { type ReactElement } from "react";
 import { render } from "ink";
 import { runProductionDeploy, redact } from "./deploy.js";
 import { runDevelopment } from "./dev.js";
-import { runLocalServer } from "./local.js";
+import { runDevelopmentServer } from "./server.js";
 import { repositoryRoot } from "./paths.js";
 import { CommandMenu, Failure, Help, Success } from "./ui.js";
 
@@ -37,10 +37,9 @@ async function main(): Promise<void> {
     if (process.stdout.isTTY) show(<Success title="Starting OpenBot development" />);
     return runDevelopment();
   }
-  if (invocation.command === "local" || invocation.command === "_serve") {
+  if (invocation.command === "_serve") {
     rejectArguments(invocation.command, invocation.rest);
-    if (invocation.command === "local" && process.stdout.isTTY) show(<Success title="Starting OpenBot locally" />);
-    return runLocalServer();
+    return runDevelopmentServer();
   }
   if (invocation.command === "deploy") return runProductionDeploy(invocation.rest);
   if (invocation.command === "check") return delegate("check", invocation.rest);

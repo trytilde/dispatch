@@ -8,13 +8,15 @@
     "deploy": "tsx src/index.tsx deploy",
     "dev": "tsx src/index.tsx dev",
     "lint": "tsc --noEmit",
-    "local": "tsx src/index.tsx local",
     "start": "tsx src/index.tsx",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hono/node-server": "1.19.1",
+    "@openbot/config": "workspace:*",
+    "@openbot/runtime-provider": "workspace:*",
+    "@openbot/runtime-provider-core": "workspace:*",
     "@openbot/server": "workspace:*",
     "arg": "5.0.2",
     "dotenv": "17.2.1",

@@ -20,7 +20,7 @@ Read the smallest relevant set:
 - `README.md`: product, setup, runtime, deployment, and ownership boundaries.
 - `AGENTS.md`: coding and validation rules.
 - `packages/contracts/proto/openbot/v1/openbot.proto`: public control contract.
-- `packages/provider-sdk/src/index.ts`: provider seams.
+- `packages/*-provider-core/src/index.ts`: domain provider seams.
 - `packages/db/src/schema.ts`: persisted OpenBot control state.
 - `tilde.state.yaml`: portable Tilde resources.
 - `PROVENANCE.md`: copied-source and clean-room constraints.

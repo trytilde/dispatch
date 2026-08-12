@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/vercel.ts"],
+  entry: ["src/app.ts"],
   format: ["esm"],
   platform: "node",
   target: "node24",

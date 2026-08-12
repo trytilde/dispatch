@@ -1,0 +1,26 @@
+{
+  "name": "@openbot/box-host",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx watch src/index.ts",
+    "lint": "tsc --noEmit",
+    "start": "tsx src/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@connectrpc/connect": "2.1.2",
+    "@connectrpc/connect-node": "2.1.2",
+    "@openbot/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.3.0",
+    "tsx": "4.20.4",
+    "tsup": "8.5.1",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}

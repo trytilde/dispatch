@@ -1,0 +1,42 @@
+{
+  "name": "@openbot/desktop",
+  "version": "0.1.0",
+  "description": "OpenBot desktop client",
+  "author": { "name": "OpenBot contributors", "email": "opensource@trytilde.ai" },
+  "repository": "https://github.com/trytilde/openbot",
+  "license": "MIT",
+  "desktopName": "OpenBot.desktop",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "tsup src/main.ts src/preload.ts --format cjs --out-dir dist --clean",
+    "dev": "pnpm build && electron .",
+    "lint": "tsc --noEmit",
+    "package": "pnpm --filter @openbot/web build && pnpm build && node scripts/package-current.mjs",
+    "package:linux": "pnpm --filter @openbot/web build && pnpm build && electron-builder --linux",
+    "package:mac": "pnpm --filter @openbot/web build && pnpm build && electron-builder --mac",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "24.3.0",
+    "electron": "43.4.0",
+    "electron-builder": "26.15.3",
+    "tsup": "8.5.1",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  },
+  "build": {
+    "appId": "dev.openbot.desktop",
+    "productName": "OpenBot",
+    "executableName": "openbot",
+    "icon": "build/icon.png",
+    "directories": { "output": "out" },
+    "files": ["dist/**", "package.json"],
+    "extraResources": [{ "from": "../web/dist", "to": "web" }],
+    "mac": { "target": ["dmg", "zip"], "category": "public.app-category.productivity" },
+    "linux": { "target": ["AppImage", "deb"], "category": "Development", "syncDesktopName": true },
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+  }
+}

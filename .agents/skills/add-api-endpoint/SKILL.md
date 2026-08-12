@@ -1,0 +1,50 @@
+---
+name: add-api-endpoint
+description: Add or modify an OpenBot Hono HTTP route or ConnectRPC method while preserving authentication, provider boundaries, Web-standard request handling, generated contracts, and focused tests.
+metadata:
+  author: openbot
+  version: "1.0.0"
+  argument-hint: <surface> <change-summary>
+---
+
+# Add Or Modify An API Endpoint
+
+OpenBot uses ConnectRPC for authenticated control operations and Hono for protocol-native HTTP routes. Keep handlers thin and portable across the local Node server and Vercel Functions.
+
+## Process
+
+1. Choose the surface:
+   - ConnectRPC: control-plane methods used by OpenBot clients.
+   - Hono: setup unlock, health, ChatKit compatibility, or signed Tilde webhooks/tools.
+2. For ConnectRPC, edit `packages/contracts/proto/openbot/v1/openbot.proto`, run `pnpm contracts:generate`, then implement the method in `apps/server/src/services.ts`.
+3. For Hono, edit `apps/server/src/http.ts`; update `apps/server/src/fetch-handler.ts` only when dispatch behavior changes.
+4. Validate input at the edge. Use protobuf types for Connect and Zod or narrow parsing for untyped HTTP payloads.
+5. Apply the existing authorization mechanism before business work.
+6. Delegate external behavior to `packages/provider-sdk` interfaces and `packages/providers` adapters. Keep route code provider-neutral.
+7. Preserve `Request.signal` through `ProviderCallContext`.
+8. Add focused tests beside the server surface. Test status/code, response shape, authorization, and the owning provider call.
+
+## Authentication And Scope
+
+- Connect services use the setup-session guard in `apps/server/src/services.ts`.
+- `/api/chat` requires a valid setup session.
+- `/api/tilde/chatkit` and `/api/tilde/tools/sandbox` require Tilde webhook verification and raw request bodies.
+- `/healthz` is public and must remain side-effect free.
+- Treat Tilde org/team IDs as deployment configuration. Do not accept tenant overrides on signed runtime callbacks.
+
+## Collections
+
+Add pagination only when the backing provider supports a stable cursor contract. Put page size and continuation tokens in protobuf messages or explicit HTTP schemas; do not leak a provider-specific response shape to clients.
+
+## Checklist
+
+- [ ] Correct Hono or ConnectRPC surface chosen.
+- [ ] Handler remains thin and Web-standard.
+- [ ] Authentication or signature verification preserved.
+- [ ] Provider work stays behind `provider-sdk`.
+- [ ] Proto regenerated when changed; generated files not hand-edited.
+- [ ] Local and Vercel routing still agree with `vercel.json`.
+- [ ] Focused server/provider tests pass.
+- [ ] `pnpm check` and `pnpm build` pass.
+- [ ] Browser flow tested when user-visible behavior changed.
+

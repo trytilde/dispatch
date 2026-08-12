@@ -1,0 +1,250 @@
+import { Hono } from "hono";
+import { secureHeaders } from "hono/secure-headers";
+import { createClient } from "@trytilde/harness-sdk";
+import {
+  chatKitEndpoint,
+  convertToAiSdkMessages,
+  signBody,
+  TILDE_WEBHOOK_ID_HEADER,
+  TILDE_WEBHOOK_SIGNATURE_HEADER,
+  TILDE_WEBHOOK_TIMESTAMP_HEADER,
+  verifyWebhookRequest,
+  WebhookVerificationError,
+} from "@trytilde/harness-sdk-vercel-ai-node";
+import { timingSafeEqual } from "node:crypto";
+import { consumeStream, convertToModelMessages, stepCountIs, streamText } from "ai";
+import { z } from "zod";
+import { defaultSandboxProvider, OpenAiProvider, TildeChatProvider } from "@openbot/providers";
+import { hasValidSession, issueSessionCookie, matchesSetupCode } from "./crypto.js";
+import { publicOrigin, setupCode } from "./config.js";
+import { environmentNames, environmentProvider, getEnvironment, providerContext, tildeEnvironment } from "./environment.js";
+import { ensureInstallation } from "./store.js";
+import { createAgentRuntimeContext } from "./agent-runtime.js";
+
+export const httpApp = new Hono();
+
+httpApp.use("*", secureHeaders());
+
+httpApp.get("/healthz", (context) => context.json({ ok: true, service: "openbot", version: "0.1.0" }));
+
+httpApp.post("/api/setup/unlock", async (context) => {
+  const body: { setupCode?: string } = await context.req.json<{ setupCode?: string }>().catch(() => ({}));
+  if (!body.setupCode || !matchesSetupCode(body.setupCode, setupCode())) {
+    return context.json({ error: "Invalid setup code" }, 401);
+  }
+  await ensureInstallation(publicOrigin(context.req.raw));
+  context.header("Set-Cookie", issueSessionCookie(setupCode(), new URL(context.req.url).protocol === "https:"));
+  return context.json({ ok: true });
+});
+
+httpApp.use("/api/chat", async (context, next) => {
+  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode())) return context.json({ error: "Setup session required" }, 401);
+  await next();
+});
+
+httpApp.post("/api/chat", async (context) => {
+  const body = await context.req.json<{ agentId?: string; sessionId?: string; text?: string; messages?: unknown[] }>();
+  const tilde = await tildeEnvironment();
+  if (!tilde) return context.json({ error: "Tilde is not configured" }, 409);
+  const agentId = body.agentId || tilde.agentId;
+  if (!agentId) return context.json({ error: "A Tilde agent is required" }, 400);
+  const text = body.text?.trim() || lastUserText(body.messages);
+  if (!text) return context.json({ error: "A user message is required" }, 400);
+  const provider = new TildeChatProvider(tilde);
+  const session = body.sessionId
+    ? { id: body.sessionId }
+    : await provider.createSession(agentId, undefined, providerContext(undefined, context.req.raw.signal));
+  const messages = await provider.sendMessage(agentId, session.id, text, providerContext(undefined, context.req.raw.signal));
+  return context.json({
+    sessionId: session.id,
+    messages: messages.map((message) => ({ ...message, createdAt: message.createdAt.toISOString() })),
+  });
+});
+
+httpApp.all("/api/tilde/chatkit", async (context) => {
+  if (context.req.method !== "POST") return context.json({ error: "Method not allowed" }, 405);
+  const base = await tildeSecrets();
+  if (!base) return context.json({ error: "Tilde is not configured" }, 503);
+  const secrets = await matchingTildeAgentCredentials(context.req.raw, base);
+  if (!secrets) return context.json({ error: "Invalid webhook signature" }, 401);
+  const client = createClient({ apiKey: secrets.apiKey, orgId: secrets.orgId, teamId: secrets.teamId, baseUrl: process.env.TILDE_BASE_URL });
+  const endpoint = chatKitEndpoint({
+    client,
+    webhookSigningKey: secrets.webhookSigningKey,
+    async handler(request, endpointContext) {
+      const history = await endpointContext.session.history();
+      const messages = await convertToAiSdkMessages({ messages: [...history.items, ...endpointContext.messages] });
+      const openaiApiKey = await getEnvironment(environmentNames.openaiApiKey);
+      if (!openaiApiKey) return Response.json({ error: "OpenAI is not configured" }, { status: 503 });
+      const model = (await getEnvironment(environmentNames.openaiModel)) ?? "gpt-5.4";
+      const aiProvider = new OpenAiProvider();
+      const runtime = await createAgentRuntimeContext({
+        agentId: secrets.agentId ?? "openbot-gateway",
+        displayName: "OpenBot",
+        sessionId: endpointContext.sessionId,
+        ...(endpointContext.userId ? { userId: endpointContext.userId } : {}),
+        client,
+        skills: endpointContext.skills,
+        apiKey: secrets.apiKey,
+        orgId: secrets.orgId,
+        aiProvider,
+        signal: request.signal,
+      });
+      try {
+        const result = streamText({
+          model: aiProvider.languageModel(model, { mode: "api_key", apiKey: openaiApiKey }),
+          system: runtime.system,
+          messages: await convertToModelMessages(messages),
+          tools: runtime.tools,
+          stopWhen: stepCountIs(12),
+          abortSignal: request.signal,
+          onFinish: runtime.close,
+          onAbort: runtime.close,
+          onError: runtime.close,
+        });
+        return result.toUIMessageStreamResponse({ consumeSseStream: consumeStream });
+      } catch (error) {
+        await runtime.close();
+        throw error;
+      }
+    },
+  });
+  return endpoint(context.req.raw);
+});
+
+httpApp.all("/api/tilde/tools/sandbox", async (context) => {
+  const secrets = await tildeSecrets();
+  if (!secrets) return context.json({ error: "Tilde is not configured" }, 503);
+  return sandboxToolEndpoint(context.req.raw, secrets.webhookSigningKey);
+});
+
+const sandboxExecInput = z.object({
+  command: z.string().min(1),
+  arguments: z.array(z.string()).default([]),
+});
+
+export async function sandboxToolEndpoint(request: Request, webhookSigningKey: string): Promise<Response> {
+  if (request.method === "GET") {
+    const verificationError = verifySignedDiscovery(request, webhookSigningKey);
+    if (verificationError) return Response.json({ type: "error", message: verificationError }, { status: 401 });
+    return Response.json({
+      provider: {
+        name: "OpenBot sandbox",
+        description: "Execute bounded commands in the active OpenBot sandbox",
+        version: "1.0.0",
+      },
+      invoke_url: new URL("/api/tilde/tools/sandbox", publicOrigin(request)).toString(),
+      tools: [{
+        type_id: "sandbox_exec",
+        name: "Run sandbox command",
+        description: "Run a command in this OpenBot installation's active computer.",
+        input_schema: z.toJSONSchema(sandboxExecInput, { target: "draft-7" }),
+        output_schema: z.toJSONSchema(z.object({ exitCode: z.number().int(), stdout: z.string(), stderr: z.string() }), { target: "draft-7" }),
+      }],
+    });
+  }
+
+  let verified: Awaited<ReturnType<typeof verifyWebhookRequest>>;
+  try {
+    verified = await verifyWebhookRequest(request, { webhookSigningKey });
+  } catch (error) {
+    if (error instanceof WebhookVerificationError) {
+      return Response.json({ type: "error", message: error.message }, { status: 401 });
+    }
+    throw error;
+  }
+
+  if (request.method !== "POST") return Response.json({ error: "Method not allowed" }, { status: 405 });
+  const invocation = verified.json;
+  if (!isRecord(invocation) || invocation.tool_source_type_id !== "sandbox_exec") {
+    return Response.json({ type: "error", message: "Unknown or invalid tool invocation" }, { status: 400 });
+  }
+  const input = await sandboxExecInput.safeParseAsync(invocation.params);
+  if (!input.success) return Response.json({ type: "error", message: z.prettifyError(input.error) });
+  try {
+    const installation = await ensureInstallation();
+    if (!installation.sandboxInstanceId) {
+      return Response.json({ type: "error", message: "The OpenBot computer has not been started" });
+    }
+    const output = await defaultSandboxProvider().exec(
+      installation.sandboxInstanceId,
+      input.data.command,
+      input.data.arguments,
+      { requestId: crypto.randomUUID(), signal: request.signal },
+    );
+    return Response.json({ ...output, type: "success" });
+  } catch (error) {
+    return Response.json({ type: "error", message: error instanceof Error ? error.message : "Tool execution failed" });
+  }
+}
+
+function verifySignedDiscovery(request: Request, webhookSigningKey: string): string | undefined {
+  const webhookId = request.headers.get(TILDE_WEBHOOK_ID_HEADER);
+  const timestampValue = request.headers.get(TILDE_WEBHOOK_TIMESTAMP_HEADER);
+  const signature = request.headers.get(TILDE_WEBHOOK_SIGNATURE_HEADER);
+  if (!webhookId) return `Missing ${TILDE_WEBHOOK_ID_HEADER} header`;
+  if (!timestampValue) return `Missing ${TILDE_WEBHOOK_TIMESTAMP_HEADER} header`;
+  if (!signature) return `Missing ${TILDE_WEBHOOK_SIGNATURE_HEADER} header`;
+  if (!/^-?\d+$/.test(timestampValue)) return "Invalid webhook timestamp";
+  const timestamp = Number(timestampValue);
+  if (!Number.isSafeInteger(timestamp)) return "Invalid webhook timestamp";
+  if (Math.abs(Math.floor(Date.now() / 1000) - timestamp) > 300) return "Webhook timestamp is outside tolerance";
+  const expected = signBody(webhookSigningKey, timestamp, new Uint8Array());
+  const receivedBytes = Buffer.from(signature);
+  const expectedBytes = Buffer.from(expected);
+  if (receivedBytes.length !== expectedBytes.length || !timingSafeEqual(receivedBytes, expectedBytes)) {
+    return "Invalid webhook signature";
+  }
+  return undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+async function tildeSecrets() {
+  return tildeEnvironment();
+}
+
+async function matchingTildeAgentCredentials(
+  request: Request,
+  base: NonNullable<Awaited<ReturnType<typeof tildeEnvironment>>>,
+) {
+  const candidates = [{ apiKey: base.apiKey, webhookSigningKey: base.webhookSigningKey }];
+  const provider = environmentProvider();
+  const entries = await provider.list("OPENBOT_TILDE_AGENT_", providerContext());
+  const signingEntries = entries.filter((entry) => entry.name.endsWith("_WEBHOOK_SIGNING_KEY"));
+  for (const signingEntry of signingEntries) {
+    const prefix = signingEntry.name.slice(0, -"_WEBHOOK_SIGNING_KEY".length);
+    const [apiKey, webhookSigningKey] = await Promise.all([
+      provider.get(`${prefix}_API_KEY`, providerContext()),
+      provider.get(signingEntry.name, providerContext()),
+    ]);
+    if (apiKey && webhookSigningKey) candidates.push({ apiKey, webhookSigningKey });
+  }
+  for (const candidate of candidates) {
+    try {
+      await verifyWebhookRequest(request.clone(), { webhookSigningKey: candidate.webhookSigningKey });
+      return { ...base, ...candidate };
+    } catch (error) {
+      if (!(error instanceof WebhookVerificationError)) throw error;
+    }
+  }
+  return undefined;
+}
+
+function lastUserText(messages: unknown[] | undefined): string | undefined {
+  if (!Array.isArray(messages)) return undefined;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (!isRecord(message) || message.role !== "user") continue;
+    if (typeof message.content === "string") return message.content.trim() || undefined;
+    if (!Array.isArray(message.parts)) continue;
+    const value = message.parts
+      .map((part) => isRecord(part) && typeof part.text === "string" ? part.text : "")
+      .join("")
+      .trim();
+    if (value) return value;
+  }
+  return undefined;
+}

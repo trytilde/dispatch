@@ -1,0 +1,16 @@
+.vercel
+.env*
+node_modules
+.turbo
+.cache
+.data
+.openbot-deploy
+plan
+coverage
+playwright-report
+test-results
+apps/desktop/out
+apps/desktop/release
+apps/*/dist
+packages/contracts/src/gen
+*.log

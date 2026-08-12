@@ -169,8 +169,6 @@ export interface SkillsProviderModelHooks {
 }
 
 export interface SkillsProvider extends SkillsProviderModelHooks, DeployableProvider {
-  readonly descriptor: SkillsProviderDescriptor;
-  health(context: SkillsProviderCallContext): Promise<{ healthy: boolean; message?: string }>;
   listSkills(request: ListSkillsRequest, context: SkillsProviderCallContext): Promise<Page<Skill>>;
   getSkill(id: string, context: SkillsProviderCallContext): Promise<Skill>;
   createSkill(request: CreateSkillRequest, context: SkillsProviderCallContext): Promise<Skill>;

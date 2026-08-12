@@ -157,8 +157,6 @@ export interface PublishedComputerImage extends BuiltComputerImage {
 }
 
 export interface ComputerProvider extends DeployableProvider {
-  readonly descriptor: ComputerProviderDescriptor;
-  health(context: ComputerCallContext): Promise<{ healthy: boolean; message?: string }>;
   injectPromptPart(context: ComputerPromptContext, callContext: ComputerCallContext): ComputerPromptPart | undefined | Promise<ComputerPromptPart | undefined>;
   registerTools(context: RegisterComputerToolsContext): readonly RegisteredComputerTool[];
 

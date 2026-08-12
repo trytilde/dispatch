@@ -32,6 +32,12 @@ package shape is:
 - `agent-provider-core` and `agent-provider`
 - `inference-model-provider-core` and `inference-model-provider`
 
+Domain interfaces contain only the operations required at that application
+boundary. They do not require a universal descriptor, health check, or
+credential verification method. Provider-specific adapters may retain such
+helpers internally, while configuration and composition own provider selection
+and startup validation.
+
 The first migration slice adds the control proto plus the agent core and Tilde
 implementation. `AgentProvider` owns agent registration and lifecycle as well
 as Mission Control session/message operations. The control server translates

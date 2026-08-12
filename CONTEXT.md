@@ -67,3 +67,29 @@ _Avoid_: API key, password
 - "workspace" can mean the **OpenBot Workspace**, a Tilde team, or the computer filesystem; use the explicit term.
 - "agent" can mean a **Tilde Agent** or the software implementing its behavior; use **Tilde Agent** for the registered runtime resource.
 - "state" can mean **Control State**, **Portable Tilde State**, or Tilde-owned runtime data; name the owner and kind.
+
+## Follow-up markers
+
+Known, intentionally deferred work must be written as a standalone block using
+the exact tags below. PR preparation and merged-PR review should search for
+these blocks rather than relying on an unstructured TODO comment.
+
+```text
+<FOLLOW UP>
+Owner: <package or subsystem>
+Trigger: <the change that makes this work actionable>
+Work: <specific remaining behavior and its acceptance proof>
+</FOLLOW UP>
+```
+
+<FOLLOW UP>
+Owner: control service and web workspace
+Trigger: after active worktrees no longer depend on the legacy SandboxProvider and SandboxService
+Work: adopt computer-provider-core for the singleton lifecycle, proxy browser VNC through ComputerService.TunnelVnc, and decide whether owner file uploads are agent-mediated or a capability-protected computer-service control route; prove the chosen route without exposing provider URLs or credentials to the renderer
+</FOLLOW UP>
+
+<FOLLOW UP>
+Owner: production deployment orchestrator
+Trigger: when computer-providers replaces the legacy production sandbox adapter
+Work: build and publish the OpenBot computer image with ensurePublishedComputerImage, persist its source digest and immutable image reference in redacted deployment state, and prove a second unchanged deployment skips both buildImage and publishImage
+</FOLLOW UP>

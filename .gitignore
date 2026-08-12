@@ -12,6 +12,8 @@ test-results/
 !.env.example
 .vercel/
 .openbot-deploy/
+.openbot/
+sandbox/secrets.yaml
 *.log
 apps/web/src/routeTree.gen.ts
 packages/contracts/src/gen/
@@ -19,3 +21,4 @@ apps/desktop/out/
 apps/desktop/release/
 .vercel
 .env*
+!.env.example

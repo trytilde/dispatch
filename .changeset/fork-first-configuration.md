@@ -4,8 +4,6 @@
 "@openbot/contracts": minor
 "@openbot/db": minor
 "@openbot/desktop": minor
-"@openbot/provider-sdk": minor
-"@openbot/providers": minor
 "@openbot/server": minor
 "@openbot/ui": minor
 "@openbot/web": minor

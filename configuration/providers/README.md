@@ -1,9 +1,7 @@
 # Custom providers
 
-Add fork-owned provider plugins at `configuration/providers/<id>/index.ts`. Export a plugin
-created with `defineProviderPlugin` from `@openbot/provider-sdk`, then select
-its registered provider ID in `openbot.config.ts`.
+This directory is reserved for fork-owned provider plugins. Runtime discovery
+is intentionally unwired while the UX and control API are designed.
 
 Provider modules are trusted application code. Keep credentials in the
-configured environment provider and retrieve them by name from the factory
-context; never commit values here.
+configured environment provider; never commit values here.

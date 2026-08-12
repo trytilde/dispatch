@@ -12,26 +12,25 @@ OpenBot is a TypeScript monorepo for a local or Vercel-hosted agent workspace. I
 
 ## Toolchain and commands
 
-- Vite+ 0.2, Node.js 24, pnpm 10, TypeScript ESM, strict mode.
-- Use the repository-pinned Vite+ toolchain through `vp`; it manages Node.js, pnpm, Vite, Vitest, Oxlint, and Oxfmt.
+- Node.js 24, pnpm 10, TypeScript ESM, strict mode.
+- Use repository-pinned tools through `pnpm`; do not install global substitutes.
 - Do not hand-edit generated files under `packages/contracts/src/gen/`, `packages/control-service-proto/src/gen/`, or `apps/web/src/routeTree.gen.ts`.
 
 ```bash
-vp install
-vp run dev
-vp run check
-vp run build
-vp run test
-vp run test:e2e
-vp run --filter @openbot/desktop package
+pnpm install
+pnpm dev
+pnpm check
+pnpm build
+pnpm test
+pnpm test:e2e
+pnpm --filter @openbot/desktop package
 ```
 
 Run focused package tests while iterating:
 
 ```bash
-vp run --filter @openbot/server test
-vp run --filter @openbot/providers test
-vp run --filter @openbot/db test
+pnpm --filter @openbot/server test
+pnpm --filter @openbot/db test
 ```
 
 ## Repository map
@@ -43,7 +42,7 @@ vp run --filter @openbot/db test
 - `packages/control-service-proto`: browser/Electron control protobuf and generated Connect types.
 - `packages/agent-provider-core`: internal agent, session, and message interfaces.
 - `packages/agent-provider`: Tilde implementation of the agent provider interface.
-- `packages/contracts`, `packages/provider-sdk`, `packages/providers`: legacy cross-domain packages retained during the domain-package migration.
+- `packages/contracts`: legacy protocol package retained while the new UX and control API are designed.
 - `configuration`: fork-owned Vercel AI SDK agent endpoints, runtime skills, sandbox seed, and provider plugins.
 - `packages/db`: Drizzle over local SQLite or remote libSQL/Turso.
 - `packages/ui`: shared React UI and vendored Beautiful UI components.
@@ -58,7 +57,7 @@ vp run --filter @openbot/db test
 
 - Prefer ConnectRPC for authenticated control-plane operations.
 - Keep Hono routes for protocol-native HTTP surfaces: setup unlock, ChatKit compatibility, signed Tilde callbacks/tools, and health.
-- Edit `packages/control-service-proto/proto/openbot/control/v1/control.proto` for control RPCs, then run `vp run contracts:generate`. The legacy contracts package continues to own the box/computer protocol until that domain migrates.
+- Edit `packages/control-service-proto/proto/openbot/control/v1/control.proto` for control RPCs, then run `pnpm contracts:generate`. The legacy contracts package continues to own the box/computer protocol until that domain migrates.
 - Keep handlers thin: validate input, authorize, call the owning provider/store, map to protobuf or HTTP response.
 - Preserve Web-standard `Request`/`Response` behavior so the same server works locally and in Vercel Functions.
 - Preserve raw request bodies and webhook verification on signed Tilde routes.
@@ -78,7 +77,7 @@ vp run --filter @openbot/db test
 - Secrets belong in `EnvProvider`, never database tables.
 - Edit `packages/db/src/schema.ts` and append compatible statements in `packages/db/src/migrations.ts`.
 - Migrations must be idempotent and work against local SQLite and remote libSQL/Turso.
-- Run `vp run --filter @openbot/db test` and `vp run db:migrate` against an isolated database URL when schema changes.
+- Run `pnpm --filter @openbot/db test` and `pnpm db:migrate` against an isolated database URL when schema changes.
 
 ### Web and desktop
 
@@ -104,7 +103,7 @@ vp run --filter @openbot/db test
 
 ## Local development
 
-`vp run dev` loads `.env.local`, creates local control state under `.data/`, generates contracts, builds box-host, migrates the database, and starts server/web plus Electron when available. With Tilde credentials, it runs through `tilde tunnel`.
+`pnpm dev` loads `.env.local`, creates local control state under `.data/`, generates contracts, builds box-host, migrates the database, and starts server/web plus Electron when available. With Tilde credentials, it runs through `tilde tunnel`.
 
 - Default web URL: `http://127.0.0.1:4173`.
 - Default control server: `http://127.0.0.1:4100`.
@@ -124,16 +123,16 @@ vp run --filter @openbot/db test
 Use the narrowest useful check first, then broaden by risk:
 
 1. Focused package test.
-2. `vp run check`.
-3. `vp run build`.
-4. `vp run test:e2e` for changed browser workflows.
+2. `pnpm check`.
+3. `pnpm build`.
+4. `pnpm test:e2e` for changed browser workflows.
 5. Desktop packaging for Electron changes.
 
 For browser-visible changes, verify the real route, console, network, and visible state. Store ad hoc artifacts outside the repository. Do not commit Playwright output, screenshots, videos, traces, HAR files, `.data/`, `.vercel/`, or deployment state.
 
 ## Deployment and delivery
 
-- Production deployment uses `vp run deploy:prod --dry-run --json`, then `vp run deploy:prod --yes` only when explicitly requested.
+- Production deployment uses `pnpm deploy:prod -- --dry-run --json`, then `pnpm deploy:prod -- --yes` only when explicitly requested.
 - The deploy script coordinates Vercel, Turso, Tilde state, encrypted environment, Sandbox snapshot, and smoke tests. Do not replace it with a raw production deploy.
 - Commit, push, open a PR, merge, or deploy only when requested.
 - Before creating or updating a PR, always review the full diff for major architecture, strongly opinionated code, or durable code/product design decisions. If found, pause and prompt the user through an ADR under `docs/adrs/`; do not silently invent or skip the decision.

@@ -43,13 +43,9 @@ _Avoid_: agent state, chat state
 Secret-free declarative configuration used to create or update the Tilde resources required by an **OpenBot Installation**.
 _Avoid_: credentials, runtime state
 
-**Setup Code**:
-The installation-specific secret that unlocks initial OpenBot configuration.
-_Avoid_: API key, password
-
 ## Relationships
 
-- An **Owner** configures an **OpenBot Installation**.
+- An **Owner** opens an **OpenBot Installation** without a pairing-code gate.
 - An **OpenBot Installation** presents one **OpenBot Workspace**.
 - An **OpenBot Installation** connects to one **Tilde Organization** and **Tilde Team**.
 - A **Tilde Team** owns one or more **Tilde Agents** and their **ChatKit Sessions**.
@@ -84,8 +80,8 @@ Work: <specific remaining behavior and its acceptance proof>
 
 <FOLLOW UP>
 Owner: control service and web workspace
-Trigger: after active worktrees no longer depend on the legacy SandboxProvider and SandboxService
-Work: adopt computer-provider-core for the singleton lifecycle, proxy browser VNC through ComputerService.TunnelVnc, and decide whether owner file uploads are agent-mediated or a capability-protected computer-service control route; prove the chosen route without exposing provider URLs or credentials to the renderer
+Trigger: when the owner-facing desktop preview becomes a product requirement
+Work: design the narrow preview-only transport without exposing general computer lifecycle, file, process, input, provider URL, or credential methods to the renderer; prove the chosen route on web and Electron
 </FOLLOW UP>
 
 <FOLLOW UP>

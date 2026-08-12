@@ -1,5 +1,7 @@
 # ADR-0004: Domain-owned provider packages
 
+> Superseded for application wiring by ADR-0005. Domain packages remain, but the UX-first reset does not wire them into the server.
+
 ## In brief
 
 - Split provider contracts by domain. No universal provider SDK.

@@ -1,89 +1,44 @@
 # OpenBot
 
-OpenBot is a fork-first, open-source agent workspace. Fork the repository, describe your agents and integrations as ordinary TypeScript and Markdown, then run the same configuration locally or on Vercel.
+OpenBot is being rebuilt from the user experience downward. The current repository intentionally ships a minimal, healthy application shell before agent, provider, and computer behavior is wired back in.
 
-## Start locally
+## Run locally
 
-Requirements: [Vite+](https://viteplus.dev/guide/) and Linux with KVM or Apple Silicon macOS. Vite+ resolves the repository's pinned Node.js 24 and pnpm 10 toolchain.
-
-```bash
-git clone https://github.com/trytilde/openbot.git
-cd openbot
-vp install
-vp run openbot setup
-vp run openbot doctor
-vp run openbot dev
-```
-
-The default fork includes one agent, Tilde skill registration, an isolated computer, and the web/desktop application. Local state and credentials are ignored by Git. When Tilde credentials are present, the dev tunnel gives repository agents a public signed endpoint and startup reconciliation registers them.
-
-## Deploy your fork
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftrytilde%2Fopenbot&project-name=openbot&repository-name=openbot&env=OPENBOT_SETUP_CODE&envDescription=Use%20at%20least%2032%20random%20bytes.)
-
-The hosted path uses Vercel, Turso Marketplace, and Tilde. Generate `OPENBOT_SETUP_CODE` with `openssl rand -base64 32`, complete the setup UI, then use:
+Requirements: Node.js 24 and pnpm 10.
 
 ```bash
-vp run openbot deploy --dry-run --json
-vp run openbot deploy --yes
+pnpm install
+pnpm dev
 ```
 
-Deployment validates and builds the fork, provisions or reuses its resources, deploys, reconciles committed skills and agents under a database lease, and runs smoke tests. A private mirror works too; configure the same environment values and retain an `upstream` remote for updates.
+- Web: `http://127.0.0.1:4173`
+- API: `http://127.0.0.1:4100`
+- Health: `http://127.0.0.1:4100/healthz`
 
-## The repository is the configuration
+No setup or pairing code is required. The web app is a disconnected UX shell and `control-service-proto` is intentionally empty while the frontend contract is designed.
 
-```text
-openbot.config.ts       provider selection and repository paths
-configuration/agents/<id>.ts
-                        one Vercel AI SDK-compatible agent endpoint per file
-configuration/skills/<name>/SKILL.md
-                        runtime skills registered by the selected skill provider
-configuration/providers/<id>/
-                        fork-owned provider plugin implementations
-configuration/sandbox/assets/
-                        files copied to /workspace on every sandbox start
-configuration/sandbox/bootstrap.sh
-                        optional idempotent script run after files are copied
-```
+## Deploy to Vercel
 
-Agent route modules export `POST` using Tilde `chatKitEndpoint` and the Vercel AI SDK. OpenBot serves each module at `/api/agents/<id>`. Skills are reconciled into the configured Tilde registry. Removed agents remain orphaned by default; `vp run openbot sync --prune --yes` explicitly disables them remotely.
-
-OpenBot does not load sandbox secrets from repository configuration or copy control-plane credentials into a sandbox.
-
-## Common commands
-
-Run `vp run openbot` in a terminal for an interactive launcher with arrow-key navigation. Every command also remains directly callable for scripts and repeatable workflows:
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftrytilde%2Fopenbot&project-name=openbot&repository-name=openbot)
 
 ```bash
-vp run openbot check
-vp run openbot doctor
-vp run openbot providers list
-vp run openbot sync
-vp run openbot status
+pnpm deploy:prod -- --dry-run --json
+pnpm deploy:prod -- --yes
 ```
 
-Long-running operations show live progress and finish with compact status tables. Add `--json` to `check`, `doctor`, `providers list`, `sync`, or `status` when another tool needs stable machine-readable output.
+The production workflow validates and builds the monorepo, deploys the static frontend and bare Hono API, then verifies `/healthz`.
 
-Create and edit agent endpoint modules directly under `configuration/agents/`. OpenBot discovers committed modules during the build and reconciles them during deployment; it does not generate TypeScript or publish source-code changes at runtime.
+## Current application boundary
 
-See [configuration](docs/configuration.md), [agents](docs/agents.md), [provider plugins](docs/providers.md), [sandbox setup](docs/sandbox.md), and [fork maintenance](docs/forks.md). Contributor agents can use the repository skills in `.agents/skills/` for running, customizing, updating, and contributing OpenBot.
-
-## Architecture and validation
-
-The Hono server serves signed agent endpoints and Connect control APIs. Tilde owns remote agents, skill registries, ChatKit sessions, and runtime MCP tools. Turso/libSQL stores reconciliation leases and non-secret control state. Provider secrets stay behind `EnvProvider`; sandbox browser state remains sensitive.
-
-`packages/control-service-proto` defines the browser/Electron control protocol.
-`packages/agent-provider-core` defines the internal agent, session, and message
-boundary, and `packages/agent-provider` contains its Tilde implementation. The
-legacy cross-domain `contracts`, `provider-sdk`, and `providers` packages remain
-available while computer, skills, and tools migrate independently.
+- `apps/web` owns the UX shell and frontend routes.
+- `apps/server` owns a bare Hono server, `/healthz`, and ConnectRPC federation under `/rpc`.
+- `packages/control-service-proto` is the future owner-facing API contract and is intentionally empty.
+- Domain packages remain available but are not wired into the application yet.
 
 ```bash
-vp run check
-vp run build
-vp run test:e2e
+pnpm check
+pnpm build
+pnpm test:e2e
 ```
 
 OpenBot is MIT licensed. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [PROVENANCE.md](PROVENANCE.md).
-
-Changesets records release impact and maintains one version across all workspace packages. Contributors add a `.changeset/*.md` entry for owner-visible behavior or package API changes; GitHub Actions opens the unified version pull request. Packages and changelogs are never versioned independently.

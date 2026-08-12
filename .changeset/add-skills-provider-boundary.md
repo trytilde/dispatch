@@ -9,8 +9,6 @@
 "@openbot/desktop": minor
 "@openbot/inference-model-provider": minor
 "@openbot/inference-model-provider-core": minor
-"@openbot/provider-sdk": minor
-"@openbot/providers": minor
 "@openbot/server": minor
 "@openbot/skills-provider": minor
 "@openbot/skills-provider-core": minor

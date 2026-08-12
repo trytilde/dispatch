@@ -17,8 +17,6 @@
     "@openbot/desktop",
     "@openbot/inference-model-provider",
     "@openbot/inference-model-provider-core",
-    "@openbot/provider-sdk",
-    "@openbot/providers",
     "@openbot/server",
     "@openbot/skills-provider",
     "@openbot/skills-provider-core",

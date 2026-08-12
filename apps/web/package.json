@@ -11,12 +11,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@connectrpc/connect": "2.1.2",
-    "@connectrpc/connect-web": "2.1.2",
-    "@openbot/contracts": "workspace:*",
-    "@openbot/control-service-proto": "workspace:*",
-    "@openbot/ui": "workspace:*",
-    "@tanstack/react-query": "5.101.4",
     "@tanstack/react-router": "1.170.27",
     "react": "19.1.2",
     "react-dom": "19.1.2"

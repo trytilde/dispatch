@@ -133,18 +133,20 @@ websockify --web=/usr/share/novnc --token-plugin TokenFile \
   --token-source /opt/openbot/novnc.tokens 0.0.0.0:6080 \
   >/var/log/openbot-novnc.log 2>&1 &
 
-CUA_RUNNER=(cua-driver serve --socket "$CUA_DRIVER_SOCKET")
 if [[ "$(id -u)" == 0 ]] && getent passwd 1000 >/dev/null 2>&1; then
   CUA_USER="$(id -nu 1000)"
   CUA_GROUP="$(id -gn 1000)"
   CUA_HOME="$(getent passwd 1000 | cut -d: -f6)"
   CUA_RUNTIME_DIR="/tmp/openbot-cua-runtime-1000"
   install -d -o "$CUA_USER" -g "$CUA_GROUP" -m 0700 "$CUA_RUNTIME_DIR"
-  CUA_RUNNER=(runuser -u "$CUA_USER" -- env \
+  runuser -u "$CUA_USER" -- env \
     DISPLAY="$DISPLAY" HOME="$CUA_HOME" XDG_RUNTIME_DIR="$CUA_RUNTIME_DIR" \
-    cua-driver serve --socket "$CUA_DRIVER_SOCKET")
+    cua-driver serve --socket "$CUA_DRIVER_SOCKET" \
+    >/var/log/openbot-cua-driver.log 2>&1 &
+else
+  cua-driver serve --socket "$CUA_DRIVER_SOCKET" \
+    >/var/log/openbot-cua-driver.log 2>&1 &
 fi
-"\${CUA_RUNNER[@]}" >/var/log/openbot-cua-driver.log 2>&1 &
 for _ in $(seq 1 60); do
   if [[ -S "$CUA_DRIVER_SOCKET" ]]; then
     chmod 0666 "$CUA_DRIVER_SOCKET"

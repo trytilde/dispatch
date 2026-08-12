@@ -36,7 +36,8 @@ describe("Fetch dispatcher", () => {
     process.env.OPENBOT_TILDE_ORG_ID = "org-one";
     process.env.OPENBOT_TILDE_TEAM_ID = "team-one";
     vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request) => {
-      expect(String(input)).toContain("/chatkit/mission-control/agents/agent-one/sessions");
+      const url = input instanceof Request ? input.url : String(input);
+      expect(url).toContain("/chatkit/mission-control/agents/agent-one/sessions");
       return Response.json({ items: [{
         id: "session-one",
         title: "First session",

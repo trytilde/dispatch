@@ -281,6 +281,9 @@ importers:
       '@openbot/agent-provider-core':
         specifier: workspace:*
         version: link:../agent-provider-core
+      '@trytilde/harness-sdk':
+        specifier: 0.1.2
+        version: 0.1.2
     devDependencies:
       '@types/node':
         specifier: 24.3.0

@@ -36,12 +36,11 @@ Repository resources always use their canonical file locations:
 
 - agents: `configuration/agents/<id>/`, served below `/api/agents/<id>`
 - global agent instrumentation: `configuration/instrumentation.ts`
-- skills: `configuration/skills/`
+- agent skills: `configuration/agents/<id>/skills/`
 - custom provider source: `configuration/providers/`
-- sandbox assets: `configuration/sandbox/assets/`
-- sandbox bootstrap: `configuration/sandbox/bootstrap.sh`
+- agent workspace seed: `configuration/agents/<id>/sandbox/workspace/`
 
-These locations are conventions, not configuration options. File discovery makes the same fork work from source and from a Vercel function bundle. Symlinks, escaping paths, duplicate IDs, oversized files, and malformed skill metadata fail generation or startup.
+These locations are conventions, not configuration options. Global `configuration/skills/` and `configuration/sandbox/` directories are not supported. File discovery makes the same fork work from source and from a Vercel function bundle. Symlinks, escaping paths, duplicate IDs, oversized files, and malformed skill metadata fail generation or startup.
 
 Custom provider implementations live under `configuration/providers/` and must be explicitly imported and instantiated in `configuration/index.ts`.
 

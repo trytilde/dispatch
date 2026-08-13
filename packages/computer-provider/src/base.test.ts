@@ -20,9 +20,23 @@ import { MicrosandboxComputerProvider } from "./microsandbox/index.js";
 import { VercelSandboxComputerProvider } from "./vercel/index.js";
 
 class TestVercelSandboxComputerProvider extends VercelSandboxComputerProvider {
+  readonly login = vi.fn(async (_args: readonly string[], _input: string) => undefined);
   buildArguments(spec: Parameters<BaseComputerProvider["buildImage"]>[0], reference: string) {
     return this.buildImageArguments(spec, reference);
   }
+  protected override runDockerWithInput(args: readonly string[], input: string) {
+    return this.login(args, input);
+  }
+  override publishImage = vi.fn(
+    async (
+      image: Parameters<BaseComputerProvider["publishImage"]>[0],
+      spec: Parameters<BaseComputerProvider["publishImage"]>[1],
+    ) => ({
+      ...image,
+      reference: `${spec.repository}:openbot-computer-${image.sourceDigest.slice(7, 19)}`,
+      publishedAt: new Date(0),
+    }),
+  );
 }
 
 class TestComputerProvider extends BaseComputerProvider {
@@ -187,10 +201,19 @@ describe("agent workspace deployment", () => {
 });
 
 describe("computer image lifecycle", () => {
-  it("exposes repository initialization and a publish plan", async () => {
-    expect(new VercelSandboxComputerProvider({}).initialization?.questions[0]).toMatchObject({
-      description: expect.stringContaining("vercel.com/docs/container-registry"),
-      destination: { key: "OPENBOT_COMPUTER_IMAGE_REPOSITORY" },
+  it("does not ask for a Vercel repository and describes its managed publish target", async () => {
+    const vercel = new VercelSandboxComputerProvider({});
+    expect(vercel.initialization).toBeUndefined();
+    await expect(
+      vercel.deployable.plan({
+        target: "production",
+        repositoryRoot: "/repository",
+        environment: {},
+        inputs: new DeploymentOutputs(),
+        report: vi.fn(),
+      }),
+    ).resolves.toMatchObject({
+      summary: expect.stringContaining("agent Vercel project's Container Registry"),
     });
     expect(new MicrosandboxComputerProvider().initialization).toBeUndefined();
     const provider = new TestComputerProvider();
@@ -206,6 +229,55 @@ describe("computer image lifecycle", () => {
     ).resolves.toMatchObject({
       summary: expect.stringContaining("registry.test/openbot-computer"),
     });
+  });
+
+  it("authenticates and creates the managed repository during image deployment", async () => {
+    const request = vi.fn(
+      async () => new Response(JSON.stringify({ id: "team_123", slug: "tryopenbot" })),
+    );
+    const provider = new TestVercelSandboxComputerProvider({ request });
+    const inputs = new DeploymentOutputs();
+    inputs.merge({
+      deploymentSecrets: { VERCEL_TOKEN: "vercel-secret" },
+      outputs: {
+        OPENBOT_VERCEL_SANDBOX_IMAGE_CONTEXT: "/tmp/context",
+        OPENBOT_VERCEL_SANDBOX_IMAGE_DOCKERFILE: "/tmp/context/Containerfile",
+        OPENBOT_VERCEL_SANDBOX_IMAGE_LOCAL_REFERENCE:
+          "openbot/vercel-sandbox-computer:openbot-computer-aaaaaaaaaaaa",
+        OPENBOT_VERCEL_SANDBOX_IMAGE_SOURCE_DIGEST: `sha256:${"a".repeat(64)}`,
+      },
+    });
+
+    await expect(
+      provider.deployable.deploy({
+        target: "production",
+        repositoryRoot: "/repository",
+        environment: {
+          VERCEL_TEAM_ID: "team_123",
+          OPENBOT_VERCEL_AGENT_PROJECT: "openbot-agents",
+        },
+        inputs,
+        report: vi.fn(),
+      }),
+    ).resolves.toMatchObject({
+      environmentVariables: {
+        OPENBOT_VERCEL_COMPUTER_IMAGE:
+          "vcr.vercel.com/tryopenbot/openbot-agents/openbot-computer:openbot-computer-aaaaaaaaaaaa",
+      },
+    });
+    expect(provider.login).toHaveBeenCalledWith(
+      ["login", "vcr.vercel.com", "--username", "team_123", "--password-stdin"],
+      "vercel-secret",
+    );
+    expect(provider.publishImage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        localReference: "openbot/vercel-sandbox-computer:openbot-computer-aaaaaaaaaaaa",
+      }),
+      expect.objectContaining({
+        repository: "vcr.vercel.com/tryopenbot/openbot-agents/openbot-computer",
+      }),
+      expect.any(Object),
+    );
   });
 
   it("uses a local repository-derived image for Microsandbox", async () => {
@@ -224,7 +296,7 @@ describe("computer image lifecycle", () => {
 
   it("uses Docker Buildx for the Vercel Sandbox image", () => {
     const provider = new TestVercelSandboxComputerProvider({
-      repository: "registry.vercel.com/example/openbot-computer",
+      repository: "vcr.vercel.com/example/openbot-computer",
     });
     expect(
       provider.buildArguments(
@@ -232,9 +304,9 @@ describe("computer image lifecycle", () => {
           sourceDigest: `sha256:${"a".repeat(64)}`,
           contextDirectory: "/tmp/context",
           dockerfilePath: "/tmp/context/Containerfile",
-          repository: "registry.vercel.com/example/openbot-computer",
+          repository: "vcr.vercel.com/example/openbot-computer",
         },
-        "registry.vercel.com/example/openbot-computer:openbot-computer-aaaaaaaaaaaa",
+        "vcr.vercel.com/example/openbot-computer:openbot-computer-aaaaaaaaaaaa",
       ),
     ).toEqual([
       "buildx",
@@ -245,7 +317,7 @@ describe("computer image lifecycle", () => {
       "--file",
       "/tmp/context/Containerfile",
       "--tag",
-      "registry.vercel.com/example/openbot-computer:openbot-computer-aaaaaaaaaaaa",
+      "vcr.vercel.com/example/openbot-computer:openbot-computer-aaaaaaaaaaaa",
       "--label",
       `org.openbot.computer.source-digest=sha256:${"a".repeat(64)}`,
       "/tmp/context",

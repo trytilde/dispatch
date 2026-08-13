@@ -58,3 +58,4 @@ flowchart LR
 - 2026-08-13T11:12:53+02:00: Added computer providers as non-runtime build and deployment participants that publish content-tagged image references without mutating existing computers.
 - 2026-08-13T12:53:05+02:00: Renamed the lifecycle package to `runtime-provider` as part of eliminating separate core packages; lifecycle semantics are unchanged.
 - 2026-08-13T17:53:21+02:00: Split computer image delivery by provider: Vercel Sandbox uses Buildx and publishes to Vercel Container Registry, while local Microsandbox derives a local Docker tag from the Git remote and does not ask for or push to a registry.
+- 2026-08-13T18:34:00+02:00: Made the Vercel image repository provider-owned: service configuration creates both Vercel projects before deploy, then the computer provider derives the agent project's VCR namespace and creates its repository on the first authenticated push instead of asking during init.

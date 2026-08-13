@@ -39,7 +39,7 @@ The internal computer boundary, shared image/build behavior, and Microsandbox an
 
 ## Deployment behavior
 
-Build creates a multi-stage image that compiles `@tryopenbot/computer-service` inside the container. Vercel Sandbox uses Docker Buildx for `linux/amd64`, publishes the content-tagged image to Vercel Container Registry during deploy, and contributes its immutable reference to later participants. Microsandbox keeps its repository-derived Docker image local and contributes that local reference without asking for registry configuration. Existing computers are not updated: their image and persistent disk belong to their creation lifecycle.
+Build creates a multi-stage image that compiles `@tryopenbot/computer-service` inside the container. Vercel Sandbox uses Docker Buildx for `linux/amd64`; after the Vercel service projects are configured, it derives the agent project's built-in VCR namespace, authenticates Docker with the deployment token, and creates the `openbot-computer` repository on first push. It contributes the content-tagged immutable reference to later participants. Microsandbox keeps its repository-derived Docker image local and contributes that local reference without asking for registry configuration. Existing computers are not updated: their image and persistent disk belong to their creation lifecycle.
 
 Agents share one filesystem and process identity. Their commands default to `/workspace/<agent-id>`, but absolute paths and sibling agent directories remain accessible; these directories are not a security boundary. A separate trusted development sandbox is the only computer that receives aggregate deployment credentials and `SOPS_AGE_KEY`; its environment file is mode `0600` and ordinary agent directories never receive it.
 

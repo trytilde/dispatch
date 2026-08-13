@@ -283,7 +283,6 @@ describe("OpenBot initialization", () => {
       "vercel-secret",
       "openbot-control",
       "openbot-agents",
-      "registry.vercel.com/example/openbot-computer",
     ];
     const promptInput = vi.fn(async () => inputs.shift() ?? "");
     const prompts: InitializationPrompts = {
@@ -306,19 +305,14 @@ describe("OpenBot initialization", () => {
 
     await initializeOpenBot({ repositoryRoot, prompts, runner });
 
-    expect(promptInput).toHaveBeenCalledWith(
-      "Which OCI repository should receive OpenBot computer images?",
-      expect.objectContaining({
-        description: expect.stringContaining("vercel.com/docs/container-registry"),
-      }),
-    );
+    expect(calls.at(-1)).toMatchObject({ command: "vp", args: ["install"] });
+
+    expect(promptInput).toHaveBeenCalledTimes(5);
     const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
     expect(environment).not.toContain("OPENBOT_RUNTIME_PROVIDER");
     expect(environment).toContain('OPENBOT_VERCEL_CONTROL_PROJECT="openbot-control"');
     expect(environment).toContain('OPENBOT_VERCEL_AGENT_PROJECT="openbot-agents"');
-    expect(environment).toContain(
-      'OPENBOT_COMPUTER_IMAGE_REPOSITORY="registry.vercel.com/example/openbot-computer"',
-    );
+    expect(environment).not.toContain("OPENBOT_COMPUTER_IMAGE_REPOSITORY");
     expect(environment).not.toContain("vercel-secret");
     const configuration = await readFile(join(repositoryRoot, "configuration/index.ts"), "utf8");
     expect(configuration).toContain("providers: {");

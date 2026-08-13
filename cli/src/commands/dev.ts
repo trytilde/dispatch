@@ -14,7 +14,7 @@ export async function runDevelopment(): Promise<never> {
   const server = run(
     "pnpm",
     ["--filter", "openbot", "exec", "tsx", "watch", "src/index.tsx", "_serve"],
-    env,
+    developmentServerEnvironment(env),
   );
   const web = run(
     "pnpm",
@@ -40,4 +40,12 @@ export async function runDevelopment(): Promise<never> {
   }
 
   return supervise(children);
+}
+
+export function developmentServerEnvironment(environment: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const nodeOptions = environment.NODE_OPTIONS?.trim();
+  return {
+    ...environment,
+    NODE_OPTIONS: [nodeOptions, "--conditions=development"].filter(Boolean).join(" "),
+  };
 }

@@ -3,17 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "build": "tsc --noEmit",
-    "lint": "tsc --noEmit",
-    "test": "vitest run",
+    "lint": "vp lint",
+    "test": "vp test run",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": { "@openbot/provider-sdk": "workspace:*" },
+  "dependencies": {
+    "@openbot/provider-sdk": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "24.3.0",
     "typescript": "5.9.2",
-    "vitest": "3.2.4"
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
   }
 }

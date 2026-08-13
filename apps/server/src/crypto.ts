@@ -1,7 +1,4 @@
-import {
-  createHmac,
-  timingSafeEqual,
-} from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 const cookieName = "openbot_session";
 const cookieLifetimeSeconds = 7 * 24 * 60 * 60;
@@ -25,7 +22,9 @@ export function matchesSetupCode(candidate: string, expected: string): boolean {
 }
 
 export function issueSessionCookie(setupCode: string, secure: boolean): string {
-  const payload = encode(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + cookieLifetimeSeconds }));
+  const payload = encode(
+    JSON.stringify({ exp: Math.floor(Date.now() / 1000) + cookieLifetimeSeconds }),
+  );
   const signature = encode(createHmac("sha256", sessionKey(setupCode)).update(payload).digest());
   return `${cookieName}=${payload}.${signature}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${cookieLifetimeSeconds}${secure ? "; Secure" : ""}`;
 }

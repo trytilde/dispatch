@@ -5,10 +5,16 @@ export const installationId = "default";
 
 export async function ensureInstallation(origin?: string) {
   const db = createDatabase();
-  const [current] = await db.select().from(installations).where(eq(installations.id, installationId));
+  const [current] = await db
+    .select()
+    .from(installations)
+    .where(eq(installations.id, installationId));
   if (current) {
     if (origin && current.publicOrigin !== origin) {
-      await db.update(installations).set({ publicOrigin: origin, updatedAt: new Date() }).where(eq(installations.id, installationId));
+      await db
+        .update(installations)
+        .set({ publicOrigin: origin, updatedAt: new Date() })
+        .where(eq(installations.id, installationId));
       return { ...current, publicOrigin: origin };
     }
     return current;
@@ -32,19 +38,24 @@ export async function ensureInstallation(origin?: string) {
   return value;
 }
 
-export async function updateInstallation(patch: Partial<{
-  phase: string;
-  onboardingStep: string;
-  publicOrigin: string;
-  sandboxProviderId: string | null;
-  sandboxInstanceId: string | null;
-  sandboxState: string | null;
-  sandboxCreatedAt: Date | null;
-  sandboxCheckpointId: string | null;
-  configurationDigest: string | null;
-}>) {
+export async function updateInstallation(
+  patch: Partial<{
+    phase: string;
+    onboardingStep: string;
+    publicOrigin: string;
+    sandboxProviderId: string | null;
+    sandboxInstanceId: string | null;
+    sandboxState: string | null;
+    sandboxCreatedAt: Date | null;
+    sandboxCheckpointId: string | null;
+    configurationDigest: string | null;
+  }>,
+) {
   await ensureInstallation();
-  await createDatabase().update(installations).set({ ...patch, updatedAt: new Date() }).where(eq(installations.id, installationId));
+  await createDatabase()
+    .update(installations)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(eq(installations.id, installationId));
 }
 
 export async function withLifecycleLease<T>(id: string, action: () => Promise<T>): Promise<T> {
@@ -55,12 +66,20 @@ export async function withLifecycleLease<T>(id: string, action: () => Promise<T>
   await db.insert(lifecycleLeases).values({ id, holder, expiresAt }).onConflictDoNothing();
   let [lease] = await db.select().from(lifecycleLeases).where(eq(lifecycleLeases.id, id));
   if (lease?.holder !== holder && lease && lease.expiresAt <= now) {
-    await db.update(lifecycleLeases).set({ holder, expiresAt }).where(and(eq(lifecycleLeases.id, id), eq(lifecycleLeases.holder, lease.holder)));
+    await db
+      .update(lifecycleLeases)
+      .set({ holder, expiresAt })
+      .where(and(eq(lifecycleLeases.id, id), eq(lifecycleLeases.holder, lease.holder)));
     [lease] = await db.select().from(lifecycleLeases).where(eq(lifecycleLeases.id, id));
   }
   if (lease?.holder !== holder) throw new Error(`Lifecycle ${id} is already running`);
-  try { return await action(); }
-  finally { await db.delete(lifecycleLeases).where(and(eq(lifecycleLeases.id, id), eq(lifecycleLeases.holder, holder))); }
+  try {
+    return await action();
+  } finally {
+    await db
+      .delete(lifecycleLeases)
+      .where(and(eq(lifecycleLeases.id, id), eq(lifecycleLeases.holder, holder)));
+  }
 }
 
 export async function persistSandbox(handle: SandboxHandle): Promise<void> {

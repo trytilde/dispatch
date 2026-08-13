@@ -3,7 +3,21 @@ packages:
   - packages/*
 
 onlyBuiltDependencies:
-  - '@bufbuild/buf'
+  - "@bufbuild/buf"
   - electron
   - esbuild
   - microsandbox
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@0.2.9
+  vitest: 4.1.10
+  vite-plus: 0.2.9
+overrides:
+  vite: "catalog:"
+  vitest: "catalog:"
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    vite: "*"
+    vitest: "*"

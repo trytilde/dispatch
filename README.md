@@ -4,15 +4,15 @@ OpenBot is a fork-first, open-source agent workspace. Fork the repository, descr
 
 ## Start locally
 
-Requirements: Node.js 24, pnpm 10, and Linux with KVM or Apple Silicon macOS.
+Requirements: [Vite+](https://viteplus.dev/guide/) and Linux with KVM or Apple Silicon macOS. Vite+ resolves the repository's pinned Node.js 24 and pnpm 10 toolchain.
 
 ```bash
 git clone https://github.com/trytilde/openbot.git
 cd openbot
-pnpm install
-pnpm openbot setup
-pnpm openbot doctor
-pnpm openbot dev
+vp install
+vp run openbot setup
+vp run openbot doctor
+vp run openbot dev
 ```
 
 The default fork includes one agent, Tilde skill registration, an isolated computer, and the web/desktop application. Local state and credentials are ignored by Git. When Tilde credentials are present, the dev tunnel gives repository agents a public signed endpoint and startup reconciliation registers them.
@@ -24,8 +24,8 @@ The default fork includes one agent, Tilde skill registration, an isolated compu
 The hosted path uses Vercel, Turso Marketplace, and Tilde. Generate `OPENBOT_SETUP_CODE` with `openssl rand -base64 32`, complete the setup UI, then use:
 
 ```bash
-pnpm openbot deploy --dry-run --json
-pnpm openbot deploy --yes
+vp run openbot deploy --dry-run --json
+vp run openbot deploy --yes
 ```
 
 Deployment validates and builds the fork, provisions or reuses its resources, deploys, reconciles committed skills and agents under a database lease, and runs smoke tests. A private mirror works too; configure the same environment values and retain an `upstream` remote for updates.
@@ -46,20 +46,20 @@ configuration/sandbox/bootstrap.sh
                         optional idempotent script run after files are copied
 ```
 
-Agent route modules export `POST` using Tilde `chatKitEndpoint` and the Vercel AI SDK. OpenBot serves each module at `/api/agents/<id>`. Skills are reconciled into the configured Tilde registry. Removed agents remain orphaned by default; `pnpm openbot sync --prune --yes` explicitly disables them remotely.
+Agent route modules export `POST` using Tilde `chatKitEndpoint` and the Vercel AI SDK. OpenBot serves each module at `/api/agents/<id>`. Skills are reconciled into the configured Tilde registry. Removed agents remain orphaned by default; `vp run openbot sync --prune --yes` explicitly disables them remotely.
 
 OpenBot does not load sandbox secrets from repository configuration or copy control-plane credentials into a sandbox.
 
 ## Common commands
 
-Run `pnpm openbot` in a terminal for an interactive launcher with arrow-key navigation. Every command also remains directly callable for scripts and repeatable workflows:
+Run `vp run openbot` in a terminal for an interactive launcher with arrow-key navigation. Every command also remains directly callable for scripts and repeatable workflows:
 
 ```bash
-pnpm openbot check
-pnpm openbot doctor
-pnpm openbot providers list
-pnpm openbot sync
-pnpm openbot status
+vp run openbot check
+vp run openbot doctor
+vp run openbot providers list
+vp run openbot sync
+vp run openbot status
 ```
 
 Long-running operations show live progress and finish with compact status tables. Add `--json` to `check`, `doctor`, `providers list`, `sync`, or `status` when another tool needs stable machine-readable output.
@@ -73,9 +73,9 @@ See [configuration](docs/configuration.md), [agents](docs/agents.md), [provider 
 The Hono server serves signed agent endpoints and Connect control APIs. Tilde owns remote agents, skill registries, ChatKit sessions, and runtime MCP tools. Turso/libSQL stores reconciliation leases and non-secret control state. Provider secrets stay behind `EnvProvider`; sandbox browser state remains sensitive.
 
 ```bash
-pnpm check
-pnpm build
-pnpm test:e2e
+vp run check
+vp run build
+vp run test:e2e
 ```
 
 OpenBot is MIT licensed. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [PROVENANCE.md](PROVENANCE.md).

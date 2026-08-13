@@ -14,7 +14,9 @@ test("setup code gates the installation and prepares the Tilde deploy", async ({
   // this assertion is only completed by the isolated Playwright webServer.
   await page.getByLabel("Setup code").fill(setupCode);
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("heading", { name: "Deploy the shared agent gateway." })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: "Deploy the shared agent gateway." })).toBeVisible(
+    { timeout: 15_000 },
+  );
   const deploy = page.getByRole("link", { name: /Deploy with Tilde/ });
   await expect(deploy).toHaveAttribute("href", /state-path=tilde\.state\.yaml/);
   await expect(deploy).toHaveAttribute("href", /OPENBOT_CHATKIT_ENDPOINT_URL=/);
@@ -72,7 +74,11 @@ async function mockOnboarding(page: Page): Promise<void> {
     } else {
       body = {};
     }
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(body),
+    });
   });
 }
 

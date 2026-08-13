@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const mocks = vi.hoisted(() => ({
   create: vi.fn(),
@@ -29,8 +29,9 @@ describe("VercelSandboxProvider", () => {
   });
 
   it("stops a sandbox when initialization fails", async () => {
-    await expect(new VercelSandboxProvider().create({}, { requestId: "test" }))
-      .rejects.toThrow("seed failed");
+    await expect(new VercelSandboxProvider().create({}, { requestId: "test" })).rejects.toThrow(
+      "seed failed",
+    );
 
     expect(mocks.stop).toHaveBeenCalledOnce();
   });

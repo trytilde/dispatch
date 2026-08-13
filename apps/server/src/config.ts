@@ -7,7 +7,8 @@ export function setupCode(): string {
 }
 
 export function publicOrigin(request?: Request): string {
-  if (process.env.OPENBOT_PUBLIC_ORIGIN) return process.env.OPENBOT_PUBLIC_ORIGIN.replace(/\/$/, "");
+  if (process.env.OPENBOT_PUBLIC_ORIGIN)
+    return process.env.OPENBOT_PUBLIC_ORIGIN.replace(/\/$/, "");
   if (request) return new URL(request.url).origin;
   return `http://127.0.0.1:${process.env.OPENBOT_PORT ?? "4100"}`;
 }

@@ -16,8 +16,11 @@ let sandboxProvider: SandboxProvider | undefined;
 
 export function defaultSandboxProvider(): SandboxProvider {
   if (sandboxProvider) return sandboxProvider;
-  sandboxProvider = process.env.VERCEL || process.env.OPENBOT_SANDBOX_PROVIDER === "vercel" || process.env.OPENBOT_SANDBOX_PROVIDER === "vercel-sandbox"
-    ? new VercelSandboxProvider()
-    : new MicrosandboxProvider();
+  sandboxProvider =
+    process.env.VERCEL ||
+    process.env.OPENBOT_SANDBOX_PROVIDER === "vercel" ||
+    process.env.OPENBOT_SANDBOX_PROVIDER === "vercel-sandbox"
+      ? new VercelSandboxProvider()
+      : new MicrosandboxProvider();
   return sandboxProvider;
 }

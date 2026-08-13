@@ -22,6 +22,11 @@ Build the web app once into `apps/web/dist`. The Vercel control provider copies 
 
 Delete the legacy `providers` and `provider-sdk` packages. Preserve the domain packages without wiring them into `apps/control-service`. Remove setup-code generation, unlock endpoints, browser setup screens, and production setup-secret provisioning.
 
+Delete the unused legacy `contracts` package once the domain service protos are
+the only consumers, and delete the unused control database package while the
+reset application owns no persisted control state. Persistence must be
+introduced from a concrete UX/API requirement rather than retained speculatively.
+
 ```mermaid
 flowchart LR
   U["Web UI"] --> V["Vercel CDN"]
@@ -38,3 +43,7 @@ flowchart LR
 - New functionality starts with a visible UX and an explicit control contract.
 - Existing lower-level packages can be evaluated independently in later changes.
 - Removed application behavior can be recovered from Git history if needed.
+
+## Updates
+
+- 2026-08-13T12:09:51+02:00: Removed the unused legacy contracts and control database packages; active protobuf generation now covers only control and computer service protos.

@@ -25,6 +25,12 @@ The coordinator plans every registered participant, configures participants that
 
 Two providers that happen to use Vercel remain two independent deployment participants and reimplement their own lifecycle for now. The coordinator does not deduplicate them by vendor or deployment ID. Shared vendor infrastructure can be extracted later when there is a concrete shared resource and ownership boundary.
 
+The selected computer provider is a non-runtime participant. Its build phase
+creates and content-tags the shared OCI computer image; deploy pushes that image
+and contributes the provider-specific image reference to the runtime. Existing
+computers are intentionally not updated because their image and persistent
+workspace belong to their creation lifecycle.
+
 The local runtime implementation writes a private runtime environment file, then installs OpenBot as a user service: systemd on Linux or launchd on macOS. Service definitions contain only the environment-file path, not secret values.
 
 Do not adopt a general infrastructure state engine yet. Alchemy has a useful resource/output/reconciliation model, but without built-in Vercel and Tilde resources OpenBot would still need custom providers plus another state lifecycle.
@@ -45,3 +51,7 @@ flowchart LR
 - Providers that do not need configuration omit `configure()`.
 - Using one vendor in multiple provider domains can repeat vendor-specific work until an explicit shared abstraction is justified.
 - Tilde deployment remains a later participant; the current implementations are Vercel and local runtime deployment.
+
+## Updates
+
+- 2026-08-13T11:12:53+02:00: Added computer providers as non-runtime build and deployment participants that publish content-tagged image references without mutating existing computers.

@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./instrumentation": "./src/instrumentation.ts"
+  },
   "scripts": {
     "build": "tsgo --noEmit",
     "lint": "tsgo --noEmit",
@@ -12,7 +15,9 @@
   },
   "dependencies": {
     "@hono/node-server": "1.19.1",
+    "@openbot/computer-provider-core": "workspace:*",
     "@openbot/control-service-provider": "workspace:*",
+    "@openbot/utilities": "workspace:*",
     "@openbot/runtime-provider-core": "workspace:*",
     "hono": "4.13.1",
     "tsdown": "0.22.14",

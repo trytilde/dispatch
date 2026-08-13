@@ -1,0 +1,15 @@
+import { serve } from {{{NODE_SERVER}}};
+import { Hono } from {{{HONO}}};
+
+{{{AGENT_IMPORTS}}}
+
+{{{AGENT_INITIALIZERS}}}
+
+const app = new Hono();
+app.get("/healthz", (context) => context.json({ ok: true, service: "openbot-agents" }));
+{{{AGENT_ROUTES}}}
+
+const port = Number.parseInt(process.env.OPENBOT_AGENT_PORT ?? "4101", 10);
+serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
+  console.log(`OpenBot agent service listening at http://127.0.0.1:${port}`);
+});

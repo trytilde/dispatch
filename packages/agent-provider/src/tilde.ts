@@ -32,7 +32,6 @@ import {
   createTildeApiClient,
   InboxStatus,
   type TildeApiClient,
-  whoami,
 } from "@trytilde/harness-sdk/api";
 
 export interface TildeAgentProviderConfig {
@@ -45,29 +44,8 @@ export interface TildeAgentProviderConfig {
 type JsonRecord = Record<string, unknown>;
 
 export class TildeAgentProvider implements AgentProvider {
-  readonly descriptor = {
-    id: "tilde",
-    version: "1.0.0",
-    displayName: "Tilde",
-    capabilities: [
-      "agents:list",
-      "agents:get",
-      "agents:register",
-      "agents:update",
-      "agents:unregister",
-      "sessions:list",
-      "sessions:create",
-      "sessions:rename",
-      "sessions:mark-unread",
-      "sessions:interrupt",
-      "messages:list",
-      "messages:send",
-    ] as const,
-  };
-
   readonly #api: TildeApiClient;
   readonly #client: Client;
-  readonly #orgId: string;
   readonly #teamId: string;
 
   constructor(config: TildeAgentProviderConfig) {
@@ -83,22 +61,7 @@ export class TildeAgentProvider implements AgentProvider {
       orgId: config.orgId,
       teamId: config.teamId,
     });
-    this.#orgId = config.orgId;
     this.#teamId = config.teamId;
-  }
-
-  async health(context: AgentProviderCallContext) {
-    try {
-      await this.verify(context);
-      return { healthy: true };
-    } catch (error) {
-      return { healthy: false, message: error instanceof Error ? error.message : "Tilde is unavailable" };
-    }
-  }
-
-  async verify(context: AgentProviderCallContext) {
-    await this.#generated(context, (signal) => whoami({ client: this.#api, signal }));
-    return { organizationId: this.#orgId, teamId: this.#teamId };
   }
 
   async listAgents(request: ListAgentsRequest, context: AgentProviderCallContext): Promise<Page<Agent>> {

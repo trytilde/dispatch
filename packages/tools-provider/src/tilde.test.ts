@@ -1,7 +1,7 @@
 import { createClient } from "@trytilde/harness-sdk";
 import type { ToolSet } from "ai";
 import { describe, expect, it, vi } from "vitest";
-import { TildeToolsProvider } from "./tilde.js";
+import { TildeToolProvider } from "./tilde.js";
 
 const mocks = vi.hoisted(() => {
   const tools: ToolSet = {
@@ -19,7 +19,7 @@ vi.mock("@trytilde/harness-sdk-vercel-ai-node", () => ({
   createMCPClient: mocks.createMCPClient,
 }));
 
-describe("TildeToolsProvider", () => {
+describe("TildeToolProvider", () => {
   it("uses the Harness SDK MCP client and registers named AI SDK tools", async () => {
     const client = createClient({ baseUrl: "https://tilde.test", teamId: "team-one", apiKey: "secret" });
     vi.spyOn(client.mcp, "getServer").mockResolvedValue({
@@ -31,13 +31,12 @@ describe("TildeToolsProvider", () => {
       url: "https://tilde.test/mcp",
     });
 
-    const provider = await TildeToolsProvider.connect({ client, serverId: "runtime-one" });
+    const provider = new TildeToolProvider({ client, serverId: "runtime-one" });
     const registered = await provider.registerTools({ requestId: "request-one" });
 
     expect(mocks.createMCPClient).toHaveBeenCalledWith({ client, serverId: "runtime-one" });
     expect(registered.map((tool) => tool.name)).toEqual(["SEARCH_TOOLS", "MULTI_EXECUTE_TOOL"]);
-    expect(provider.descriptor.capabilities).toContain("tools:dynamic-discovery");
-    expect(provider.injectPromptPart({ agentId: "agent", sessionId: "session" }, { requestId: "request-one" })).toContain("GET_TOOL_SCHEMAS");
+    await expect(provider.injectPromptPart({ agentId: "agent", sessionId: "session" }, { requestId: "request-one" })).resolves.toContain("GET_TOOL_SCHEMAS");
   });
 
   it("invokes through and closes the Harness SDK MCP client", async () => {
@@ -50,7 +49,7 @@ describe("TildeToolsProvider", () => {
       tools: [],
       url: "https://tilde.test/mcp",
     });
-    const provider = await TildeToolsProvider.connect({ client, serverId: "runtime-one" });
+    const provider = new TildeToolProvider({ client, serverId: "runtime-one" });
 
     await expect(provider.invoke("SEARCH_TOOLS", { query: "email" }, { requestId: "request-one" })).resolves.toEqual({
       name: "SEARCH_TOOLS",

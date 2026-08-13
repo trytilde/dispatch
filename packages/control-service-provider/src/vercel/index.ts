@@ -1,9 +1,9 @@
 import type { Buildable, Deployable, DeploymentContext, DeploymentPlan, DeploymentResult, InitializableProvider, ProviderInitialization } from "@openbot/runtime-provider-core";
-import { copyFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { materializeFileTemplate } from "@openbot/utilities";
 import { checkControlService } from "../check.js";
 import { processRunner, type CommandRunner } from "../command.js";
-import { buildVercelControlService, controlVercelArtifact, vercelProjectConfig } from "./build.js";
+import { buildVercelControlService, controlVercelArtifact, vercelProjectTemplate } from "./build.js";
 
 export interface VercelControlServiceProviderOptions { runner?: CommandRunner; request?: typeof fetch }
 
@@ -36,7 +36,7 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
   async deploy(context: DeploymentContext): Promise<DeploymentResult> {
     const project = requiredProject(context.environment);
     const root = context.inputs.require("control-service.artifact");
-    await copyFile(vercelProjectConfig, resolve(root, "vercel.json"));
+    await materializeFileTemplate(vercelProjectTemplate, resolve(root, "vercel.json"));
     await installRuntimeVariables(this.#runner, context, project);
     const args = ["exec", "vercel", "deploy", "--prebuilt", "--yes", "--json", "--cwd", root, "--project", project, ...scopeArgs(context.environment)];
     if (context.target === "production") args.push("--prod");

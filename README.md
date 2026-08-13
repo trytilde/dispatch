@@ -25,15 +25,15 @@ pnpm deploy:prod -- --dry-run --json
 pnpm deploy:prod -- --yes
 ```
 
-`openbot init` creates `configuration/.env`, configures SOPS, generates a dedicated age identity for the trusted development sandbox, and asks for an independent owner identity. Managed owner identities support HashiCorp Vault Transit, Azure Key Vault, Google Cloud KMS, and AWS KMS. Local fallbacks store a generated owner age identity in 1Password or the native operating-system keychain. Provider-contributed questions are saved either to `.env` or `configuration/secrets.enc.yaml`; secret input is never written to command arguments. Deployment credentials such as `VERCEL_TOKEN` are available to providers and the trusted development sandbox but are excluded from the final runtime environment.
+`openbot init` creates `configuration/index.ts` and `configuration/.env`, configures SOPS, generates a dedicated age identity for the trusted development sandbox, and asks for an independent owner identity. Managed owner identities support HashiCorp Vault Transit, Azure Key Vault, Google Cloud KMS, and AWS KMS. Local fallbacks store a generated owner age identity in 1Password or the native operating-system keychain. Provider-contributed questions are saved either to `.env` or `configuration/secrets.enc.yaml`; secret input is never written to command arguments. Deployment credentials such as `VERCEL_TOKEN` are available to providers and the trusted development sandbox but are excluded from the final runtime environment.
 
 Use `pnpm openbot secrets set NAME` and `pnpm openbot secrets unset NAME` to maintain encrypted values without learning SOPS commands. Setting a value requires a current SOPS release with `set --value-stdin` support so plaintext never appears in the process list.
 
-Commit `.sops.yaml`, `sops.identity.json`, and `secrets.enc.yaml` after initialization. Never commit `configuration/.env`. The sandbox age private key is encrypted at `openbot.sandbox.sops_age_key` and is reserved for the trusted development-sandbox deployment participant.
+Commit `configuration/index.ts`, `.sops.yaml`, `sops.identity.json`, and `secrets.enc.yaml` after initialization. Never commit `configuration/.env`. The sandbox age private key is encrypted at `openbot.sandbox.sops_age_key` and is reserved for the trusted development-sandbox deployment participant.
 
-The CLI checks and builds every selected provider that exposes `buildable`, then plans and deploys providers that expose `deployable`. `openbot deploy --skip-deploy` stops after producing artifacts. `openbot deploy --service agents --yes` builds and deploys the agent project without compiling or redeploying control; `--service control` does the inverse. Agent functions deploy before the control runtime when both are selected. Provider outputs contribute named outputs, environment variables, and secrets without a second operator command. Sandbox-only secrets remain excluded from service runtimes.
+The CLI checks and builds every selected provider that exposes `buildable`, then plans and deploys providers that expose `deployable`. `openbot deploy --skip-deploy` stops after producing artifacts. `openbot deploy --service agents --yes` builds and deploys the agent project without compiling or redeploying control; `--service control` does the inverse. A configured computer provider builds and publishes its shared OCI image during a full deployment, before agent functions and the control runtime. Provider outputs contribute named outputs, environment variables, and secrets without a second operator command. Sandbox-only secrets remain excluded from service runtimes.
 
-`providers.runtime` in `openbot.config.ts` selects the runtime:
+`configuration/index.ts` explicitly constructs selected implementations under its `providers` object. Agents, skills, custom provider source, and sandbox resources always use the canonical paths under `configuration/`; their locations are not configuration options.
 
 - `vercel` builds a control/web project and a separate agent project. Every configured agent is a parallel-built Vercel Function; both projects deploy from prebuilt artifacts.
 - `local` builds separate control and agent Hono servers, writes private service environments, and installs two user-level systemd services on Linux or launchd agents on macOS. Development still hosts control and agents in one Hono process.
@@ -47,11 +47,13 @@ The production build stages the web app in the control provider's `.vercel/outpu
 - `cli` owns the React Ink repository CLI, development process supervision, and provider deployment coordination.
 - `packages/runtime-provider-core` owns the optional provider deployment contract and runtime-last coordinator.
 - `packages/control-service-provider` owns local and Vercel control/web builds and deployment.
-- `packages/agent-service-provider` owns agent discovery, concurrent per-agent Vercel bundles, the local agent server, and deployment.
+- `packages/agent-service-provider` owns Eve-compatible agent-directory discovery, instrumentation startup, concurrent per-agent Vercel bundles, the local agent server, and deployment.
 - `apps/web` owns the UX shell and frontend routes.
 - `apps/control-service` owns the portable Hono application, built web UI fallback, `/healthz`, ConnectRPC federation under `/rpc`, and the local control-service entrypoint.
 - `packages/control-service-proto` is the future owner-facing API contract and is intentionally empty.
-- Domain packages remain available but are not wired into the application yet.
+- `packages/computer-service-proto` owns the capability-protected internal computer API.
+- No control database is retained while the reset application has no persisted control state.
+- Domain provider packages remain available but are not wired into the application yet.
 
 ```bash
 pnpm check

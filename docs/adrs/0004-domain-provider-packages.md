@@ -7,7 +7,7 @@
 - Split provider contracts by domain. No universal provider SDK.
 - Keep providers TypeScript-internal. RPC belongs to service-proto packages.
 - Agent provider owns agents and sessions. Control methods are not agent tools.
-- Keep legacy packages during migration. No destructive contraction.
+- Remove the legacy universal protocol package after its consumers migrate to domain service protos.
 
 ## Context
 
@@ -27,16 +27,18 @@ package shape is:
 - `control-service-proto`
 - `computer-service-proto`
 - `computer-provider-core` and `computer-providers`
-- `skills-provider-core` and `skills-provider`
-- `tools-provider-core` and `tools-provider`
+- `skills-provider-core` (`SkillProvider`) and `skills-provider`
+- `tools-provider-core` (`ToolProvider`) and `tools-provider`
 - `agent-provider-core` and `agent-provider`
 - `inference-model-provider-core` and `inference-model-provider`
 
 Domain interfaces contain only the operations required at that application
-boundary. They do not require a universal descriptor, health check, or
-credential verification method. Provider-specific adapters may retain such
-helpers internally, while configuration and composition own provider selection
-and startup validation.
+boundary. Provider interfaces and implementations do not expose `health()` or
+`verify()` methods unless a future domain requirement explicitly introduces
+one. They also do not expose descriptors or generic string selector factories;
+`configuration/index.ts` explicitly constructs them, while composition owns
+startup validation. Service health endpoints and deployment smoke checks remain
+service/runtime concerns rather than provider methods.
 
 The first migration slice adds the control proto plus the agent core and Tilde
 implementation. `AgentProvider` owns agent registration and lifecycle as well
@@ -80,13 +82,18 @@ flowchart LR
   I --> O["inference-model-provider: OpenAI"]
 ```
 
-The legacy `contracts`, `provider-sdk`, and `providers` packages remain in place
-until their other domains migrate independently. This expansion does not rename
-or delete their files, exports, or protocol messages.
+The universal `contracts`, `provider-sdk`, and `providers` packages are removed;
+their RPC-shaped abstraction is not a compatibility boundary. The active RPC
+surfaces live only in `control-service-proto` and `computer-service-proto`.
 
 ## Consequences
 
 - Provider code does not imply an RPC surface.
 - Agent and session semantics evolve together behind one internal boundary.
 - Computer, skills, and tools can migrate without a flag-day change.
-- The repository temporarily carries parallel legacy and domain packages.
+- Domain service protos are the only remaining RPC contracts.
+
+## Updates
+
+- 2026-08-13T11:12:53+02:00: Removed universal provider packages plus default descriptor, health, verification, and selector-factory requirements in favor of explicit domain interfaces and composition.
+- 2026-08-13T12:09:51+02:00: Removed the unused legacy `contracts` package after control and computer callers moved to their domain service protos.

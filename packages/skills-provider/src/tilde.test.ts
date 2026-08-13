@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { TildeSkillsProvider } from "./tilde.js";
+import { TildeSkillProvider } from "./tilde.js";
 
 const config = {
   apiKey: "secret",
@@ -45,7 +45,7 @@ function registry() {
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe("TildeSkillsProvider", () => {
+describe("TildeSkillProvider", () => {
   it("uses the typed SDK for skill and registry control operations", async () => {
     const requests: Request[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request) => {
@@ -58,7 +58,7 @@ describe("TildeSkillsProvider", () => {
       throw new Error(`Unexpected request: ${request.method} ${request.url}`);
     }));
 
-    const provider = new TildeSkillsProvider(config);
+    const provider = new TildeSkillProvider(config);
     const listed = await provider.listSkills({ pageSize: 10 }, context);
     const created = await provider.createSkill({ name: "Research", description: "Research carefully", content: "# Research" }, context);
     const registered = await provider.registerSkills({ name: "OpenBot", description: "OpenBot skills", skillIds: [created.id] }, context);
@@ -95,7 +95,7 @@ describe("TildeSkillsProvider", () => {
     }));
     const writes: Array<{ path: string; content: string; executable: boolean }> = [];
 
-    const manifest = await new TildeSkillsProvider(config).materializeSkillAssets("skill-one", {
+    const manifest = await new TildeSkillProvider(config).materializeSkillAssets("skill-one", {
       async writeFile(path, bytes, options) {
         writes.push({ path, content: new TextDecoder().decode(bytes), executable: options.executable });
       },
@@ -112,7 +112,7 @@ describe("TildeSkillsProvider", () => {
       if (url.pathname.endsWith("/search")) return Response.json({ items: [skill()] });
       return Response.json(registry());
     }));
-    const provider = new TildeSkillsProvider(config);
+    const provider = new TildeSkillProvider(config);
     const tools = provider.registerTools(context);
 
     expect(tools.map((entry) => entry.name)).toEqual(["search_skills", "read_skill"]);

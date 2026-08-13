@@ -1,0 +1,12 @@
+import { Configuration } from "@openbot/configuration";
+import { LocalAgentServiceProvider } from "@openbot/agent-service-provider";
+import { LocalControlServiceProvider } from "@openbot/control-service-provider";
+import { MicrosandboxComputerProvider } from "@openbot/computer-providers";
+
+export default Configuration({
+  providers: {
+    controlService: new LocalControlServiceProvider(),
+    agentService: new LocalAgentServiceProvider(),
+    computer: new MicrosandboxComputerProvider(),
+  },
+});

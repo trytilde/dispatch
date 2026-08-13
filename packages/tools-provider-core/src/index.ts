@@ -34,20 +34,6 @@ export class ToolsProviderError extends Error {
   }
 }
 
-export interface ToolsProviderDescriptor {
-  id: string;
-  version: string;
-  displayName: string;
-  capabilities: readonly ToolsProviderCapability[];
-}
-
-export type ToolsProviderCapability =
-  | "tools:list"
-  | "tools:invoke"
-  | "tools:dynamic-discovery"
-  | "model:tools"
-  | "model:prompt";
-
 export interface ToolSummary {
   name: string;
   description: string;
@@ -64,7 +50,7 @@ export interface ToolsPromptContext {
   userId?: string;
 }
 
-export interface ToolsProvider extends DeployableProvider {
+export interface ToolProvider extends DeployableProvider {
   listTools(context: ToolsProviderCallContext): Promise<readonly ToolSummary[]>;
   invoke(name: string, input: JsonObject, context: ToolsProviderCallContext): Promise<JsonValue>;
   registerTools(context: ToolsProviderCallContext): Promise<readonly RegisteredTool[]>;

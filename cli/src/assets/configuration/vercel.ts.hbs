@@ -1,0 +1,12 @@
+import { Configuration } from "@openbot/configuration";
+import { VercelAgentServiceProvider } from "@openbot/agent-service-provider";
+import { VercelControlServiceProvider } from "@openbot/control-service-provider";
+import { VercelSandboxComputerProvider } from "@openbot/computer-providers";
+
+export default Configuration({
+  providers: {
+    controlService: new VercelControlServiceProvider(),
+    agentService: new VercelAgentServiceProvider(),
+    computer: new VercelSandboxComputerProvider(),
+  },
+});

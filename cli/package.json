@@ -15,8 +15,10 @@
   "dependencies": {
     "@hono/node-server": "1.19.1",
     "@openbot/agent-service-provider": "workspace:*",
-    "@openbot/config": "workspace:*",
+    "@openbot/configuration": "workspace:*",
+    "@openbot/computer-providers": "workspace:*",
     "@openbot/control-service-provider": "workspace:*",
+    "@openbot/utilities": "workspace:*",
     "@openbot/runtime-provider-core": "workspace:*",
     "@openbot/control-service": "workspace:*",
     "arg": "5.0.2",

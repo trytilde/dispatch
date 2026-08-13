@@ -11,6 +11,7 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "@openbot/utilities": "workspace:*",
     "@openbot/runtime-provider-core": "workspace:*",
     "tsdown": "0.22.14",
     "vercel": "58.9.4"

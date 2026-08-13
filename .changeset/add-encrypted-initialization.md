@@ -6,10 +6,8 @@
 "@openbot/computer-providers": minor
 "@openbot/computer-service": minor
 "@openbot/computer-service-proto": minor
-"@openbot/config": minor
-"@openbot/contracts": minor
+"@openbot/configuration": minor
 "@openbot/control-service-proto": minor
-"@openbot/db": minor
 "@openbot/desktop": minor
 "@openbot/inference-model-provider": minor
 "@openbot/inference-model-provider-core": minor

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render } from "ink-testing-library";
+import { parseInvocation } from "./commands/index.js";
 import { CommandMenu, Help } from "./ui.js";
-import { parseInvocation } from "./index.js";
 
 describe("OpenBot CLI", () => {
   it("parses commands after pnpm's separator", () => expect(parseInvocation(["--", "deploy", "--dry-run"])).toEqual({ command: "deploy", rest: ["--dry-run"] }));

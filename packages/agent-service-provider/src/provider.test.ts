@@ -14,9 +14,11 @@ afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recur
 describe("agent service artifacts", () => {
   it("discovers stable slugs and emits one independently bundled Vercel function per agent", async () => {
     const root = await temporaryRoot();
-    await mkdir(join(root, "configuration/agents"), { recursive: true });
-    await writeFile(join(root, "configuration/agents/alpha.ts"), "export async function POST() { return new Response('alpha') }\n");
-    await writeFile(join(root, "configuration/agents/beta.ts"), "export async function POST() { return new Response('beta') }\n");
+    await mkdir(join(root, "configuration/agents/alpha"), { recursive: true });
+    await mkdir(join(root, "configuration/agents/beta"), { recursive: true });
+    await writeFile(join(root, "configuration/instrumentation.ts"), "export default { setup() {} }\n");
+    await writeFile(join(root, "configuration/agents/alpha/agent.ts"), "export default async function endpoint() { return new Response('alpha') }\n");
+    await writeFile(join(root, "configuration/agents/beta/agent.ts"), "export default async function endpoint() { return new Response('beta') }\n");
     expect((await discoverAgents(root)).map((agent) => agent.slug)).toEqual(["alpha", "beta"]);
     const result = await buildVercelAgentService(context(root));
     expect(result.outputs?.["agent-service.count"]).toBe("2");

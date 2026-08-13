@@ -28,7 +28,7 @@ import type {
   SkillAssetManifest,
   SkillRegistry,
   SkillsPromptRequest,
-  SkillsProvider,
+  SkillProvider,
   SkillsProviderCallContext,
   UpdateSkillRequest,
 } from "@openbot/skills-provider-core";
@@ -39,7 +39,7 @@ import {
   SkillsProviderError,
 } from "@openbot/skills-provider-core";
 
-export interface TildeSkillsProviderConfig {
+export interface TildeSkillProviderConfig {
   apiKey: string;
   orgId: string;
   teamId: string;
@@ -79,38 +79,11 @@ interface TildeSkillPackageApi {
 
 const { downloadSkillPackageFile, getSkillPackage } = tildeApiClient as typeof tildeApiClient & TildeSkillPackageApi;
 
-export class TildeSkillsProvider implements SkillsProvider {
-  readonly descriptor = {
-    id: "tilde-skills",
-    version: "1.0.0",
-    displayName: "Tilde",
-    capabilities: [
-      "skills:list",
-      "skills:get",
-      "skills:create",
-      "skills:update",
-      "registries:list",
-      "registries:get",
-      "registries:register",
-      "assets:manifest",
-      "assets:download",
-      "assets:materialize",
-    ] as const,
-  };
+export class TildeSkillProvider implements SkillProvider {
+  readonly #config: TildeSkillProviderConfig;
 
-  readonly #config: TildeSkillsProviderConfig;
-
-  constructor(config: TildeSkillsProviderConfig) {
+  constructor(config: TildeSkillProviderConfig) {
     this.#config = config;
-  }
-
-  async health(context: SkillsProviderCallContext) {
-    try {
-      await this.listSkills({ pageSize: 1 }, context);
-      return { healthy: true };
-    } catch (error) {
-      return { healthy: false, message: error instanceof Error ? error.message : "Tilde skills are unavailable" };
-    }
   }
 
   async listSkills(request: ListSkillsRequest, context: SkillsProviderCallContext): Promise<Page<Skill>> {

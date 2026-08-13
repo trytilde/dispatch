@@ -33,7 +33,7 @@ pnpm build
 ```bash
 pnpm --filter @openbot/control-service test
 pnpm --filter @openbot/agent-service-provider test
-pnpm --filter @openbot/computer-providers test
+pnpm --filter @openbot/computer-provider test
 pnpm --filter @openbot/desktop test
 ```
 

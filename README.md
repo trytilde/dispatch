@@ -53,7 +53,7 @@ The production build stages the web app in the control provider's `.vercel/outpu
 - `packages/control-service-proto` is the future owner-facing API contract and is intentionally empty.
 - `packages/computer-service-proto` owns the capability-protected internal computer API.
 - No control database is retained while the reset application has no persisted control state.
-- Each domain provider package owns both its TypeScript contract under `core.ts` or `core/` and its concrete adapters; provider contracts are not RPC surfaces.
+- Each domain provider package owns both its TypeScript contract in `src/core.ts` or `src/core/index.ts` and its concrete adapters; provider contract interfaces never live in adapter modules or the package-root entrypoint, and they are not RPC surfaces.
 
 ```bash
 pnpm check

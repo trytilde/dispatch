@@ -63,6 +63,25 @@ Review whether the diff changes:
 
 Classify each changed field as portable configuration, secret material, control state, or ephemeral runtime state. Secrets must never enter protobuf state, `tilde.state.yaml`, logs, or PR text. Ask the user only when a real product or migration choice remains unresolved.
 
+## Configuration Ownership Gate
+
+Determine the PR's base repository from the existing or newly opened GitHub PR, not from `origin`: a contributor may push from a personal fork while targeting `trytilde/openbot`.
+
+- PR targets `trytilde/openbot`: the final tracked `configuration/` tree must contain exactly `configuration/.gitignore`, whose contents are `*` followed by `!.gitignore`. Block any agent, provider, SOPS, environment, secret, update-note, or other fork-owned configuration content from the contribution. `configuration/.env` and root environment or SOPS files are always forbidden.
+- PR targets any fork: successful init must have removed the upstream `configuration/.gitignore` sentinel. Require the fork's generated `configuration/index.ts`, `runtime-providers.ts`, instrumentation, encrypted SOPS files, agent trees, and intentional custom providers to be tracked. Keep `configuration/.env` ignored and untracked. Treat an empty configuration tree or a restored sentinel as blocking because the fork would not contain its behavior.
+
+After the draft PR exists, verify the target and tracked state again. Suggested checks:
+
+```bash
+pr_url="$(gh pr view --json url --jq .url)"
+pr_repository="${pr_url#https://github.com/}"
+pr_repository="${pr_repository%%/pull/*}"
+git ls-files configuration
+git status --short -- configuration .env '.env.*' '*.env' '*.local'
+```
+
+For an upstream PR, `git ls-files configuration` must print only the sentinel. For a fork PR, it must not print the sentinel or `configuration/.env`, and it must include the initialized composition root and agent configuration. Explain the classification and result in the PR body.
+
 ## Architecture And ADR Gate
 
 Always inspect the complete diff for major architecture, strongly opinionated code, or durable code/product design decisions. Compare it with `CONTEXT.md`, `AGENTS.md`, and relevant records under `docs/adrs/`.
@@ -167,6 +186,7 @@ git diff --cached
 
 Check for secrets, unrelated files, generated churn, missing tests, stale instructions copied from another repository, and unresolved ADR candidates.
 Also confirm the PR-numbered fork update record passes its gate and reflects the current PR head.
+Repeat the configuration ownership gate against the actual PR target; do not rely on an earlier origin-based assumption.
 
 ## Open Or Update Draft PR
 

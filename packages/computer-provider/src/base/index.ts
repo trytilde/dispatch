@@ -16,7 +16,6 @@ import {
   type ComputerExecRequest,
   type ComputerSeedFile,
   type ComputerImageSpec,
-  type ComputerInput,
   type ComputerPromptContext,
   type ComputerProvider,
   type ComputerPromptPart,
@@ -37,7 +36,7 @@ import { sandboxDeploymentEnvironment } from "@openbot/runtime-provider";
 import { renderFileTemplatePath } from "@openbot/utilities";
 import { computerImageAssets, materializeComputerImageContext } from "./assets.js";
 import { developmentSandboxSourceFiles, shellEnvironmentExports } from "./development.js";
-import { scopedCapability } from "../capability.js";
+import { computerServiceApiKey } from "../capability.js";
 
 const execute = promisify(execFile);
 
@@ -143,17 +142,16 @@ export abstract class BaseComputerProvider implements ComputerProvider {
   registerTools(context: RegisterComputerToolsContext): readonly RegisteredComputerTool[] {
     const service = async () => createClient(ComputerService, createConnectTransport({ baseUrl: await this.computerServiceUrl(context.computerId), httpVersion: "1.1" }));
     const options = () => ({
-      headers: { authorization: `Bearer ${scopedCapability("computer", context.computerId)}` },
+      headers: { authorization: `Bearer ${computerServiceApiKey()}` },
     });
     return [
-      asRegisteredComputerTool("computer_exec", {
-        name: "Run computer command",
-        description: "Run one command in the OpenBot computer workspace.",
+      asRegisteredComputerTool("bash", {
+        name: "Bash",
+        description: "Run a Bash command in the agent's private computer workspace.",
         input_schema: {
           type: "object",
           properties: {
             command: { type: "string" },
-            arguments: { type: "array", items: { type: "string" } },
             cwd: { type: "string" },
             timeout_ms: { type: "integer", minimum: 1, maximum: 1_200_000 },
           },
@@ -161,83 +159,76 @@ export abstract class BaseComputerProvider implements ComputerProvider {
           additionalProperties: false,
         },
       }, tool({
-        description: "Run one command in the OpenBot computer workspace.",
-        inputSchema: z.object({ command: z.string().min(1), arguments: z.array(z.string()).optional(), cwd: z.string().optional(), timeout_ms: z.number().int().positive().max(1_200_000).optional() }),
-        execute: async (input) => (await service()).exec({ agentId: context.agentId, command: input.command, arguments: input.arguments ?? [], cwd: input.cwd ?? "", timeoutMilliseconds: input.timeout_ms ?? 0 }, options()),
+        description: "Run a Bash command in the agent's private computer workspace.",
+        inputSchema: z.object({ command: z.string().min(1), cwd: z.string().optional(), timeout_ms: z.number().int().positive().max(1_200_000).optional() }),
+        execute: async (input) => (await service()).exec({ agentId: context.agentId, command: "bash", arguments: ["-lc", input.command], cwd: input.cwd ?? "/workspace", timeoutMilliseconds: input.timeout_ms ?? 0 }, options()),
       })),
-      asRegisteredComputerTool("computer_read_file", {
-        name: "Read computer file",
-        description: "Read a file from the OpenBot computer workspace as base64.",
+      asRegisteredComputerTool("read_file", {
+        name: "Read file",
+        description: "Read a UTF-8 file from the agent's private computer workspace.",
         input_schema: { type: "object", properties: { path: { type: "string" } }, required: ["path"], additionalProperties: false },
       }, tool({
-        description: "Read a file from the OpenBot computer workspace as base64.",
+        description: "Read a UTF-8 file from the agent's private computer workspace.",
         inputSchema: z.object({ path: z.string().min(1) }),
-        execute: async ({ path }) => ({ content_base64: Buffer.from((await (await service()).readFile({ agentId: context.agentId, path }, options())).content).toString("base64") }),
+        execute: async ({ path }) => ({ content: new TextDecoder().decode((await (await service()).readFile({ agentId: context.agentId, path }, options())).content) }),
       })),
-      asRegisteredComputerTool("computer_write_file", {
-        name: "Write computer file",
-        description: "Write base64 content to a file in the OpenBot computer workspace.",
+      asRegisteredComputerTool("write_file", {
+        name: "Write file",
+        description: "Write UTF-8 text to a file in the agent's private computer workspace.",
         input_schema: {
           type: "object",
-          properties: { path: { type: "string" }, content_base64: { type: "string", contentEncoding: "base64" } },
-          required: ["path", "content_base64"],
+          properties: { path: { type: "string" }, content: { type: "string" } },
+          required: ["path", "content"],
           additionalProperties: false,
         },
       }, tool({
-        description: "Write base64 content to a file in the OpenBot computer workspace.",
-        inputSchema: z.object({ path: z.string().min(1), content_base64: z.string() }),
-        execute: async ({ path, content_base64 }) => {
-          const content = Buffer.from(content_base64, "base64");
-          const response = await (await service()).writeFile({ agentId: context.agentId, path, content, mode: 0 }, options());
+        description: "Write UTF-8 text to a file in the agent's private computer workspace.",
+        inputSchema: z.object({ path: z.string().min(1), content: z.string() }),
+        execute: async ({ path, content }) => {
+          const response = await (await service()).writeFile({ agentId: context.agentId, path, content: new TextEncoder().encode(content), mode: 0 }, options());
           return { bytes_written: Number(response.bytesWritten) };
         },
       })),
-      asRegisteredComputerTool("computer_screenshot", {
-        name: "Capture computer screenshot",
-        description: "Capture the current OpenBot computer desktop as PNG base64.",
-        input_schema: { type: "object", properties: {}, additionalProperties: false },
+      asRegisteredComputerTool("glob", {
+        name: "Glob",
+        description: "List files matching a glob in the agent's private computer workspace.",
+        input_schema: { type: "object", properties: { pattern: { type: "string" }, path: { type: "string" } }, required: ["pattern"], additionalProperties: false },
       }, tool({
-        description: "Capture the current OpenBot computer desktop as PNG base64.",
-        inputSchema: z.object({}),
-        execute: async () => ({ media_type: "image/png", content_base64: Buffer.from((await (await service()).screenshot({ agentId: context.agentId }, options())).png).toString("base64") }),
+        description: "List files matching a glob in the agent's private computer workspace.",
+        inputSchema: z.object({ pattern: z.string().min(1), path: z.string().optional() }),
+        execute: async ({ pattern, path }) => (await service()).exec({ agentId: context.agentId, command: "rg", arguments: ["--files", "--hidden", "--glob", "!.git", "--glob", pattern, path ?? "/workspace"], cwd: "/workspace", timeoutMilliseconds: 120_000 }, options()),
       })),
-      asRegisteredComputerTool("computer_input", {
-        name: "Control computer desktop",
-        description: "Send a bounded mouse or keyboard action to the OpenBot computer desktop.",
+      asRegisteredComputerTool("grep", {
+        name: "Grep",
+        description: "Search file contents in the agent's private computer workspace.",
         input_schema: {
-          oneOf: [
-            { type: "object", properties: { action: { const: "mouse_move" }, x: { type: "integer" }, y: { type: "integer" } }, required: ["action", "x", "y"], additionalProperties: false },
-            { type: "object", properties: { action: { const: "click" }, button: { type: "integer", enum: [1, 2, 3] } }, required: ["action"], additionalProperties: false },
-            { type: "object", properties: { action: { const: "type" }, text: { type: "string" }, delay_ms: { type: "integer", minimum: 0 } }, required: ["action", "text"], additionalProperties: false },
-            { type: "object", properties: { action: { const: "key" }, key: { type: "string" } }, required: ["action", "key"], additionalProperties: false },
-          ],
+          type: "object",
+          properties: { pattern: { type: "string" }, path: { type: "string" }, glob: { type: "string" } },
+          required: ["pattern"],
+          additionalProperties: false,
         },
       }, tool({
-        description: "Send a bounded mouse or keyboard action to the OpenBot computer desktop.",
-        inputSchema: z.discriminatedUnion("action", [
-          z.object({ action: z.literal("mouse_move"), x: z.number().int(), y: z.number().int() }),
-          z.object({ action: z.literal("click"), button: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional() }),
-          z.object({ action: z.literal("type"), text: z.string(), delay_ms: z.number().int().nonnegative().optional() }),
-          z.object({ action: z.literal("key"), key: z.string().min(1) }),
-        ]),
-        execute: async (input) => {
-          const normalized = normalizeInput(input);
-          const { action, ...payload } = normalized;
-          return (await service()).input({ agentId: context.agentId, action, payloadJson: JSON.stringify(payload) }, options());
-        },
+        description: "Search file contents in the agent's private computer workspace.",
+        inputSchema: z.object({ pattern: z.string().min(1), path: z.string().optional(), glob: z.string().optional() }),
+        execute: async ({ pattern, path, glob }) => (await service()).exec({ agentId: context.agentId, command: "rg", arguments: ["--line-number", "--no-heading", "--color", "never", "--hidden", "--glob", "!.git", ...(glob ? ["--glob", glob] : []), pattern, path ?? "/workspace"], cwd: "/workspace", timeoutMilliseconds: 120_000 }, options()),
       })),
     ] as readonly RegisteredComputerTool[];
   }
 
   async deployAgentWorkspaces(request: DeployAgentWorkspacesRequest, context: DeploymentContext): Promise<DeploymentResult> {
     const call: ComputerCallContext = { requestId: "computer:deploy-agent-workspaces" };
+    const serviceApiKey = computerServiceApiKey(context.inputs.secrets().OPENBOT_COMPUTER_SERVICE_API_KEY ?? context.environment.OPENBOT_COMPUTER_SERVICE_API_KEY);
     let computer;
     try {
       computer = await this.get(request.computerId, call);
     } catch (error) {
       if (!(error instanceof ComputerProviderError) || error.code !== "not_found") throw error;
       const image = context.inputs.environmentVariables()[this.deployedImageEnvironmentVariable] ?? context.environment[this.deployedImageEnvironmentVariable];
-      computer = await this.create({ id: request.computerId, ...(image ? { image } : {}) }, call);
+      computer = await this.create({
+        id: request.computerId,
+        ...(image ? { image } : {}),
+        environment: { OPENBOT_COMPUTER_SERVICE_API_KEY: serviceApiKey },
+      }, call);
     }
     if (computer.state === "sleeping") await this.wake(computer.id, call);
     for (const workspace of request.workspaces) await this.#registerAgentWorkspace(computer.id, workspace, call);
@@ -247,7 +238,6 @@ export abstract class BaseComputerProvider implements ComputerProvider {
         OPENBOT_COMPUTER_ID: computer.id,
         OPENBOT_COMPUTER_SERVICE_URL: await this.computerServiceUrl(computer.id),
       },
-      secrets: { OPENBOT_COMPUTER_SERVICE_CAPABILITY: scopedCapability("computer", computer.id) },
     };
   }
 
@@ -490,11 +480,4 @@ function deadlineTimeout(context: ComputerCallContext): number | undefined {
 
 function ensureDigest(digest: string): void {
   if (!/^sha256:[a-f0-9]{64}$/.test(digest)) throw new ComputerProviderError("invalid_configuration", "Computer image source digest is invalid");
-}
-
-function normalizeInput(input: { action: string; [key: string]: unknown }): ComputerInput {
-  if (input.action === "mouse_move") return { action: "mouse_move", x: input.x as number, y: input.y as number };
-  if (input.action === "click") return { action: "click", button: input.button as 1 | 2 | 3 | undefined };
-  if (input.action === "type") return { action: "type", text: input.text as string, delayMs: input.delay_ms as number | undefined };
-  return { action: "key", key: input.key as string };
 }

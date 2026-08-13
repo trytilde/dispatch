@@ -29,11 +29,11 @@ describe("computer tool registration", () => {
     const provider = new TestComputerProvider();
     const tools = provider.registerTools({ computerId: "computer", agentId: "hello-world" });
     expect(tools.map((candidate) => candidate.typeId)).toEqual([
-      "computer_exec",
-      "computer_read_file",
-      "computer_write_file",
-      "computer_screenshot",
-      "computer_input",
+      "bash",
+      "read_file",
+      "write_file",
+      "glob",
+      "grep",
     ]);
     for (const candidate of tools) {
       expect(candidate.tilde).toMatchObject({
@@ -99,7 +99,10 @@ describe("computer image lifecycle", () => {
     expect(containerfile).toContain("COPY --from=computer-service-builder");
     expect(containerfile).not.toMatch(/^COPY apps\/computer-service\/dist/m);
     expect(containerfile).toContain("openbot-agent-exec");
-    expect(await readFile(computerImageAssets.agentExec, "utf8")).toContain("unshare --mount");
+    const agentExec = await readFile(computerImageAssets.agentExec, "utf8");
+    expect(agentExec).toContain("unshare --mount");
+    expect(agentExec).toContain("env -i");
+    expect(agentExec).not.toContain("OPENBOT_COMPUTER_SERVICE_API_KEY");
     expect(await readFile(computerImageAssets.bootstrap, "utf8")).toContain("SOPS_VERSION=3.13.3");
   });
 });
@@ -140,7 +143,7 @@ describe("trusted development sandbox", () => {
 
 describe("agent computer-service deployment", () => {
   it("returns the typed service transport after registering agent users", async () => {
-    vi.stubEnv("OPENBOT_COMPUTER_CAPABILITY_SECRET", "a".repeat(32));
+    vi.stubEnv("OPENBOT_COMPUTER_SERVICE_API_KEY", "a".repeat(32));
     const provider = new TestComputerProvider();
     const result = await provider.deployAgentWorkspaces({ computerId: "computer", workspaces: [{ agentId: "hello-world", files: [] }] }, {
       target: "production",
@@ -157,7 +160,7 @@ describe("agent computer-service deployment", () => {
         OPENBOT_COMPUTER_ID: "computer",
         OPENBOT_COMPUTER_SERVICE_URL: "https://computer.test/rpc",
       },
-      secrets: { OPENBOT_COMPUTER_SERVICE_CAPABILITY: expect.any(String) },
     });
+    expect(result.secrets).toBeUndefined();
   });
 });

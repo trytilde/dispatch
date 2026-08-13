@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${OPENBOT_COMPUTER_CAPABILITY:?OPENBOT_COMPUTER_CAPABILITY is required}"
+: "${OPENBOT_COMPUTER_SERVICE_API_KEY:?OPENBOT_COMPUTER_SERVICE_API_KEY is required}"
 : "${OPENBOT_VNC_CAPABILITY:?OPENBOT_VNC_CAPABILITY is required}"
 
 # Keep all mutable browser and runtime data on the persistent computer workspace.
@@ -69,7 +69,7 @@ websockify --web=/usr/share/novnc --token-plugin TokenFile \
   --token-source /opt/openbot/novnc.tokens 0.0.0.0:6080 \
   >/var/log/openbot-novnc.log 2>&1 &
 
-# Start the local computer-use driver and capability-protected Connect service.
+# Start the local computer-use driver and API-key-protected Connect service.
 /usr/local/bin/openbot-cua-driver serve --socket "$CUA_DRIVER_SOCKET" --dangerously-bypass-approvals \
   >/var/log/openbot-cua-driver.log 2>&1 &
 

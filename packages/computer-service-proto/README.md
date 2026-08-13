@@ -1,6 +1,6 @@
 # @openbot/computer-service-proto
 
-Generated ConnectRPC and protobuf types for the capability-protected service inside an OpenBot Computer. This is an internal provider transport, not an API for the web or desktop UI.
+Generated ConnectRPC and protobuf types for the API-key-protected service inside an OpenBot Computer. This is an internal provider transport, not an API for the web or desktop UI.
 
 ## Public API
 

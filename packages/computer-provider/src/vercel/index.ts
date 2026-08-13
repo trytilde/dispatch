@@ -14,7 +14,7 @@ import {
   scopeComputerExecRequest,
   type ComputerImageDeploymentConfig,
 } from "../base/index.js";
-import { scopedCapability } from "../capability.js";
+import { computerServiceApiKey, scopedCapability } from "../capability.js";
 
 export class VercelSandboxComputerProvider extends BaseComputerProvider {
   protected readonly providerId = "vercel-sandbox";
@@ -170,7 +170,7 @@ function computerEnvironment(id: string, spec: ComputerSpec): Record<string, str
   return {
     CUA_DRIVER_SOCKET: "/tmp/openbot-cua-driver.sock",
     DISPLAY: ":1",
-    OPENBOT_COMPUTER_CAPABILITY: scopedCapability("computer", id),
+    OPENBOT_COMPUTER_SERVICE_API_KEY: computerServiceApiKey(),
     OPENBOT_COMPUTER_EXPOSED_PORTS: "6080,4101",
     OPENBOT_COMPUTER_SERVICE_PORT: "4101",
     OPENBOT_COMPUTER_WORKSPACE: "/workspace",

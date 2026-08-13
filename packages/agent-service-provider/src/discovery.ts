@@ -9,11 +9,11 @@ export interface AgentSource {
 }
 
 export const requiredComputerToolFiles = [
-  "computer-exec.ts",
-  "computer-input.ts",
-  "computer-read-file.ts",
-  "computer-screenshot.ts",
-  "computer-write-file.ts",
+  "bash.ts",
+  "glob.ts",
+  "grep.ts",
+  "read_file.ts",
+  "write_file.ts",
 ] as const;
 
 export async function discoverAgents(repositoryRoot: string): Promise<readonly AgentSource[]> {

@@ -35,7 +35,9 @@ The CLI checks and builds every selected provider that exposes `buildable`, then
 
 `configuration/index.ts` explicitly constructs selected implementations under its `providers` object. Each agent owns its skills and workspace seed under `configuration/agents/<id>/`; custom provider source lives under `configuration/providers/`. Global `configuration/skills/` and `configuration/sandbox/` directories are unsupported, and filesystem locations are not configuration options.
 
-The agent-local folder remains named `sandbox/workspace/` to stay structurally compatible with Eve where practical; runtime terminology is Computer everywhere else. Each agent owns explicit `tools/computer-*.ts` AI SDK tools that call the typed internal computer-service API. The service maps the agent ID to its registered Linux user and runs the operation inside that agent's private `/workspace` view.
+The agent-local folder remains named `sandbox/workspace/` to stay structurally compatible with Eve where practical; runtime terminology is Computer everywhere else. Each agent explicitly owns Eve's five default computer tools as `tools/bash.ts`, `read_file.ts`, `write_file.ts`, `glob.ts`, and `grep.ts`. Every tool calls the typed internal computer-service API and hardcodes the path-derived agent ID outside its model-visible schema. The service maps that ID to its registered Linux user and private `/workspace` view.
+
+`openbot init` also generates `OPENBOT_COMPUTER_SERVICE_API_KEY` directly into the SOPS-encrypted runtime secrets. Agent and control services receive it through their normal secret installation, and each computer receives the same value when it is created. Computer-service rejects every RPC without the exact bearer key; the key is never returned as a deployment output or written into a generated public artifact.
 
 - `vercel` builds a control/web project and a separate agent project. Every configured agent is a parallel-built Vercel Function; both projects deploy from prebuilt artifacts.
 - `local` builds separate control and agent Hono servers, writes private service environments, and installs two user-level systemd services on Linux or launchd agents on macOS. Development still hosts control and agents in one Hono process.
@@ -53,7 +55,7 @@ The production build stages the web app in the control provider's `.vercel/outpu
 - `apps/web` owns the UX shell and frontend routes.
 - `apps/control-service` owns the portable Hono application, built web UI fallback, `/healthz`, ConnectRPC federation under `/rpc`, and the local control-service entrypoint.
 - `packages/control-service-proto` is the future owner-facing API contract and is intentionally empty.
-- `packages/computer-service-proto` owns the capability-protected internal computer API.
+- `packages/computer-service-proto` owns the API-key-protected internal computer API.
 - No control database is retained while the reset application has no persisted control state.
 - Each domain provider package owns both its TypeScript contract in `src/core.ts` or `src/core/index.ts` and its concrete adapters; provider contract interfaces never live in adapter modules or the package-root entrypoint, and they are not RPC surfaces.
 

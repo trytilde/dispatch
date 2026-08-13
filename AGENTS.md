@@ -40,7 +40,7 @@ pnpm --filter @openbot/cli test
 - `apps/web`: React 19, Vite, TanStack Router, Connect clients.
 - `apps/control-service`: Hono HTTP routes, ConnectRPC services, and the local control-service entrypoint.
 - `apps/desktop`: Electron main/preload shell and packaged local server.
-- `apps/computer-service`: capability-protected ConnectRPC service inside computers.
+- `apps/computer-service`: API-key-protected ConnectRPC service inside computers.
 - `packages/control-service-proto`: browser/Electron control protobuf and generated Connect types.
 - `packages/agent-provider`: internal agent, session, and message interfaces plus the Tilde implementation.
 - `packages/configuration`: typed contract for the fork-owned composition root.

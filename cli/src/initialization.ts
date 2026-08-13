@@ -31,11 +31,11 @@ const defaultAgentTemplates = [
   ["agents/hello-world/instrumentation.ts", "./assets/agents/hello-world/instrumentation.ts.hbs"],
   ["agents/hello-world/lib/greeting.ts", "./assets/agents/hello-world/lib/greeting.ts.hbs"],
   ["agents/hello-world/lib/computer-service.ts", "./assets/agents/hello-world/lib/computer-service.ts.hbs"],
-  ["agents/hello-world/tools/computer-exec.ts", "./assets/agents/hello-world/tools/computer-exec.ts.hbs"],
-  ["agents/hello-world/tools/computer-input.ts", "./assets/agents/hello-world/tools/computer-input.ts.hbs"],
-  ["agents/hello-world/tools/computer-read-file.ts", "./assets/agents/hello-world/tools/computer-read-file.ts.hbs"],
-  ["agents/hello-world/tools/computer-screenshot.ts", "./assets/agents/hello-world/tools/computer-screenshot.ts.hbs"],
-  ["agents/hello-world/tools/computer-write-file.ts", "./assets/agents/hello-world/tools/computer-write-file.ts.hbs"],
+  ["agents/hello-world/tools/bash.ts", "./assets/agents/hello-world/tools/bash.ts.hbs"],
+  ["agents/hello-world/tools/glob.ts", "./assets/agents/hello-world/tools/glob.ts.hbs"],
+  ["agents/hello-world/tools/grep.ts", "./assets/agents/hello-world/tools/grep.ts.hbs"],
+  ["agents/hello-world/tools/read_file.ts", "./assets/agents/hello-world/tools/read_file.ts.hbs"],
+  ["agents/hello-world/tools/write_file.ts", "./assets/agents/hello-world/tools/write_file.ts.hbs"],
   ["agents/hello-world/tools/hello-world.ts", "./assets/agents/hello-world/tools/hello-world.ts.hbs"],
   ["agents/hello-world/skills/hello-world/SKILL.md", "./assets/agents/hello-world/skills/hello-world/SKILL.md.hbs"],
   ["agents/hello-world/sandbox/workspace/README.md", "./assets/agents/hello-world/sandbox/workspace/README.md.hbs"],
@@ -122,7 +122,7 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
     else if (question.destination.kind === "deployment-secret") deploymentSecretValues[question.destination.key] = value;
     else environmentValues[question.destination.key] = value;
   }
-  secretValues.OPENBOT_COMPUTER_CAPABILITY_SECRET ??= randomBytes(32).toString("base64url");
+  secretValues.OPENBOT_COMPUTER_SERVICE_API_KEY ??= randomBytes(32).toString("base64url");
 
   const ownerAge = owner.creationRule.age;
   const creationRule: SopsCreationRule = {

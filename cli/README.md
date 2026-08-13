@@ -4,7 +4,7 @@ The React Ink repository CLI for OpenBot initialization, development supervision
 
 ## Commands
 
-- `openbot init` interactively creates `configuration/.env`, `configuration/index.ts`, SOPS recipients and encrypted secrets, plus the hello-world agent tree.
+- `openbot init` interactively creates `configuration/.env`, `configuration/index.ts`, SOPS recipients and encrypted secrets, plus the hello-world agent tree with Eve's five explicit default computer tools. It generates `OPENBOT_COMPUTER_SERVICE_API_KEY` directly into SOPS-encrypted runtime secrets.
 - `openbot dev` generates contracts and supervises the combined control, agent, web, and optional Electron development processes.
 - `openbot deploy` builds selected providers, optionally stops with `--skip-deploy`, or plans and deploys providers with the runtime last.
 - `openbot secrets set NAME` and `openbot secrets unset NAME` maintain encrypted `configuration/secrets.enc.yaml` values without putting plaintext in command arguments.

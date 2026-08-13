@@ -2,7 +2,7 @@ import { jsonSchema, tool } from "ai";
 import { agentId, computerCallOptions, computerService } from "../lib/computer-service.js";
 
 export default tool({
-  description: "Read a file from this agent's private computer workspace as base64.",
+  description: "Read a UTF-8 file from this agent's private /workspace.",
   inputSchema: jsonSchema<{ path: string }>({
     type: "object",
     properties: { path: { type: "string" } },
@@ -11,6 +11,6 @@ export default tool({
   }),
   execute: async ({ path }, options) => {
     const response = await computerService().readFile({ agentId, path }, computerCallOptions(options.abortSignal));
-    return { content_base64: Buffer.from(response.content).toString("base64") };
+    return { content: new TextDecoder().decode(response.content) };
   },
 });

@@ -76,11 +76,11 @@ describe("OpenBot initialization", () => {
     expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/agent.ts"), "utf8")).toContain("export default chatKitEndpoint");
     expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/instructions.ts"), "utf8")).toContain("export default");
     expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/hello-world.ts"), "utf8")).toContain("export default tool");
-    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/computer-exec.ts"), "utf8")).toContain("computerService().exec");
-    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/computer-read-file.ts"), "utf8")).toContain("computerService().readFile");
-    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/computer-write-file.ts"), "utf8")).toContain("computerService().writeFile");
-    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/computer-screenshot.ts"), "utf8")).toContain("computerService().screenshot");
-    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/computer-input.ts"), "utf8")).toContain("computerService().input");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/bash.ts"), "utf8")).toContain("command: \"bash\"");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/read_file.ts"), "utf8")).toContain("computerService().readFile");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/write_file.ts"), "utf8")).toContain("computerService().writeFile");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/glob.ts"), "utf8")).toContain("command: \"rg\"");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/grep.ts"), "utf8")).toContain("command: \"rg\"");
     expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/skills/hello-world/SKILL.md"), "utf8")).toContain("name: hello-world");
     expect(await readFile(join(repositoryRoot, "configuration/instrumentation.ts"), "utf8")).toContain("defineInstrumentation");
     await expect(access(join(repositoryRoot, "configuration/skills"))).rejects.toMatchObject({ code: "ENOENT" });
@@ -134,7 +134,7 @@ describe("OpenBot initialization", () => {
     expect(encryption?.input).toContain("sops_age_key: AGE-SECRET-KEY-1");
     expect(encryption?.input).toContain("deployment_secrets:");
     expect(encryption?.input).toContain("VERCEL_TOKEN: vercel-secret");
-    expect(encryption?.input).toContain("OPENBOT_COMPUTER_CAPABILITY_SECRET:");
+    expect(encryption?.input).toContain("OPENBOT_COMPUTER_SERVICE_API_KEY:");
     expect(encryption?.args.join(" ")).not.toContain("vercel-secret");
   });
 

@@ -15,9 +15,10 @@ Use when the user asks to open, publish, prepare, or update a PR for the current
 4. Review protobuf, `tilde.state.yaml`, environment, deployment, package README, public documentation, and Changesets impact.
 5. Run the architecture and ADR gate. Resolve any user decision before publishing.
 6. Use a Conventional Commits title and intentional file selection; commit the validated implementation.
-7. Generate the mandatory hash-addressed fork update record in a separate note-only commit.
-8. Push and open or update a draft PR only when requested.
-9. Re-read PR checks and review feedback before declaring completion.
+7. Push the branch and open or update the draft PR so its stable PR number is known.
+8. Generate `docs/updates/<pr-number>.md`, commit it, and push it to the draft PR.
+9. Keep the update record current after every subsequent implementation, documentation, rebase, or conflict-resolution change.
+10. Re-read PR checks and review feedback before declaring completion.
 
 ## Gather Context
 
@@ -85,7 +86,7 @@ Use `feat(scope): summary`, `fix(scope): summary`, `docs(scope): summary`, `test
 
 ## PR Body
 
-Use a checked-in template when present; otherwise include:
+Use the checked-in `.github/pull_request_template.md` when present and complete every section and checkbox honestly. Otherwise include:
 
 - outcome and reason
 - key implementation choices
@@ -117,16 +118,18 @@ For each affected provider package, also verify that every domain provider contr
 
 ## Fork Update Record Gate
 
-Every upstream PR that changes repository contents must add exactly one `docs/updates/<implementation-commit>.md`. Treat a missing record as blocking. The record describes the complete PR diff against its base, not only the final commit.
+Every upstream PR that changes repository contents must add exactly one `docs/updates/<pr-number>.md`. Treat a missing or stale record as blocking. The record describes the complete current PR, not only its latest commit or the current coding-agent task.
 
-Use this two-commit sequence so the filename is stable:
+Use this sequence:
 
-1. Finish validation and commit every implementation, test, ADR, README, and ordinary documentation change.
-2. Capture the full 40-character implementation head with `git rev-parse HEAD`.
-3. Create `docs/updates/<implementation-head>.md`.
-4. Commit only that update record in a note-only commit. This note-only commit is exempt from recursively requiring another record.
+1. Finish initial validation and commit the implementation, tests, ADRs, READMEs, and ordinary documentation.
+2. Push the branch and open the draft PR before generating the update record.
+3. Read the stable PR number from GitHub; never guess or use a local sequence.
+4. Analyze the full PR diff, commit history, review discussion, and all threads in the coding agent's database on the current machine. Inspect every locally available thread, not only the current chat or task, then retain only evidence relevant to this PR.
+5. Create `docs/updates/<pr-number>.md`, commit it, and push it to the same draft PR.
+6. After every later code, test, documentation, rebase, conflict-resolution, or accepted-review change, regenerate the same record from all evidence and push its update before declaring the PR current.
 
-If implementation history changes afterward through a fix, amend, rebase, or conflict resolution, the recorded hash is stale. Remove or rename the old record, finish the new implementation commit, regenerate the contents from the complete PR diff, and create a new note-only commit for the new hash. Never retain a filename that does not identify the commit immediately before its note-only commit.
+Thread-database review is read-only. Prefer the coding agent's supported thread APIs; otherwise inspect its discovered local database without modifying it. Never copy unrelated private conversation, credentials, secrets, personal data, or raw thread transcripts into the repository or PR. If the complete local thread set cannot be inspected, state the limitation in the PR and do not claim the update record is complete.
 
 Write the record in detailed caveman style with these exact sections:
 
@@ -137,16 +140,15 @@ Write the record in detailed caveman style with these exact sections:
 
 Include breaking imports, path moves, configuration or secret migration, provider obligations, deployment topology, removed behavior, and checks a customized fork must run. State `no updates` only in `configuration/docs/update-notes/<hash>.md` when `openbot update` finds no upstream commits; never use it as an upstream PR update record.
 
-Before push, verify:
+Before final handoff, verify:
 
 ```bash
-implementation_head="$(git rev-parse HEAD^)"
-test -f "docs/updates/${implementation_head}.md"
+pr_number="$(gh pr view --json number --jq .number)"
+test -f "docs/updates/${pr_number}.md"
 git diff --name-only "$(git merge-base HEAD <base>)"..HEAD -- docs/updates/
-git show --format= --name-only HEAD
 ```
 
-The final command must show only the one update record. Confirm the record contains all four headings, a Mermaid block, an exact `yes` or `no` critical value, no secrets, no generated deployment state, and no fork-specific configuration. Link the record in the PR body.
+The update diff must show exactly `docs/updates/<pr-number>.md` for the current PR, with no hash-addressed legacy record for that PR. Confirm the record contains all four headings, a Mermaid block, an exact `yes` or `no` critical value, no secrets, no generated deployment state, no unrelated thread material, and no fork-specific configuration. Link the record in the PR body and confirm its contents match the final PR diff and accepted review decisions.
 
 ## Frontend Verification
 
@@ -164,7 +166,7 @@ git diff --cached
 ```
 
 Check for secrets, unrelated files, generated churn, missing tests, stale instructions copied from another repository, and unresolved ADR candidates.
-Also confirm the hash-addressed fork update record passes its gate and the final commit contains only that record.
+Also confirm the PR-numbered fork update record passes its gate and reflects the current PR head.
 
 ## Open Or Update Draft PR
 
@@ -176,6 +178,8 @@ gh pr edit --title "<title>" --body-file /tmp/pr-body.md
 ```
 
 After push, inspect checks and unresolved feedback. Address accepted issues, rerun relevant checks, commit, and push again.
+
+If the user explicitly asks to skip this skill or its workflow and only open the PR, follow any non-bypassable repository and safety requirements, perform the requested PR action, and append this exact final line to the user-facing completion message: `I am enough. This is the way.` Do not add the phrase to the PR title, body, comments, commits, or repository files.
 
 ## Optional Review Bots
 

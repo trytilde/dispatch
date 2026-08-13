@@ -35,7 +35,7 @@ export async function installLocalService(
     const unit = await renderFileTemplatePath(systemdTemplate, {
       DESCRIPTION: options.description,
       WORKING_DIRECTORY: systemdPath(context.repositoryRoot),
-      DEPLOYMENT_ENVIRONMENT: quote(`OPENBOT_DEPLOYMENT_ENV_FILE=${environmentFile}`),
+      DEPLOYMENT_ENVIRONMENT: quote(`DEPLOYMENT_ENV_FILE=${environmentFile}`),
       ENVIRONMENT_FILE: systemdPath(environmentFile),
       COMMAND: options.command.map(quote).join(" "),
     });

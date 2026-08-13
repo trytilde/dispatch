@@ -93,7 +93,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
                   "Use an untagged OCI repository that the deployment environment can push to.",
                 input: "text",
                 required: true,
-                destination: { kind: "environment", key: "OPENBOT_COMPUTER_IMAGE_REPOSITORY" },
+                destination: { kind: "environment", key: "COMPUTER_IMAGE_REPOSITORY" },
               },
             ],
           };
@@ -365,8 +365,8 @@ export abstract class BaseComputerProvider implements ComputerProvider {
   ): Promise<DeploymentResult> {
     const call: ComputerCallContext = { requestId: "computer:deploy-agent-workspaces" };
     const serviceApiKey = computerServiceApiKey(
-      context.inputs.secrets().OPENBOT_COMPUTER_SERVICE_API_KEY ??
-        context.environment.OPENBOT_COMPUTER_SERVICE_API_KEY,
+      context.inputs.secrets().COMPUTER_SERVICE_API_KEY ??
+        context.environment.COMPUTER_SERVICE_API_KEY,
     );
     let computer;
     try {
@@ -380,7 +380,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
         {
           id: request.computerId,
           ...(image ? { image } : {}),
-          environment: { OPENBOT_COMPUTER_SERVICE_API_KEY: serviceApiKey },
+          environment: { COMPUTER_SERVICE_API_KEY: serviceApiKey },
         },
         call,
       );
@@ -391,8 +391,8 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     return {
       outputs: { "computer.id": computer.id },
       environmentVariables: {
-        OPENBOT_COMPUTER_ID: computer.id,
-        OPENBOT_COMPUTER_SERVICE_URL: await this.computerServiceUrl(computer.id),
+        COMPUTER_ID: computer.id,
+        COMPUTER_SERVICE_URL: await this.computerServiceUrl(computer.id),
       },
     };
   }
@@ -496,7 +496,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       );
     return {
       outputs: { "development-sandbox.computer-id": computer.id },
-      environmentVariables: { OPENBOT_DEVELOPMENT_SANDBOX_ID: computer.id },
+      environmentVariables: { DEVELOPMENT_SANDBOX_ID: computer.id },
     };
   }
 
@@ -624,7 +624,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     _phase: "build" | "plan" | "deploy",
   ): Promise<string> {
     const repository =
-      this.#imageDeployment.repository ?? context.environment.OPENBOT_COMPUTER_IMAGE_REPOSITORY;
+      this.#imageDeployment.repository ?? context.environment.COMPUTER_IMAGE_REPOSITORY;
     const selected =
       repository?.trim() ||
       (!this.#imageLifecycle.publish
@@ -633,7 +633,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     if (!selected)
       throw new ComputerProviderError(
         "invalid_configuration",
-        "OPENBOT_COMPUTER_IMAGE_REPOSITORY is required to build and deploy computer images",
+        "COMPUTER_IMAGE_REPOSITORY is required to build and deploy computer images",
       );
     if (selected.includes("://") || /\s/.test(selected))
       throw new ComputerProviderError(
@@ -683,7 +683,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
   }
 
   #outputName(suffix: string): string {
-    return `OPENBOT_${this.providerId.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase()}_IMAGE_${suffix}`;
+    return `${this.providerId.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase()}_IMAGE_${suffix}`;
   }
 }
 
@@ -756,8 +756,8 @@ export function scopeComputerExecRequest(
     cwd: request.cwd ? logicalComputerPath(request.cwd, root) : root,
     environment: {
       HOME: root,
-      OPENBOT_AGENT_ID: agentId,
-      OPENBOT_COMPUTER_WORKSPACE: root,
+      AGENT_ID: agentId,
+      COMPUTER_WORKSPACE: root,
       ...request.environment,
     },
     timeoutMs: request.timeoutMs,

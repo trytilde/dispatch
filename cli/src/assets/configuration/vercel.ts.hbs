@@ -1,12 +1,12 @@
 import { Configuration } from "@tryopenbot/configuration";
 import { VercelAgentServiceProvider } from "@tryopenbot/agent-service-provider";
 import { VercelControlServiceProvider } from "@tryopenbot/control-service-provider";
-import runtimeProviders from "./runtime-providers.js";
+import runtimeProviders, { vercel } from "./runtime-providers.js";
 
 export default Configuration({
   providers: {
-    controlService: new VercelControlServiceProvider(),
-    agentService: new VercelAgentServiceProvider(),
+    controlService: new VercelControlServiceProvider({ platform: vercel }),
+    agentService: new VercelAgentServiceProvider({ platform: vercel }),
     agent: runtimeProviders.agent,
     computer: runtimeProviders.computer,
     inferenceModel: runtimeProviders.inferenceModel,

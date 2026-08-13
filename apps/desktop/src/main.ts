@@ -34,12 +34,12 @@ async function createWindow(): Promise<void> {
     if (current && new URL(url).origin !== new URL(current).origin) event.preventDefault();
   });
 
-  const developmentUrl = process.env.OPENBOT_DESKTOP_DEV_URL;
+  const developmentUrl = process.env.DESKTOP_DEV_URL;
   if (developmentUrl) await window.loadURL(developmentUrl);
   else {
     rendererServer ??= await startRendererServer(
       join(process.resourcesPath, "web"),
-      process.env.OPENBOT_CONTROL_ORIGIN || "http://127.0.0.1:4100",
+      process.env.CONTROL_ORIGIN || "http://127.0.0.1:4100",
     );
     await window.loadURL(rendererServer.origin);
   }

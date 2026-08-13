@@ -2,7 +2,7 @@ metadata:
   name: openbot
   description: Shared ChatKit gateway for an OpenBot installation.
 variables:
-  OPENBOT_CHATKIT_ENDPOINT_URL:
+  CHATKIT_ENDPOINT_URL:
     type: string
     description: The deployed OpenBot /api/tilde/chatkit URL.
 resources:
@@ -14,7 +14,7 @@ resources:
       timeout_ms: 300000
     displayName: OpenBot Gateway
     enabled: true
-    endpointUrl: ${OPENBOT_CHATKIT_ENDPOINT_URL}
+    endpointUrl: ${CHATKIT_ENDPOINT_URL}
   chatkit/provider/openbot-web:
     refs:
       default_agent: chatkit/agent/openbot-gateway

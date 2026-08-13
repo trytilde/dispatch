@@ -3,16 +3,16 @@ import { loadDeploymentConfiguration } from "./initialization.js";
 import { repositoryRoot } from "./paths.js";
 
 export async function loadLocalEnvironment(): Promise<NodeJS.ProcessEnv> {
-  const deploymentEnvironment = process.env.OPENBOT_DEPLOYMENT_ENV_FILE;
+  const deploymentEnvironment = process.env.DEPLOYMENT_ENV_FILE;
   if (deploymentEnvironment) config({ path: deploymentEnvironment, quiet: true });
   const environment =
-    process.env.OPENBOT_CONFIGURATION_LOADED === "1"
+    process.env.CONFIGURATION_LOADED === "1"
       ? process.env
       : (await loadDeploymentConfiguration(repositoryRoot, { environment: process.env }))
           .environment;
-  environment.OPENBOT_CONFIGURATION_LOADED = "1";
-  environment.OPENBOT_PORT ||= environment.TUNNEL_PORT || environment.PORT || "4100";
-  environment.OPENBOT_WEB_PORT ||= "4173";
+  environment.CONFIGURATION_LOADED = "1";
+  environment.PORT ||= environment.TUNNEL_PORT || environment.PORT || "4100";
+  environment.WEB_PORT ||= "4173";
   Object.assign(process.env, environment);
   return environment;
 }

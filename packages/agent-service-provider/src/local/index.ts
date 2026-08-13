@@ -58,11 +58,11 @@ export class LocalAgentServiceProvider implements Buildable, Deployable, Initial
     };
   }
   async configure(context: DeploymentContext): Promise<DeploymentResult> {
-    const port = context.environment.OPENBOT_AGENT_PORT ?? "4101";
+    const port = context.environment.AGENT_PORT ?? "4101";
     const origin = `http://127.0.0.1:${port}`;
     return {
       outputs: { "agent-service.origin": origin },
-      environmentVariables: { OPENBOT_AGENT_SERVICE_ORIGIN: origin, OPENBOT_AGENT_PORT: port },
+      environmentVariables: { AGENT_SERVICE_ORIGIN: origin, AGENT_PORT: port },
     };
   }
   async deploy(context: DeploymentContext): Promise<DeploymentResult> {

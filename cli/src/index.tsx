@@ -4,6 +4,7 @@ import React, { type ReactElement } from "react";
 import { render } from "ink";
 import { redact } from "./commands/deploy.js";
 import { parseInvocation, runCommand } from "./commands/index.js";
+import { runWithTypeScriptLoader } from "./typescript-loader.js";
 import { CommandMenu, Failure } from "./ui.js";
 
 async function main(): Promise<void> {
@@ -39,7 +40,7 @@ function printJson(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
-main().catch((error) => {
+runWithTypeScriptLoader(main).catch((error) => {
   const message = redact(error instanceof Error ? error.message : String(error), [
     process.env.VERCEL_TOKEN ?? "",
   ]);

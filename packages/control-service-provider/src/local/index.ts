@@ -54,11 +54,11 @@ export class LocalControlServiceProvider implements Buildable, Deployable, Initi
     };
   }
   async configure(context: DeploymentContext): Promise<DeploymentResult> {
-    const port = context.environment.OPENBOT_PORT ?? "4100";
+    const port = context.environment.PORT ?? "4100";
     const origin = `http://127.0.0.1:${port}`;
     return {
       outputs: { "control-service.origin": origin, "runtime.origin": origin },
-      environmentVariables: { OPENBOT_PUBLIC_ORIGIN: origin, OPENBOT_PORT: port },
+      environmentVariables: { PUBLIC_ORIGIN: origin, PORT: port },
     };
   }
   async deploy(context: DeploymentContext): Promise<DeploymentResult> {

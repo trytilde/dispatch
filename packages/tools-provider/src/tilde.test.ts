@@ -24,6 +24,15 @@ vi.mock("@trytilde/harness-sdk-vercel-ai-node", () => ({
 }));
 
 describe("TildeToolProvider", () => {
+  it("depends on shared Tilde setup and owns only the runtime MCP server question", () => {
+    const client = createClient({ teamId: "team-one", apiKey: "secret" });
+    const provider = new TildeToolProvider({ client, serverId: "runtime-one" });
+    expect(provider.platforms.map(({ id }) => id)).toEqual(["tilde"]);
+    expect(provider.initialization.questions.map(({ id }) => id)).toEqual([
+      "tilde-runtime-mcp-server-id",
+    ]);
+  });
+
   it("uses the Harness SDK MCP client and registers named AI SDK tools", async () => {
     const client = createClient({
       baseUrl: "https://tilde.test",

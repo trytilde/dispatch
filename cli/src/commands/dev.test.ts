@@ -12,8 +12,8 @@ describe("development server command", () => {
 
 describe("development server environment", () => {
   it("resolves workspace packages through their source exports", () => {
-    expect(developmentServerEnvironment({ OPENBOT_PORT: "4100" })).toEqual({
-      OPENBOT_PORT: "4100",
+    expect(developmentServerEnvironment({ PORT: "4100" })).toEqual({
+      PORT: "4100",
       NODE_OPTIONS: "--conditions=development",
     });
   });

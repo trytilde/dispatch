@@ -1,4 +1,5 @@
 import { createOpenAI, type OpenAIProviderSettings } from "@ai-sdk/openai";
+import type { ProviderInitialization } from "@tryopenbot/runtime-provider";
 import type { InferenceModelProvider } from "./core.js";
 import { OPENAI_PROMPT_PART, requireCredentialValue, requireModelName } from "./openai-shared.js";
 
@@ -11,7 +12,23 @@ export interface OpenAIApiKeyInferenceModelProviderOptions {
   fetch?: typeof globalThis.fetch;
 }
 
+export const openAIApiKeyProviderInitialization: ProviderInitialization = {
+  id: "openai-api-key",
+  label: "OpenAI API",
+  questions: [
+    {
+      id: "openai-api-key",
+      prompt: "OpenAI API key",
+      description: "API key used by the default OpenAI inference model provider.",
+      input: "secret",
+      required: true,
+      destination: { kind: "secret", key: "OPENAI_API_KEY" },
+    },
+  ],
+};
+
 export class OpenAIApiKeyInferenceModelProvider implements InferenceModelProvider {
+  readonly initialization = openAIApiKeyProviderInitialization;
   readonly #openai: ReturnType<typeof createOpenAI>;
 
   constructor(options: OpenAIApiKeyInferenceModelProviderOptions) {

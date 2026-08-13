@@ -1,6 +1,11 @@
 import { tool } from "ai";
+import { TildePlatform, type TildePlatformConfig } from "@tryopenbot/platform-integrations";
+import {
+  tildeErrorMessage,
+  tildeErrorStatus,
+} from "@tryopenbot/platform-integrations/tilde/errors";
+import { tildeFetch } from "@tryopenbot/platform-integrations/tilde/fetch";
 import { z } from "zod";
-import { createClient, type SkillItem } from "@trytilde/harness-sdk";
 import * as tildeApiClient from "@trytilde/api-client";
 import {
   createSkill,
@@ -34,12 +39,8 @@ import type {
 } from "./core.js";
 import { pageSize, providerSignal, safeSkillAssetPath, SkillsProviderError } from "./core.js";
 
-export interface TildeSkillProviderConfig {
-  apiKey: string;
-  orgId: string;
-  teamId: string;
+export interface TildeSkillProviderConfig extends TildePlatformConfig {
   registryId?: string;
-  baseUrl?: string;
 }
 
 interface TildeSkillPackageManifest {
@@ -76,10 +77,22 @@ const { downloadSkillPackageFile, getSkillPackage } = tildeApiClient as typeof t
   TildeSkillPackageApi;
 
 export class TildeSkillProvider implements SkillProvider {
+  readonly platform: TildePlatform;
+  readonly platforms: readonly TildePlatform[];
   readonly #config: TildeSkillProviderConfig;
 
-  constructor(config: TildeSkillProviderConfig) {
-    this.#config = config;
+  constructor(platformOrConfig: TildePlatform | TildeSkillProviderConfig) {
+    this.platform =
+      platformOrConfig instanceof TildePlatform
+        ? platformOrConfig
+        : new TildePlatform(platformOrConfig);
+    this.platforms = [this.platform];
+    this.#config = {
+      ...this.platform.connection(),
+      ...(platformOrConfig instanceof TildePlatform
+        ? {}
+        : { registryId: platformOrConfig.registryId }),
+    };
   }
 
   async listSkills(
@@ -264,7 +277,7 @@ export class TildeSkillProvider implements SkillProvider {
         body: { path },
         throwOnError: true,
       });
-      const response = await contextFetch(context)(data.url);
+      const response = await tildeFetch(providerSignal(context))(data.url);
       if (!response.ok) {
         throw new SkillsProviderError(
           "provider_unavailable",
@@ -343,15 +356,7 @@ export class TildeSkillProvider implements SkillProvider {
   }
 
   #harness(context: SkillsProviderCallContext) {
-    return createClient({
-      apiKey: this.#config.apiKey,
-      orgId: this.#config.orgId,
-      orgSubdomain: false,
-      teamId: this.#config.teamId,
-      baseUrl: this.#config.baseUrl,
-      headers: { "x-api-key": this.#config.apiKey },
-      fetch: contextFetch(context),
-    });
+    return this.platform.client(providerSignal(context));
   }
 
   #api(context: SkillsProviderCallContext) {
@@ -360,7 +365,7 @@ export class TildeSkillProvider implements SkillProvider {
       orgId: this.#config.orgId,
       baseUrl: this.#config.baseUrl ?? "https://api.trytilde.ai",
       headers: { "x-api-key": this.#config.apiKey },
-      fetch: contextFetch(context),
+      fetch: tildeFetch(providerSignal(context)),
       throwOnError: true,
     });
   }
@@ -380,7 +385,7 @@ export class TildeSkillProvider implements SkillProvider {
           true,
         );
       }
-      const status = errorStatus(error);
+      const status = tildeErrorStatus(error);
       const code =
         status === 400
           ? "invalid_request"
@@ -391,7 +396,7 @@ export class TildeSkillProvider implements SkillProvider {
               : "provider_unavailable";
       throw new SkillsProviderError(
         code,
-        errorMessage(error),
+        tildeErrorMessage(error, "Tilde skills request failed"),
         status === undefined || status >= 500,
       );
     }
@@ -451,33 +456,11 @@ function page<T>(items: readonly T[], nextPageToken?: string): Page<T> {
   return { items, ...(nextPageToken ? { nextPageToken } : {}) };
 }
 
-function contextFetch(context: SkillsProviderCallContext): typeof fetch {
-  const providerAbort = providerSignal(context);
-  return (input, init) => {
-    const requestAbort = init?.signal ?? (input instanceof Request ? input.signal : undefined);
-    const signal = requestAbort ? AbortSignal.any([requestAbort, providerAbort]) : providerAbort;
-    return fetch(input, { ...init, signal });
-  };
-}
-
 function dateValue(value: string): Date {
   const date = new Date(value);
   if (Number.isNaN(date.valueOf()))
     throw new SkillsProviderError("provider_unavailable", "Tilde returned an invalid timestamp");
   return date;
-}
-
-function errorStatus(error: unknown): number | undefined {
-  if (!error || typeof error !== "object" || !("status" in error)) return undefined;
-  return typeof error.status === "number" ? error.status : undefined;
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  if (error && typeof error === "object" && "msg" in error && typeof error.msg === "string")
-    return error.msg;
-  return "Tilde skills request failed";
 }
 
 async function sha256Hex(content: Uint8Array): Promise<string> {

@@ -3,16 +3,20 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   generateAgeIdentity,
   initializeOpenBot,
+  isInitializedOpenBotRepository,
   loadDeploymentConfiguration,
   processCommandRunner,
   setEncryptedSecret,
+  setEnvironmentValue,
   SANDBOX_SOPS_AGE_KEY,
   type InitializationCommandRunner,
   type InitializationPrompts,
   unsetEncryptedSecret,
+  unsetEnvironmentValue,
 } from "./initialization.js";
 
 const temporaryDirectories: string[] = [];
@@ -191,7 +195,7 @@ describe("OpenBot initialization", () => {
         code: "ENOENT",
       });
       expect(loaded.environment.SOPS_AGE_KEY).toBeUndefined();
-      expect(loaded.environment.OPENBOT_COMPUTER_IMAGE_REPOSITORY).toBeUndefined();
+      expect(loaded.environment.COMPUTER_IMAGE_REPOSITORY).toBeUndefined();
       await expect(access(join(repositoryRoot, "configuration/.gitignore"))).rejects.toMatchObject({
         code: "ENOENT",
       });
@@ -281,8 +285,15 @@ describe("OpenBot initialization", () => {
       "Engineering",
       "OpenBot owner identity",
       "vercel-secret",
+      "",
       "openbot-control",
       "openbot-agents",
+      "tilde-secret",
+      "tilde-org",
+      "tilde-team",
+      "",
+      "runtime-mcp",
+      "openai-secret",
     ];
     const promptInput = vi.fn(async () => inputs.shift() ?? "");
     const prompts: InitializationPrompts = {
@@ -307,16 +318,25 @@ describe("OpenBot initialization", () => {
 
     expect(calls.at(-1)).toMatchObject({ command: "vp", args: ["install"] });
 
-    expect(promptInput).toHaveBeenCalledTimes(5);
+    expect(promptInput).toHaveBeenCalledTimes(12);
     const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
-    expect(environment).not.toContain("OPENBOT_RUNTIME_PROVIDER");
-    expect(environment).toContain('OPENBOT_VERCEL_CONTROL_PROJECT="openbot-control"');
-    expect(environment).toContain('OPENBOT_VERCEL_AGENT_PROJECT="openbot-agents"');
-    expect(environment).not.toContain("OPENBOT_COMPUTER_IMAGE_REPOSITORY");
+    expect(environment).not.toContain("RUNTIME_PROVIDER");
+    expect(environment).toContain('VERCEL_CONTROL_PROJECT="openbot-control"');
+    expect(environment).toContain(
+      "# Name of the Vercel project that will host the OpenBot control service",
+    );
+    expect(environment).toContain('VERCEL_AGENT_PROJECT="openbot-agents"');
+    expect(environment).toContain('TILDE_ORG_ID="tilde-org"');
+    expect(environment).toContain('TILDE_TEAM_ID="tilde-team"');
+    expect(environment).toContain('TILDE_RUNTIME_MCP_SERVER_ID="runtime-mcp"');
+    expect(environment).not.toContain("TILDE_BASE_URL");
+    expect(environment).not.toContain("COMPUTER_IMAGE_REPOSITORY");
     expect(environment).not.toContain("vercel-secret");
     const configuration = await readFile(join(repositoryRoot, "configuration/index.ts"), "utf8");
     expect(configuration).toContain("providers: {");
-    expect(configuration).toContain("controlService: new VercelControlServiceProvider()");
+    expect(configuration).toContain(
+      "controlService: new VercelControlServiceProvider({ platform: vercel })",
+    );
     const sopsConfig = await readFile(join(repositoryRoot, "configuration/.sops.yaml"), "utf8");
     expect(sopsConfig.match(/- age1/g)).toHaveLength(2);
     const encrypted = await readFile(
@@ -337,16 +357,146 @@ describe("OpenBot initialization", () => {
     expect(onePasswordCreate?.input).toContain("AGE-SECRET-KEY-1");
     expect(onePasswordCreate?.args.join(" ")).not.toContain("AGE-SECRET-KEY");
     const encryption = calls.find(
-      (call) => call.command === "sops" && call.input?.includes("sops_age_key:"),
+      (call) => call.command === "sops" && call.input?.includes("SECRETS_SOPS_AGE_KEY:"),
     );
-    expect(encryption?.input).toContain("sops_age_key: AGE-SECRET-KEY-1");
-    expect(encryption?.input).toContain("deployment_secrets:");
-    expect(encryption?.input).toContain("VERCEL_TOKEN: vercel-secret");
-    expect(encryption?.input).toContain("OPENBOT_COMPUTER_SERVICE_API_KEY:");
+    expect(encryption?.input).toContain("SECRETS_SOPS_AGE_KEY:");
+    expect(encryption?.input).toContain("description:");
+    expect(encryption?.input).toContain("value: AGE-SECRET-KEY-1");
+    expect(encryption?.input).toContain("VERCEL_TOKEN:");
+    expect(encryption?.input).toContain("value: vercel-secret");
+    expect(encryption?.input).toContain("value: tilde-secret");
+    expect(encryption?.input).toContain("value: openai-secret");
+    expect(encryption?.input).toContain("COMPUTER_SERVICE_API_KEY:");
+    expect(encryption?.args).toContain("--encrypted-regex");
     expect(encryption?.args.join(" ")).not.toContain("vercel-secret");
     await expect(access(join(repositoryRoot, "configuration/.gitignore"))).rejects.toMatchObject({
       code: "ENOENT",
     });
+  });
+
+  it("revisits initialized platform config with existing values as defaults", async () => {
+    const repositoryRoot = await temporaryRepository();
+    const sopsConfiguration = stringifyYaml({
+      creation_rules: [
+        {
+          path_regex: "configuration/secrets\\.enc\\.yaml$",
+          encrypted_regex: "^value$",
+          age: ["age1owner"],
+        },
+      ],
+    });
+    const storedSecrets = {
+      EXTRA_SECRET: { description: "Unrelated secret", value: "keep-secret" },
+      SECRETS_SOPS_AGE_KEY: {
+        description: "Sandbox age identity",
+        value: "AGE-SECRET-KEY-1STORED",
+      },
+    };
+    await writeFixture(
+      repositoryRoot,
+      "configuration/.env",
+      'TILDE_ORG_ID="stored-org"\nUNRELATED="keep"\n',
+    );
+    await writeFixture(repositoryRoot, "configuration/.sops.yaml", sopsConfiguration);
+    await writeFixture(repositoryRoot, "configuration/secrets.enc.yaml", "encrypted\n");
+    await writeFixture(repositoryRoot, "configuration/sops.identity.json", '{"version":1}\n');
+    await writeFixture(
+      repositoryRoot,
+      "configuration/index.ts",
+      `function requiredEnvironment(name) {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(\`${"${name}"} is required\`);
+  return value;
+}
+
+class TildeAgentProvider {
+  configured = requiredEnvironment("TILDE_API_KEY");
+}
+
+export default {
+  providers: {
+    controlService: {},
+    agentService: {},
+    agent: new TildeAgentProvider(),
+    computer: {},
+    inferenceModel: {},
+    skills: {},
+    tools: {},
+  },
+};
+`,
+    );
+
+    const defaults = new Map<string, string | undefined>();
+    let encryptionInput: string | undefined;
+    const run = vi.fn(async (command: string, args: readonly string[]) => {
+      if (command === "sops" && args[0] === "decrypt")
+        return { stdout: stringifyYaml(storedSecrets), stderr: "" };
+      if (command === "vp") return { stdout: "", stderr: "" };
+      throw new Error(`Unexpected command: ${command} ${args.join(" ")}`);
+    });
+    const runner: InitializationCommandRunner = {
+      run,
+      runWithInputFile: vi.fn(async (command, args, options) => {
+        expect(command).toBe("sops");
+        expect(args[0]).toBe("encrypt");
+        encryptionInput = options.input;
+        const plaintext = parseYaml(options.input) as Record<
+          string,
+          { description: string; value: string }
+        >;
+        const encrypted = Object.fromEntries(
+          Object.entries(plaintext).map(([name, described]) => [
+            name,
+            { ...described, value: `ENC[${name}]` },
+          ]),
+        );
+        return { stdout: stringifyYaml({ ...encrypted, sops: { mac: "encrypted" } }), stderr: "" };
+      }),
+    };
+    const prompts: InitializationPrompts = {
+      select: vi.fn(async () => {
+        throw new Error("No select prompt expected");
+      }),
+      input: vi.fn(async (_prompt, options) => {
+        defaults.set(options?.id ?? "", options?.initialValue);
+        if (options?.id === "tilde-api-key") return "entered-tilde";
+        if (options?.id === "tilde-team-id") return "entered-team";
+        return options?.id === "tilde-org-id" ? "updated-org" : (options?.initialValue ?? "");
+      }),
+    };
+
+    expect(await isInitializedOpenBotRepository(repositoryRoot)).toBe(true);
+    await initializeOpenBot({ repositoryRoot, prompts, runner });
+
+    expect(defaults).toEqual(
+      new Map([
+        ["tilde-api-key", undefined],
+        ["tilde-org-id", "stored-org"],
+        ["tilde-team-id", undefined],
+        ["tilde-base-url", undefined],
+      ]),
+    );
+    const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
+    expect(environment).toContain('TILDE_ORG_ID="updated-org"');
+    expect(environment).toContain('TILDE_TEAM_ID="entered-team"');
+    expect(environment).toContain('UNRELATED="keep"');
+    const reencrypted = parseYaml(encryptionInput ?? "") as typeof storedSecrets;
+    expect(reencrypted).toMatchObject({
+      TILDE_API_KEY: {
+        description: "API key used by OpenBot services to access the selected Tilde team.",
+        value: "entered-tilde",
+      },
+    });
+    expect(reencrypted.EXTRA_SECRET).toEqual(storedSecrets.EXTRA_SECRET);
+    expect(reencrypted.SECRETS_SOPS_AGE_KEY).toEqual(storedSecrets.SECRETS_SOPS_AGE_KEY);
+    expect(await readFile(join(repositoryRoot, "configuration/.sops.yaml"), "utf8")).toBe(
+      sopsConfiguration,
+    );
+    expect(await readFile(join(repositoryRoot, "configuration/sops.identity.json"), "utf8")).toBe(
+      '{"version":1}\n',
+    );
+    expect(run).toHaveBeenLastCalledWith("vp", ["install"], { cwd: repositoryRoot });
   });
 
   it("loads runtime values while keeping the sandbox identity sandbox-scoped", async () => {
@@ -384,9 +534,16 @@ describe("OpenBot initialization", () => {
         });
         return {
           stdout: JSON.stringify({
-            openbot: { sandbox: { sops_age_key: "AGE-SECRET-KEY-1TEST" } },
-            deployment_secrets: { VERCEL_TOKEN: "deploy-private" },
-            secrets: { API_TOKEN: "private" },
+            SECRETS_SOPS_AGE_KEY: {
+              description: "Sandbox age identity",
+              value: "AGE-SECRET-KEY-1TEST",
+            },
+            VERCEL_TOKEN: { description: "Vercel deployment token", value: "deploy-private" },
+            API_TOKEN: { description: "Runtime API token", value: "private" },
+            COMPUTER_SERVICE_API_KEY: {
+              description: "Computer service key",
+              value: "computer-private",
+            },
           }),
           stderr: "",
         };
@@ -400,7 +557,10 @@ describe("OpenBot initialization", () => {
       API_TOKEN: "private",
       VERCEL_TOKEN: "deploy-private",
     });
-    expect(loaded.inputs.secrets).toEqual({ API_TOKEN: "private" });
+    expect(loaded.inputs.secrets).toEqual({
+      API_TOKEN: "private",
+      COMPUTER_SERVICE_API_KEY: "computer-private",
+    });
     expect(loaded.inputs.deploymentSecrets).toEqual({ VERCEL_TOKEN: "deploy-private" });
     expect(loaded.inputs.sandboxSecrets).toEqual({
       [SANDBOX_SOPS_AGE_KEY]: "AGE-SECRET-KEY-1TEST",
@@ -420,6 +580,7 @@ describe("OpenBot initialization", () => {
     await setEncryptedSecret(repositoryRoot, "VERCEL_TOKEN", "private-value", {
       runner,
       environment: { SOPS_AGE_KEY: "owner" },
+      description: "Vercel deployment credential.",
     });
     await unsetEncryptedSecret(repositoryRoot, "VERCEL_TOKEN", {
       runner,
@@ -429,9 +590,35 @@ describe("OpenBot initialization", () => {
     const set = calls.find(
       (call) => call.args.includes("set") && call.args.includes("--value-stdin"),
     );
-    expect(set?.input).toBe('"private-value"');
+    expect(JSON.parse(set?.input ?? "")).toEqual({
+      description: "Vercel deployment credential.",
+      value: "private-value",
+    });
+    expect(set?.args).toContain('["VERCEL_TOKEN"]');
     expect(set?.args.join(" ")).not.toContain("private-value");
     expect(calls.some((call) => call.args.includes("unset"))).toBe(true);
+  });
+
+  it("sets and unsets described environment values", async () => {
+    const repositoryRoot = await temporaryRepository();
+    await writeFixture(
+      repositoryRoot,
+      "configuration/.env",
+      '# Existing description\nEXISTING="old"\nUNRELATED=value\n',
+    );
+
+    await setEnvironmentValue(repositoryRoot, "EXISTING", "new", "Updated description.");
+    await setEnvironmentValue(repositoryRoot, "NEW", "value", "New description.");
+    let environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
+    expect(environment).toContain('# Updated description.\nEXISTING="new"');
+    expect(environment).toContain('# New description.\nNEW="value"');
+    expect(environment).toContain("UNRELATED=value");
+
+    await unsetEnvironmentValue(repositoryRoot, "EXISTING");
+    environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
+    expect(environment).not.toContain("Updated description");
+    expect(environment).not.toContain("EXISTING");
+    expect(environment).toContain("UNRELATED=value");
   });
 });
 

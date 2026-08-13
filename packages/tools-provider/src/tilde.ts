@@ -7,6 +7,9 @@ import {
   type McpServer,
   type ToolResult,
 } from "@trytilde/harness-sdk";
+import { TildePlatform, tildePlatform } from "@tryopenbot/platform-integrations";
+import { tildeErrorMessage } from "@tryopenbot/platform-integrations/tilde/errors";
+import type { ProviderInitialization } from "@tryopenbot/runtime-provider";
 import { createMCPClient, type TildeMCPClient } from "@trytilde/harness-sdk-vercel-ai-node";
 import type {
   JsonObject,
@@ -19,10 +22,24 @@ import type {
 } from "./core.js";
 import { asRegisteredTool, providerSignal, ToolsProviderError } from "./core.js";
 
-export interface TildeToolProviderConfig {
-  client: Client;
-  serverId: string;
-}
+export type TildeToolProviderConfig =
+  | { platform: TildePlatform; serverId: string }
+  | { client: Client; serverId: string };
+
+export const tildeToolProviderInitialization: ProviderInitialization = {
+  id: "tilde-tools",
+  label: "Tilde tools",
+  questions: [
+    {
+      id: "tilde-runtime-mcp-server-id",
+      prompt: "Tilde runtime MCP server ID",
+      description: "MCP server whose tools are exposed to OpenBot agents at runtime.",
+      input: "text",
+      required: true,
+      destination: { kind: "environment", key: "TILDE_RUNTIME_MCP_SERVER_ID" },
+    },
+  ],
+};
 
 interface TildeToolsConnection {
   server: McpServer;
@@ -31,12 +48,20 @@ interface TildeToolsConnection {
 }
 
 export class TildeToolProvider implements ToolProvider {
-  readonly #config: TildeToolProviderConfig;
+  readonly platform: TildePlatform;
+  readonly platforms: readonly TildePlatform[];
+  readonly initialization = tildeToolProviderInitialization;
+  readonly #config: { client: Client; serverId: string };
   #connection: Promise<TildeToolsConnection> | undefined;
   #registeredTools: Promise<readonly RegisteredTool[]> | undefined;
 
   constructor(config: TildeToolProviderConfig) {
-    this.#config = config;
+    this.platform = "platform" in config ? config.platform : tildePlatform;
+    this.platforms = [this.platform];
+    this.#config = {
+      client: "platform" in config ? config.platform.client() : config.client,
+      serverId: config.serverId,
+    };
   }
 
   async listTools(context: ToolsProviderCallContext): Promise<readonly ToolSummary[]> {
@@ -71,7 +96,7 @@ export class TildeToolProvider implements ToolProvider {
       if (error instanceof ToolsProviderError) throw error;
       throw new ToolsProviderError(
         "provider_unavailable",
-        `Unable to invoke Tilde tool ${name}: ${errorMessage(error)}`,
+        `Unable to invoke Tilde tool ${name}: ${tildeErrorMessage(error, "unknown error")}`,
         true,
       );
     }
@@ -110,7 +135,7 @@ export class TildeToolProvider implements ToolProvider {
     } catch (error) {
       throw new ToolsProviderError(
         "provider_unavailable",
-        `Unable to load Tilde tools: ${errorMessage(error)}`,
+        `Unable to load Tilde tools: ${tildeErrorMessage(error, "unknown error")}`,
         true,
       );
     }
@@ -147,12 +172,4 @@ function isJsonValue(value: ToolResult): value is JsonValue {
     typeof value === "object" &&
     Object.values(value).every((item) => isJsonValue(item as ToolResult))
   );
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error
-    ? error.message
-    : typeof error === "string"
-      ? error
-      : "unknown error";
 }

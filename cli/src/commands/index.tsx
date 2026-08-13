@@ -6,6 +6,7 @@ import { repositoryRoot } from "../paths.js";
 import { Help, Success } from "../ui.js";
 import { runProductionDeploy } from "./deploy.js";
 import { runDevelopment } from "./dev.js";
+import { runEnvironment } from "./env.js";
 import { runInitialization } from "./init.js";
 import { runNewAgent } from "./new-agent.js";
 import { runSecrets } from "./secrets.js";
@@ -36,6 +37,10 @@ export async function runCommand(command: string, args: readonly string[]): Prom
   if (["help", "--help", "-h"].includes(command)) return show(<Help />);
   if (command === "init") {
     const result = await runInitialization(args);
+    if (result.kind === "help") {
+      process.stdout.write(`${JSON.stringify(result.schema, null, 2)}\n`);
+      return;
+    }
     if (result.json) {
       process.stdout.write(
         `${JSON.stringify({ ok: true, command: "init", mode: result.mode, repository: repositoryRoot })}\n`,
@@ -72,6 +77,14 @@ export async function runCommand(command: string, args: readonly string[]): Prom
     if (result.json)
       process.stdout.write(
         `${JSON.stringify({ ok: true, command: "secrets", operation: result.operation, name: result.name })}\n`,
+      );
+    return;
+  }
+  if (command === "env") {
+    const result = await runEnvironment(args);
+    if (result.json)
+      process.stdout.write(
+        `${JSON.stringify({ ok: true, command: "env", operation: result.operation, name: result.name })}\n`,
       );
     return;
   }

@@ -19,6 +19,12 @@ afterEach(async () =>
 );
 
 describe("agent service artifacts", () => {
+  it("depends on shared Vercel setup but owns only its agent project question", () => {
+    const provider = new VercelAgentServiceProvider();
+    expect(provider.platforms.map(({ id }) => id)).toEqual(["vercel"]);
+    expect(provider.initialization.questions.map(({ id }) => id)).toEqual(["vercel-agent-project"]);
+  });
+
   it("rejects agents missing a required computer tool", async () => {
     const root = await temporaryRoot();
     await mkdir(join(root, "configuration/agents/incomplete"), { recursive: true });
@@ -67,7 +73,7 @@ describe("agent service artifacts", () => {
     await mkdir(join(root, "configuration/agents/alpha/sandbox/workspace"), { recursive: true });
     await writeFile(
       join(root, "configuration/agents/alpha/sandbox/workspace/.profile"),
-      "export OPENBOT_PROFILE_LOADED=1\n",
+      "export PROFILE_LOADED=1\n",
     );
     expect((await discoverAgents(root)).map((agent) => agent.slug)).toEqual(["alpha", "beta"]);
     expect((await discoverAgentWorkspaces(root))[0]?.files.map((file) => file.path)).toContain(
@@ -118,7 +124,7 @@ describe("agent service artifacts", () => {
       target: "preview",
       dryRun: false,
       repositoryRoot: root,
-      environment: { OPENBOT_VERCEL_AGENT_PROJECT: "openbot-agents" },
+      environment: { VERCEL_AGENT_PROJECT: "openbot-agents" },
       initialInputs: {
         outputs: { "agent-service.artifact": artifact, "agent-service.count": "0" },
       },

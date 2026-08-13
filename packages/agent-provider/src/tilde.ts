@@ -15,7 +15,12 @@ import type {
   UpdateAgentRequest,
 } from "./core.js";
 import { AgentProviderError, pageSize, providerSignal } from "./core.js";
-import { createClient, type Client } from "@trytilde/harness-sdk";
+import { TildePlatform, type TildePlatformConfig } from "@tryopenbot/platform-integrations";
+import {
+  tildeErrorMessage,
+  tildeErrorStatus,
+} from "@tryopenbot/platform-integrations/tilde/errors";
+import type { Client } from "@trytilde/harness-sdk";
 import {
   chatkitDeleteAgent,
   chatkitGetAgent,
@@ -34,33 +39,31 @@ import {
   type TildeApiClient,
 } from "@trytilde/harness-sdk/api";
 
-export interface TildeAgentProviderConfig {
-  apiKey: string;
-  orgId: string;
-  teamId: string;
-  baseUrl?: string;
-}
+export interface TildeAgentProviderConfig extends TildePlatformConfig {}
 
 type JsonRecord = Record<string, unknown>;
 
 export class TildeAgentProvider implements AgentProvider {
+  readonly platform: TildePlatform;
+  readonly platforms: readonly TildePlatform[];
   readonly #api: TildeApiClient;
   readonly #client: Client;
   readonly #teamId: string;
 
-  constructor(config: TildeAgentProviderConfig) {
-    const baseUrl = config.baseUrl ?? "https://api.trytilde.ai";
+  constructor(platformOrConfig: TildePlatform | TildeAgentProviderConfig) {
+    this.platform =
+      platformOrConfig instanceof TildePlatform
+        ? platformOrConfig
+        : new TildePlatform(platformOrConfig);
+    this.platforms = [this.platform];
+    const config = this.platform.connection();
+    const { baseUrl } = config;
     this.#api = createTildeApiClient({
       baseUrl,
       apiKey: config.apiKey,
       orgId: config.orgId,
     });
-    this.#client = createClient({
-      baseUrl,
-      apiKey: config.apiKey,
-      orgId: config.orgId,
-      teamId: config.teamId,
-    });
+    this.#client = this.platform.client();
     this.#teamId = config.teamId;
   }
 
@@ -333,9 +336,12 @@ export class TildeAgentProvider implements AgentProvider {
     return this.#call(context, async () => {
       const result = await operation(providerSignal(context));
       if (result.error !== undefined) {
-        throw Object.assign(new Error(apiErrorMessage(result.error)), {
-          response: result.response,
-        });
+        throw Object.assign(
+          new Error(tildeErrorMessage(result.error, "Tilde API request failed")),
+          {
+            response: result.response,
+          },
+        );
       }
       return result.data as T;
     });
@@ -353,7 +359,7 @@ export class TildeAgentProvider implements AgentProvider {
       ) {
         throw new AgentProviderError("deadline_exceeded", "Tilde request timed out", true);
       }
-      const status = responseStatus(error);
+      const status = tildeErrorStatus(error);
       const code =
         status === 400
           ? "invalid_request"
@@ -478,17 +484,4 @@ function dateValue(value: unknown): Date | undefined {
   if (typeof value !== "string") return undefined;
   const date = new Date(value);
   return Number.isNaN(date.valueOf()) ? undefined : date;
-}
-
-function responseStatus(error: unknown): number | undefined {
-  if (!error || typeof error !== "object") return undefined;
-  const response = "response" in error ? (error as { response?: unknown }).response : undefined;
-  return response instanceof Response ? response.status : undefined;
-}
-
-function apiErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (error && typeof error === "object" && "message" in error && typeof error.message === "string")
-    return error.message;
-  return "Tilde API request failed";
 }

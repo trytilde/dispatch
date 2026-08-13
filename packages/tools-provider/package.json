@@ -30,6 +30,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@tryopenbot/platform-integrations": "workspace:*",
     "@tryopenbot/runtime-provider": "workspace:*",
     "@trytilde/harness-sdk": "0.1.2",
     "@trytilde/harness-sdk-vercel-ai-node": "0.2.0",

@@ -12,6 +12,10 @@ const context = { requestId: "request-one" };
 afterEach(() => vi.unstubAllGlobals());
 
 describe("TildeAgentProvider", () => {
+  it("depends on the shared Tilde setup", () => {
+    expect(new TildeAgentProvider(config).platforms.map(({ id }) => id)).toEqual(["tilde"]);
+  });
+
   it("maps grouped Mission Control sessions", async () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
       const url = requestUrl(input);

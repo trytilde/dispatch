@@ -25,7 +25,7 @@ describe("agent scaffolding", () => {
     expect(agent).toMatchObject({ id: "research-assistant", name: "Research Assistant" });
     const directory = join(root, "configuration/agents/research-assistant");
     expect(await readFile(join(directory, "agent.ts"), "utf8")).toContain(
-      "OPENBOT_AGENT_RESEARCH_ASSISTANT_API_KEY",
+      "AGENT_RESEARCH_ASSISTANT_API_KEY",
     );
     expect(await readFile(join(directory, "lib/identity.ts"), "utf8")).toContain(
       '"Research Assistant"',

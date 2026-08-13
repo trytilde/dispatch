@@ -20,6 +20,7 @@ Shared provider build, initialization, and phased deployment contracts. It coord
 - `Deployable` defines read-only `plan()`, optional `configure()`, and `deploy()`.
 - `DeployableProvider` lets a domain provider opt into `buildable` and/or `deployable`; absent lifecycles are skipped.
 - `ProviderInitialization` and `ProviderInitializationQuestion` describe GUI-agnostic onboarding questions and value destinations.
+- `Platform` represents an external platform shared by domain providers. `collectProviderInitializations(providers)` combines provider-owned questions with shared `platforms`, rejecting conflicting definitions and returning each stable initialization ID once.
 - `DeploymentParticipant` assigns a stable ID and optional `provider`, `sandbox`, or `runtime` role.
 - `DeploymentContext`, `DeploymentResult`, and `DeploymentRunOptions` carry repository paths, accumulated values, reporting, and dry-run state.
 

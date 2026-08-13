@@ -50,8 +50,43 @@ export interface ProviderInitialization {
   questions: readonly ProviderInitializationQuestion[];
 }
 
+/** An external platform shared by one or more domain providers. */
+export interface Platform {
+  readonly id: string;
+  readonly initialization: ProviderInitialization;
+}
+
 export interface InitializableProvider {
   readonly initialization?: ProviderInitialization;
+  /** Shared external platforms required before this provider can be configured. */
+  readonly platforms?: readonly Platform[];
+}
+
+/** Collect provider-owned setup and shared platform dependencies once by stable ID. */
+export function collectProviderInitializations(
+  providers: readonly InitializableProvider[],
+): ProviderInitialization[] {
+  const result = new Map<string, ProviderInitialization>();
+  for (const provider of providers) {
+    const initializations = [
+      ...(provider.platforms ?? []).map((platform) => {
+        if (platform.id !== platform.initialization.id)
+          throw new Error(`Platform ${platform.id} has mismatched initialization metadata`);
+        return platform.initialization;
+      }),
+      ...(provider.initialization ? [provider.initialization] : []),
+    ];
+    for (const initialization of initializations) {
+      const previous = result.get(initialization.id);
+      if (previous && JSON.stringify(previous) !== JSON.stringify(initialization)) {
+        throw new Error(
+          `Providers define conflicting initialization dependency: ${initialization.id}`,
+        );
+      }
+      result.set(initialization.id, initialization);
+    }
+  }
+  return [...result.values()];
 }
 
 /** Shared, in-memory deployment data. Secret values must never be reported. */

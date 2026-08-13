@@ -22,11 +22,11 @@ function requiredEnv(...names: string[]): string {
 }
 
 const client = createClient({
-  apiKey: requiredEnv("OPENBOT_AGENT_{{AGENT_ENV_PREFIX}}_API_KEY", "OPENBOT_TILDE_API_KEY"),
+  apiKey: requiredEnv("AGENT_{{AGENT_ENV_PREFIX}}_API_KEY", "TILDE_API_KEY"),
   baseUrl: process.env.TILDE_BASE_URL ?? "https://api.trytilde.ai",
-  orgId: requiredEnv("OPENBOT_TILDE_ORG_ID"),
+  orgId: requiredEnv("TILDE_ORG_ID"),
   orgSubdomain: false,
-  teamId: requiredEnv("OPENBOT_TILDE_TEAM_ID"),
+  teamId: requiredEnv("TILDE_TEAM_ID"),
 });
 function addTools(target: ToolSet, source: readonly ({ readonly name: string } & ToolSet[string])[]): void {
   for (const providerTool of source) {
@@ -37,7 +37,7 @@ function addTools(target: ToolSet, source: readonly ({ readonly name: string } &
 
 export default chatKitEndpoint({
   client,
-  webhookSigningKey: requiredEnv("OPENBOT_AGENT_{{AGENT_ENV_PREFIX}}_WEBHOOK_SIGNING_KEY", "OPENBOT_TILDE_WEBHOOK_SIGNING_KEY"),
+  webhookSigningKey: requiredEnv("AGENT_{{AGENT_ENV_PREFIX}}_WEBHOOK_SIGNING_KEY", "TILDE_WEBHOOK_SIGNING_KEY"),
   requestTimeoutMs: 285_000,
   async handler(request, context) {
     const callContext = { requestId: context.webhookId, signal: request.signal };
@@ -60,7 +60,7 @@ export default chatKitEndpoint({
     const result = streamText({
       abortSignal: request.signal,
       messages: await convertToModelMessages(messages),
-      model: providers.inferenceModel.model(process.env.OPENBOT_OPENAI_MODEL ?? "gpt-5.4"),
+      model: providers.inferenceModel.model(process.env.OPENAI_MODEL ?? "gpt-5.4"),
       stopWhen: stepCountIs(12),
       system,
       tools,

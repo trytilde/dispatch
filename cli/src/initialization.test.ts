@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -78,6 +78,8 @@ describe("OpenBot initialization", () => {
     expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/hello-world.ts"), "utf8")).toContain("export default tool");
     expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/skills/hello-world/SKILL.md"), "utf8")).toContain("name: hello-world");
     expect(await readFile(join(repositoryRoot, "configuration/instrumentation.ts"), "utf8")).toContain("defineInstrumentation");
+    await expect(access(join(repositoryRoot, "configuration/skills"))).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(access(join(repositoryRoot, "configuration/sandbox"))).rejects.toMatchObject({ code: "ENOENT" });
     expect(loaded.environment.SOPS_AGE_KEY).toBeUndefined();
   });
 

@@ -19,7 +19,7 @@ function skill(id = "skill-one") {
     content: "# Research",
     version: 1,
     source_kind: "repository",
-    source_path: "configuration/skills/research",
+    source_path: "configuration/agents/research/skills/research",
     source_repository_url: null,
     source_commit_hash: null,
     source_provider_id: null,

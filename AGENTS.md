@@ -8,7 +8,7 @@ OpenBot is a TypeScript monorepo for a local or Vercel-hosted agent workspace. I
 2. Inspect `git status --short --branch`; preserve unrelated work.
 3. Read the owning package and its tests before editing.
 4. Read relevant records under `docs/adrs/` before changing a recorded decision.
-5. Use `.agents/skills/<name>/SKILL.md` for repository workflows. Runtime agent skills under `configuration/skills/` serve OpenBot agents, not coding-agent process.
+5. Use `.agents/skills/<name>/SKILL.md` for repository workflows. Runtime agent skills under `configuration/agents/<id>/skills/` serve that OpenBot agent, not the coding-agent process.
 
 ## Toolchain and commands
 
@@ -45,7 +45,7 @@ pnpm --filter @openbot/cli test
 - `packages/agent-provider`: internal agent, session, and message interfaces plus the Tilde implementation.
 - `packages/configuration`: typed contract for the fork-owned composition root.
 - `packages/utilities`: shared utilities, including strict Handlebars rendering for generated source, configuration, service, and deployment files.
-- `configuration`: fork-owned Eve-compatible agent directories, runtime skills, sandbox seed, and provider plugins.
+- `configuration`: fork-owned Eve-compatible agent directories, provider composition, and provider plugins.
 - `packages/runtime-provider`: shared build and phased deployment contracts and coordinator.
 - `packages/control-service-provider`, `packages/agent-service-provider`: independent local and Vercel service artifacts and deployment.
 - `packages/ui`: shared React UI and vendored Beautiful UI components.
@@ -101,7 +101,7 @@ pnpm --filter @openbot/cli test
 
 ### Fork files
 
-- Repository resources use fixed paths, not `OpenBotConfiguration` options: agents in `configuration/agents/<id>/`, skills in `configuration/skills/`, custom providers in `configuration/providers/`, sandbox assets in `configuration/sandbox/assets/`, and bootstrap at `configuration/sandbox/bootstrap.sh`.
+- Repository resources use fixed paths, not `OpenBotConfiguration` options: agents in `configuration/agents/<id>/`, agent skills in `configuration/agents/<id>/skills/`, agent workspace seeds in `configuration/agents/<id>/sandbox/workspace/`, and custom providers in `configuration/providers/`. Global `configuration/skills/` and `configuration/sandbox/` directories are unsupported.
 
 ## Local development
 

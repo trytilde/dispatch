@@ -1,6 +1,6 @@
 # @openbot/configuration
 
-Typed composition for repository-owned OpenBot configuration. A generated `configuration/index.ts` explicitly constructs provider implementations; filesystem locations for agents, skills, providers, and sandbox assets are conventions, not configurable paths.
+Typed composition for repository-owned OpenBot configuration. A generated `configuration/index.ts` explicitly constructs provider implementations; agent skills and workspace seeds remain inside their agent directory, and filesystem locations are conventions rather than configurable paths.
 
 ## Public API
 

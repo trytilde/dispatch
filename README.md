@@ -6,9 +6,21 @@ OpenBot is being rebuilt from the user experience downward. The current reposito
 
 Requirements: Node.js 24 and pnpm 10.
 
+Install the standalone CLI with `npm install --global openbot`, or use `npx openbot`. Create and enter a completely empty destination directory before running init; any visible or hidden entry makes initialization stop before prompts or external changes.
+
+AI agents and automation can initialize without a TTY by piping a JSON answer object through standard input:
+
 ```bash
+openbot init --non-interactive --json < openbot-answers.json
+```
+
+Secrets therefore stay out of process arguments. See `cli/README.md` for stable answer IDs and a complete example.
+
+```bash
+mkdir my-openbot
+cd my-openbot
+openbot init
 pnpm install
-pnpm openbot init
 pnpm dev
 ```
 
@@ -16,12 +28,12 @@ pnpm dev
 - API: `http://127.0.0.1:4100`
 - Health: `http://127.0.0.1:4100/healthz`
 
-A fresh upstream checkout intentionally contains only `configuration/.gitignore`, which hides all configuration contents. Run `pnpm openbot init` after forking; successful initialization removes that exact upstream sentinel so the fork can commit its configuration and initial agent. Commit the deletion with the generated configuration. Ordinary upstream merges preserve the fork's committed deletion while upstream leaves the sentinel unchanged. No setup or pairing code is required.
+A fresh upstream checkout intentionally contains only `configuration/.gitignore`, which hides all configuration contents. `openbot init` creates and clones the owner repository into the empty destination before configuring it; successful initialization removes that exact upstream sentinel so the fork can commit its configuration and initial agent. Commit the deletion with the generated configuration. Ordinary upstream merges preserve the fork's committed deletion while upstream leaves the sentinel unchanged. No setup or pairing code is required.
 
 ## Deploy
 
 ```bash
-pnpm openbot init
+openbot init
 pnpm openbot new-agent
 pnpm deploy:prod -- --dry-run --json
 pnpm deploy:prod -- --yes
@@ -35,11 +47,11 @@ Use `pnpm openbot secrets set NAME` and `pnpm openbot secrets unset NAME` to mai
 
 Commit `configuration/index.ts`, `.sops.yaml`, `sops.identity.json`, and `secrets.enc.yaml` after initialization. Never commit `configuration/.env`. The sandbox age private key is encrypted at `openbot.sandbox.sops_age_key` and is reserved for the trusted development-sandbox deployment participant.
 
-The CLI checks and builds every selected provider that exposes `buildable`, then plans and deploys providers that expose `deployable`. `openbot deploy --skip-deploy` stops after producing artifacts. `openbot deploy --service agents --yes` builds and deploys the agent project without compiling or redeploying control; `--service control` does the inverse. A configured computer provider builds and publishes its shared OCI image during a full deployment, before agent functions and the control runtime. Provider outputs contribute named outputs, environment variables, and secrets without a second operator command. Sandbox-only secrets remain excluded from service runtimes.
+The CLI checks and builds every selected provider that exposes `buildable`, then plans and deploys providers that expose `deployable`. `openbot deploy --skip-deploy` stops after producing artifacts. `openbot deploy --service agents --yes` builds and deploys the agent project without compiling or redeploying control; `--service control` does the inverse. A configured computer provider builds its shared image before agent functions and the control runtime. Vercel Sandbox publishes it to Vercel Container Registry; local Microsandbox keeps the content-tagged Docker image local. Provider outputs contribute named outputs, environment variables, and secrets without a second operator command. Sandbox-only secrets remain excluded from service runtimes.
 
 `configuration/index.ts` explicitly configures every provider role under its `providers` object. The five providers used inside agent functions are constructed in `configuration/runtime-providers.ts` and referenced explicitly from the composition root, keeping control/agent deployment compilers out of runtime bundles. Init selects the default Tilde agent, skills, and tools providers without asking the owner to choose domain providers. Each agent owns its skills and workspace seed under `configuration/agents/<id>/`; custom provider source lives under `configuration/providers/`. Global `configuration/skills/` and `configuration/sandbox/` directories are unsupported, and filesystem locations are not configuration options.
 
-The agent-local folder remains named `sandbox/workspace/` to stay structurally compatible with Eve where practical; runtime terminology is Computer everywhere else. Run `pnpm openbot new-agent` to create an agent from its display name. Each generated agent explicitly owns thin tool files for shell, background-shell waiting, file access, search, and screenshots. Their shared Zod schemas and typed computer-service implementations live in `@openbot/computer-provider/tools`; every file fixes the path-derived agent ID outside its model-visible schema. Populated seeds initialize `/workspace/<agent-id>` once on the shared computer. That path is the agent's default directory, not a security boundary.
+The agent-local folder remains named `sandbox/workspace/` to stay structurally compatible with Eve where practical; runtime terminology is Computer everywhere else. Run `pnpm openbot new-agent` to create an agent from its display name. Each generated agent explicitly owns thin tool files for shell, background-shell waiting, file access, search, and screenshots. Their shared Zod schemas and typed computer-service implementations live in `@tryopenbot/computer-provider/tools`; every file fixes the path-derived agent ID outside its model-visible schema. Populated seeds initialize `/workspace/<agent-id>` once on the shared computer. That path is the agent's default directory, not a security boundary.
 
 Agent Bash tools run `bash -lc` with `HOME=/workspace/<agent-id>`. Init scaffolds
 `configuration/agents/<id>/sandbox/workspace/.profile`, which Bash loads before

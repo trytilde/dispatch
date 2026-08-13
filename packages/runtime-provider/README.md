@@ -1,4 +1,4 @@
-# @openbot/runtime-provider
+# @tryopenbot/runtime-provider
 
 Shared provider build, initialization, and phased deployment contracts. It coordinates artifacts first, deploys ordinary providers next, gives the trusted development sandbox its sandbox-only inputs, and deploys the control runtime last.
 

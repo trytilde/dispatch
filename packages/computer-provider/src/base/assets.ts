@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { materializeFileTemplate } from "@openbot/utilities";
+import { materializeFileTemplate } from "@tryopenbot/utilities";
 
 const providerAssetDirectory = fileURLToPath(new URL("./assets/", import.meta.url));
 

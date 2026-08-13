@@ -1,4 +1,4 @@
-@import "@openbot/ui/beautiful-ui.css";
+@import "@tryopenbot/ui/beautiful-ui.css";
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
 
 :root {

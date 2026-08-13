@@ -11,13 +11,13 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/computer-service/package.json apps/computer-service/package.json
 COPY packages/computer-service-proto/package.json packages/computer-service-proto/package.json
 COPY packages/utilities/package.json packages/utilities/package.json
-RUN pnpm install --frozen-lockfile --filter @openbot/computer-service...
+RUN pnpm install --frozen-lockfile --filter @tryopenbot/computer-service...
 
 # Copy sources after dependency installation so source edits keep that layer hot.
 COPY apps/computer-service apps/computer-service
 COPY packages/computer-service-proto packages/computer-service-proto
 COPY packages/utilities packages/utilities
-RUN pnpm --filter @openbot/computer-service build
+RUN pnpm --filter @tryopenbot/computer-service build
 
 # Node 24 is both the service runtime and the base for the shared computer image.
 FROM node:24-bookworm-slim

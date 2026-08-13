@@ -6,9 +6,9 @@ import type {
   DeploymentResult,
   InitializableProvider,
   ProviderInitialization,
-} from "@openbot/runtime-provider";
+} from "@tryopenbot/runtime-provider";
 import { resolve } from "node:path";
-import { materializeFileTemplate } from "@openbot/utilities";
+import { materializeFileTemplate } from "@tryopenbot/utilities";
 import { checkControlService } from "../check.js";
 import { processRunner, type CommandRunner } from "../command.js";
 import {

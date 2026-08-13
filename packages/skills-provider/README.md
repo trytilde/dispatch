@@ -1,4 +1,4 @@
-# @openbot/skills-provider
+# @tryopenbot/skills-provider
 
 Internal skill and skill-registry boundary with the Tilde Harness SDK implementation. Managed skill assets remain behind an explicit destination instead of becoming general computer credentials or RPC methods.
 

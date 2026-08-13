@@ -1,24 +1,49 @@
 {
-  "name": "@openbot/computer-provider",
+  "name": "@tryopenbot/computer-provider",
   "version": "0.1.0",
-  "private": true,
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./tools": "./src/tools/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./tools": {
+      "types": "./src/tools/index.ts",
+      "development": "./src/tools/index.ts",
+      "import": "./dist/tools/index.js"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./tools": {
+        "types": "./dist/tools/index.d.ts",
+        "import": "./dist/tools/index.js"
+      }
+    },
+    "access": "public"
   },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsc --noEmit && tsdown --config ../../tsdown.package.config.ts && node ../../scripts/copy-package-assets.mjs",
     "lint": "tsc --noEmit",
+    "prepack": "pnpm build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@connectrpc/connect": "2.1.2",
     "@connectrpc/connect-node": "2.1.2",
-    "@openbot/computer-service-proto": "workspace:*",
-    "@openbot/runtime-provider": "workspace:*",
-    "@openbot/utilities": "workspace:*",
+    "@tryopenbot/computer-service-proto": "workspace:*",
+    "@tryopenbot/runtime-provider": "workspace:*",
+    "@tryopenbot/utilities": "workspace:*",
     "@vercel/sandbox": "3.0.0",
     "ai": "6.0.250",
     "microsandbox": "0.6.8",

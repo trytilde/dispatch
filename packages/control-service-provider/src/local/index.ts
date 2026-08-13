@@ -7,7 +7,7 @@ import type {
   DeploymentResult,
   InitializableProvider,
   ProviderInitialization,
-} from "@openbot/runtime-provider";
+} from "@tryopenbot/runtime-provider";
 import { checkControlService } from "../check.js";
 import { processRunner, type CommandRunner } from "../command.js";
 import { installLocalService, waitForHealth } from "../local-service.js";

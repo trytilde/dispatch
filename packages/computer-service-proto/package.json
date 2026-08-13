@@ -1,16 +1,42 @@
 {
-  "name": "@openbot/computer-service-proto",
+  "name": "@tryopenbot/computer-service-proto",
   "version": "0.1.0",
-  "private": true,
+  "files": [
+    "dist",
+    "README.md",
+    "proto"
+  ],
   "type": "module",
   "exports": {
-    ".": "./src/index.js",
-    "./gen/*": "./src/gen/*.js"
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./gen/*": {
+      "types": "./src/gen/*.ts",
+      "development": "./src/gen/*.ts",
+      "import": "./dist/gen/*.js"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./gen/*": {
+        "types": "./dist/gen/*.d.ts",
+        "import": "./dist/gen/*.js"
+      }
+    },
+    "access": "public"
   },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsc --noEmit && tsdown --config ../../tsdown.package.config.ts && node ../../scripts/copy-package-assets.mjs",
     "generate": "BUF_CACHE_DIR=../../.cache/buf buf generate",
     "lint": "BUF_CACHE_DIR=../../.cache/buf buf lint",
+    "prepack": "pnpm build",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },

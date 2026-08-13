@@ -1,10 +1,10 @@
-# @openbot/computer-service
+# @tryopenbot/computer-service
 
 The API-key-protected ConnectRPC server that runs inside an OpenBot Computer image. It executes lifecycle bundles, agent-scoped commands and file operations, desktop input and screenshots, port discovery, and VNC tunneling.
 
 ## Public API
 
-This package is a service executable and declares no importable package exports. Its network contract is `@openbot/computer-service-proto`, mounted under `/rpc`; the listening port is `OPENBOT_COMPUTER_SERVICE_PORT` or `4101`.
+This package is a service executable and declares no importable package exports. Its network contract is `@tryopenbot/computer-service-proto`, mounted under `/rpc`; the listening port is `OPENBOT_COMPUTER_SERVICE_PORT` or `4101`.
 
 Model-facing requests include an agent ID. The service validates it and defaults relative command and file operations to `/workspace/<agent-id>`. Agents otherwise share the computer's process identity and filesystem, so this directory is not a security boundary. Agent tools call this service through the generated typed client. The web and desktop applications do not call it directly.
 

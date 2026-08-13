@@ -1,15 +1,32 @@
 {
-  "name": "@openbot/control-service",
+  "name": "@tryopenbot/control-service",
   "version": "0.1.0",
-  "private": true,
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    },
+    "access": "public"
   },
   "scripts": {
     "build": "tsgo --noEmit && tsdown",
     "dev": "tsx watch src/index.ts",
     "lint": "vp lint",
+    "prepack": "pnpm build",
     "start": "tsx src/index.ts",
     "test": "vp test run",
     "typecheck": "tsgo --noEmit"

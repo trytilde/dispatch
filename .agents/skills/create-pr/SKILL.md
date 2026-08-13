@@ -48,7 +48,7 @@ Add focused checks by surface:
 - protobuf: `pnpm contracts:generate`
 - server/providers: corresponding package tests
 - browser flow: `pnpm test:e2e`
-- Electron packaging: `pnpm --filter @openbot/desktop package`
+- Electron packaging: `pnpm --filter @tryopenbot/desktop package`
 
 Record exact commands and failures. Do not claim checks that did not run.
 

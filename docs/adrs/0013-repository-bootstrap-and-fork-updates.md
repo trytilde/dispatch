@@ -20,9 +20,9 @@ Forks may change any package and cannot safely consume upstream releases from a 
 
 `openbot init` becomes a standalone bootstrap command that runs from the intended, completely empty destination directory. Any entry, including hidden files, makes init fail before prompts or network mutation. The command must be distributable independently of a cloned OpenBot workspace; the existing repository-local `pnpm openbot init` invocation is transitional and cannot implement this decision by itself.
 
-Init checks that `git` and authenticated GitHub CLI access are available. Missing `gh`, failed `gh auth status`, unavailable SSH access, an existing destination repository, or any Git operation failure aborts repository bootstrap and prevents configuration initialization.
+Init checks that `git` and authenticated GitHub CLI access are available. It resolves canonical OpenBot's HEAD, verifies that revision has the workspace contract required by the installed CLI, and later verifies that the owned clone is at the same revision. Missing `gh`, failed `gh auth status`, unavailable SSH access, an incompatible canonical revision, an existing destination repository, or any Git operation failure aborts repository bootstrap and prevents repository creation or configuration initialization.
 
-The user chooses a repository name and visibility. Visibility defaults to private. The owner defaults to the account reported by the authenticated GitHub CLI; organization selection is a future extension.
+The user chooses a repository owner/name and visibility. A bare name defaults to the account reported by the authenticated GitHub CLI; an explicit `owner/name` may target a GitHub organization where that account has repository-creation permission. Visibility defaults to private.
 
 - Public: use `gh repo fork` with the requested name, clone it into the current empty directory, and retain the canonical OpenBot repository as `upstream`.
 - Private: create a new private GitHub repository, make a temporary bare clone of canonical OpenBot, mirror its refs to the new repository, remove the temporary bare repository, clone the private repository into the current directory, and add canonical OpenBot as `upstream`. This is an independent repository copy, not a GitHub fork.
@@ -89,7 +89,7 @@ flowchart LR
 
 - Fresh users receive a repository they own before any credentials or fork configuration exist.
 - Public repositories preserve GitHub fork relationships; private repositories sacrifice fork-network metadata for actual privacy.
-- The CLI needs an independently installable bootstrap distribution before this init flow can replace repository-local initialization.
+- The independently installable `openbot` CLI owns empty-directory repository bootstrap and configuration initialization.
 - Update notes require the draft PR to exist first and must be refreshed as its implementation or review outcome changes.
 - Merge automation handles Git history only. Coding-agent review owns semantic preservation of arbitrary fork customizations.
 - Direct GitHub CLI orchestration is accepted temporary coupling until the code-forge provider exists.
@@ -98,3 +98,9 @@ flowchart LR
 
 - 2026-08-13T16:59:19+02:00: Added follow-up boundaries for a forge-specific repository provider and automatic default coding-agent launch after every update result, with safe manual fallback and no implied review completion.
 - 2026-08-13T17:08:19+02:00: Replaced commit-hash update records with stable PR-number records, required draft-PR creation before generation, required continuous refresh, and expanded evidence gathering to every local coding-agent thread with strict privacy filtering.
+- 2026-08-13T17:50:21+02:00: Added the public standalone `openbot` package and executable entrypoint; empty-directory repository provisioning remains separate implementation work.
+- 2026-08-13T18:15:10+02:00: Added an early cloned-repository guard so transitional init cannot write partial configuration outside an OpenBot checkout while empty-directory bootstrap remains unimplemented.
+- 2026-08-13T18:24:38+02:00: Replaced transitional in-clone init with empty-directory-only GitHub bootstrap for public forks and private mirrors, including preflight checks and verified origin/upstream remotes.
+- 2026-08-13T18:27:43+02:00: Added stdin JSON answers and JSON results for non-interactive init, using stable core and provider question IDs so AI agents execute the same validated bootstrap path without a TTY or secrets in arguments; agent scaffolding and secret mutations also expose explicit JSON/stdin modes.
+- 2026-08-13T18:29:50+02:00: Allowed repository bootstrap to target an authorized GitHub organization through explicit `owner/name` input while preserving bare-name account defaults.
+- 2026-08-13T18:33:45+02:00: Required init to verify canonical HEAD's workspace compatibility before prompts or repository mutation and to verify the owned clone remains pinned to that checked revision.

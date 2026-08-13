@@ -1,4 +1,4 @@
-# @openbot/desktop
+# @tryopenbot/desktop
 
 The Electron desktop shell for the OpenBot web UI and local control service. Privileged Node.js behavior remains in Electron main/preload code behind a narrow bridge; the renderer stays browser-compatible.
 

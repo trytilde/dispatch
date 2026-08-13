@@ -31,7 +31,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
   readonly #servicePorts = new Map<string, number>();
 
   constructor(imageDeployment: ComputerImageDeploymentConfig = {}) {
-    super(imageDeployment);
+    super(imageDeployment, { publish: false });
   }
 
   async create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle> {

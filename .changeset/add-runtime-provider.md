@@ -1,14 +1,14 @@
 ---
-"@openbot/control-service-provider": minor
-"@openbot/agent-service-provider": minor
-"@openbot/runtime-provider": minor
-"@openbot/cli": patch
-"@openbot/configuration": patch
-"@openbot/agent-provider": patch
-"@openbot/computer-provider": patch
-"@openbot/inference-model-provider": patch
-"@openbot/skills-provider": patch
-"@openbot/tools-provider": patch
+"@tryopenbot/control-service-provider": minor
+"@tryopenbot/agent-service-provider": minor
+"@tryopenbot/runtime-provider": minor
+"openbot": patch
+"@tryopenbot/configuration": patch
+"@tryopenbot/agent-provider": patch
+"@tryopenbot/computer-provider": patch
+"@tryopenbot/inference-model-provider": patch
+"@tryopenbot/skills-provider": patch
+"@tryopenbot/tools-provider": patch
 ---
 
 Add one-command provider lifecycle deployment with separate control and agent

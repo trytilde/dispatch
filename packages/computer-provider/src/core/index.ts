@@ -3,8 +3,8 @@ import type {
   DeployableProvider,
   DeploymentContext,
   DeploymentResult,
-} from "@openbot/runtime-provider";
-export type { Deployable } from "@openbot/runtime-provider";
+} from "@tryopenbot/runtime-provider";
+export type { Deployable } from "@tryopenbot/runtime-provider";
 
 export type ComputerState = "creating" | "running" | "sleeping" | "failed";
 

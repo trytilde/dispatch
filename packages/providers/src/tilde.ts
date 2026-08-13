@@ -43,8 +43,17 @@ class TildeApi {
     });
     if (!response.ok) {
       const detail = await response.text();
-      const code = response.status === 404 ? "not_found" : response.status === 401 || response.status === 403 ? "permission_denied" : "provider_unavailable";
-      throw new ProviderError(code, `Tilde API failed (${response.status}): ${detail.slice(0, 300)}`, response.status >= 500);
+      const code =
+        response.status === 404
+          ? "not_found"
+          : response.status === 401 || response.status === 403
+            ? "permission_denied"
+            : "provider_unavailable";
+      throw new ProviderError(
+        code,
+        `Tilde API failed (${response.status}): ${detail.slice(0, 300)}`,
+        response.status >= 500,
+      );
     }
     return response.json() as Promise<T>;
   }
@@ -53,8 +62,12 @@ class TildeApi {
     return `/api/v1/team/${encodeURIComponent(this.#config.teamId)}${path}`;
   }
 
-  get orgId(): string { return this.#config.orgId; }
-  get teamId(): string { return this.#config.teamId; }
+  get orgId(): string {
+    return this.#config.orgId;
+  }
+  get teamId(): string {
+    return this.#config.teamId;
+  }
 }
 
 export class TildeAgentProvider implements AgentProvider {
@@ -76,7 +89,10 @@ export class TildeAgentProvider implements AgentProvider {
       await this.verify(context);
       return { healthy: true };
     } catch (error) {
-      return { healthy: false, message: error instanceof Error ? error.message : "Tilde is unavailable" };
+      return {
+        healthy: false,
+        message: error instanceof Error ? error.message : "Tilde is unavailable",
+      };
     }
   }
 
@@ -86,48 +102,62 @@ export class TildeAgentProvider implements AgentProvider {
   }
 
   async list(context: ProviderCallContext): Promise<readonly AgentRecord[]> {
-    const response = await this.#api.request<{ items?: JsonRecord[] }>(this.#api.teamPath("/chatkit/agents?page_size=100"), context);
+    const response = await this.#api.request<{ items?: JsonRecord[] }>(
+      this.#api.teamPath("/chatkit/agents?page_size=100"),
+      context,
+    );
     return (response.items ?? []).map(agentRecord);
   }
 
   async get(id: string, context: ProviderCallContext): Promise<AgentRecord> {
-    return agentRecord(await this.#api.request<JsonRecord>(this.#api.teamPath(`/chatkit/agents/${encodeURIComponent(id)}`), context));
+    return agentRecord(
+      await this.#api.request<JsonRecord>(
+        this.#api.teamPath(`/chatkit/agents/${encodeURIComponent(id)}`),
+        context,
+      ),
+    );
   }
 
   async create(spec: CreateAgentSpec, context: ProviderCallContext) {
-    const response = await this.#api.request<{ agent: JsonRecord; api_key: string; webhook_signing_key: string }>(
-      this.#api.teamPath("/chatkit/agents/http-vercel-ai-sdk"),
-      context,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          id: spec.id,
-          display_name: spec.displayName,
-          endpoint_url: spec.endpointUrl.toString(),
-          local_running_endpoint: false,
-          streaming: spec.streaming ?? true,
-          timeout_ms: spec.timeoutMs ?? 300_000,
-        }),
-      },
-    );
+    const response = await this.#api.request<{
+      agent: JsonRecord;
+      api_key: string;
+      webhook_signing_key: string;
+    }>(this.#api.teamPath("/chatkit/agents/http-vercel-ai-sdk"), context, {
+      method: "POST",
+      body: JSON.stringify({
+        id: spec.id,
+        display_name: spec.displayName,
+        endpoint_url: spec.endpointUrl.toString(),
+        local_running_endpoint: false,
+        streaming: spec.streaming ?? true,
+        timeout_ms: spec.timeoutMs ?? 300_000,
+      }),
+    });
     return {
       agent: agentRecord(response.agent),
       credentials: { apiKey: response.api_key, webhookSigningKey: response.webhook_signing_key },
     };
   }
 
-  async update(id: string, patch: { displayName?: string; endpointUrl?: URL }, context: ProviderCallContext) {
-    return agentRecord(await this.#api.request<JsonRecord>(
-      this.#api.teamPath(`/chatkit/agents/${encodeURIComponent(id)}`),
-      context,
-      {
-        method: "PATCH",
-        body: JSON.stringify({
-          display_name: patch.displayName,
-          endpoint_url: patch.endpointUrl?.toString(),
-        }),
-      },
-    ));
+  async update(
+    id: string,
+    patch: { displayName?: string; endpointUrl?: URL },
+    context: ProviderCallContext,
+  ) {
+    return agentRecord(
+      await this.#api.request<JsonRecord>(
+        this.#api.teamPath(`/chatkit/agents/${encodeURIComponent(id)}`),
+        context,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            display_name: patch.displayName,
+            endpoint_url: patch.endpointUrl?.toString(),
+          }),
+        },
+      ),
+    );
   }
 
   async register(spec: AgentRegistrationSpec, context: ProviderCallContext) {
@@ -167,19 +197,31 @@ export class TildeChatProvider implements ChatProvider {
       await this.#api.request<unknown>("/api/v1/identity/auth/whoami", context);
       return { healthy: true };
     } catch (error) {
-      return { healthy: false, message: error instanceof Error ? error.message : "Tilde ChatKit is unavailable" };
+      return {
+        healthy: false,
+        message: error instanceof Error ? error.message : "Tilde ChatKit is unavailable",
+      };
     }
   }
 
-  async listSessions(agentId: string, context: ProviderCallContext): Promise<readonly ChatSession[]> {
+  async listSessions(
+    agentId: string,
+    context: ProviderCallContext,
+  ): Promise<readonly ChatSession[]> {
     const response = await this.#api.request<{ items?: JsonRecord[] }>(
-      this.#api.teamPath(`/chatkit/mission-control/agents/${encodeURIComponent(agentId)}/sessions?page_size=100&session_sort=updated_at`),
+      this.#api.teamPath(
+        `/chatkit/mission-control/agents/${encodeURIComponent(agentId)}/sessions?page_size=100&session_sort=updated_at`,
+      ),
       context,
     );
     return (response.items ?? []).map((item) => sessionRecord(item, agentId));
   }
 
-  async createSession(agentId: string, title: string | undefined, context: ProviderCallContext): Promise<ChatSession> {
+  async createSession(
+    agentId: string,
+    title: string | undefined,
+    context: ProviderCallContext,
+  ): Promise<ChatSession> {
     const response = await this.#api.request<{ session: JsonRecord }>(
       this.#api.teamPath(`/chatkit/mission-control/agents/${encodeURIComponent(agentId)}/sessions`),
       context,
@@ -188,24 +230,38 @@ export class TildeChatProvider implements ChatProvider {
     return sessionRecord(response.session, agentId);
   }
 
-  async listMessages(sessionId: string, context: ProviderCallContext): Promise<readonly ChatMessage[]> {
-    const path = this.#api.teamPath(`/chatkit/mission-control/sessions/${encodeURIComponent(sessionId)}/messages?page_size=100`);
+  async listMessages(
+    sessionId: string,
+    context: ProviderCallContext,
+  ): Promise<readonly ChatMessage[]> {
+    const path = this.#api.teamPath(
+      `/chatkit/mission-control/sessions/${encodeURIComponent(sessionId)}/messages?page_size=100`,
+    );
     try {
       const response = await this.#api.request<{ items?: JsonRecord[] }>(path, context);
       return (response.items ?? []).map(messageRecord);
     } catch (error) {
       if (!(error instanceof ProviderError) || error.code !== "not_found") throw error;
       const response = await this.#api.request<{ items?: JsonRecord[] }>(
-        this.#api.teamPath(`/chatkit/sessions/${encodeURIComponent(sessionId)}/messages?page_size=100`),
+        this.#api.teamPath(
+          `/chatkit/sessions/${encodeURIComponent(sessionId)}/messages?page_size=100`,
+        ),
         context,
       );
       return (response.items ?? []).map(messageRecord);
     }
   }
 
-  async sendMessage(agentId: string, sessionId: string, text: string, context: ProviderCallContext): Promise<readonly ChatMessage[]> {
+  async sendMessage(
+    agentId: string,
+    sessionId: string,
+    text: string,
+    context: ProviderCallContext,
+  ): Promise<readonly ChatMessage[]> {
     const response = await this.#api.request<{ items?: JsonRecord[] }>(
-      this.#api.teamPath(`/chatkit/mission-control/agents/${encodeURIComponent(agentId)}/sessions/${encodeURIComponent(sessionId)}/messages`),
+      this.#api.teamPath(
+        `/chatkit/mission-control/agents/${encodeURIComponent(agentId)}/sessions/${encodeURIComponent(sessionId)}/messages`,
+      ),
       context,
       { method: "POST", body: JSON.stringify({ text, attachment_ids: [] }) },
     );
@@ -214,7 +270,9 @@ export class TildeChatProvider implements ChatProvider {
 
   async interrupt(sessionId: string, context: ProviderCallContext): Promise<void> {
     await this.#api.request<unknown>(
-      this.#api.teamPath(`/chatkit/mission-control/sessions/${encodeURIComponent(sessionId)}/interrupt`),
+      this.#api.teamPath(
+        `/chatkit/mission-control/sessions/${encodeURIComponent(sessionId)}/interrupt`,
+      ),
       context,
       { method: "POST", body: "{}" },
     );
@@ -242,7 +300,10 @@ export class TildeManagedSkillProvider implements SkillProvider {
       await this.#api.request<unknown>("/api/v1/identity/auth/whoami", context);
       return { healthy: true };
     } catch (error) {
-      return { healthy: false, message: error instanceof Error ? error.message : "Tilde skills are unavailable" };
+      return {
+        healthy: false,
+        message: error instanceof Error ? error.message : "Tilde skills are unavailable",
+      };
     }
   }
 
@@ -254,66 +315,117 @@ export class TildeManagedSkillProvider implements SkillProvider {
 
   async listSkills(context: ProviderCallContext) {
     if (!this.#registryId) return [];
-    const registry = await this.#api.request<JsonRecord>(this.#api.teamPath(`/skill-registry/${encodeURIComponent(this.#registryId)}`), context);
+    const registry = await this.#api.request<JsonRecord>(
+      this.#api.teamPath(`/skill-registry/${encodeURIComponent(this.#registryId)}`),
+      context,
+    );
     return arrayValue(registry.skills).map((value) => skillSummary(asRecord(value)));
   }
 
   async readSkill(id: string, context: ProviderCallContext): Promise<string> {
-    if (!this.#registryId) throw new ProviderError("invalid_configuration", "Tilde skill registry is not configured");
-    const skill = await this.#api.request<JsonRecord>(this.#api.teamPath(`/skill/${encodeURIComponent(id)}`), context);
+    if (!this.#registryId)
+      throw new ProviderError("invalid_configuration", "Tilde skill registry is not configured");
+    const skill = await this.#api.request<JsonRecord>(
+      this.#api.teamPath(`/skill/${encodeURIComponent(id)}`),
+      context,
+    );
     return optionalString(skill.content) ?? "";
   }
 
-  async reconcileRegistry(spec: SkillRegistrySpec, context: ProviderCallContext): Promise<SkillRegistryResult> {
+  async reconcileRegistry(
+    spec: SkillRegistrySpec,
+    context: ProviderCallContext,
+  ): Promise<SkillRegistryResult> {
     const existingRegistry = await this.#findRegistry(spec, context);
     const currentSkills = await this.#listTeamSkills(context);
-    const currentByName = new Map(currentSkills.map((skill) => [optionalString(skill.name), skill]));
+    const currentByName = new Map(
+      currentSkills.map((skill) => [optionalString(skill.name), skill]),
+    );
     const remoteSkills: JsonRecord[] = [];
     let changed = !existingRegistry;
     for (const desired of spec.skills) {
       const mappedId = spec.existingSkills?.[desired.name];
       const current = mappedId
-        ? await this.#api.request<JsonRecord>(this.#api.teamPath(`/skill/${encodeURIComponent(mappedId)}`), context).catch(() => undefined)
+        ? await this.#api
+            .request<JsonRecord>(
+              this.#api.teamPath(`/skill/${encodeURIComponent(mappedId)}`),
+              context,
+            )
+            .catch(() => undefined)
         : currentByName.get(desired.name);
       if (!current) {
-        remoteSkills.push(await this.#api.request<JsonRecord>(this.#api.teamPath("/skill"), context, {
-          method: "POST",
-          body: JSON.stringify({
-            name: desired.name,
-            description: desired.description,
-            content: desired.content,
-            source_kind: "repository",
-            source_path: desired.sourcePath,
+        remoteSkills.push(
+          await this.#api.request<JsonRecord>(this.#api.teamPath("/skill"), context, {
+            method: "POST",
+            body: JSON.stringify({
+              name: desired.name,
+              description: desired.description,
+              content: desired.content,
+              source_kind: "repository",
+              source_path: desired.sourcePath,
+            }),
           }),
-        }));
+        );
         changed = true;
         continue;
       }
-      const needsUpdate = optionalString(current.description) !== desired.description || optionalString(current.content) !== desired.content;
-      remoteSkills.push(needsUpdate
-        ? await this.#api.request<JsonRecord>(this.#api.teamPath(`/skill/${encodeURIComponent(stringValue(current.id))}`), context, {
-            method: "PATCH",
-            body: JSON.stringify({ name: desired.name, description: desired.description, content: desired.content }),
-          })
-        : current);
+      const needsUpdate =
+        optionalString(current.description) !== desired.description ||
+        optionalString(current.content) !== desired.content;
+      remoteSkills.push(
+        needsUpdate
+          ? await this.#api.request<JsonRecord>(
+              this.#api.teamPath(`/skill/${encodeURIComponent(stringValue(current.id))}`),
+              context,
+              {
+                method: "PATCH",
+                body: JSON.stringify({
+                  name: desired.name,
+                  description: desired.description,
+                  content: desired.content,
+                }),
+              },
+            )
+          : current,
+      );
       changed ||= needsUpdate;
     }
     const skillIds = remoteSkills.map((skill) => stringValue(skill.id));
     let registry = existingRegistry;
     if (!registry) {
-      registry = await this.#api.request<JsonRecord>(this.#api.teamPath("/skill-registry"), context, {
-        method: "POST",
-        body: JSON.stringify({ name: spec.name, description: spec.description, skill_ids: skillIds }),
-      });
+      registry = await this.#api.request<JsonRecord>(
+        this.#api.teamPath("/skill-registry"),
+        context,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name: spec.name,
+            description: spec.description,
+            skill_ids: skillIds,
+          }),
+        },
+      );
     } else {
-      const currentIds = arrayValue(registry.skills).map((value) => stringValue(asRecord(value).id)).sort();
-      if (JSON.stringify(currentIds) !== JSON.stringify([...skillIds].sort())
-        || optionalString(registry.name) !== spec.name
-        || optionalString(registry.description) !== spec.description) {
-        registry = await this.#api.request<JsonRecord>(this.#api.teamPath(`/skill-registry/${encodeURIComponent(stringValue(registry.id))}`), context, {
-          method: "PATCH",
-          body: JSON.stringify({ name: spec.name, description: spec.description, skill_ids: skillIds }),
-        });
+      const currentIds = arrayValue(registry.skills)
+        .map((value) => stringValue(asRecord(value).id))
+        .sort();
+      if (
+        JSON.stringify(currentIds) !== JSON.stringify([...skillIds].sort()) ||
+        optionalString(registry.name) !== spec.name ||
+        optionalString(registry.description) !== spec.description
+      ) {
+        registry = await this.#api.request<JsonRecord>(
+          this.#api.teamPath(`/skill-registry/${encodeURIComponent(stringValue(registry.id))}`),
+          context,
+          {
+            method: "PATCH",
+            body: JSON.stringify({
+              name: spec.name,
+              description: spec.description,
+              skill_ids: skillIds,
+            }),
+          },
+        );
         changed = true;
       }
     }
@@ -328,21 +440,44 @@ export class TildeManagedSkillProvider implements SkillProvider {
   }
 
   async inspectRegistry(id: string, context: ProviderCallContext): Promise<SkillRegistryResult> {
-    const registry = await this.#api.request<JsonRecord>(this.#api.teamPath(`/skill-registry/${encodeURIComponent(id)}`), context);
+    const registry = await this.#api.request<JsonRecord>(
+      this.#api.teamPath(`/skill-registry/${encodeURIComponent(id)}`),
+      context,
+    );
     this.#registryId = id;
-    return { id, name: optionalString(registry.name) ?? id, skills: arrayValue(registry.skills).map((value) => skillSummary(asRecord(value))), created: false, changed: false };
+    return {
+      id,
+      name: optionalString(registry.name) ?? id,
+      skills: arrayValue(registry.skills).map((value) => skillSummary(asRecord(value))),
+      created: false,
+      changed: false,
+    };
   }
 
-  async #findRegistry(spec: SkillRegistrySpec, context: ProviderCallContext): Promise<JsonRecord | undefined> {
+  async #findRegistry(
+    spec: SkillRegistrySpec,
+    context: ProviderCallContext,
+  ): Promise<JsonRecord | undefined> {
     if (spec.existingRegistryId) {
-      return this.#api.request<JsonRecord>(this.#api.teamPath(`/skill-registry/${encodeURIComponent(spec.existingRegistryId)}`), context).catch(() => undefined);
+      return this.#api
+        .request<JsonRecord>(
+          this.#api.teamPath(`/skill-registry/${encodeURIComponent(spec.existingRegistryId)}`),
+          context,
+        )
+        .catch(() => undefined);
     }
-    const response = await this.#api.request<{ items?: JsonRecord[] }>(this.#api.teamPath("/skill-registry?page_size=100"), context);
+    const response = await this.#api.request<{ items?: JsonRecord[] }>(
+      this.#api.teamPath("/skill-registry?page_size=100"),
+      context,
+    );
     return (response.items ?? []).find((registry) => optionalString(registry.name) === spec.name);
   }
 
   async #listTeamSkills(context: ProviderCallContext): Promise<JsonRecord[]> {
-    const response = await this.#api.request<{ items?: JsonRecord[] }>(this.#api.teamPath("/skill?page_size=100"), context);
+    const response = await this.#api.request<{ items?: JsonRecord[] }>(
+      this.#api.teamPath("/skill?page_size=100"),
+      context,
+    );
     return response.items ?? [];
   }
 }
@@ -353,7 +488,9 @@ function agentRecord(value: JsonRecord): AgentRecord {
     id: stringValue(value.id),
     displayName: optionalString(configuration.display_name) ?? stringValue(value.id),
     status: optionalString(value.status) ?? "unknown",
-    ...(optionalString(configuration.endpoint_url) ? { endpointUrl: optionalString(configuration.endpoint_url) } : {}),
+    ...(optionalString(configuration.endpoint_url)
+      ? { endpointUrl: optionalString(configuration.endpoint_url) }
+      : {}),
     ...(dateValue(value.created_at) ? { createdAt: dateValue(value.created_at) } : {}),
     ...(dateValue(value.updated_at) ? { updatedAt: dateValue(value.updated_at) } : {}),
   };
@@ -371,7 +508,10 @@ function sessionRecord(value: JsonRecord, agentId: string): ChatSession {
 }
 
 function messageRecord(value: JsonRecord): ChatMessage {
-  const role = value.role === "system" || value.role === "user" || value.role === "assistant" ? value.role : "assistant";
+  const role =
+    value.role === "system" || value.role === "user" || value.role === "assistant"
+      ? value.role
+      : "assistant";
   return {
     id: stringValue(value.id),
     sessionId: stringValue(value.session_id),
@@ -401,11 +541,15 @@ function messageText(value: JsonRecord): string {
 }
 
 function asRecord(value: unknown): JsonRecord {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as JsonRecord : {};
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as JsonRecord) : {};
 }
 
 function stringValue(value: unknown): string {
-  if (typeof value !== "string" || !value) throw new ProviderError("provider_unavailable", "Tilde returned an invalid resource identifier");
+  if (typeof value !== "string" || !value)
+    throw new ProviderError(
+      "provider_unavailable",
+      "Tilde returned an invalid resource identifier",
+    );
   return value;
 }
 

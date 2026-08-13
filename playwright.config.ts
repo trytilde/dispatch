@@ -10,7 +10,8 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "OPENBOT_SETUP_CODE=openbot-e2e-setup-code-with-32-bytes OPENBOT_SANDBOX_PROVIDER=vercel-sandbox OPENBOT_NO_DESKTOP=1 DATABASE_URL=file:./.data/openbot-e2e.db pnpm dev",
+    command:
+      "OPENBOT_SETUP_CODE=openbot-e2e-setup-code-with-32-bytes OPENBOT_SANDBOX_PROVIDER=vercel-sandbox OPENBOT_NO_DESKTOP=1 DATABASE_URL=file:./.data/openbot-e2e.db vp run dev",
     url: "http://127.0.0.1:4173/healthz",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

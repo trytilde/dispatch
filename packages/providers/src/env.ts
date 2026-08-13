@@ -1,9 +1,4 @@
-import {
-  createCipheriv,
-  createDecipheriv,
-  randomBytes,
-  scryptSync,
-} from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { EnvEntry, EnvProvider, ProviderCallContext } from "@openbot/provider-sdk";
@@ -66,7 +61,12 @@ export class LocalEncryptedEnvProvider implements EnvProvider {
       .map((name) => ({ name, sensitive: true }));
   }
 
-  async set(name: string, value: string, _options: { sensitive?: boolean }, _context: ProviderCallContext): Promise<void> {
+  async set(
+    name: string,
+    value: string,
+    _options: { sensitive?: boolean },
+    _context: ProviderCallContext,
+  ): Promise<void> {
     validateName(name);
     await this.#mutate((values) => ({ ...values, [name]: value }));
     process.env[name] = value;
@@ -128,9 +128,16 @@ export class VercelProjectEnvProvider implements EnvProvider {
   readonly #teamId?: string;
   readonly #target: string;
 
-  constructor(options: { token?: string; projectId?: string; teamId?: string; target?: string } = {}) {
-    this.#token = options.token ?? process.env.OPENBOT_VERCEL_API_TOKEN ?? process.env.VERCEL_TOKEN ?? "";
-    this.#projectId = options.projectId ?? process.env.OPENBOT_VERCEL_PROJECT_ID ?? process.env.VERCEL_PROJECT_ID ?? "";
+  constructor(
+    options: { token?: string; projectId?: string; teamId?: string; target?: string } = {},
+  ) {
+    this.#token =
+      options.token ?? process.env.OPENBOT_VERCEL_API_TOKEN ?? process.env.VERCEL_TOKEN ?? "";
+    this.#projectId =
+      options.projectId ??
+      process.env.OPENBOT_VERCEL_PROJECT_ID ??
+      process.env.VERCEL_PROJECT_ID ??
+      "";
     this.#teamId = options.teamId ?? process.env.OPENBOT_VERCEL_TEAM_ID;
     this.#target = options.target ?? process.env.VERCEL_TARGET_ENV ?? "production";
   }
@@ -143,7 +150,10 @@ export class VercelProjectEnvProvider implements EnvProvider {
       await this.#records();
       return { healthy: true };
     } catch (error) {
-      return { healthy: false, message: error instanceof Error ? error.message : "Vercel environment API failed" };
+      return {
+        healthy: false,
+        message: error instanceof Error ? error.message : "Vercel environment API failed",
+      };
     }
   }
 
@@ -169,7 +179,12 @@ export class VercelProjectEnvProvider implements EnvProvider {
       }));
   }
 
-  async set(name: string, value: string, options: { sensitive?: boolean }, _context: ProviderCallContext): Promise<void> {
+  async set(
+    name: string,
+    value: string,
+    options: { sensitive?: boolean },
+    _context: ProviderCallContext,
+  ): Promise<void> {
     validateName(name);
     await this.#request(`/v10/projects/${encodeURIComponent(this.#projectId)}/env?upsert=true`, {
       method: "POST",
@@ -189,19 +204,27 @@ export class VercelProjectEnvProvider implements EnvProvider {
   async delete(name: string, _context: ProviderCallContext): Promise<void> {
     const record = (await this.#records()).find((candidate) => candidate.key === name);
     if (!record) return;
-    await this.#request(`/v10/projects/${encodeURIComponent(this.#projectId)}/env/${encodeURIComponent(record.id)}`, { method: "DELETE" });
+    await this.#request(
+      `/v10/projects/${encodeURIComponent(this.#projectId)}/env/${encodeURIComponent(record.id)}`,
+      { method: "DELETE" },
+    );
     delete process.env[name];
   }
 
   async #records(): Promise<VercelEnvironmentRecord[]> {
-    const response = await this.#request(`/v10/projects/${encodeURIComponent(this.#projectId)}/env?target=${encodeURIComponent(this.#target)}`);
-    const body = await response.json() as { envs?: VercelEnvironmentRecord[] };
+    const response = await this.#request(
+      `/v10/projects/${encodeURIComponent(this.#projectId)}/env?target=${encodeURIComponent(this.#target)}`,
+    );
+    const body = (await response.json()) as { envs?: VercelEnvironmentRecord[] };
     return body.envs ?? [];
   }
 
   async #request(path: string, init: RequestInit = {}): Promise<Response> {
     if (!this.#token || !this.#projectId) {
-      throw new ProviderError("invalid_configuration", "Vercel API token and project ID are required");
+      throw new ProviderError(
+        "invalid_configuration",
+        "Vercel API token and project ID are required",
+      );
     }
     const url = new URL(path, "https://api.vercel.com");
     if (this.#teamId) url.searchParams.set("teamId", this.#teamId);
@@ -216,7 +239,11 @@ export class VercelProjectEnvProvider implements EnvProvider {
     });
     if (!response.ok) {
       await response.body?.cancel().catch(() => undefined);
-      throw new ProviderError("provider_unavailable", `Vercel environment API failed (${response.status})`, response.status >= 500);
+      throw new ProviderError(
+        "provider_unavailable",
+        `Vercel environment API failed (${response.status})`,
+        response.status >= 500,
+      );
     }
     return response;
   }
@@ -278,8 +305,13 @@ function decryptJson(envelope: StoredEnvironment, code: string): Record<string, 
     decipher.final(),
   ]).toString("utf8");
   const parsed = JSON.parse(plaintext) as unknown;
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid environment store payload");
-  return Object.fromEntries(Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+    throw new Error("Invalid environment store payload");
+  return Object.fromEntries(
+    Object.entries(parsed).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
+  );
 }
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {

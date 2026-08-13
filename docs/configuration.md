@@ -6,4 +6,4 @@ The build generator statically discovers agent modules, provider plugins, skills
 
 Built-ins use `openai`, `tilde-agents`, `tilde-chatkit`, `tilde-skills`, automatic local/Vercel sandbox selection, the environment provider, and Vercel deployment status. Select a custom provider ID in configuration only after registering it under `configuration/providers/`.
 
-Run `pnpm openbot check` after every configuration change. `pnpm openbot doctor` also checks the selected providers without exposing secret values.
+Run `vp run openbot check` after every configuration change. `vp run openbot doctor` also checks the selected providers without exposing secret values.

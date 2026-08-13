@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "dev": "vite --host 127.0.0.1 --port 4173",
-    "lint": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests",
+    "build": "vp build",
+    "dev": "vp dev --host 127.0.0.1 --port 4173",
+    "lint": "vp lint",
+    "test": "vp test run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -27,7 +27,8 @@
     "@vitejs/plugin-react": "6.0.5",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.2",
-    "vite": "8.2.1",
-    "vitest": "3.2.4"
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
   }
 }

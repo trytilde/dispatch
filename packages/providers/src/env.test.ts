@@ -1,7 +1,7 @@
 import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { LocalEncryptedEnvProvider, VercelProjectEnvProvider } from "./env.js";
 
 describe("LocalEncryptedEnvProvider", () => {
@@ -24,16 +24,25 @@ describe("LocalEncryptedEnvProvider", () => {
 
     expect(await provider.get("OPENBOT_TEST_SECRET", context)).toBe("not-plaintext");
     expect(await readFile(path, "utf8")).not.toContain("not-plaintext");
-    expect((await provider.list("OPENBOT_TEST_", context)).map((entry) => entry.name)).toEqual(["OPENBOT_TEST_SECRET"]);
+    expect((await provider.list("OPENBOT_TEST_", context)).map((entry) => entry.name)).toEqual([
+      "OPENBOT_TEST_SECRET",
+    ]);
   });
 
   it("fails closed when the setup code changes", async () => {
     process.env.OPENBOT_SETUP_CODE = "the-first-long-enough-setup-code";
     const directory = await mkdtemp(join(tmpdir(), "openbot-env-"));
     const path = join(directory, "environment.json");
-    await new LocalEncryptedEnvProvider(path).set("OPENBOT_TEST_SECRET", "secret", { sensitive: true }, context);
+    await new LocalEncryptedEnvProvider(path).set(
+      "OPENBOT_TEST_SECRET",
+      "secret",
+      { sensitive: true },
+      context,
+    );
     process.env.OPENBOT_SETUP_CODE = "a-different-long-enough-setup-code";
-    await expect(new LocalEncryptedEnvProvider(path).get("OPENBOT_TEST_SECRET", context)).rejects.toMatchObject({ code: "invalid_configuration" });
+    await expect(
+      new LocalEncryptedEnvProvider(path).get("OPENBOT_TEST_SECRET", context),
+    ).rejects.toMatchObject({ code: "invalid_configuration" });
   });
 });
 
@@ -44,7 +53,11 @@ describe("VercelProjectEnvProvider", () => {
       expect(url.searchParams.get("teamId")).toBe("team-test");
       if (init?.method === "POST") {
         expect(url.searchParams.get("upsert")).toBe("true");
-        expect(JSON.parse(String(init.body))).toMatchObject({ key: "OPENBOT_TEST_SECRET", type: "encrypted", target: ["production"] });
+        expect(JSON.parse(String(init.body))).toMatchObject({
+          key: "OPENBOT_TEST_SECRET",
+          type: "encrypted",
+          target: ["production"],
+        });
         return Response.json({ created: true });
       }
       if (url.pathname.endsWith("/env/env-one")) {
@@ -57,12 +70,25 @@ describe("VercelProjectEnvProvider", () => {
         });
       }
       expect(url.searchParams.get("decrypt")).toBeNull();
-      return Response.json({ envs: [{ id: "env-one", key: "OPENBOT_TEST_SECRET", value: "secret", type: "encrypted" }] });
+      return Response.json({
+        envs: [{ id: "env-one", key: "OPENBOT_TEST_SECRET", value: "secret", type: "encrypted" }],
+      });
     });
     vi.stubGlobal("fetch", fetchMock);
-    const provider = new VercelProjectEnvProvider({ token: "vercel-token", projectId: "project-test", teamId: "team-test" });
-    await expect(provider.get("OPENBOT_TEST_SECRET", { requestId: "test" })).resolves.toBe("secret");
+    const provider = new VercelProjectEnvProvider({
+      token: "vercel-token",
+      projectId: "project-test",
+      teamId: "team-test",
+    });
+    await expect(provider.get("OPENBOT_TEST_SECRET", { requestId: "test" })).resolves.toBe(
+      "secret",
+    );
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    await provider.set("OPENBOT_TEST_SECRET", "updated", { sensitive: true }, { requestId: "test" });
+    await provider.set(
+      "OPENBOT_TEST_SECRET",
+      "updated",
+      { sensitive: true },
+      { requestId: "test" },
+    );
   });
 });

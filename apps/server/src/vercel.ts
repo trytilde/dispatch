@@ -11,7 +11,10 @@ export default {
       return fetchRequestHandler(request);
     } catch (error) {
       migration = undefined;
-      console.error("OpenBot request initialization failed", error instanceof Error ? error.message : "unknown error");
+      console.error(
+        "OpenBot request initialization failed",
+        error instanceof Error ? error.message : "unknown error",
+      );
       return Response.json({ error: "Service initialization failed" }, { status: 503 });
     }
   },

@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 import { startRendererServer, type RendererServer } from "./local-server.js";
 
 const cleanups: Array<() => Promise<void>> = [];
@@ -15,19 +15,31 @@ describe("Electron renderer server", () => {
     const staticRoot = await mkdtemp(join(tmpdir(), "openbot-electron-web-"));
     await writeFile(join(staticRoot, "index.html"), "<main>OpenBot renderer</main>");
     const upstream = createServer((request, response) => {
-      response.setHeader("set-cookie", "openbot_session=example; HttpOnly; Secure; SameSite=Strict");
+      response.setHeader(
+        "set-cookie",
+        "openbot_session=example; HttpOnly; Secure; SameSite=Strict",
+      );
       response.end(`${request.url}:${request.headers.cookie ?? "none"}`);
     });
     await new Promise<void>((resolvePromise) => upstream.listen(0, "127.0.0.1", resolvePromise));
     const address = upstream.address();
     if (!address || typeof address === "string") throw new Error("test upstream did not bind");
-    const renderer: RendererServer = await startRendererServer(staticRoot, `http://127.0.0.1:${address.port}`);
+    const renderer: RendererServer = await startRendererServer(
+      staticRoot,
+      `http://127.0.0.1:${address.port}`,
+    );
     cleanups.push(async () => renderer.close());
-    cleanups.push(async () => new Promise<void>((resolvePromise) => upstream.close(() => resolvePromise())));
+    cleanups.push(
+      async () => new Promise<void>((resolvePromise) => upstream.close(() => resolvePromise())),
+    );
     cleanups.push(async () => rm(staticRoot, { recursive: true, force: true }));
 
-    expect(await (await fetch(`${renderer.origin}/agents/one`)).text()).toContain("OpenBot renderer");
-    const proxied = await fetch(`${renderer.origin}/healthz`, { headers: { cookie: "client=value" } });
+    expect(await (await fetch(`${renderer.origin}/agents/one`)).text()).toContain(
+      "OpenBot renderer",
+    );
+    const proxied = await fetch(`${renderer.origin}/healthz`, {
+      headers: { cookie: "client=value" },
+    });
     expect(await proxied.text()).toBe("/healthz:client=value");
     expect(proxied.headers.get("set-cookie")).toContain("HttpOnly");
     expect(proxied.headers.get("set-cookie")).not.toContain("Secure");

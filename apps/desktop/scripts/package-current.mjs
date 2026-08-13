@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 
-const target = process.platform === "darwin" ? "--mac" : process.platform === "linux" ? "--linux" : undefined;
+const target =
+  process.platform === "darwin" ? "--mac" : process.platform === "linux" ? "--linux" : undefined;
 if (!target) {
   process.stderr.write("OpenBot desktop packaging supports macOS and Linux only.\n");
   process.exit(1);

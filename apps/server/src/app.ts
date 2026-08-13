@@ -15,7 +15,7 @@ registerControlServices(controlRouter);
 const controlHandlers = new Map(
   controlRouter.handlers.map((handler) => [`/rpc${handler.requestPath}`, createFetchHandler(handler)]),
 );
-const defaultWebRoot = fileURLToPath(new URL("../../../apps/web/dist", import.meta.url));
+const defaultWebRoot = process.env.OPENBOT_WEB_ROOT ?? resolve(process.cwd(), "apps/web/dist");
 
 export interface AppOptions {
   webRoot?: string;
@@ -27,9 +27,9 @@ export function createApp(options: AppOptions = {}): Hono {
 
   app.use("*", secureHeaders());
   app.get("/healthz", (context) => context.json({ ok: true, service: "openbot" }));
-  app.all("/rpc/*", (context) => {
+  app.all("/rpc/*", async (context) => {
     const handler = controlHandlers.get(new URL(context.req.url).pathname);
-    return handler ? handler(context.req.raw) : context.json({ error: "Control method not found" }, 404);
+    return handler ? await handler(context.req.raw) : context.json({ error: "Control method not found" }, 404);
   });
 
   if (existsSync(webRoot)) {

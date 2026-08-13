@@ -19,8 +19,6 @@ No setup or pairing code is required. The web app is a disconnected UX shell and
 
 ## Deploy
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftrytilde%2Fopenbot&project-name=openbot&repository-name=openbot)
-
 ```bash
 pnpm openbot init
 pnpm deploy:prod -- --dry-run --json
@@ -33,14 +31,14 @@ Use `pnpm openbot secrets set NAME` and `pnpm openbot secrets unset NAME` to mai
 
 Commit `.sops.yaml`, `sops.identity.json`, and `secrets.enc.yaml` after initialization. Never commit `configuration/.env`. The sandbox age private key is encrypted at `openbot.sandbox.sops_age_key` and is reserved for the trusted development-sandbox deployment participant.
 
-The CLI validates once, plans every provider that exposes `deployable`, runs optional provider configuration, deploys ordinary providers, then any registered development-sandbox participant, and deploys the runtime last. Providers without `deployable` are skipped. Provider deployment results contribute named outputs, environment variables, and secrets; the runtime receives the aggregate without requiring a second operator command or redeployment loop. Sandbox-only secrets are available to the sandbox environment helper but excluded from the runtime.
+The CLI checks and builds every selected provider that exposes `buildable`, then plans and deploys providers that expose `deployable`. `openbot deploy --skip-deploy` stops after producing artifacts. `openbot deploy --service agents --yes` builds and deploys the agent project without compiling or redeploying control; `--service control` does the inverse. Agent functions deploy before the control runtime when both are selected. Provider outputs contribute named outputs, environment variables, and secrets without a second operator command. Sandbox-only secrets remain excluded from service runtimes.
 
 `providers.runtime` in `openbot.config.ts` selects the runtime:
 
-- `vercel` installs contributed environment variables and secrets with the Vercel CLI, then deploys the control service and web UI.
-- `local` writes a private `.openbot-deploy/runtime.env` and installs a user-level systemd service on Linux or launchd agent on macOS. Run the same deploy command as the user who should own the service; no root service is created.
+- `vercel` builds a control/web project and a separate agent project. Every configured agent is a parallel-built Vercel Function; both projects deploy from prebuilt artifacts.
+- `local` builds separate control and agent Hono servers, writes private service environments, and installs two user-level systemd services on Linux or launchd agents on macOS. Development still hosts control and agents in one Hono process.
 
-`--dry-run` calls only the read-only `plan()` lifecycle and does not link projects, write files, or start services.
+`--dry-run` performs native checks, writes local build artifacts, and calls the read-only `plan()` lifecycle. It does not link projects, publish Vercel deployments, or start services. Use `--skip-deploy` when only the artifacts are wanted and no deployment plan is needed.
 
 The production build stages the web app in `public/` for Vercel's static CDN and deploys the bare Hono server for `/healthz` and `/rpc`.
 
@@ -48,9 +46,10 @@ The production build stages the web app in `public/` for Vercel's static CDN and
 
 - `cli` owns the React Ink repository CLI, development process supervision, and provider deployment coordination.
 - `packages/runtime-provider-core` owns the optional provider deployment contract and runtime-last coordinator.
-- `packages/runtime-provider` owns Vercel and local systemd/launchd runtime implementations.
+- `packages/control-service-provider` owns local and Vercel control/web builds and deployment.
+- `packages/agent-service-provider` owns agent discovery, concurrent per-agent Vercel bundles, the local agent server, and deployment.
 - `apps/web` owns the UX shell and frontend routes.
-- `apps/server` owns the portable Hono application, built web UI fallback, `/healthz`, and ConnectRPC federation under `/rpc`; it does not bind a port.
+- `apps/server` owns the portable Hono application, built web UI fallback, `/healthz`, ConnectRPC federation under `/rpc`, and the local control-service entrypoint.
 - `packages/control-service-proto` is the future owner-facing API contract and is intentionally empty.
 - Domain packages remain available but are not wired into the application yet.
 

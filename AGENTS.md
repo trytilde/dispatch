@@ -47,7 +47,8 @@ pnpm --filter @openbot/db test
 - `packages/contracts`: legacy protocol package retained while the new UX and control API are designed.
 - `configuration`: fork-owned Vercel AI SDK agent endpoints, runtime skills, sandbox seed, and provider plugins.
 - `packages/db`: Drizzle over local SQLite or remote libSQL/Turso.
-- `packages/runtime-provider-core`, `packages/runtime-provider`: phased deployment contract and Vercel runtime implementation.
+- `packages/runtime-provider-core`: shared build and phased deployment contracts and coordinator.
+- `packages/control-service-provider`, `packages/agent-service-provider`: independent local and Vercel service artifacts and deployment.
 - `packages/ui`: shared React UI and vendored Beautiful UI components.
 - `server.ts`: portable root Hono entrypoint for Vercel.
 - `scripts/`: non-interactive build helpers that do not belong to the operator CLI.

@@ -5,6 +5,7 @@
   "fixed": [[
     "@openbot/agent-provider",
     "@openbot/agent-provider-core",
+    "@openbot/agent-service-provider",
     "@openbot/box-host",
     "@openbot/cli",
     "@openbot/computer-provider-core",
@@ -18,7 +19,7 @@
     "@openbot/desktop",
     "@openbot/inference-model-provider",
     "@openbot/inference-model-provider-core",
-    "@openbot/runtime-provider",
+    "@openbot/control-service-provider",
     "@openbot/runtime-provider-core",
     "@openbot/server",
     "@openbot/skills-provider",

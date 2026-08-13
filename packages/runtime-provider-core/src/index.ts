@@ -17,6 +17,12 @@ export interface DeploymentResult {
   environmentVariables?: Readonly<Record<string, string>>;
 }
 
+/** A provider-owned software artifact lifecycle. */
+export interface Buildable {
+  check(context: DeploymentContext): Promise<void>;
+  build(context: DeploymentContext): Promise<DeploymentResult | void>;
+}
+
 export type InitializationValueDestination = "environment" | "secret" | "deployment-secret";
 
 export interface ProviderInitializationQuestion {
@@ -94,6 +100,16 @@ export class DeploymentOutputs {
     return Object.fromEntries(this.#environmentVariables);
   }
 
+  result(): DeploymentResult {
+    return {
+      outputs: this.outputs(),
+      secrets: this.secrets(),
+      deploymentSecrets: this.deploymentSecrets(),
+      sandboxSecrets: this.sandboxSecrets(),
+      environmentVariables: this.environmentVariables(),
+    };
+  }
+
   #mergeMap(target: Map<string, string>, values: Readonly<Record<string, string>> | undefined, kind: string, environmentName: boolean): void {
     for (const [name, value] of Object.entries(values ?? {})) {
       if (!name || !value) throw new Error(`Deployment ${kind} names and values must not be empty`);
@@ -140,6 +156,7 @@ export interface Deployable {
 
 /** Provider domains expose a deployment lifecycle only when they need one. */
 export interface DeployableProvider extends InitializableProvider {
+  readonly buildable?: Buildable;
   readonly deployable?: Deployable;
 }
 
@@ -158,18 +175,47 @@ export interface DeploymentRunOptions {
   report?: DeploymentReporter;
 }
 
+/** Check and build every opted-in software artifact before deployment begins. */
+export async function buildProviders(
+  participants: readonly DeploymentParticipant[],
+  options: DeploymentRunOptions,
+): Promise<DeploymentOutputs> {
+  assertUniqueParticipantIds(participants);
+  const inputs = new DeploymentOutputs();
+  inputs.merge(options.initialInputs);
+  const report = options.report ?? (() => undefined);
+  const context: DeploymentContext = {
+    target: options.target,
+    repositoryRoot: options.repositoryRoot,
+    environment: options.environment ?? process.env,
+    inputs,
+    report,
+  };
+
+  for (const participant of participants) {
+    const buildable = participant.provider.buildable;
+    if (!buildable) continue;
+    const scopedContext = participant.role === "sandbox" ? context : { ...context, inputs: withoutSandboxSecrets(inputs) };
+    report({ event: "build.provider.check.started", details: { providerId: participant.id } });
+    await buildable.check(scopedContext);
+    report({ event: "build.provider.check.complete", details: { providerId: participant.id } });
+    report({ event: "build.provider.build.started", details: { providerId: participant.id } });
+    inputs.merge(await buildable.build(scopedContext));
+    report({ event: "build.provider.build.complete", details: { providerId: participant.id } });
+  }
+  return inputs;
+}
+
 export async function deployProviders(
   participants: readonly DeploymentParticipant[],
   options: DeploymentRunOptions,
 ): Promise<DeploymentOutputs> {
+  assertUniqueParticipantIds(participants);
   const deployable = participants.flatMap((participant) => participant.provider.deployable
     ? [{ ...participant, deployable: participant.provider.deployable }]
     : []);
-  const ids = new Set<string>();
   for (const participant of deployable) {
     if (!participant.id) throw new Error("Deployment participant id must not be empty");
-    if (ids.has(participant.id)) throw new Error(`Duplicate deployment participant id: ${participant.id}`);
-    ids.add(participant.id);
   }
   const runtime = deployable.filter((participant) => participant.role === "runtime");
   if (runtime.length > 1) throw new Error("Only one runtime deployment participant may be registered");
@@ -213,6 +259,15 @@ export async function deployProviders(
     report({ event: "deployment.provider.deploy.complete", details: { providerId: participant.id, role: participant.role ?? "provider" } });
   }
   return inputs;
+}
+
+function assertUniqueParticipantIds(participants: readonly DeploymentParticipant[]): void {
+  const ids = new Set<string>();
+  for (const participant of participants) {
+    if (!participant.id) throw new Error("Deployment participant id must not be empty");
+    if (ids.has(participant.id)) throw new Error(`Duplicate deployment participant id: ${participant.id}`);
+    ids.add(participant.id);
+  }
 }
 
 function withoutSandboxSecrets(inputs: DeploymentOutputs): DeploymentOutputs {

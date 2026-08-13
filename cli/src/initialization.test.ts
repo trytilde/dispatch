@@ -77,7 +77,7 @@ describe("OpenBot initialization", () => {
   it("stores the owner identity in 1Password and encrypts the sandbox identity", async () => {
     const repositoryRoot = await temporaryRepository();
     const answers = ["onepassword", "vercel"];
-    const inputs = ["Engineering", "OpenBot owner identity", "vercel-secret"];
+    const inputs = ["Engineering", "OpenBot owner identity", "vercel-secret", "openbot-control", "openbot-agents"];
     const prompts: InitializationPrompts = {
       select: vi.fn(async () => answers.shift()!),
       input: vi.fn(async () => inputs.shift() ?? ""),
@@ -98,6 +98,8 @@ describe("OpenBot initialization", () => {
 
     const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
     expect(environment).toContain('OPENBOT_RUNTIME_PROVIDER="vercel"');
+    expect(environment).toContain('OPENBOT_VERCEL_CONTROL_PROJECT="openbot-control"');
+    expect(environment).toContain('OPENBOT_VERCEL_AGENT_PROJECT="openbot-agents"');
     expect(environment).not.toContain("vercel-secret");
     const sopsConfig = await readFile(join(repositoryRoot, "configuration/.sops.yaml"), "utf8");
     expect(sopsConfig.match(/- age1/g)).toHaveLength(2);

@@ -1,21 +1,26 @@
 {
-  "name": "@openbot/runtime-provider",
+  "name": "@openbot/agent-service-provider",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },
   "scripts": {
-    "build": "tsc --noEmit",
-    "lint": "tsc --noEmit",
+    "build": "tsgo --noEmit",
+    "lint": "tsgo --noEmit",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "@hono/node-server": "1.19.1",
+    "@openbot/control-service-provider": "workspace:*",
     "@openbot/runtime-provider-core": "workspace:*",
+    "hono": "4.13.1",
+    "tsdown": "0.22.14",
     "vercel": "58.9.4"
   },
   "devDependencies": {
     "@types/node": "24.3.0",
+    "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "typescript": "5.9.2",
     "vitest": "3.2.4"
   }

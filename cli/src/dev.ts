@@ -8,7 +8,7 @@ export async function runDevelopment(): Promise<never> {
   const serverPort = env.OPENBOT_PORT ?? "4100";
   const webPort = env.OPENBOT_WEB_PORT ?? "4173";
   console.log(`OpenBot web: http://127.0.0.1:${webPort}`);
-  console.log(`OpenBot control server: http://127.0.0.1:${serverPort}`);
+  console.log(`OpenBot control and agent server: http://127.0.0.1:${serverPort}`);
 
   const server = run("pnpm", ["--filter", "@openbot/cli", "exec", "tsx", "watch", "src/index.tsx", "_serve"], env);
   const web = run("pnpm", ["--filter", "@openbot/web", "dev", "--port", webPort], env);

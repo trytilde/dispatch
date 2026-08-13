@@ -35,6 +35,8 @@ const commands = [
   ["build", "Build the deployable application shell"],
   ["test", "Run repository tests"],
   ["deploy --yes", "Deploy the current fork to production"],
+  ["deploy --skip-deploy", "Check and build deployable artifacts without deploying"],
+  ["deploy --service agents --yes", "Build and deploy agent functions without control"],
 ] as const;
 
 const menuItems = [

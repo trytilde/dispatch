@@ -45,8 +45,7 @@ For a private Vercel installation using AWS KMS, the answer object is:
   "runtime": "vercel",
   "vercel-token": "secret",
   "vercel-control-project": "my-openbot-control",
-  "vercel-agent-project": "my-openbot-agents",
-  "computer-image-repository": "registry.vercel.com/example/openbot-computer"
+  "vercel-agent-project": "my-openbot-agents"
 }
 ```
 

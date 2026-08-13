@@ -265,6 +265,7 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   );
   await scaffoldAgent(options.repositoryRoot, "Hello World", { existing: "preserve" });
   await rm(configurationIgnorePath, { force: true });
+  await runner.run("vp", ["install"], { cwd: options.repositoryRoot });
 }
 
 async function assertOpenBotRepositoryRoot(repositoryRoot: string): Promise<void> {

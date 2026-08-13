@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { basename, posix } from "node:path";
 import { promisify } from "node:util";
 import {
@@ -57,6 +57,7 @@ export interface ComputerImageDeploymentConfig {
 interface ComputerImageLifecycleOptions {
   publish: boolean;
   buildxPlatform?: string;
+  managedRepository?: boolean;
   repositoryDescription?: string;
 }
 
@@ -77,7 +78,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     this.#imageDeployment = imageDeployment;
     this.#imageLifecycle = imageLifecycle;
     this.initialization =
-      imageDeployment.repository || !imageLifecycle.publish
+      imageDeployment.repository || !imageLifecycle.publish || imageLifecycle.managedRepository
         ? undefined
         : {
             id: "computer-image",
@@ -98,7 +99,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
           };
     this.buildable = {
       check: async (context) => {
-        await this.#imageRepository(context);
+        await this.imageRepository(context, "build");
         await runDocker(
           ["version", "--format", "{{.Server.Version}}"],
           deploymentCallContext("check"),
@@ -111,7 +112,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
           context.repositoryRoot,
           this.providerId,
         );
-        const spec = await this.#imageSpec(context, materialized);
+        const spec = await this.#imageSpec(context, materialized, "build");
         const image = await this.buildImage(spec, deploymentCallContext("build"));
         return {
           outputs: {
@@ -125,7 +126,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     };
     this.deployable = {
       plan: async (context) => {
-        const repository = await this.#imageRepository(context);
+        const repository = await this.imageRepository(context, "plan");
         return this.#imageLifecycle.publish
           ? {
               summary: `Publish the ${this.providerId} computer image to ${repository}`,
@@ -140,15 +141,21 @@ export abstract class BaseComputerProvider implements ComputerProvider {
             };
       },
       deploy: async (context) => {
-        const spec = await this.#imageSpec(context, {
-          contextDirectory: context.inputs.require(this.#outputName("CONTEXT")),
-          dockerfilePath: context.inputs.require(this.#outputName("DOCKERFILE")),
-          sourceDigest: context.inputs.require(this.#outputName("SOURCE_DIGEST")),
-        });
+        const spec = await this.#imageSpec(
+          context,
+          {
+            contextDirectory: context.inputs.require(this.#outputName("CONTEXT")),
+            dockerfilePath: context.inputs.require(this.#outputName("DOCKERFILE")),
+            sourceDigest: context.inputs.require(this.#outputName("SOURCE_DIGEST")),
+          },
+          "deploy",
+        );
         const built = {
           localReference: context.inputs.require(this.#outputName("LOCAL_REFERENCE")),
           sourceDigest: spec.sourceDigest,
         };
+        if (this.#imageLifecycle.publish)
+          await this.authenticateImageRepository(context, spec, deploymentCallContext("deploy"));
         const image = this.#imageLifecycle.publish
           ? await this.publishImage(built, spec, deploymentCallContext("deploy"))
           : { ...built, reference: built.localReference, publishedAt: new Date() };
@@ -612,7 +619,10 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     return { ...image, reference, publishedAt: new Date() };
   }
 
-  async #imageRepository(context: DeploymentContext): Promise<string> {
+  protected async imageRepository(
+    context: DeploymentContext,
+    _phase: "build" | "plan" | "deploy",
+  ): Promise<string> {
     const repository =
       this.#imageDeployment.repository ?? context.environment.OPENBOT_COMPUTER_IMAGE_REPOSITORY;
     const selected =
@@ -643,13 +653,28 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     return normalized;
   }
 
+  protected async authenticateImageRepository(
+    _context: DeploymentContext,
+    _spec: ComputerImageSpec,
+    _callContext: ComputerCallContext,
+  ): Promise<void> {}
+
+  protected runDockerWithInput(
+    args: readonly string[],
+    input: string,
+    context: ComputerCallContext,
+  ): Promise<void> {
+    return runDockerWithInput(args, input, context);
+  }
+
   async #imageSpec(
     context: DeploymentContext,
     materialized: { contextDirectory: string; dockerfilePath: string; sourceDigest: string },
+    phase: "build" | "deploy",
   ): Promise<ComputerImageSpec> {
     return {
       ...materialized,
-      repository: await this.#imageRepository(context),
+      repository: await this.imageRepository(context, phase),
       ...(this.#imageDeployment.tagPrefix ? { tagPrefix: this.#imageDeployment.tagPrefix } : {}),
       ...(this.#imageDeployment.buildArguments
         ? { buildArguments: this.#imageDeployment.buildArguments }
@@ -783,6 +808,40 @@ async function runDocker(args: string[], context: ComputerCallContext): Promise<
       `Computer image command failed: ${failure.stderr?.trim() || failure.message}`,
     );
   }
+}
+
+async function runDockerWithInput(
+  args: readonly string[],
+  input: string,
+  context: ComputerCallContext,
+): Promise<void> {
+  await new Promise<void>((resolvePromise, reject) => {
+    const child = spawn("docker", [...args], { stdio: ["pipe", "pipe", "pipe"] });
+    let stderr = "";
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk: string) => {
+      stderr += chunk;
+    });
+    const abort = () => child.kill("SIGTERM");
+    context.signal?.addEventListener("abort", abort, { once: true });
+    child.once("error", reject);
+    child.once("close", (code) => {
+      context.signal?.removeEventListener("abort", abort);
+      if (context.signal?.aborted) {
+        reject(context.signal.reason ?? new Error("Docker command was aborted"));
+        return;
+      }
+      if (code === 0) resolvePromise();
+      else
+        reject(
+          new ComputerProviderError(
+            "provider_unavailable",
+            `docker ${args.join(" ")} failed${stderr.trim() ? `: ${stderr.trim()}` : ""}`,
+          ),
+        );
+    });
+    child.stdin.end(input);
+  });
 }
 
 function deploymentCallContext(phase: string): ComputerCallContext {

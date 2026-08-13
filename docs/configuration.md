@@ -1,16 +1,16 @@
 # Repository configuration
 
-The upstream repository initially tracks only `configuration/.gitignore`, with every configuration entry ignored. Every fresh fork must run `pnpm openbot init`. After initialization succeeds, init removes that exact sentinel so the fork can commit its generated configuration; it refuses to delete a custom fork-owned ignore file. Commit the sentinel deletion with the generated files. Git preserves that committed deletion during ordinary merges while upstream leaves the sentinel unchanged; if upstream ever changes it, resolve the delete/modify conflict in favor of the fork's configuration. Init creates `configuration/index.ts` as the single fork-owned composition root and `configuration/runtime-providers.ts` for the provider instances imported by agent functions. `index.ts` still names every provider role explicitly; the split prevents deployment-only compilers and platform SDKs from entering agent bundles. Provider packages do not select implementations from string IDs. `Configuration()` and `RuntimeProviders()` type provider selection only. These files must not contain credentials; providers read secret values from the initialized environment.
+The upstream repository initially tracks only `configuration/.gitignore`, with every configuration entry ignored. Run the standalone `openbot init` command from a completely empty destination directory; it creates and clones the owner repository before configuration begins. After initialization succeeds, init removes that exact sentinel so the fork can commit its generated configuration. Commit the sentinel deletion with the generated files. Git preserves that committed deletion during ordinary merges while upstream leaves the sentinel unchanged; if upstream ever changes it, resolve the delete/modify conflict in favor of the fork's configuration. Init creates `configuration/index.ts` as the single fork-owned composition root and `configuration/runtime-providers.ts` for the provider instances imported by agent functions. `index.ts` still names every provider role explicitly; the split prevents deployment-only compilers and platform SDKs from entering agent bundles. Provider packages do not select implementations from string IDs. `Configuration()` and `RuntimeProviders()` type provider selection only. These files must not contain credentials; providers read secret values from the initialized environment.
 
 OpenBot never loads root `.env`, `.env.local`, or a root SOPS document. Fork-owned values live only in `configuration/.env` and `configuration/secrets.enc.yaml`. Contributors and CI use their process environment for repository-maintenance credentials.
 
 ```ts
-import { Configuration } from "@openbot/configuration";
-import { TildeAgentProvider } from "@openbot/agent-provider";
-import { VercelAgentServiceProvider } from "@openbot/agent-service-provider";
-import { VercelControlServiceProvider } from "@openbot/control-service-provider";
-import { VercelSandboxComputerProvider } from "@openbot/computer-provider";
-import { TildeToolProvider } from "@openbot/tools-provider";
+import { Configuration } from "@tryopenbot/configuration";
+import { TildeAgentProvider } from "@tryopenbot/agent-provider";
+import { VercelAgentServiceProvider } from "@tryopenbot/agent-service-provider";
+import { VercelControlServiceProvider } from "@tryopenbot/control-service-provider";
+import { VercelSandboxComputerProvider } from "@tryopenbot/computer-provider";
+import { TildeToolProvider } from "@tryopenbot/tools-provider";
 import { createClient } from "@trytilde/harness-sdk";
 
 const tilde = {
@@ -46,9 +46,11 @@ These locations are conventions, not configuration options. Global `configuratio
 
 Custom provider implementations live under `configuration/providers/` and must be explicitly imported and instantiated in `configuration/index.ts`.
 
-The generated computer provider reads `OPENBOT_COMPUTER_IMAGE_REPOSITORY` as an
-untagged OCI repository. `openbot init` asks for it; alternatively pass
-`{ repository: "ghcr.io/example/openbot-computer" }` to the concrete computer
-provider constructor.
+The Vercel Sandbox computer provider reads `OPENBOT_COMPUTER_IMAGE_REPOSITORY`
+as an untagged Vercel Container Registry repository. `openbot init` asks for it
+only when Vercel is selected; alternatively pass `{ repository:
+"registry.vercel.com/example/openbot-computer" }` to its constructor. The local
+Microsandbox provider asks for no registry and tags its local image from the Git
+remote, such as `trytilde/openbot-computer:<content-tag>`.
 
 Run `pnpm openbot check` after every configuration change. Provider build checks also run automatically before `pnpm openbot deploy` creates or deploys an artifact.

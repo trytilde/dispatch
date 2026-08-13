@@ -29,7 +29,7 @@ Keep provider-specific behavior behind its domain core contract and keep composi
 ## Provider-owned assets
 
 - Store TypeScript, JavaScript, JSON, service units, plists, shell files, and every other generated-file source under `assets/` as Handlebars templates with the target extension followed by `.hbs`, such as `entry.ts.hbs` or `vercel.json.hbs`. Do not embed whole files in TypeScript string literals.
-- Resolve templates relative to `import.meta.url` and render them through `@openbot/utilities`. Build and deploy methods must render or bundle every required template into their ignored artifact; do not materialize provider assets with `copyFile()` even when a template is currently static.
+- Resolve templates relative to `import.meta.url` and render them through `@tryopenbot/utilities`. Build and deploy methods must render or bundle every required template into their ignored artifact; do not materialize provider assets with `copyFile()` even when a template is currently static.
 - Put assets shared completely by sibling providers under `src/base/assets/`; add provider-specific asset directories only when their contents or control flow actually diverge.
 - Use strict templates so missing values fail. Escape values for the target format before rendering. Use ordinary Handlebars expressions for text that needs HTML escaping and triple braces only for deliberately pre-encoded target-language fragments such as `JSON.stringify(...)` output.
 - Do not create ad hoc `replaceAll()` renderers, multiline whole-file strings, or alternate template engines.

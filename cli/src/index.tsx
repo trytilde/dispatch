@@ -1,5 +1,5 @@
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+#!/usr/bin/env node
+
 import React, { type ReactElement } from "react";
 import { render } from "ink";
 import { redact } from "./commands/deploy.js";
@@ -39,12 +39,11 @@ function printJson(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href)
-  main().catch((error) => {
-    const message = redact(error instanceof Error ? error.message : String(error), [
-      process.env.VERCEL_TOKEN ?? "",
-    ]);
-    if (process.argv.includes("--json")) printJson({ error: message });
-    else show(<Failure message={message} />);
-    process.exitCode = 1;
-  });
+main().catch((error) => {
+  const message = redact(error instanceof Error ? error.message : String(error), [
+    process.env.VERCEL_TOKEN ?? "",
+  ]);
+  if (process.argv.includes("--json")) printJson({ error: message });
+  else show(<Failure message={message} />);
+  process.exitCode = 1;
+});

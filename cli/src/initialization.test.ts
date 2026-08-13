@@ -24,6 +24,25 @@ afterEach(async () => {
 });
 
 describe("OpenBot initialization", () => {
+  it("rejects initialization outside an OpenBot repository before writing configuration", async () => {
+    const repositoryRoot = await mkdtemp(join(tmpdir(), "not-openbot-init-"));
+    temporaryDirectories.push(repositoryRoot);
+
+    await expect(
+      initializeOpenBot({
+        repositoryRoot,
+        prompts: {
+          select: vi.fn(async () => ""),
+          input: vi.fn(async () => ""),
+        },
+      }),
+    ).rejects.toThrow("openbot init must run from the root of a cloned OpenBot repository");
+
+    await expect(access(join(repositoryRoot, "configuration"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
+
   it("generates valid-looking age identities", () => {
     const identity = generateAgeIdentity();
     expect(identity.recipient).toMatch(/^age1[023456789acdefghjklmnpqrstuvwxyz]{58}$/);
@@ -77,7 +96,7 @@ describe("OpenBot initialization", () => {
         runWithInputFile: processCommandRunner.runWithInputFile,
       };
       const selections = ["onepassword", "local"];
-      const inputs = ["Engineering", "OpenBot owner identity", "ghcr.io/example/openbot-computer"];
+      const inputs = ["Engineering", "OpenBot owner identity"];
       await initializeOpenBot({
         repositoryRoot,
         runner,
@@ -172,6 +191,7 @@ describe("OpenBot initialization", () => {
         code: "ENOENT",
       });
       expect(loaded.environment.SOPS_AGE_KEY).toBeUndefined();
+      expect(loaded.environment.OPENBOT_COMPUTER_IMAGE_REPOSITORY).toBeUndefined();
       await expect(access(join(repositoryRoot, "configuration/.gitignore"))).rejects.toMatchObject({
         code: "ENOENT",
       });
@@ -201,6 +221,59 @@ describe("OpenBot initialization", () => {
     });
   });
 
+  it("fails immediately when the configured SOPS owner cannot encrypt", async () => {
+    const repositoryRoot = await temporaryRepository();
+    const select = vi.fn(async () => "aws-kms");
+    const answers = [
+      "arn:aws:kms:eu-west-1:123456789012:key/00000000-0000-0000-0000-000000000000",
+      "sso-admin",
+    ];
+    const input = vi.fn(async () => answers.shift() ?? "");
+    const runner: InitializationCommandRunner = {
+      run: vi.fn(async (command, args, options) => {
+        if (command === "aws") {
+          expect(args).toEqual([
+            "configure",
+            "export-credentials",
+            "--profile",
+            "sso-admin",
+            "--format",
+            "process",
+          ]);
+          return {
+            stdout: JSON.stringify({
+              Version: 1,
+              AccessKeyId: "fresh-access-key",
+              SecretAccessKey: "fresh-secret-key",
+              SessionToken: "fresh-session-token",
+            }),
+            stderr: "",
+          };
+        }
+        if (command === "sops") {
+          expect(args).not.toContain("--aws-profile");
+          expect(options?.environment).toMatchObject({
+            AWS_ACCESS_KEY_ID: "fresh-access-key",
+            AWS_SECRET_ACCESS_KEY: "fresh-secret-key",
+            AWS_SESSION_TOKEN: "fresh-session-token",
+          });
+          throw new Error("KMS access denied");
+        }
+        return { stdout: "", stderr: "" };
+      }),
+    };
+
+    await expect(
+      initializeOpenBot({ repositoryRoot, prompts: { select, input }, runner }),
+    ).rejects.toThrow("SOPS encryption test failed: KMS access denied");
+
+    expect(select).toHaveBeenCalledTimes(1);
+    expect(input).toHaveBeenCalledTimes(2);
+    await expect(
+      access(join(repositoryRoot, "configuration/secrets.enc.yaml")),
+    ).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("stores the owner identity in 1Password and encrypts the sandbox identity", async () => {
     const repositoryRoot = await temporaryRepository();
     const answers = ["onepassword", "vercel"];
@@ -210,11 +283,12 @@ describe("OpenBot initialization", () => {
       "vercel-secret",
       "openbot-control",
       "openbot-agents",
-      "ghcr.io/example/openbot-computer",
+      "registry.vercel.com/example/openbot-computer",
     ];
+    const promptInput = vi.fn(async () => inputs.shift() ?? "");
     const prompts: InitializationPrompts = {
       select: vi.fn(async () => answers.shift()!),
-      input: vi.fn(async () => inputs.shift() ?? ""),
+      input: promptInput,
     };
     const calls: { command: string; args: readonly string[]; input?: string }[] = [];
     const runner: InitializationCommandRunner = {
@@ -232,12 +306,18 @@ describe("OpenBot initialization", () => {
 
     await initializeOpenBot({ repositoryRoot, prompts, runner });
 
+    expect(promptInput).toHaveBeenCalledWith(
+      "Which OCI repository should receive OpenBot computer images?",
+      expect.objectContaining({
+        description: expect.stringContaining("vercel.com/docs/container-registry"),
+      }),
+    );
     const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
     expect(environment).not.toContain("OPENBOT_RUNTIME_PROVIDER");
     expect(environment).toContain('OPENBOT_VERCEL_CONTROL_PROJECT="openbot-control"');
     expect(environment).toContain('OPENBOT_VERCEL_AGENT_PROJECT="openbot-agents"');
     expect(environment).toContain(
-      'OPENBOT_COMPUTER_IMAGE_REPOSITORY="ghcr.io/example/openbot-computer"',
+      'OPENBOT_COMPUTER_IMAGE_REPOSITORY="registry.vercel.com/example/openbot-computer"',
     );
     expect(environment).not.toContain("vercel-secret");
     const configuration = await readFile(join(repositoryRoot, "configuration/index.ts"), "utf8");
@@ -262,7 +342,9 @@ describe("OpenBot initialization", () => {
     );
     expect(onePasswordCreate?.input).toContain("AGE-SECRET-KEY-1");
     expect(onePasswordCreate?.args.join(" ")).not.toContain("AGE-SECRET-KEY");
-    const encryption = calls.find((call) => call.command === "sops");
+    const encryption = calls.find(
+      (call) => call.command === "sops" && call.input?.includes("sops_age_key:"),
+    );
     expect(encryption?.input).toContain("sops_age_key: AGE-SECRET-KEY-1");
     expect(encryption?.input).toContain("deployment_secrets:");
     expect(encryption?.input).toContain("VERCEL_TOKEN: vercel-secret");
@@ -277,15 +359,44 @@ describe("OpenBot initialization", () => {
     const repositoryRoot = await temporaryRepository();
     await writeFixture(repositoryRoot, "configuration/.env", "OPENAI_MODEL=gpt-test\n");
     await writeFixture(repositoryRoot, "configuration/secrets.enc.yaml", "encrypted\n");
+    await writeFixture(
+      repositoryRoot,
+      "configuration/sops.identity.json",
+      JSON.stringify({
+        version: 1,
+        ownerIdentity: { kind: "aws-profile", profile: "sso-admin" },
+      }),
+    );
     const runner: InitializationCommandRunner = {
-      run: vi.fn(async () => ({
-        stdout: JSON.stringify({
-          openbot: { sandbox: { sops_age_key: "AGE-SECRET-KEY-1TEST" } },
-          deployment_secrets: { VERCEL_TOKEN: "deploy-private" },
-          secrets: { API_TOKEN: "private" },
-        }),
-        stderr: "",
-      })),
+      run: vi.fn(async (command, args, options) => {
+        if (command === "aws") {
+          expect(args).toContain("sso-admin");
+          return {
+            stdout: JSON.stringify({
+              Version: 1,
+              AccessKeyId: "fresh-access-key",
+              SecretAccessKey: "fresh-secret-key",
+              SessionToken: "fresh-session-token",
+            }),
+            stderr: "",
+          };
+        }
+        expect(command).toBe("sops");
+        expect(options?.environment).toMatchObject({
+          AWS_PROFILE: "sso-admin",
+          AWS_ACCESS_KEY_ID: "fresh-access-key",
+          AWS_SECRET_ACCESS_KEY: "fresh-secret-key",
+          AWS_SESSION_TOKEN: "fresh-session-token",
+        });
+        return {
+          stdout: JSON.stringify({
+            openbot: { sandbox: { sops_age_key: "AGE-SECRET-KEY-1TEST" } },
+            deployment_secrets: { VERCEL_TOKEN: "deploy-private" },
+            secrets: { API_TOKEN: "private" },
+          }),
+          stderr: "",
+        };
+      }),
     };
 
     const loaded = await loadDeploymentConfiguration(repositoryRoot, { runner, environment: {} });
@@ -333,6 +444,9 @@ describe("OpenBot initialization", () => {
 async function temporaryRepository(): Promise<string> {
   const path = await mkdtemp(join(tmpdir(), "openbot-init-"));
   temporaryDirectories.push(path);
+  await writeFixture(path, "package.json", '{"name":"@tryopenbot/workspace"}\n');
+  await writeFixture(path, "pnpm-workspace.yaml", "packages:\n  - cli\n");
+  await writeFixture(path, "cli/package.json", '{"name":"openbot"}\n');
   await writeFixture(path, "configuration/.gitignore", "*\n!.gitignore\n");
   return path;
 }

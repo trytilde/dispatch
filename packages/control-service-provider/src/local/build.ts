@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { build } from "tsdown";
-import type { DeploymentContext, DeploymentResult } from "@openbot/runtime-provider";
+import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
 import type { CommandRunner } from "../command.js";
 
 export const controlLocalArtifact = ".openbot-deploy/control-service/service.mjs";
@@ -10,7 +10,7 @@ export async function buildLocalControlService(
   context: DeploymentContext,
   runner: CommandRunner,
 ): Promise<DeploymentResult> {
-  await runner.run("pnpm", ["--filter", "@openbot/web", "build"], {
+  await runner.run("pnpm", ["--filter", "@tryopenbot/web", "build"], {
     cwd: context.repositoryRoot,
     environment: context.environment,
   });

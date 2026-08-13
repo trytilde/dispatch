@@ -35,42 +35,42 @@ importers:
       '@connectrpc/connect-node':
         specifier: 2.1.2
         version: 2.1.2(@bufbuild/protobuf@2.7.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.7.0))
-      '@openbot/agent-provider':
-        specifier: workspace:*
-        version: link:packages/agent-provider
-      '@openbot/agent-service-provider':
-        specifier: workspace:*
-        version: link:packages/agent-service-provider
-      '@openbot/computer-provider':
-        specifier: workspace:*
-        version: link:packages/computer-provider
-      '@openbot/computer-service-proto':
-        specifier: workspace:*
-        version: link:packages/computer-service-proto
-      '@openbot/configuration':
-        specifier: workspace:*
-        version: link:packages/configuration
-      '@openbot/control-service-proto':
-        specifier: workspace:*
-        version: link:packages/control-service-proto
-      '@openbot/control-service-provider':
-        specifier: workspace:*
-        version: link:packages/control-service-provider
-      '@openbot/inference-model-provider':
-        specifier: workspace:*
-        version: link:packages/inference-model-provider
-      '@openbot/runtime-provider':
-        specifier: workspace:*
-        version: link:packages/runtime-provider
-      '@openbot/skills-provider':
-        specifier: workspace:*
-        version: link:packages/skills-provider
-      '@openbot/tools-provider':
-        specifier: workspace:*
-        version: link:packages/tools-provider
       '@playwright/test':
         specifier: 1.55.0
         version: 1.55.0
+      '@tryopenbot/agent-provider':
+        specifier: workspace:*
+        version: link:packages/agent-provider
+      '@tryopenbot/agent-service-provider':
+        specifier: workspace:*
+        version: link:packages/agent-service-provider
+      '@tryopenbot/computer-provider':
+        specifier: workspace:*
+        version: link:packages/computer-provider
+      '@tryopenbot/computer-service-proto':
+        specifier: workspace:*
+        version: link:packages/computer-service-proto
+      '@tryopenbot/configuration':
+        specifier: workspace:*
+        version: link:packages/configuration
+      '@tryopenbot/control-service-proto':
+        specifier: workspace:*
+        version: link:packages/control-service-proto
+      '@tryopenbot/control-service-provider':
+        specifier: workspace:*
+        version: link:packages/control-service-provider
+      '@tryopenbot/inference-model-provider':
+        specifier: workspace:*
+        version: link:packages/inference-model-provider
+      '@tryopenbot/runtime-provider':
+        specifier: workspace:*
+        version: link:packages/runtime-provider
+      '@tryopenbot/skills-provider':
+        specifier: workspace:*
+        version: link:packages/skills-provider
+      '@tryopenbot/tools-provider':
+        specifier: workspace:*
+        version: link:packages/tools-provider
       '@trytilde/cli':
         specifier: 0.1.0
         version: 0.1.0(@types/react@19.2.18)(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.20.4)
@@ -92,6 +92,12 @@ importers:
       ai:
         specifier: 6.0.250
         version: 6.0.250(zod@4.4.3)
+      openbot:
+        specifier: workspace:*
+        version: link:cli
+      tsdown:
+        specifier: 0.22.14
+        version: 0.22.14(@typescript/native-preview@7.0.0-dev.20260707.2)(@volar/typescript@2.4.28)(tsx@4.20.4)(typescript@5.9.2)
       tsx:
         specifier: 4.20.4
         version: 4.20.4
@@ -125,10 +131,10 @@ importers:
       '@connectrpc/connect-node':
         specifier: 2.1.2
         version: 2.1.2(@bufbuild/protobuf@2.7.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.7.0))
-      '@openbot/computer-service-proto':
+      '@tryopenbot/computer-service-proto':
         specifier: workspace:*
         version: link:../../packages/computer-service-proto
-      '@openbot/utilities':
+      '@tryopenbot/utilities':
         specifier: workspace:*
         version: link:../../packages/utilities
     devDependencies:
@@ -217,6 +223,9 @@ importers:
       '@tanstack/react-router':
         specifier: 1.170.27
         version: 1.170.27(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
+      '@tryopenbot/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       react:
         specifier: 19.1.2
         version: 19.1.2
@@ -257,28 +266,28 @@ importers:
       '@hono/node-server':
         specifier: 1.19.1
         version: 1.19.1(hono@4.13.1)
-      '@openbot/agent-provider':
+      '@tryopenbot/agent-provider':
         specifier: workspace:*
         version: link:../packages/agent-provider
-      '@openbot/agent-service-provider':
+      '@tryopenbot/agent-service-provider':
         specifier: workspace:*
         version: link:../packages/agent-service-provider
-      '@openbot/computer-provider':
+      '@tryopenbot/computer-provider':
         specifier: workspace:*
         version: link:../packages/computer-provider
-      '@openbot/configuration':
+      '@tryopenbot/configuration':
         specifier: workspace:*
         version: link:../packages/configuration
-      '@openbot/control-service':
+      '@tryopenbot/control-service':
         specifier: workspace:*
         version: link:../apps/control-service
-      '@openbot/control-service-provider':
+      '@tryopenbot/control-service-provider':
         specifier: workspace:*
         version: link:../packages/control-service-provider
-      '@openbot/runtime-provider':
+      '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../packages/runtime-provider
-      '@openbot/utilities':
+      '@tryopenbot/utilities':
         specifier: workspace:*
         version: link:../packages/utilities
       arg:
@@ -309,6 +318,9 @@ importers:
       ink-testing-library:
         specifier: 4.0.0
         version: 4.0.0(@types/react@19.2.18)
+      tsdown:
+        specifier: 0.22.14
+        version: 0.22.14(@typescript/native-preview@7.0.0-dev.20260707.2)(@volar/typescript@2.4.28)(tsx@4.20.4)(typescript@5.9.2)
       tsx:
         specifier: 4.20.4
         version: 4.20.4
@@ -321,7 +333,7 @@ importers:
 
   packages/agent-provider:
     dependencies:
-      '@openbot/runtime-provider':
+      '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
       '@trytilde/harness-sdk':
@@ -346,16 +358,16 @@ importers:
       '@hono/node-server':
         specifier: 1.19.1
         version: 1.19.1(hono@4.13.1)
-      '@openbot/computer-provider':
+      '@tryopenbot/computer-provider':
         specifier: workspace:*
         version: link:../computer-provider
-      '@openbot/control-service-provider':
+      '@tryopenbot/control-service-provider':
         specifier: workspace:*
         version: link:../control-service-provider
-      '@openbot/runtime-provider':
+      '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
-      '@openbot/utilities':
+      '@tryopenbot/utilities':
         specifier: workspace:*
         version: link:../utilities
       hono:
@@ -389,13 +401,13 @@ importers:
       '@connectrpc/connect-node':
         specifier: 2.1.2
         version: 2.1.2(@bufbuild/protobuf@2.7.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.7.0))
-      '@openbot/computer-service-proto':
+      '@tryopenbot/computer-service-proto':
         specifier: workspace:*
         version: link:../computer-service-proto
-      '@openbot/runtime-provider':
+      '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
-      '@openbot/utilities':
+      '@tryopenbot/utilities':
         specifier: workspace:*
         version: link:../utilities
       '@vercel/sandbox':
@@ -445,22 +457,22 @@ importers:
 
   packages/configuration:
     dependencies:
-      '@openbot/agent-provider':
+      '@tryopenbot/agent-provider':
         specifier: workspace:*
         version: link:../agent-provider
-      '@openbot/computer-provider':
+      '@tryopenbot/computer-provider':
         specifier: workspace:*
         version: link:../computer-provider
-      '@openbot/inference-model-provider':
+      '@tryopenbot/inference-model-provider':
         specifier: workspace:*
         version: link:../inference-model-provider
-      '@openbot/runtime-provider':
+      '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
-      '@openbot/skills-provider':
+      '@tryopenbot/skills-provider':
         specifier: workspace:*
         version: link:../skills-provider
-      '@openbot/tools-provider':
+      '@tryopenbot/tools-provider':
         specifier: workspace:*
         version: link:../tools-provider
     devDependencies:
@@ -498,10 +510,10 @@ importers:
 
   packages/control-service-provider:
     dependencies:
-      '@openbot/runtime-provider':
+      '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
-      '@openbot/utilities':
+      '@tryopenbot/utilities':
         specifier: workspace:*
         version: link:../utilities
       tsdown:
@@ -532,7 +544,7 @@ importers:
       '@ai-sdk/provider':
         specifier: 3.0.15
         version: 3.0.15
-      '@openbot/runtime-provider':
+      '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
       ai:
@@ -563,7 +575,7 @@ importers:
 
   packages/skills-provider:
     dependencies:
-      '@openbot/runtime-provider':
+      '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
       '@trytilde/api-client':
@@ -591,7 +603,7 @@ importers:
 
   packages/tools-provider:
     dependencies:
-      '@openbot/runtime-provider':
+      '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
       '@trytilde/harness-sdk':

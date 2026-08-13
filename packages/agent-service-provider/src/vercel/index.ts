@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { materializeFileTemplate } from "@openbot/utilities";
+import { materializeFileTemplate } from "@tryopenbot/utilities";
 import type {
   Buildable,
   Deployable,
@@ -8,13 +8,13 @@ import type {
   DeploymentResult,
   InitializableProvider,
   ProviderInitialization,
-} from "@openbot/runtime-provider";
+} from "@tryopenbot/runtime-provider";
 import {
   deploymentUrl,
   ensureVercelProject,
   processRunner,
   type CommandRunner,
-} from "@openbot/control-service-provider";
+} from "@tryopenbot/control-service-provider";
 import { checkAgentService } from "../check.js";
 import { agentVercelArtifact, buildVercelAgentService, vercelProjectTemplate } from "./build.js";
 

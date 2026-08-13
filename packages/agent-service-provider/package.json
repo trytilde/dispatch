@@ -1,24 +1,49 @@
 {
-  "name": "@openbot/agent-service-provider",
+  "name": "@tryopenbot/agent-service-provider",
   "version": "0.1.0",
-  "private": true,
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./instrumentation": "./src/instrumentation.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./instrumentation": {
+      "types": "./src/instrumentation.ts",
+      "development": "./src/instrumentation.ts",
+      "import": "./dist/instrumentation.js"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./instrumentation": {
+        "types": "./dist/instrumentation.d.ts",
+        "import": "./dist/instrumentation.js"
+      }
+    },
+    "access": "public"
   },
   "scripts": {
-    "build": "tsgo --noEmit",
+    "build": "tsgo --noEmit && tsdown --config ../../tsdown.package.config.ts && node ../../scripts/copy-package-assets.mjs",
     "lint": "tsgo --noEmit",
+    "prepack": "pnpm build",
     "test": "vitest run",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
     "@hono/node-server": "1.19.1",
-    "@openbot/computer-provider": "workspace:*",
-    "@openbot/control-service-provider": "workspace:*",
-    "@openbot/runtime-provider": "workspace:*",
-    "@openbot/utilities": "workspace:*",
+    "@tryopenbot/computer-provider": "workspace:*",
+    "@tryopenbot/control-service-provider": "workspace:*",
+    "@tryopenbot/runtime-provider": "workspace:*",
+    "@tryopenbot/utilities": "workspace:*",
     "hono": "4.13.1",
     "tsdown": "0.22.14",
     "vercel": "58.9.4"

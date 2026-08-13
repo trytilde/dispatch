@@ -1,16 +1,45 @@
 {
-  "name": "@openbot/ui",
+  "name": "@tryopenbot/ui",
   "version": "0.1.0",
-  "private": true,
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
   "exports": {
-    ".": "./src/index.js",
-    "./beautiful-ui.css": "./src/beautiful-ui/upstream/globals.css",
-    "./beautiful-ui/*": "./src/beautiful-ui/upstream/*.tsx"
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./beautiful-ui.css": {
+      "development": "./src/beautiful-ui/upstream/globals.css",
+      "default": "./dist/beautiful-ui/upstream/globals.css"
+    },
+    "./beautiful-ui/*": {
+      "types": "./src/beautiful-ui/upstream/*.tsx",
+      "development": "./src/beautiful-ui/upstream/*.tsx",
+      "import": "./dist/beautiful-ui/upstream/*.js"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./beautiful-ui.css": "./dist/beautiful-ui/upstream/globals.css",
+      "./beautiful-ui/*": {
+        "types": "./dist/beautiful-ui/upstream/*.d.ts",
+        "import": "./dist/beautiful-ui/upstream/*.js"
+      }
+    },
+    "access": "public"
   },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsc --noEmit && tsdown --config ../../tsdown.package.config.ts && node ../../scripts/copy-package-assets.mjs",
     "lint": "vp lint",
+    "prepack": "pnpm build",
     "test": "vp test run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },

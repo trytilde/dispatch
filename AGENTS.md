@@ -23,15 +23,15 @@ pnpm check
 pnpm build
 pnpm test
 pnpm test:e2e
-pnpm --filter @openbot/desktop package
+pnpm --filter @tryopenbot/desktop package
 ```
 
 Run focused package tests while iterating:
 
 ```bash
-pnpm --filter @openbot/cli test
-pnpm --filter @openbot/control-service test
-pnpm --filter @openbot/cli test
+pnpm --filter openbot test
+pnpm --filter @tryopenbot/control-service test
+pnpm --filter openbot test
 ```
 
 ## Repository map
@@ -69,7 +69,7 @@ pnpm --filter @openbot/cli test
 - Define provider contracts in `core.ts` or `core/` inside the owning provider package and keep implementations beside them. Do not expose internal provider interfaces over RPC by default.
 - Use the `implement-provider` skill whenever adding or editing a provider implementation.
 - Keep small implementations in `<provider>.ts`. When one owns multiple responsibilities or runtime files, use `<provider>/index.ts`, cohesive subfiles, and `assets/`.
-- Store generated-file sources as `*.hbs` assets, not TypeScript strings. Provider build and deploy lifecycles render them through `@openbot/utilities` into ignored artifacts; runtime persistence and user-supplied bytes remain byte-preserving data.
+- Store generated-file sources as `*.hbs` assets, not TypeScript strings. Provider build and deploy lifecycles render them through `@tryopenbot/utilities` into ignored artifacts; runtime persistence and user-supplied bytes remain byte-preserving data.
 - Pass `ProviderCallContext` through calls so cancellation, deadlines, request IDs, and idempotency remain available.
 - Convert provider-specific failures to `ProviderError` at the adapter boundary.
 - Keep provider selection in composition code, not UI branches.

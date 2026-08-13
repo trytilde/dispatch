@@ -1,4 +1,4 @@
-# @openbot/tools-provider
+# @tryopenbot/tools-provider
 
 Internal Vercel AI SDK tool boundary with the Tilde implementation. Providers return concrete AI SDK tools and may contribute a prompt part; they are not automatically exposed over RPC.
 

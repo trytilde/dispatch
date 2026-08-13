@@ -1,8 +1,8 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AgentProviderError, type AgentProvider } from "@openbot/agent-provider";
-import { DeploymentOutputs, type DeploymentContext } from "@openbot/runtime-provider";
+import { AgentProviderError, type AgentProvider } from "@tryopenbot/agent-provider";
+import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { configureAgentRegistrations, parseOptions, redact } from "./deploy.js";
 

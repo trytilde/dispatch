@@ -6,6 +6,12 @@
 
 <!-- Important boundaries, tradeoffs, and reusable decisions. -->
 
+## Repository context
+
+- [ ] Branch, remotes, worktree, stashes, and existing PRs were inspected.
+- [ ] The diff was reviewed against the repository's actual default/base branch.
+- [ ] There is a real commit diff to publish and unrelated user work is preserved.
+
 ## Validation
 
 - [ ] Focused tests for changed surfaces ran.
@@ -73,3 +79,5 @@
 - [ ] No generated noise, stale instructions, missing tests, or unresolved ADR candidate remains.
 - [ ] The PR title uses Conventional Commits style and is under 72 characters.
 - [ ] The PR remains draft until checks and accepted feedback are current.
+- [ ] Current PR checks and unresolved review feedback were inspected after the latest push.
+- [ ] No optional review bot was triggered unless the user explicitly requested it.

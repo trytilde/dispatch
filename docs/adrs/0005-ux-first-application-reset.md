@@ -18,7 +18,7 @@ Reset the application layer to a static UX shell and a bare Hono server. The ser
 
 Build the web app once into `apps/web/dist`. Stage that output in Vercel's `public/` directory so production static assets use its CDN. Keep static-file and SPA fallback handling in Hono as the portable default for local and non-Vercel Node.js hosts. Vercel routing configuration must not duplicate the application route table.
 
-Delete the legacy `providers` and `provider-sdk` packages. Preserve the domain packages without wiring them into `apps/server`. Remove setup-code generation, unlock endpoints, browser setup screens, and production setup-secret provisioning.
+Delete the legacy `providers` and `provider-sdk` packages. Preserve the domain packages without wiring them into `apps/control-service`. Remove setup-code generation, unlock endpoints, browser setup screens, and production setup-secret provisioning.
 
 ```mermaid
 flowchart LR

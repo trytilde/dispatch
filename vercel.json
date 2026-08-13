@@ -6,7 +6,7 @@
   "functions": {
     "server.ts": {
       "maxDuration": 300,
-      "includeFiles": "{apps/server/dist,apps/web/dist}/**/*"
+      "includeFiles": "{apps/control-service/dist,apps/web/dist}/**/*"
     }
   }
 }

@@ -1,6 +1,6 @@
 ---
 "@openbot/control-service-proto": minor
-"@openbot/server": minor
+"@openbot/control-service": minor
 "@openbot/web": minor
 ---
 

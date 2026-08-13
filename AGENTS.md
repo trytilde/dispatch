@@ -30,7 +30,7 @@ Run focused package tests while iterating:
 
 ```bash
 pnpm --filter @openbot/cli test
-pnpm --filter @openbot/server test
+pnpm --filter @openbot/control-service test
 pnpm --filter @openbot/db test
 ```
 
@@ -38,9 +38,9 @@ pnpm --filter @openbot/db test
 
 - `cli`: React Ink repository CLI, dev supervision, and provider deployment coordination.
 - `apps/web`: React 19, Vite, TanStack Router, Connect clients.
-- `apps/server`: Hono HTTP routes, ConnectRPC services, Tilde agent runtime.
+- `apps/control-service`: Hono HTTP routes, ConnectRPC services, and the local control-service entrypoint.
 - `apps/desktop`: Electron main/preload shell and packaged local server.
-- `apps/box-host`: capability-protected ConnectRPC service inside sandboxes.
+- `apps/computer-service`: capability-protected ConnectRPC service inside computers.
 - `packages/control-service-proto`: browser/Electron control protobuf and generated Connect types.
 - `packages/agent-provider-core`: internal agent, session, and message interfaces.
 - `packages/agent-provider`: Tilde implementation of the agent provider interface.
@@ -61,7 +61,7 @@ pnpm --filter @openbot/db test
 
 - Prefer ConnectRPC for authenticated control-plane operations.
 - Keep Hono routes for protocol-native HTTP surfaces: setup unlock, ChatKit compatibility, signed Tilde callbacks/tools, and health.
-- Edit `packages/control-service-proto/proto/openbot/control/v1/control.proto` for control RPCs, then run `pnpm contracts:generate`. The legacy contracts package continues to own the box/computer protocol until that domain migrates.
+- Edit `packages/control-service-proto/proto/openbot/control/v1/control.proto` for control RPCs, then run `pnpm contracts:generate`. The legacy contracts package continues to own its computer protocol until that domain migrates.
 - Keep handlers thin: validate input, authorize, call the owning provider/store, map to protobuf or HTTP response.
 - Preserve Web-standard `Request`/`Response` behavior so the same server works locally and in Vercel Functions.
 - Preserve raw request bodies and webhook verification on signed Tilde routes.
@@ -102,7 +102,7 @@ pnpm --filter @openbot/db test
 
 - Linux with KVM and Apple Silicon use Microsandbox by default; Intel macOS or explicit remote mode uses Vercel Sandbox.
 - Never copy control-plane credentials into a sandbox.
-- Preserve capability checks in `apps/box-host` and provider implementations.
+- Preserve capability checks in `apps/computer-service` and provider implementations.
 - Treat browser profiles, screenshots, and sandbox files as sensitive user data.
 
 ## Local development

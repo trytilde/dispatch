@@ -36,7 +36,7 @@ Keep these distinctions explicit:
 - OpenBot control state vs Tilde-owned agents, chats, tools, skills, and memory.
 - Local/Vercel environment secrets vs database state vs sandbox files.
 - Provider interface vs concrete adapter vs UI/client.
-- Web app vs Electron shell vs box-host sandbox service.
+- Web app vs Electron shell vs computer-service sandbox API.
 - Portable Tilde configuration vs runtime or one-time credentials.
 
 Call out any plan that crosses one of these boundaries without a reason.

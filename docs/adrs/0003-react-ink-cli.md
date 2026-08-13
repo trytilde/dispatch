@@ -16,7 +16,7 @@ Fork owners need an approachable setup and operations experience, while scripts 
 
 The root `cli` workspace package uses React Ink for its interactive launcher, progress feedback, status tables, help, and errors, with Vercel `arg` as the command-line parser. Every operation remains directly callable, structured commands expose `--json`, and non-interactive output remains deterministic. Operator workflows belong in this package; build-only repository helpers may remain under `scripts/`.
 
-The `dev` command supervises the watched Hono application, Vite, and optional Electron shell. There is no separate public `local` command. `apps/server` exports the Web-standard application but never owns a port or process lifecycle. Commands that delegate to validation scripts briefly render startup feedback and then hand the terminal to the child process with inherited standard streams.
+The `dev` command supervises the watched Hono application, Vite, and optional Electron shell. There is no separate public `local` command. `apps/control-service` exports the Web-standard application but never owns a port or process lifecycle. Commands that delegate to validation scripts briefly render startup feedback and then hand the terminal to the child process with inherited standard streams.
 
 ```mermaid
 flowchart LR

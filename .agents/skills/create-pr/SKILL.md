@@ -14,9 +14,10 @@ Use when the user asks to open, publish, prepare, or update a PR for the current
 3. Run `pre-commit-checks` and fix in-scope failures.
 4. Review protobuf, `tilde.state.yaml`, environment, deployment, package README, public documentation, and Changesets impact.
 5. Run the architecture and ADR gate. Resolve any user decision before publishing.
-6. Use a Conventional Commits title and intentional file selection.
-7. Commit, push, and open or update a draft PR only when requested.
-8. Re-read PR checks and review feedback before declaring completion.
+6. Use a Conventional Commits title and intentional file selection; commit the validated implementation.
+7. Generate the mandatory hash-addressed fork update record in a separate note-only commit.
+8. Push and open or update a draft PR only when requested.
+9. Re-read PR checks and review feedback before declaring completion.
 
 ## Gather Context
 
@@ -114,6 +115,39 @@ Trace exports from the package's declared entrypoints rather than documenting ev
 
 For each affected provider package, also verify that every domain provider contract interface is defined in `src/core.ts` or, when supporting core files are needed, `src/core/index.ts`. The package root may re-export the contract; it must not define it. Concrete adapter configuration and SDK-specific interfaces may remain with their adapters. Confirm the README's critical-interface documentation matches those core exports.
 
+## Fork Update Record Gate
+
+Every upstream PR that changes repository contents must add exactly one `docs/updates/<implementation-commit>.md`. Treat a missing record as blocking. The record describes the complete PR diff against its base, not only the final commit.
+
+Use this two-commit sequence so the filename is stable:
+
+1. Finish validation and commit every implementation, test, ADR, README, and ordinary documentation change.
+2. Capture the full 40-character implementation head with `git rev-parse HEAD`.
+3. Create `docs/updates/<implementation-head>.md`.
+4. Commit only that update record in a note-only commit. This note-only commit is exempt from recursively requiring another record.
+
+If implementation history changes afterward through a fix, amend, rebase, or conflict resolution, the recorded hash is stale. Remove or rename the old record, finish the new implementation commit, regenerate the contents from the complete PR diff, and create a new note-only commit for the new hash. Never retain a filename that does not identify the commit immediately before its note-only commit.
+
+Write the record in detailed caveman style with these exact sections:
+
+1. `Intent of the change`
+2. `Architecture changes`, always with a Mermaid diagram; use a small unchanged-boundary diagram when architecture did not change
+3. `Summarized package changes`
+4. `Critical to apply to forks`, starting with exactly `yes` or `no`, then the reason and concrete fork action
+
+Include breaking imports, path moves, configuration or secret migration, provider obligations, deployment topology, removed behavior, and checks a customized fork must run. State `no updates` only in `configuration/docs/update-notes/<hash>.md` when `openbot update` finds no upstream commits; never use it as an upstream PR update record.
+
+Before push, verify:
+
+```bash
+implementation_head="$(git rev-parse HEAD^)"
+test -f "docs/updates/${implementation_head}.md"
+git diff --name-only "$(git merge-base HEAD <base>)"..HEAD -- docs/updates/
+git show --format= --name-only HEAD
+```
+
+The final command must show only the one update record. Confirm the record contains all four headings, a Mermaid block, an exact `yes` or `no` critical value, no secrets, no generated deployment state, and no fork-specific configuration. Link the record in the PR body.
+
 ## Frontend Verification
 
 Use `e2e-debug-and-qa` when the user requests browser proof or the acceptance condition is visual. Keep screenshots, traces, videos, HAR files, and browser profiles outside git. GitHub-hosted attachments may be used in PR comments; never commit generated artifacts.
@@ -130,6 +164,7 @@ git diff --cached
 ```
 
 Check for secrets, unrelated files, generated churn, missing tests, stale instructions copied from another repository, and unresolved ADR candidates.
+Also confirm the hash-addressed fork update record passes its gate and the final commit contains only that record.
 
 ## Open Or Update Draft PR
 

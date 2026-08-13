@@ -30,8 +30,9 @@ configuration/
 - Default-export TypeScript instructions from `instructions.ts`. Do not add `instructions.md`.
 - Keep reusable import-only TypeScript in `lib/`.
 - Default-export one Vercel AI SDK tool from each file in `tools/`.
-- Require `tools/computer-exec.ts`, `computer-read-file.ts`, `computer-write-file.ts`, `computer-screenshot.ts`, and `computer-input.ts` in every agent. Import them explicitly in `agent.ts` and add them to its Vercel AI SDK tool set.
-- Route every computer tool through the generated `ComputerService` Connect client. Include the path-derived agent ID in each request; never call Microsandbox, Vercel Sandbox, `fetch`, or an untyped computer endpoint from an agent tool.
+- Require Eve's five default sandbox tools as `tools/bash.ts`, `tools/read_file.ts`, `tools/write_file.ts`, `tools/glob.ts`, and `tools/grep.ts` in every agent. Import them explicitly in `agent.ts` under the matching `bash`, `read_file`, `write_file`, `glob`, and `grep` tool names.
+- Route every computer tool through the generated `ComputerService` Connect client. Hardcode the path-derived agent ID in the tool module so it never appears in the model-visible input schema. Never call Microsandbox, Vercel Sandbox, `fetch`, or an untyped computer endpoint from an agent tool.
+- Authenticate the typed client with the SOPS-installed `OPENBOT_COMPUTER_SERVICE_API_KEY`. Do not generate, derive, return, log, or persist a second agent-local computer credential.
 - Store specification-conformant skill Markdown files or skill folders under `skills/`.
 - Keep skills and sandbox workspace seeds inside their owning agent directory. Never create, read, or migrate content to global `configuration/skills/` or `configuration/sandbox/` directories; those paths are unsupported.
 - Do not add channels, connections, hooks, schedules, or subagents.
@@ -49,7 +50,7 @@ Treat each `agent.ts` as an independently buildable agent-service entrypoint. Ke
 
 All agents share one OpenBot Computer, but deployment registers a stable Linux user and private persistent workspace for each agent. Provider operations scoped to an agent present that directory as logical `/workspace` and run as that agent's user.
 
-Keep the authored directory name `sandbox/` only because OpenBot follows Eve's project layout where possible. Use Computer for APIs, environment variables, classes, tool filenames, and prose about the runtime. Computer-service owns agent-ID validation, Linux-user mapping, the private mount namespace, and OS-user execution; callers must not send a username.
+Keep the authored directory name `sandbox/` and Eve's five default tool filenames only because OpenBot follows Eve's project layout where possible. Use Computer for APIs, environment variables, classes, and prose about the runtime. Computer-service owns agent-ID validation, Linux-user mapping, the private mount namespace, and OS-user execution; callers must not send a username.
 
 Seed `sandbox/workspace/**` only when registering a new agent workspace. Never overwrite an existing deployed workspace during an ordinary agent deployment. State clearly when changing seed files that already-deployed agents will not receive those changes without explicit future reconciliation or computer replacement. Reject symlinks in agent source and workspace seeds.
 

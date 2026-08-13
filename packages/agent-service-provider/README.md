@@ -21,4 +21,4 @@ Build and deployment providers for independently compiled agent entrypoints. It 
 - `AgentServiceProvider` combines `Buildable`, `Deployable`, and `InitializableProvider`.
 - `AgentInstrumentation` defines optional async `setup(context)`; `AgentInstrumentationContext.agentName` is the path-derived agent ID.
 
-Each agent must default-export `chatKitEndpoint(...)` from `agent.ts`. Global instrumentation runs before optional agent-local instrumentation and before the endpoint import. Tools and skills folders are preserved but are not auto-loaded yet.
+Each agent must default-export `chatKitEndpoint(...)` from `agent.ts`. Global instrumentation runs before optional agent-local instrumentation and before the endpoint import. Each agent must also contain the five required `tools/computer-*.ts` files. Those Vercel AI SDK tools are explicitly imported by `agent.ts` and use the typed computer-service transport; arbitrary authored tools and skills are not directory-loaded.

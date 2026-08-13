@@ -76,6 +76,11 @@ describe("OpenBot initialization", () => {
     expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/agent.ts"), "utf8")).toContain("export default chatKitEndpoint");
     expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/instructions.ts"), "utf8")).toContain("export default");
     expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/hello-world.ts"), "utf8")).toContain("export default tool");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/computer-exec.ts"), "utf8")).toContain("computerService().exec");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/computer-read-file.ts"), "utf8")).toContain("computerService().readFile");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/computer-write-file.ts"), "utf8")).toContain("computerService().writeFile");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/computer-screenshot.ts"), "utf8")).toContain("computerService().screenshot");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/computer-input.ts"), "utf8")).toContain("computerService().input");
     expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/skills/hello-world/SKILL.md"), "utf8")).toContain("name: hello-world");
     expect(await readFile(join(repositoryRoot, "configuration/instrumentation.ts"), "utf8")).toContain("defineInstrumentation");
     await expect(access(join(repositoryRoot, "configuration/skills"))).rejects.toMatchObject({ code: "ENOENT" });

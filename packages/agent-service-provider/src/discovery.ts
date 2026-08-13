@@ -8,6 +8,14 @@ export interface AgentSource {
   instrumentationPath?: string;
 }
 
+export const requiredComputerToolFiles = [
+  "computer-exec.ts",
+  "computer-input.ts",
+  "computer-read-file.ts",
+  "computer-screenshot.ts",
+  "computer-write-file.ts",
+] as const;
+
 export async function discoverAgents(repositoryRoot: string): Promise<readonly AgentSource[]> {
   const directory = resolve(repositoryRoot, "configuration/agents");
   const entries = await readdir(directory, { withFileTypes: true });
@@ -16,6 +24,7 @@ export async function discoverAgents(repositoryRoot: string): Promise<readonly A
       const agentDirectory = resolve(directory, entry.name);
       const path = resolve(agentDirectory, "agent.ts");
       await access(path);
+      await Promise.all(requiredComputerToolFiles.map((name) => access(resolve(agentDirectory, "tools", name))));
       const instrumentationPath = resolve(agentDirectory, "instrumentation.ts");
       return {
         slug: entry.name,

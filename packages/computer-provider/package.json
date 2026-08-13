@@ -11,6 +11,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@connectrpc/connect": "2.1.2",
+    "@connectrpc/connect-node": "2.1.2",
+    "@openbot/computer-service-proto": "workspace:*",
     "@openbot/runtime-provider": "workspace:*",
     "@openbot/utilities": "workspace:*",
     "@vercel/sandbox": "3.0.0",

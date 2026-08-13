@@ -12,11 +12,24 @@ const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
 
 describe("agent service artifacts", () => {
+  it("rejects agents missing a required computer tool", async () => {
+    const root = await temporaryRoot();
+    await mkdir(join(root, "configuration/agents/incomplete"), { recursive: true });
+    await writeFile(join(root, "configuration/agents/incomplete/agent.ts"), "export default async function endpoint() { return new Response('incomplete') }\n");
+    await expect(discoverAgents(root)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("discovers stable slugs and emits one independently bundled Vercel function per agent", async () => {
     const root = await temporaryRoot();
     await mkdir(join(root, "configuration/agents/alpha"), { recursive: true });
     await mkdir(join(root, "configuration/agents/beta"), { recursive: true });
     await writeFile(join(root, "configuration/instrumentation.ts"), "export default { setup() {} }\n");
+    for (const slug of ["alpha", "beta"]) {
+      await mkdir(join(root, `configuration/agents/${slug}/tools`));
+      for (const name of ["computer-exec.ts", "computer-input.ts", "computer-read-file.ts", "computer-screenshot.ts", "computer-write-file.ts"]) {
+        await writeFile(join(root, `configuration/agents/${slug}/tools/${name}`), "export default {}\n");
+      }
+    }
     await writeFile(join(root, "configuration/agents/alpha/agent.ts"), "export default async function endpoint() { return new Response('alpha') }\n");
     await writeFile(join(root, "configuration/agents/beta/agent.ts"), "export default async function endpoint() { return new Response('beta') }\n");
     expect((await discoverAgents(root)).map((agent) => agent.slug)).toEqual(["alpha", "beta"]);

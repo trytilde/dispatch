@@ -9,6 +9,7 @@ import { BaseComputerProvider, computerWorkspacePath, scopeComputerExecRequest, 
 class TestComputerProvider extends BaseComputerProvider {
   protected readonly providerId = "test";
   protected readonly deployedImageEnvironmentVariable = "OPENBOT_TEST_COMPUTER_IMAGE";
+  protected async computerServiceUrl() { return "https://computer.test/rpc"; }
   constructor(imageDeployment: ComputerImageDeploymentConfig = { repository: "registry.test/openbot-computer" }) { super(imageDeployment); }
   create = vi.fn(async (_spec: ComputerSpec): Promise<ComputerHandle> => ({ id: "computer", providerId: "test", state: "running", createdAt: new Date(0) }));
   get = vi.fn(async (): Promise<ComputerHandle> => ({ id: "computer", providerId: "test", state: "running", createdAt: new Date(0) }));
@@ -134,5 +135,29 @@ describe("trusted development sandbox", () => {
     expect(provider.exec).toHaveBeenCalledWith("computer", expect.objectContaining({
       command: "/usr/local/bin/setup-openbot-development",
     }), expect.anything());
+  });
+});
+
+describe("agent computer-service deployment", () => {
+  it("returns the typed service transport after registering agent users", async () => {
+    vi.stubEnv("OPENBOT_COMPUTER_CAPABILITY_SECRET", "a".repeat(32));
+    const provider = new TestComputerProvider();
+    const result = await provider.deployAgentWorkspaces({ computerId: "computer", workspaces: [{ agentId: "hello-world", files: [] }] }, {
+      target: "production",
+      repositoryRoot: process.cwd(),
+      environment: process.env,
+      inputs: new DeploymentOutputs(),
+      report: vi.fn(),
+    });
+    vi.unstubAllEnvs();
+
+    expect(result).toMatchObject({
+      outputs: { "computer.id": "computer" },
+      environmentVariables: {
+        OPENBOT_COMPUTER_ID: "computer",
+        OPENBOT_COMPUTER_SERVICE_URL: "https://computer.test/rpc",
+      },
+      secrets: { OPENBOT_COMPUTER_SERVICE_CAPABILITY: expect.any(String) },
+    });
   });
 });

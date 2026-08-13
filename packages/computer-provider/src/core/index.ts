@@ -160,7 +160,7 @@ export interface PublishedComputerImage extends BuiltComputerImage {
 export interface ComputerProvider extends DeployableProvider {
   injectPromptPart(context: ComputerPromptContext, callContext: ComputerCallContext): ComputerPromptPart | undefined | Promise<ComputerPromptPart | undefined>;
   registerTools(context: RegisterComputerToolsContext): readonly RegisteredComputerTool[];
-  deployAgentWorkspaces(request: DeployAgentWorkspacesRequest, context: DeploymentContext): Promise<void>;
+  deployAgentWorkspaces(request: DeployAgentWorkspacesRequest, context: DeploymentContext): Promise<DeploymentResult>;
   deployDevelopmentSandbox(request: DeployDevelopmentSandboxRequest, context: DeploymentContext): Promise<DeploymentResult>;
 
   create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle>;

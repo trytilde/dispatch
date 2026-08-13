@@ -35,6 +35,8 @@ The CLI checks and builds every selected provider that exposes `buildable`, then
 
 `configuration/index.ts` explicitly constructs selected implementations under its `providers` object. Each agent owns its skills and workspace seed under `configuration/agents/<id>/`; custom provider source lives under `configuration/providers/`. Global `configuration/skills/` and `configuration/sandbox/` directories are unsupported, and filesystem locations are not configuration options.
 
+The agent-local folder remains named `sandbox/workspace/` to stay structurally compatible with Eve where practical; runtime terminology is Computer everywhere else. Each agent owns explicit `tools/computer-*.ts` AI SDK tools that call the typed internal computer-service API. The service maps the agent ID to its registered Linux user and runs the operation inside that agent's private `/workspace` view.
+
 - `vercel` builds a control/web project and a separate agent project. Every configured agent is a parallel-built Vercel Function; both projects deploy from prebuilt artifacts.
 - `local` builds separate control and agent Hono servers, writes private service environments, and installs two user-level systemd services on Linux or launchd agents on macOS. Development still hosts control and agents in one Hono process.
 

@@ -41,3 +41,5 @@ Build creates a multi-stage image that compiles `@openbot/computer-service` insi
 An agent sees its own directory mounted at `/workspace` and runs as its own Linux user. A separate trusted development sandbox is the only computer that receives aggregate deployment credentials and `SOPS_AGE_KEY`; its environment file is mode `0600` and ordinary agent workspaces never receive it.
 
 Files under `configuration/agents/<id>/sandbox/workspace/` seed only a newly registered workspace. Later edits do not affect an existing deployed computer.
+
+`deployAgentWorkspaces()` also returns the typed computer-service URL and capability for the later agent-service deployment. Agent-authored computer tools send their fixed agent ID through that service; computer-service, rather than the tool or provider SDK, maps it to the registered Linux user and private workspace.

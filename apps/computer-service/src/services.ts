@@ -1,10 +1,11 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { createConnection } from "node:net";
+import { posix } from "node:path";
 import { promisify } from "node:util";
 import { Code, ConnectError, type ConnectRouter, type HandlerContext } from "@connectrpc/connect";
 import { ComputerService } from "@openbot/computer-service-proto";
+import { agentCommand, logicalWorkspacePath } from "./agent.js";
 import { validComputerCapability } from "./capability.js";
-import { readWorkspaceFile, workspaceRoot, writeWorkspaceFile } from "./files.js";
 import { applyLifecycleBundle, lifecycleDigest, runLifecycle } from "./lifecycle.js";
 
 const execute = promisify(execFile);
@@ -42,10 +43,13 @@ export function registerComputerService(router: ConnectRouter): void {
     },
     async exec(request, context) {
       authorized(context);
+      const scoped = agentCommand(request.agentId, request.command, request.arguments, {
+        cwd: request.cwd || "/workspace",
+        environment: request.environment,
+      });
       try {
-        const result = await execute(request.command, request.arguments, {
-          cwd: request.cwd || workspaceRoot(),
-          env: { ...process.env, ...request.environment },
+        const result = await execute(scoped.command, scoped.arguments, {
+          env: process.env,
           signal: context.signal,
           timeout: request.timeoutMilliseconds || 120_000,
           maxBuffer: 16 * 1024 * 1024,
@@ -58,25 +62,35 @@ export function registerComputerService(router: ConnectRouter): void {
     },
     async readFile(request, context) {
       authorized(context);
-      return { content: await readWorkspaceFile(request.path) };
+      const scoped = agentCommand(request.agentId, "cat", [logicalWorkspacePath(request.path)]);
+      return { content: await executeBytes(scoped.command, scoped.arguments, context.signal) };
     },
     async writeFile(request, context) {
       authorized(context);
-      return { bytesWritten: BigInt(await writeWorkspaceFile(request.path, request.content, request.mode || undefined)) };
+      const path = logicalWorkspacePath(request.path);
+      const directory = posix.dirname(path);
+      const prepare = agentCommand(request.agentId, "mkdir", ["-p", directory]);
+      await execute(prepare.command, prepare.arguments, { env: process.env, signal: context.signal });
+      const scoped = agentCommand(request.agentId, "tee", [path]);
+      await executeWithInput(scoped.command, scoped.arguments, request.content, context.signal);
+      if (request.mode) {
+        const chmod = agentCommand(request.agentId, "chmod", [request.mode.toString(8), path]);
+        await execute(chmod.command, chmod.arguments, { env: process.env, signal: context.signal });
+      }
+      return { bytesWritten: BigInt(request.content.byteLength) };
     },
-    async screenshot(_request, context) {
+    async screenshot(request, context) {
       authorized(context);
-      const result = await execute("import", ["-display", process.env.DISPLAY ?? ":1", "-window", "root", "png:-"], {
-        encoding: "buffer",
-        maxBuffer: 24 * 1024 * 1024,
-        signal: context.signal,
-      });
-      return { png: new Uint8Array(result.stdout) };
+      const scoped = agentCommand(request.agentId, "import", ["-display", process.env.DISPLAY ?? ":1", "-window", "root", "png:-"]);
+      return { png: await executeBytes(scoped.command, scoped.arguments, context.signal, 24 * 1024 * 1024) };
     },
     async input(request, context) {
       authorized(context);
-      await execute("xdotool", parseInput(request.action, request.payloadJson), {
-        env: { ...process.env, DISPLAY: process.env.DISPLAY ?? ":1" },
+      const scoped = agentCommand(request.agentId, "xdotool", parseInput(request.action, request.payloadJson), {
+        environment: { DISPLAY: process.env.DISPLAY ?? ":1" },
+      });
+      await execute(scoped.command, scoped.arguments, {
+        env: process.env,
         signal: context.signal,
       });
       return { accepted: true };
@@ -105,6 +119,26 @@ export function registerComputerService(router: ConnectRouter): void {
         socket.destroy();
       }
     },
+  });
+}
+
+function executeBytes(command: string, args: readonly string[], signal: AbortSignal, maxBuffer = 16 * 1024 * 1024): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    execFile(command, [...args], { encoding: "buffer", env: process.env, maxBuffer, signal }, (error, stdout) => {
+      if (error) reject(error);
+      else resolve(new Uint8Array(stdout));
+    });
+  });
+}
+
+function executeWithInput(command: string, args: readonly string[], input: Uint8Array, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, [...args], { env: process.env, signal, stdio: ["pipe", "ignore", "pipe"] });
+    const errors: Buffer[] = [];
+    child.stderr.on("data", (chunk: Buffer) => errors.push(chunk));
+    child.once("error", reject);
+    child.once("close", (code) => code === 0 ? resolve() : reject(new Error(Buffer.concat(errors).toString("utf8") || `Computer file write exited with code ${code}`)));
+    child.stdin.end(input);
   });
 }
 

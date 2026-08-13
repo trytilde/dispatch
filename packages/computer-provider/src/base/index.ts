@@ -4,6 +4,9 @@ import { posix } from "node:path";
 import { promisify } from "node:util";
 import { tool } from "ai";
 import { z } from "zod";
+import { createClient } from "@connectrpc/connect";
+import { createConnectTransport } from "@connectrpc/connect-node";
+import { ComputerService } from "@openbot/computer-service-proto";
 import {
   ComputerProviderError,
   asRegisteredComputerTool,
@@ -27,12 +30,14 @@ import type {
   Buildable,
   Deployable,
   DeploymentContext,
+  DeploymentResult,
   ProviderInitialization,
 } from "@openbot/runtime-provider";
 import { sandboxDeploymentEnvironment } from "@openbot/runtime-provider";
 import { renderFileTemplatePath } from "@openbot/utilities";
 import { computerImageAssets, materializeComputerImageContext } from "./assets.js";
 import { developmentSandboxSourceFiles, shellEnvironmentExports } from "./development.js";
+import { scopedCapability } from "../capability.js";
 
 const execute = promisify(execFile);
 
@@ -46,6 +51,7 @@ export interface ComputerImageDeploymentConfig {
 export abstract class BaseComputerProvider implements ComputerProvider {
   protected abstract readonly providerId: string;
   protected abstract readonly deployedImageEnvironmentVariable: string;
+  protected abstract computerServiceUrl(computerId: string): Promise<string>;
   readonly initialization: ProviderInitialization | undefined;
   readonly buildable: Buildable;
   readonly deployable: Deployable;
@@ -135,7 +141,10 @@ export abstract class BaseComputerProvider implements ComputerProvider {
   }
 
   registerTools(context: RegisterComputerToolsContext): readonly RegisteredComputerTool[] {
-    const call = (suffix: string): ComputerCallContext => ({ requestId: context.requestId ?? `computer-tool:${suffix}`, agentId: context.agentId });
+    const service = async () => createClient(ComputerService, createConnectTransport({ baseUrl: await this.computerServiceUrl(context.computerId), httpVersion: "1.1" }));
+    const options = () => ({
+      headers: { authorization: `Bearer ${scopedCapability("computer", context.computerId)}` },
+    });
     return [
       asRegisteredComputerTool("computer_exec", {
         name: "Run computer command",
@@ -154,7 +163,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       }, tool({
         description: "Run one command in the OpenBot computer workspace.",
         inputSchema: z.object({ command: z.string().min(1), arguments: z.array(z.string()).optional(), cwd: z.string().optional(), timeout_ms: z.number().int().positive().max(1_200_000).optional() }),
-        execute: async (input) => this.exec(context.computerId, { command: input.command, args: input.arguments, cwd: input.cwd, timeoutMs: input.timeout_ms }, call("exec")),
+        execute: async (input) => (await service()).exec({ agentId: context.agentId, command: input.command, arguments: input.arguments ?? [], cwd: input.cwd ?? "", timeoutMilliseconds: input.timeout_ms ?? 0 }, options()),
       })),
       asRegisteredComputerTool("computer_read_file", {
         name: "Read computer file",
@@ -163,7 +172,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       }, tool({
         description: "Read a file from the OpenBot computer workspace as base64.",
         inputSchema: z.object({ path: z.string().min(1) }),
-        execute: async ({ path }) => ({ content_base64: Buffer.from(await this.readFile(context.computerId, path, call("read-file"))).toString("base64") }),
+        execute: async ({ path }) => ({ content_base64: Buffer.from((await (await service()).readFile({ agentId: context.agentId, path }, options())).content).toString("base64") }),
       })),
       asRegisteredComputerTool("computer_write_file", {
         name: "Write computer file",
@@ -179,8 +188,8 @@ export abstract class BaseComputerProvider implements ComputerProvider {
         inputSchema: z.object({ path: z.string().min(1), content_base64: z.string() }),
         execute: async ({ path, content_base64 }) => {
           const content = Buffer.from(content_base64, "base64");
-          await this.writeFile(context.computerId, path, content, call("write-file"));
-          return { bytes_written: content.byteLength };
+          const response = await (await service()).writeFile({ agentId: context.agentId, path, content, mode: 0 }, options());
+          return { bytes_written: Number(response.bytesWritten) };
         },
       })),
       asRegisteredComputerTool("computer_screenshot", {
@@ -190,7 +199,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       }, tool({
         description: "Capture the current OpenBot computer desktop as PNG base64.",
         inputSchema: z.object({}),
-        execute: async () => ({ media_type: "image/png", content_base64: Buffer.from(await this.screenshot(context.computerId, call("screenshot"))).toString("base64") }),
+        execute: async () => ({ media_type: "image/png", content_base64: Buffer.from((await (await service()).screenshot({ agentId: context.agentId }, options())).png).toString("base64") }),
       })),
       asRegisteredComputerTool("computer_input", {
         name: "Control computer desktop",
@@ -212,14 +221,15 @@ export abstract class BaseComputerProvider implements ComputerProvider {
           z.object({ action: z.literal("key"), key: z.string().min(1) }),
         ]),
         execute: async (input) => {
-          await this.input(context.computerId, normalizeInput(input), call("input"));
-          return { accepted: true };
+          const normalized = normalizeInput(input);
+          const { action, ...payload } = normalized;
+          return (await service()).input({ agentId: context.agentId, action, payloadJson: JSON.stringify(payload) }, options());
         },
       })),
     ] as readonly RegisteredComputerTool[];
   }
 
-  async deployAgentWorkspaces(request: DeployAgentWorkspacesRequest, context: DeploymentContext): Promise<void> {
+  async deployAgentWorkspaces(request: DeployAgentWorkspacesRequest, context: DeploymentContext): Promise<DeploymentResult> {
     const call: ComputerCallContext = { requestId: "computer:deploy-agent-workspaces" };
     let computer;
     try {
@@ -231,6 +241,14 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     }
     if (computer.state === "sleeping") await this.wake(computer.id, call);
     for (const workspace of request.workspaces) await this.#registerAgentWorkspace(computer.id, workspace, call);
+    return {
+      outputs: { "computer.id": computer.id },
+      environmentVariables: {
+        OPENBOT_COMPUTER_ID: computer.id,
+        OPENBOT_COMPUTER_SERVICE_URL: await this.computerServiceUrl(computer.id),
+      },
+      secrets: { OPENBOT_COMPUTER_SERVICE_CAPABILITY: scopedCapability("computer", computer.id) },
+    };
   }
 
   async deployDevelopmentSandbox(request: DeployDevelopmentSandboxRequest, context: DeploymentContext) {

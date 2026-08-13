@@ -26,6 +26,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
   readonly #handles = new Map<string, ComputerHandle>();
   readonly #specs = new Map<string, ComputerSpec>();
   readonly #desktopPorts = new Map<string, number>();
+  readonly #servicePorts = new Map<string, number>();
 
   constructor(imageDeployment: ComputerImageDeploymentConfig = {}) {
     super(imageDeployment);
@@ -90,6 +91,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
     this.#handles.delete(id);
     this.#specs.delete(id);
     this.#desktopPorts.delete(id);
+    this.#servicePorts.delete(id);
   }
 
   async exec(id: string, request: ComputerExecRequest, _context: ComputerCallContext) {
@@ -134,6 +136,15 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
     url.searchParams.set("resize", "remote");
     url.searchParams.set("token", scopedCapability("vnc", id));
     return { url, expiresAt: new Date(Date.now() + 86_400_000) };
+  }
+
+  protected async computerServiceUrl(id: string): Promise<string> {
+    await this.get(id, { requestId: "computer-service-url" });
+    const configured = process.env.OPENBOT_MICROSANDBOX_COMPUTER_SERVICE_URL?.trim();
+    if (configured) return configured;
+    const port = this.#servicePorts.get(id);
+    if (!port) throw new ComputerProviderError("invalid_configuration", "The Microsandbox computer-service port is unknown; set OPENBOT_MICROSANDBOX_COMPUTER_SERVICE_URL when attaching to an existing computer");
+    return `http://127.0.0.1:${port}/rpc`;
   }
 
   async #start(id: string, spec: ComputerSpec, phase: "create" | "wake", _context: ComputerCallContext): Promise<ComputerHandle> {
@@ -181,6 +192,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
     this.#instances.set(id, sandbox);
     this.#handles.set(id, handle);
     this.#desktopPorts.set(id, desktopPort);
+    this.#servicePorts.set(id, servicePort);
     return handle;
   }
 

@@ -21,12 +21,17 @@ Keep provider-specific behavior behind its domain core contract and keep composi
 - When an implementation has multiple responsibilities or owns files used at runtime, use `src/<provider>/index.ts`, cohesive sibling modules, and `src/<provider>/assets/`.
 - Export the public implementation from `<provider>/index.ts`, then re-export it from the package root.
 - Prefer a file per provider. Split by responsibility, not by arbitrary line count.
+- Do not add provider descriptors or generic `createProvider(type)` selectors. The fork explicitly imports and constructs concrete implementations under `Configuration({ providers: { ... } })` in `configuration/index.ts`.
+- Do not add `health()` or `verify()` to provider interfaces or implementations unless an explicit domain requirement calls for that exact operation. Keep service health endpoints and deployment smoke checks at their owning service/runtime boundary.
 
 ## Provider-owned assets
 
-- Store static TypeScript, JavaScript, JSON, service units, plists, shell files, and other generated-file templates as their real file types under `assets/`. Do not embed whole files in TypeScript string literals.
-- Resolve assets relative to `import.meta.url`. Build methods must copy or bundle every required asset into their ignored deployment artifact.
-- Render only dynamic fragments or placeholders. Escape values for the target format and fail on unresolved placeholders.
+- Store TypeScript, JavaScript, JSON, service units, plists, shell files, and every other generated-file source under `assets/` as Handlebars templates with the target extension followed by `.hbs`, such as `entry.ts.hbs` or `vercel.json.hbs`. Do not embed whole files in TypeScript string literals.
+- Resolve templates relative to `import.meta.url` and render them through `@openbot/utilities`. Build and deploy methods must render or bundle every required template into their ignored artifact; do not materialize provider assets with `copyFile()` even when a template is currently static.
+- Put assets shared completely by sibling providers under `src/base/assets/`; add provider-specific asset directories only when their contents or control flow actually diverge.
+- Use strict templates so missing values fail. Escape values for the target format before rendering. Use ordinary Handlebars expressions for text that needs HTML escaping and triple braces only for deliberately pre-encoded target-language fragments such as `JSON.stringify(...)` output.
+- Do not create ad hoc `replaceAll()` renderers, multiline whole-file strings, or alternate template engines.
+- Keep runtime persistence, database contents, lifecycle bundle bytes, and user-supplied file contents byte-preserving. They are data, not generated-file templates.
 - Exclude executable TypeScript templates under `assets/` from the provider package typecheck when placeholders make them intentionally incomplete.
 - Test that materialized files exist and contain the expected structure. Do not snapshot secrets or deployment credentials.
 
@@ -36,14 +41,15 @@ Keep provider-specific behavior behind its domain core contract and keep composi
 - `build()` creates software artifacts and returns their paths through deployment outputs.
 - `plan()`, optional `configure()`, and `deploy()` consume accumulated outputs, environment variables, and secrets. Providers without `Deployable` are skipped by deployment coordination.
 - Keep static/bootstrap secrets separate from provider outputs. Never print secret values or write them into public artifacts.
+- Container images compile their packaged services in a multi-stage build; never copy a host-precompiled `dist` bundle into an image.
 
 ## Vercel providers
 
-- Do not track a root `vercel.json`. Store provider-specific project configuration at `src/vercel/assets/vercel.json`; the Vercel deploy lifecycle materializes it in the ignored artifact root immediately before deployment.
-- Store Function sources, `.vc-config.json`, and Build Output API `config.json` as real assets. The build method bundles or copies them into `.vercel/output`.
+- Do not track a root `vercel.json`. Store provider-specific project configuration at `src/vercel/assets/vercel.json.hbs`; the Vercel deploy lifecycle renders it in the ignored artifact root immediately before deployment.
+- Store Function sources, `.vc-config.json`, and Build Output API `config.json` as Handlebars assets. The build method renders or bundles them into `.vercel/output`.
 - Treat `.vercel/output/config.json` as the routing authority for `vercel deploy --prebuilt`; `vercel.json` is project configuration, not a substitute for Build Output configuration.
 - Preserve independently built control and agent-service artifacts and run agent function builds concurrently.
 
 ## Verification
 
-Run the focused provider tests and typecheck. Audit the diff for embedded whole-file templates, missing asset copies, stale flat-provider imports, secrets, and unrelated generated output. Run `pnpm check` and `pnpm build` when the change affects deployment artifacts or shared contracts.
+Run the focused provider tests and typecheck. Audit the diff for embedded whole-file templates, non-Handlebars generation, raw provider-asset copies, stale flat-provider imports, secrets, and unrelated generated output. Run `pnpm check` and `pnpm build` when the change affects deployment artifacts or shared contracts.

@@ -43,7 +43,7 @@ Add pagination only when the backing provider supports a stable cursor contract.
 - [ ] Authentication or signature verification preserved.
 - [ ] Provider work stays behind its domain `*-provider-core` contract.
 - [ ] Proto regenerated when changed; generated files not hand-edited.
-- [ ] Local and Vercel routing still agree with `vercel.json`.
+- [ ] Local routing and the owning provider's rendered Vercel routing assets still agree.
 - [ ] Focused server/provider tests pass.
 - [ ] `pnpm check` and `pnpm build` pass.
 - [ ] Browser flow tested when user-visible behavior changed.

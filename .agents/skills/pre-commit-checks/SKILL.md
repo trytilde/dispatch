@@ -1,6 +1,6 @@
 ---
 name: pre-commit-checks
-description: Run OpenBot's TypeScript, protobuf, Vitest, build, browser, database, and desktop checks before committing, pushing, opening a PR, or handing off work. Use risk-based focused checks first, then repository gates.
+description: Run OpenBot's TypeScript, protobuf, Vitest, build, browser, provider, and desktop checks before committing, pushing, opening a PR, or handing off work. Use risk-based focused checks first, then repository gates.
 ---
 
 # Pre-Commit Checks
@@ -32,8 +32,8 @@ pnpm build
 
 ```bash
 pnpm --filter @openbot/control-service test
-pnpm --filter @openbot/providers test
-pnpm --filter @openbot/db test
+pnpm --filter @openbot/agent-service-provider test
+pnpm --filter @openbot/computer-providers test
 pnpm --filter @openbot/desktop test
 ```
 
@@ -59,21 +59,10 @@ After protobuf changes:
 
 ```bash
 pnpm contracts:generate
-git diff -- packages/contracts/proto packages/contracts/src/gen
+git diff -- packages/control-service-proto packages/computer-service-proto
 ```
 
 Edit the `.proto` source, never generated TypeScript. Do not commit `apps/web/src/routeTree.gen.ts` unless the project intentionally begins tracking it.
-
-## Database Changes
-
-Follow `add-db-changes`. At minimum:
-
-```bash
-pnpm --filter @openbot/db test
-pnpm --filter @openbot/control-service test
-```
-
-Use an isolated local database for manual migration checks. Never test migrations against shared Turso production data.
 
 ## Release Notes
 

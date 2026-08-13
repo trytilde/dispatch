@@ -112,6 +112,8 @@ Every package README must contain:
 
 Trace exports from the package's declared entrypoints rather than documenting every internal module or every minor exported type. Treat a missing function, stale signature, renamed package, changed provider lifecycle, or changed caller obligation as a blocking documentation defect before PR publication.
 
+For each affected provider package, also verify that every domain provider contract interface is defined in `src/core.ts` or, when supporting core files are needed, `src/core/index.ts`. The package root may re-export the contract; it must not define it. Concrete adapter configuration and SDK-specific interfaces may remain with their adapters. Confirm the README's critical-interface documentation matches those core exports.
+
 ## Frontend Verification
 
 Use `e2e-debug-and-qa` when the user requests browser proof or the acceptance condition is visual. Keep screenshots, traces, videos, HAR files, and browser profiles outside git. GitHub-hosted attachments may be used in PR comments; never commit generated artifacts.

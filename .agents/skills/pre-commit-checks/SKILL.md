@@ -47,7 +47,7 @@ Prefer:
 
 - schema validation for untyped external payloads
 - exhaustive unions for provider states and errors
-- shared contracts in `core.ts` or `core/` inside the owning provider package, or in protobuf for an actual service boundary
+- shared provider contracts in `src/core.ts` or `src/core/index.ts` inside the owning provider package, or in protobuf for an actual service boundary
 - request cancellation through `AbortSignal`
 - focused compatibility adapters at external boundaries
 
@@ -76,3 +76,4 @@ OpenBot uses Changesets with one fixed group for every workspace package. Follow
 - Generated contracts match protobuf sources.
 - Diff contains no secrets, local state, generated noise, or unrelated edits.
 - A valid changeset is present when release impact requires one, or the handoff explains why none is needed.
+- Changed provider contract interfaces are defined in `src/core.ts` or `src/core/index.ts`, re-exported by the package root, and reflected in the package README's `Public API` section.

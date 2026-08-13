@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@openbot/agent-provider": "workspace:*",
-    "@openbot/computer-providers": "workspace:*",
+    "@openbot/computer-provider": "workspace:*",
     "@openbot/inference-model-provider": "workspace:*",
     "@openbot/runtime-provider": "workspace:*",
     "@openbot/skills-provider": "workspace:*",

@@ -35,9 +35,9 @@ importers:
       '@openbot/agent-service-provider':
         specifier: workspace:*
         version: link:packages/agent-service-provider
-      '@openbot/computer-providers':
+      '@openbot/computer-provider':
         specifier: workspace:*
-        version: link:packages/computer-providers
+        version: link:packages/computer-provider
       '@openbot/configuration':
         specifier: workspace:*
         version: link:packages/configuration
@@ -242,9 +242,9 @@ importers:
       '@openbot/agent-service-provider':
         specifier: workspace:*
         version: link:../packages/agent-service-provider
-      '@openbot/computer-providers':
+      '@openbot/computer-provider':
         specifier: workspace:*
-        version: link:../packages/computer-providers
+        version: link:../packages/computer-provider
       '@openbot/configuration':
         specifier: workspace:*
         version: link:../packages/configuration
@@ -325,9 +325,9 @@ importers:
       '@hono/node-server':
         specifier: 1.19.1
         version: 1.19.1(hono@4.13.1)
-      '@openbot/computer-providers':
+      '@openbot/computer-provider':
         specifier: workspace:*
-        version: link:../computer-providers
+        version: link:../computer-provider
       '@openbot/control-service-provider':
         specifier: workspace:*
         version: link:../control-service-provider
@@ -360,7 +360,7 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  packages/computer-providers:
+  packages/computer-provider:
     dependencies:
       '@openbot/runtime-provider':
         specifier: workspace:*
@@ -418,9 +418,9 @@ importers:
       '@openbot/agent-provider':
         specifier: workspace:*
         version: link:../agent-provider
-      '@openbot/computer-providers':
+      '@openbot/computer-provider':
         specifier: workspace:*
-        version: link:../computer-providers
+        version: link:../computer-provider
       '@openbot/inference-model-provider':
         specifier: workspace:*
         version: link:../inference-model-provider

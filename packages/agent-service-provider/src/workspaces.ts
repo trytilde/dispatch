@@ -1,6 +1,6 @@
 import { readFile, readdir } from "node:fs/promises";
 import { relative, resolve } from "node:path";
-import type { ComputerAgentWorkspace, ComputerSeedFile } from "@openbot/computer-providers";
+import type { ComputerAgentWorkspace, ComputerSeedFile } from "@openbot/computer-provider";
 import { discoverAgents } from "./discovery.js";
 
 export async function discoverAgentWorkspaces(repositoryRoot: string): Promise<readonly ComputerAgentWorkspace[]> {

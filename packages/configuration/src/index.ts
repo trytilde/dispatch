@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { AgentProvider } from "@openbot/agent-provider";
-import type { ComputerProvider } from "@openbot/computer-providers";
+import type { ComputerProvider } from "@openbot/computer-provider";
 import type { InferenceModelProvider } from "@openbot/inference-model-provider";
 import type { Buildable, Deployable, InitializableProvider } from "@openbot/runtime-provider";
 import type { SkillProvider } from "@openbot/skills-provider";

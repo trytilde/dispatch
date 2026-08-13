@@ -40,7 +40,7 @@
     "@openbot/agent-provider": "workspace:*",
     "@openbot/agent-service-provider": "workspace:*",
     "@openbot/configuration": "workspace:*",
-    "@openbot/computer-providers": "workspace:*",
+    "@openbot/computer-provider": "workspace:*",
     "@openbot/control-service-provider": "workspace:*",
     "@openbot/control-service-proto": "workspace:*",
     "@openbot/inference-model-provider": "workspace:*",

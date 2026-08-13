@@ -16,7 +16,7 @@
     "@hono/node-server": "1.19.1",
     "@openbot/agent-service-provider": "workspace:*",
     "@openbot/configuration": "workspace:*",
-    "@openbot/computer-providers": "workspace:*",
+    "@openbot/computer-provider": "workspace:*",
     "@openbot/control-service-provider": "workspace:*",
     "@openbot/utilities": "workspace:*",
     "@openbot/runtime-provider": "workspace:*",

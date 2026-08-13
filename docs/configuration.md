@@ -7,7 +7,7 @@ import { Configuration } from "@openbot/configuration";
 import { TildeAgentProvider } from "@openbot/agent-provider";
 import { VercelAgentServiceProvider } from "@openbot/agent-service-provider";
 import { VercelControlServiceProvider } from "@openbot/control-service-provider";
-import { VercelSandboxComputerProvider } from "@openbot/computer-providers";
+import { VercelSandboxComputerProvider } from "@openbot/computer-provider";
 import { TildeToolProvider } from "@openbot/tools-provider";
 import { createClient } from "@trytilde/harness-sdk";
 

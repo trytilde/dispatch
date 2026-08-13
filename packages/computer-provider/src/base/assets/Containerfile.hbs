@@ -22,10 +22,10 @@ RUN pnpm --filter @openbot/computer-service build
 # Node 24 is both the service runtime and the base for the shared computer image.
 FROM node:24-bookworm-slim
 
-COPY packages/computer-providers/src/base/assets/bootstrap.sh /opt/openbot/bootstrap.sh
-COPY packages/computer-providers/src/base/assets/agent-exec.sh /usr/local/bin/openbot-agent-exec
-COPY packages/computer-providers/src/base/assets/development-setup.sh /usr/local/bin/setup-openbot-development
-COPY packages/computer-providers/src/base/assets/start.sh /usr/local/bin/start-openbot-computer
+COPY packages/computer-provider/src/base/assets/bootstrap.sh /opt/openbot/bootstrap.sh
+COPY packages/computer-provider/src/base/assets/agent-exec.sh /usr/local/bin/openbot-agent-exec
+COPY packages/computer-provider/src/base/assets/development-setup.sh /usr/local/bin/setup-openbot-development
+COPY packages/computer-provider/src/base/assets/start.sh /usr/local/bin/start-openbot-computer
 COPY --from=computer-service-builder /source/apps/computer-service/dist/index.js /opt/openbot/computer-service.mjs
 COPY --from=computer-service-builder /source/apps/computer-service/src/assets /opt/openbot/assets
 

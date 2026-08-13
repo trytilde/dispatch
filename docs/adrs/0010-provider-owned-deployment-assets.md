@@ -21,7 +21,7 @@ Small providers may remain in `src/<provider>.ts`. Once a provider owns multiple
 For Vercel prebuilt deployments, each service provider owns an `assets/vercel.json.hbs`, Function entrypoints, Function configuration, and Build Output configuration as Handlebars assets. The build emits `.vercel/output/config.json`, which owns prebuilt routing. The deploy lifecycle renders `vercel.json` to that service's artifact root immediately before invoking Vercel. No root `vercel.json` is tracked.
 
 Microsandbox and Vercel Sandbox use the same computer filesystem and startup
-contract, so `computer-providers` owns one shared image under
+contract, so `computer-provider` owns one shared image under
 `src/base/assets/`. Its build lifecycle stages only the required workspace
 sources into an ignored Docker context and renders the shared `.hbs` assets
 there. The multi-stage Containerfile compiles

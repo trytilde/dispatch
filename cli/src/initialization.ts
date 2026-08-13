@@ -8,7 +8,7 @@ import { parse as parseDotenv } from "dotenv";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { LocalAgentServiceProvider, VercelAgentServiceProvider } from "@openbot/agent-service-provider";
 import type { OpenBotConfiguration } from "@openbot/configuration";
-import { MicrosandboxComputerProvider, VercelSandboxComputerProvider } from "@openbot/computer-providers";
+import { MicrosandboxComputerProvider, VercelSandboxComputerProvider } from "@openbot/computer-provider";
 import { LocalControlServiceProvider, VercelControlServiceProvider } from "@openbot/control-service-provider";
 import { materializeFileTemplate, renderFileTemplatePath } from "@openbot/utilities";
 import type { DeploymentResult, InitializableProvider, ProviderInitializationQuestion } from "@openbot/runtime-provider";

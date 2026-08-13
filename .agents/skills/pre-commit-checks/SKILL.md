@@ -47,7 +47,7 @@ Prefer:
 
 - schema validation for untyped external payloads
 - exhaustive unions for provider states and errors
-- shared contracts in the owning `*-provider-core` package or protobuf
+- shared contracts in `core.ts` or `core/` inside the owning provider package, or in protobuf for an actual service boundary
 - request cancellation through `AbortSignal`
 - focused compatibility adapters at external boundaries
 

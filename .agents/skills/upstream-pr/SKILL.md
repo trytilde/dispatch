@@ -6,7 +6,7 @@ description: Prepare a focused change from an OpenBot fork for contribution to u
 # Contribute Upstream
 
 1. Identify the minimal reusable change. Exclude fork-specific `configuration/`, secrets, branding, and deployment state unless upstream explicitly requests them.
-2. Put new integration contracts in the owning `packages/*-provider-core`; put default implementations in the matching provider package. Keep custom implementations viable through `configuration/providers/` plugins.
+2. Put new integration contracts in `core.ts` or `core/` inside the owning provider package; put default implementations beside them. Keep custom implementations viable through `configuration/providers/` plugins.
 3. Add focused tests and documentation for the public extension point.
 4. Run `pnpm check` and `pnpm build` on the contribution branch.
 5. Review the diff for credentials and unrelated fork changes before committing.

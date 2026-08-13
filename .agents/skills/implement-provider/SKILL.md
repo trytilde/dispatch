@@ -5,11 +5,11 @@ description: Add or refactor an OpenBot provider implementation while preserving
 
 # Implement an OpenBot provider
 
-Keep provider-specific behavior behind its domain core contract and keep composition outside the adapter. Read the relevant ADRs, core package, implementation, runtime selection, and focused tests before editing.
+Keep provider-specific behavior behind its domain core contract and keep composition outside the adapter. Read the relevant ADRs, the owning package's `core.ts` or `core/`, implementation, runtime selection, and focused tests before editing. Do not create a separate `*-provider-core` package.
 
 ## Workflow
 
-1. Identify the owning domain and read its `*-provider-core` contract. Do not expose an internal provider interface through RPC unless a user-facing service boundary requires it.
+1. Identify the owning domain and read the contract in the provider package's `core.ts` or `core/`. Do not expose an internal provider interface through RPC unless a user-facing service boundary requires it.
 2. Read the matching provider package, configuration composition, and tests. Preserve `ProviderCallContext`, `ProviderError`, cancellation, deadlines, request IDs, and idempotency where the contract defines them.
 3. Add the smallest provider-specific implementation. Keep selection in composition code and keep vendor SDK calls inside the adapter.
 4. Implement only the optional capabilities the provider supports, such as `Buildable`, `Deployable`, initialization questions, `registerTools()`, or `injectPromptPart()`.

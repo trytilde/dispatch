@@ -11,11 +11,8 @@ export async function runDevelopment(): Promise<never> {
   console.log(`OpenBot web: http://127.0.0.1:${webPort}`);
   console.log(`OpenBot control and agent server: http://127.0.0.1:${serverPort}`);
 
-  const server = run(
-    "pnpm",
-    ["--filter", "openbot", "exec", "tsx", "watch", "src/index.tsx", "_serve"],
-    developmentServerEnvironment(env),
-  );
+  const [serverCommand, serverArguments] = developmentServerCommand();
+  const server = run(serverCommand, serverArguments, developmentServerEnvironment(env));
   const web = run(
     "pnpm",
     ["--filter", "@tryopenbot/web", "dev", "--port", webPort],
@@ -40,6 +37,10 @@ export async function runDevelopment(): Promise<never> {
   }
 
   return supervise(children);
+}
+
+export function developmentServerCommand(): readonly [string, readonly string[]] {
+  return ["pnpm", ["exec", "tsx", "watch", "cli/src/index.tsx", "_serve"]];
 }
 
 export function developmentServerEnvironment(environment: NodeJS.ProcessEnv): NodeJS.ProcessEnv {

@@ -1,5 +1,5 @@
 import { serve } from "@hono/node-server";
-import { app } from "@openbot/server";
+import { app } from "@openbot/control-service";
 import { createAgentServiceApp } from "@openbot/agent-service-provider";
 import { Hono } from "hono";
 import { loadLocalEnvironment } from "./environment.js";

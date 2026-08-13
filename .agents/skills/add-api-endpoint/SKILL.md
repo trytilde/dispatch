@@ -16,8 +16,8 @@ OpenBot uses ConnectRPC for authenticated control operations and Hono for protoc
 1. Choose the surface:
    - ConnectRPC: control-plane methods used by OpenBot clients.
    - Hono: setup unlock, health, ChatKit compatibility, or signed Tilde webhooks/tools.
-2. For ConnectRPC, edit `packages/contracts/proto/openbot/v1/openbot.proto`, run `pnpm contracts:generate`, then implement the method in `apps/server/src/services.ts`.
-3. For Hono, edit `apps/server/src/http.ts`; update `apps/server/src/fetch-handler.ts` only when dispatch behavior changes.
+2. For ConnectRPC, edit the owning proto, run `pnpm contracts:generate`, then implement the method in `apps/control-service` or `apps/computer-service`.
+3. For Hono, edit `apps/control-service/src/app.ts` and keep Web-standard request handling.
 4. Validate input at the edge. Use protobuf types for Connect and Zod or narrow parsing for untyped HTTP payloads.
 5. Apply the existing authorization mechanism before business work.
 6. Delegate external behavior to the owning `*-provider-core` interface and matching provider adapter. Keep route code provider-neutral.
@@ -26,7 +26,7 @@ OpenBot uses ConnectRPC for authenticated control operations and Hono for protoc
 
 ## Authentication And Scope
 
-- Connect services use the setup-session guard in `apps/server/src/services.ts`.
+- Control Connect services live under `apps/control-service`; computer RPCs stay in `apps/computer-service`.
 - `/api/chat` requires a valid setup session.
 - `/api/tilde/chatkit` and `/api/tilde/tools/sandbox` require Tilde webhook verification and raw request bodies.
 - `/healthz` is public and must remain side-effect free.

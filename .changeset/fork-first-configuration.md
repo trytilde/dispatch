@@ -1,10 +1,9 @@
 ---
-"@openbot/box-host": minor
 "@openbot/config": minor
 "@openbot/contracts": minor
 "@openbot/db": minor
 "@openbot/desktop": minor
-"@openbot/server": minor
+"@openbot/control-service": minor
 "@openbot/ui": minor
 "@openbot/web": minor
 ---

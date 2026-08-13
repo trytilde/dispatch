@@ -18,7 +18,7 @@
     "@openbot/config": "workspace:*",
     "@openbot/control-service-provider": "workspace:*",
     "@openbot/runtime-provider-core": "workspace:*",
-    "@openbot/server": "workspace:*",
+    "@openbot/control-service": "workspace:*",
     "arg": "5.0.2",
     "dotenv": "17.2.1",
     "hono": "4.13.1",

@@ -1,7 +1,6 @@
 ---
 "@openbot/agent-provider": minor
 "@openbot/agent-provider-core": minor
-"@openbot/box-host": minor
 "@openbot/config": minor
 "@openbot/contracts": minor
 "@openbot/control-service-proto": minor
@@ -9,7 +8,7 @@
 "@openbot/desktop": minor
 "@openbot/inference-model-provider": minor
 "@openbot/inference-model-provider-core": minor
-"@openbot/server": minor
+"@openbot/control-service": minor
 "@openbot/tools-provider": minor
 "@openbot/tools-provider-core": minor
 "@openbot/ui": minor

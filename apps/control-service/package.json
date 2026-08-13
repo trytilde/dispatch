@@ -1,8 +1,9 @@
 {
-  "name": "@openbot/box-host",
+  "name": "@openbot/control-service",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "exports": { ".": "./src/index.js" },
   "scripts": {
     "build": "tsgo --noEmit && tsdown",
     "dev": "tsx watch src/index.ts",
@@ -13,12 +14,11 @@
   },
   "dependencies": {
     "@connectrpc/connect": "2.1.2",
-    "@connectrpc/connect-node": "2.1.2",
-    "@openbot/contracts": "workspace:*"
+    "@hono/node-server": "1.19.1",
+    "hono": "4.13.1"
   },
   "devDependencies": {
     "@types/node": "24.3.0",
-    "tsx": "4.20.4",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "tsdown": "0.22.14",
     "typescript": "5.9.2",

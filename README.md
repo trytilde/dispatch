@@ -49,7 +49,7 @@ The production build stages the web app in `public/` for Vercel's static CDN and
 - `packages/control-service-provider` owns local and Vercel control/web builds and deployment.
 - `packages/agent-service-provider` owns agent discovery, concurrent per-agent Vercel bundles, the local agent server, and deployment.
 - `apps/web` owns the UX shell and frontend routes.
-- `apps/server` owns the portable Hono application, built web UI fallback, `/healthz`, ConnectRPC federation under `/rpc`, and the local control-service entrypoint.
+- `apps/control-service` owns the portable Hono application, built web UI fallback, `/healthz`, ConnectRPC federation under `/rpc`, and the local control-service entrypoint.
 - `packages/control-service-proto` is the future owner-facing API contract and is intentionally empty.
 - Domain packages remain available but are not wired into the application yet.
 

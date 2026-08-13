@@ -31,7 +31,7 @@ pnpm build
 `pnpm check` regenerates protobuf contracts, type-checks scripts and packages, and runs package lint/test tasks plus deployment-script tests. Run focused tests first while iterating:
 
 ```bash
-pnpm --filter @openbot/server test
+pnpm --filter @openbot/control-service test
 pnpm --filter @openbot/providers test
 pnpm --filter @openbot/db test
 pnpm --filter @openbot/desktop test
@@ -70,7 +70,7 @@ Follow `add-db-changes`. At minimum:
 
 ```bash
 pnpm --filter @openbot/db test
-pnpm --filter @openbot/server test
+pnpm --filter @openbot/control-service test
 ```
 
 Use an isolated local database for manual migration checks. Never test migrations against shared Turso production data.

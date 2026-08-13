@@ -36,16 +36,6 @@ service SandboxService {
   rpc StopSandbox(StopSandboxRequest) returns (Sandbox);
 }
 
-service BoxService {
-  rpc Health(BoxHealthRequest) returns (BoxHealthResponse);
-  rpc Exec(ExecRequest) returns (ExecResponse);
-  rpc ReadFile(ReadFileRequest) returns (ReadFileResponse);
-  rpc WriteFile(WriteFileRequest) returns (WriteFileResponse);
-  rpc Screenshot(ScreenshotRequest) returns (ScreenshotResponse);
-  rpc Input(InputRequest) returns (InputResponse);
-  rpc ListPorts(ListPortsRequest) returns (ListPortsResponse);
-}
-
 message GetInstallationStatusRequest {}
 
 enum InstallationPhase {
@@ -193,8 +183,6 @@ message DesktopEndpoint {
 message CheckpointRequest {}
 message StopSandboxRequest {}
 
-message BoxHealthRequest {}
-message BoxHealthResponse { bool healthy = 1; string version = 2; }
 message ReadFileRequest { string path = 1; }
 message ReadFileResponse { bytes content = 1; }
 message WriteFileRequest { string path = 1; bytes content = 2; }

@@ -9,7 +9,7 @@ export const controlLocalArtifact = ".openbot-deploy/control-service/service.mjs
 export const controlVercelArtifact = ".openbot-deploy/vercel/control";
 
 export async function checkControlService(context: DeploymentContext, runner: CommandRunner): Promise<void> {
-  await runNativeCheck(runner, context.repositoryRoot, context.environment, ["apps/server/tsconfig.json", "apps/web/tsconfig.json"]);
+  await runNativeCheck(runner, context.repositoryRoot, context.environment, ["apps/control-service/tsconfig.json", "apps/web/tsconfig.json"]);
 }
 
 export async function buildLocalControlService(context: DeploymentContext, runner: CommandRunner): Promise<DeploymentResult> {
@@ -18,7 +18,7 @@ export async function buildLocalControlService(context: DeploymentContext, runne
   await mkdir(dirname(outfile), { recursive: true });
   await build({
     cwd: context.repositoryRoot,
-    entry: ["apps/server/src/service.ts"],
+    entry: ["apps/control-service/src/service.ts"],
     format: ["esm"],
     platform: "node",
     target: "node24",
@@ -36,11 +36,14 @@ export async function buildVercelControlService(context: DeploymentContext, runn
   const root = resolve(context.repositoryRoot, controlVercelArtifact);
   const output = resolve(root, ".vercel/output");
   const functionDirectory = resolve(output, "functions/control.func");
+  const generatedEntrypoint = resolve(context.repositoryRoot, ".openbot-deploy/generated/control-service-vercel.ts");
   await rm(root, { recursive: true, force: true });
   await mkdir(functionDirectory, { recursive: true });
+  await mkdir(dirname(generatedEntrypoint), { recursive: true });
+  await writeFile(generatedEntrypoint, `import app from ${JSON.stringify(resolve(context.repositoryRoot, "apps/control-service/src/app.ts"))};\nexport default { fetch: app.fetch };\nexport const maxDuration = 300;\n`);
   await build({
     cwd: context.repositoryRoot,
-    entry: ["apps/server/src/vercel.ts"],
+    entry: [generatedEntrypoint],
     format: ["esm"],
     platform: "node",
     target: "node24",

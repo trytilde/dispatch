@@ -1,11 +1,12 @@
 import type { Tool } from "ai";
-import type { DeployableProvider } from "@openbot/runtime-provider-core";
+import type { DeployableProvider, DeploymentContext } from "@openbot/runtime-provider-core";
 export type { Deployable } from "@openbot/runtime-provider-core";
 
 export type ComputerState = "creating" | "running" | "sleeping" | "failed";
 
 export interface ComputerCallContext {
   requestId: string;
+  agentId?: string;
   signal?: AbortSignal;
   deadline?: Date;
   idempotencyKey?: string;
@@ -27,21 +28,6 @@ export class ComputerProviderError extends Error {
     super(message);
     this.name = "ComputerProviderError";
   }
-}
-
-export interface ComputerProviderDescriptor {
-  id: string;
-  version: string;
-  displayName: string;
-  capabilities: readonly (
-    | "lifecycle"
-    | "exec"
-    | "files"
-    | "desktop"
-    | "input"
-    | "image-build"
-    | "image-publish"
-  )[];
 }
 
 export interface ComputerSeedFile {
@@ -134,7 +120,18 @@ export type RegisteredComputerTool<Input = unknown, Output = unknown> = Tool<Inp
 
 export interface RegisterComputerToolsContext {
   computerId: string;
+  agentId: string;
   requestId?: string;
+}
+
+export interface ComputerAgentWorkspace {
+  agentId: string;
+  files: readonly ComputerSeedFile[];
+}
+
+export interface DeployAgentWorkspacesRequest {
+  computerId: string;
+  workspaces: readonly ComputerAgentWorkspace[];
 }
 
 export interface ComputerImageSpec {
@@ -159,6 +156,7 @@ export interface PublishedComputerImage extends BuiltComputerImage {
 export interface ComputerProvider extends DeployableProvider {
   injectPromptPart(context: ComputerPromptContext, callContext: ComputerCallContext): ComputerPromptPart | undefined | Promise<ComputerPromptPart | undefined>;
   registerTools(context: RegisterComputerToolsContext): readonly RegisteredComputerTool[];
+  deployAgentWorkspaces(request: DeployAgentWorkspacesRequest, context: DeploymentContext): Promise<void>;
 
   create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle>;
   get(id: string, context: ComputerCallContext): Promise<ComputerHandle>;

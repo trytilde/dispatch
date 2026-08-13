@@ -19,7 +19,7 @@ OpenBot also needs equivalent local production behavior without making developme
 
 ## Decision
 
-`control-service-provider` owns the control server and web artifact. `agent-service-provider` discovers `configuration/agents`, validates every module with the native TypeScript compiler, and emits an independent bundle for each agent. Both packages implement `Buildable` and `Deployable` for local and Vercel targets.
+`control-service-provider` owns the control server and web artifact. `agent-service-provider` discovers each `configuration/agents/<id>/agent.ts`, validates its authored TypeScript tree with the native TypeScript compiler, and emits an independent bundle for each agent. Both packages implement `Buildable` and `Deployable` for local and Vercel targets.
 
 Vercel receives prebuilt Build Output API artifacts. The control project contains its Hono function and static web assets. The agent project contains one `.func` per agent plus its health function. Changed agent builds execute concurrently through tsdown's Rolldown/Oxc pipeline; content digests reuse unchanged function directories and conservatively invalidate on shared package or lockfile changes. A single agent-service deployment publishes the complete function set, so endpoints are isolated at execution but deployment and rollback remain atomic.
 
@@ -31,7 +31,7 @@ Native `@typescript/native-preview` is deliberately limited to artifact checks w
 
 ```mermaid
 flowchart LR
-  C["configuration/agents/*.ts"] --> B["Parallel tsdown builds"]
+  C["configuration/agents/id/agent.ts"] --> B["Parallel tsdown builds"]
   B --> A1["Agent function A"]
   B --> A2["Agent function B"]
   A1 --> AP["Agent service project"]
@@ -50,3 +50,7 @@ flowchart LR
 - A shared dependency change can rebuild every affected agent.
 - Per-agent rollback requires a future project-per-agent mode and is intentionally excluded.
 - Concrete Tilde endpoint registration can consume `agent-service.deployment-url`; it is not coupled to control deployment.
+
+## Updates
+
+- 2026-08-13T12:27:55+02:00: Made each directory-owned `agent.ts` the independent build entrypoint and included the full authored agent tree in invalidation.

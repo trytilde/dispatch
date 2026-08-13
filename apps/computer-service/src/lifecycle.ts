@@ -2,11 +2,14 @@ import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { chmod, mkdir, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { LifecyclePhase, type ApplyLifecycleBundleRequest } from "@openbot/computer-service-proto";
+import { materializeFileTemplate } from "@openbot/utilities";
 
 const execute = promisify(execFile);
+const manifestTemplate = fileURLToPath(new URL("./assets/manifest.json.hbs", import.meta.url));
 function lifecycleRoot(): string {
   return resolve(process.env.OPENBOT_COMPUTER_LIFECYCLE_ROOT ?? "/opt/openbot/lifecycle");
 }
@@ -68,7 +71,10 @@ export async function applyLifecycleBundle(request: ApplyLifecycleBundleRequest)
       childPath(staging, script.path);
       return { id: script.id, path: script.path, phases: script.phases };
     });
-    await writeFile(resolve(staging, "manifest.json"), JSON.stringify({ digest: request.digest, scripts }, undefined, 2), { mode: 0o600 });
+    await materializeFileTemplate(manifestTemplate, resolve(staging, "manifest.json"), {
+      DIGEST: JSON.stringify(request.digest),
+      SCRIPTS: JSON.stringify(scripts, undefined, 2),
+    }, { mode: 0o600 });
     await rm(target, { recursive: true, force: true });
     await rename(staging, target);
     const nextLink = resolve(root, `.current-${process.pid}-${Date.now()}`);

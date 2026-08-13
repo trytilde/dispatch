@@ -1,6 +1,7 @@
-import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { chmod, mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { renderFileTemplatePath } from "@openbot/utilities";
 import type { DeploymentContext } from "@openbot/runtime-provider-core";
 import type { CommandRunner } from "./command.js";
 
@@ -14,15 +15,16 @@ export interface LocalServiceOptions {
   uid?: number;
 }
 
-const systemdTemplate = fileURLToPath(new URL("./local/assets/openbot.service", import.meta.url));
-const launchdTemplate = fileURLToPath(new URL("./local/assets/openbot.plist", import.meta.url));
+const systemdTemplate = fileURLToPath(new URL("./local/assets/openbot.service.hbs", import.meta.url));
+const launchdTemplate = fileURLToPath(new URL("./local/assets/openbot.plist.hbs", import.meta.url));
+const environmentTemplate = fileURLToPath(new URL("./local/assets/environment.hbs", import.meta.url));
 
 export async function installLocalService(context: DeploymentContext, runner: CommandRunner, options: LocalServiceOptions): Promise<void> {
   const environmentFile = resolve(context.repositoryRoot, options.environmentFile);
-  await atomicWrite(environmentFile, serializeEnvironment(context), 0o600);
+  await atomicWrite(environmentFile, await renderEnvironment(context), 0o600);
   if (options.platform === "linux") {
     const unitPath = resolve(options.homeDirectory, `.config/systemd/user/${options.id}.service`);
-    const unit = await renderTemplate(systemdTemplate, {
+    const unit = await renderFileTemplatePath(systemdTemplate, {
       DESCRIPTION: options.description,
       WORKING_DIRECTORY: quote(context.repositoryRoot),
       DEPLOYMENT_ENVIRONMENT: quote(`OPENBOT_DEPLOYMENT_ENV_FILE=${environmentFile}`),
@@ -40,7 +42,7 @@ export async function installLocalService(context: DeploymentContext, runner: Co
     const label = `ai.openbot.${options.id}`;
     const plistPath = resolve(options.homeDirectory, `Library/LaunchAgents/${label}.plist`);
     const command = [options.command[0]!, `--env-file=${environmentFile}`, ...options.command.slice(1)];
-    const plist = await renderTemplate(launchdTemplate, {
+    const plist = await renderFileTemplatePath(launchdTemplate, {
       LABEL: xml(label),
       COMMAND: command.map((value) => `<string>${xml(value)}</string>`).join(""),
       WORKING_DIRECTORY: xml(context.repositoryRoot),
@@ -68,17 +70,13 @@ export async function waitForHealth(request: typeof fetch, origin: string): Prom
   throw lastError;
 }
 
-function serializeEnvironment(context: DeploymentContext): string {
+async function renderEnvironment(context: DeploymentContext): Promise<string> {
   const values = new Map(Object.entries(context.inputs.environmentVariables()));
   for (const [name, value] of Object.entries(context.inputs.secrets())) values.set(name, value);
-  return [...values].sort(([a], [b]) => a.localeCompare(b)).map(([name, value]) => `${name}=${JSON.stringify(value)}`).join("\n") + "\n";
+  return renderFileTemplatePath(environmentTemplate, {
+    entries: [...values].sort(([a], [b]) => a.localeCompare(b)).map(([name, value]) => ({ name, value: JSON.stringify(value) })),
+  });
 }
 async function atomicWrite(path: string, contents: string, mode: number): Promise<void> { await mkdir(dirname(path), { recursive: true, mode: 0o700 }); const temporary = `${path}.${process.pid}.tmp`; await writeFile(temporary, contents, { mode }); await chmod(temporary, mode); await rename(temporary, path); }
 function quote(value: string): string { if (/[\n\r\0]/.test(value)) throw new Error("Service values must not contain control characters"); return `"${value.replace(/%/g, "%%").replace(/([\\"])/g, "\\$1")}"`; }
 function xml(value: string): string { return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;"); }
-async function renderTemplate(path: string, values: Readonly<Record<string, string>>): Promise<string> {
-  let template = await readFile(path, "utf8");
-  for (const [name, value] of Object.entries(values)) template = template.replaceAll(`{{${name}}}`, value);
-  if (/{{[A-Z_]+}}/.test(template)) throw new Error(`Unresolved local service template value in ${path}`);
-  return template;
-}

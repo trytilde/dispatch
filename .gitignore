@@ -15,7 +15,6 @@ test-results/
 .openbot/
 *.log
 apps/web/src/routeTree.gen.ts
-packages/contracts/src/gen/
 apps/desktop/out/
 apps/desktop/release/
 .vercel

@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
+import { readFile } from "node:fs/promises";
 import type { ComputerCallContext, ComputerExecRequest, ComputerHandle, ComputerInput, ComputerSpec } from "@openbot/computer-provider-core";
-import { BaseComputerProvider, computerWorkspacePath } from "./base.js";
+import { DeploymentOutputs } from "@openbot/runtime-provider-core";
+import { computerImageAssets } from "./base/assets.js";
+import { BaseComputerProvider, computerWorkspacePath, type ComputerImageDeploymentConfig } from "./base/index.js";
 
 class TestComputerProvider extends BaseComputerProvider {
-  readonly descriptor = { id: "test", version: "1.0.0", displayName: "Test", capabilities: ["exec", "files", "desktop", "input"] as const };
-  health = vi.fn(async () => ({ healthy: true }));
+  protected readonly providerId = "test";
+  protected readonly deployedImageEnvironmentVariable = "OPENBOT_TEST_COMPUTER_IMAGE";
+  constructor(imageDeployment: ComputerImageDeploymentConfig = { repository: "registry.test/openbot-computer" }) { super(imageDeployment); }
   create = vi.fn(async (_spec: ComputerSpec): Promise<ComputerHandle> => ({ id: "computer", providerId: "test", state: "running", createdAt: new Date(0) }));
   get = vi.fn(async (): Promise<ComputerHandle> => ({ id: "computer", providerId: "test", state: "running", createdAt: new Date(0) }));
   wake = this.get;
@@ -21,7 +25,7 @@ class TestComputerProvider extends BaseComputerProvider {
 describe("computer tool registration", () => {
   it("returns AI SDK tools with Tilde custom-provider manifests", () => {
     const provider = new TestComputerProvider();
-    const tools = provider.registerTools({ computerId: "computer" });
+    const tools = provider.registerTools({ computerId: "computer", agentId: "hello-world" });
     expect(tools.map((candidate) => candidate.typeId)).toEqual([
       "computer_exec",
       "computer_read_file",
@@ -49,7 +53,31 @@ describe("computerWorkspacePath", () => {
   it("keeps tool file operations inside the shared workspace", () => {
     expect(computerWorkspacePath("notes/today.md")).toBe("/workspace/notes/today.md");
     expect(computerWorkspacePath("/workspace/notes/today.md")).toBe("/workspace/notes/today.md");
+    expect(computerWorkspacePath("/workspace/notes/today.md", "hello-world")).toBe("/workspace/.openbot/agents/hello-world/workspace/notes/today.md");
     expect(() => computerWorkspacePath("../../etc/passwd")).toThrow(/escapes/);
     expect(() => computerWorkspacePath("/etc/passwd")).toThrow(/inside/);
+  });
+});
+
+describe("computer image lifecycle", () => {
+  it("exposes repository initialization and a publish plan", async () => {
+    expect(new TestComputerProvider({}).initialization?.questions[0]?.destination.key).toBe("OPENBOT_COMPUTER_IMAGE_REPOSITORY");
+    const provider = new TestComputerProvider();
+    expect(provider.initialization).toBeUndefined();
+    await expect(provider.deployable.plan({
+      target: "production",
+      repositoryRoot: "/repository",
+      environment: {},
+      inputs: new DeploymentOutputs(),
+      report: vi.fn(),
+    })).resolves.toMatchObject({ summary: expect.stringContaining("registry.test/openbot-computer") });
+  });
+
+  it("builds the computer service inside the shared multi-stage image", async () => {
+    const containerfile = await readFile(computerImageAssets.containerfile, "utf8");
+    expect(containerfile).toContain("AS computer-service-builder");
+    expect(containerfile).toContain("pnpm --filter @openbot/computer-service build");
+    expect(containerfile).toContain("COPY --from=computer-service-builder");
+    expect(containerfile).not.toMatch(/^COPY apps\/computer-service\/dist/m);
   });
 });

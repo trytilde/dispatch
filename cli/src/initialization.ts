@@ -3,13 +3,37 @@ import { spawn } from "node:child_process";
 import { chmod, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { parse as parseDotenv } from "dotenv";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
-import { createAgentServiceProvider } from "@openbot/agent-service-provider";
-import { createControlServiceProvider } from "@openbot/control-service-provider";
-import type { DeploymentResult, ProviderInitializationQuestion } from "@openbot/runtime-provider-core";
+import { LocalAgentServiceProvider, VercelAgentServiceProvider } from "@openbot/agent-service-provider";
+import type { OpenBotConfiguration } from "@openbot/configuration";
+import { MicrosandboxComputerProvider, VercelSandboxComputerProvider } from "@openbot/computer-providers";
+import { LocalControlServiceProvider, VercelControlServiceProvider } from "@openbot/control-service-provider";
+import { materializeFileTemplate, renderFileTemplatePath } from "@openbot/utilities";
+import type { DeploymentResult, InitializableProvider, ProviderInitializationQuestion } from "@openbot/runtime-provider-core";
 
 export const SANDBOX_SOPS_AGE_KEY = "SOPS_AGE_KEY";
+
+const configurationAssets = {
+  local: fileURLToPath(new URL("./assets/configuration/local.ts.hbs", import.meta.url)),
+  vercel: fileURLToPath(new URL("./assets/configuration/vercel.ts.hbs", import.meta.url)),
+} as const;
+const fileTemplates = {
+  document: fileURLToPath(new URL("./assets/files/document.hbs", import.meta.url)),
+  empty: fileURLToPath(new URL("./assets/files/empty.hbs", import.meta.url)),
+  environmentEntry: fileURLToPath(new URL("./assets/files/environment-entry.hbs", import.meta.url)),
+} as const;
+const defaultAgentTemplates = [
+  ["instrumentation.ts", "./assets/agents/instrumentation.ts.hbs"],
+  ["agents/hello-world/agent.ts", "./assets/agents/hello-world/agent.ts.hbs"],
+  ["agents/hello-world/instructions.ts", "./assets/agents/hello-world/instructions.ts.hbs"],
+  ["agents/hello-world/instrumentation.ts", "./assets/agents/hello-world/instrumentation.ts.hbs"],
+  ["agents/hello-world/lib/greeting.ts", "./assets/agents/hello-world/lib/greeting.ts.hbs"],
+  ["agents/hello-world/tools/hello-world.ts", "./assets/agents/hello-world/tools/hello-world.ts.hbs"],
+  ["agents/hello-world/skills/hello-world/SKILL.md", "./assets/agents/hello-world/skills/hello-world/SKILL.md.hbs"],
+  ["agents/hello-world/sandbox/workspace/README.md", "./assets/agents/hello-world/sandbox/workspace/README.md.hbs"],
+] as const;
 
 export interface SelectChoice {
   value: string;
@@ -68,6 +92,7 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   const sopsConfigPath = resolve(configurationDirectory, ".sops.yaml");
   const secretsPath = resolve(configurationDirectory, "secrets.enc.yaml");
   const identityPath = resolve(configurationDirectory, "sops.identity.json");
+  const configurationPath = resolve(configurationDirectory, "index.ts");
 
   await mkdir(configurationDirectory, { recursive: true, mode: 0o700 });
   await createBlankEnvironment(environmentPath);
@@ -78,13 +103,10 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   const ownerKind = await options.prompts.select("How should owners decrypt OpenBot secrets?", identityChoices);
   const owner = await configureOwnerIdentity(ownerKind, options, runner);
 
-  const runtimeId = await options.prompts.select("Where do you want to deploy OpenBot?", [
-    { value: "local", label: "Local", description: "Run OpenBot as user services on this computer." },
-    { value: "vercel", label: "Vercel", description: "Deploy control and agent services as separate Vercel projects." },
-  ]);
-  const initializations = [createControlServiceProvider(runtimeId).initialization, createAgentServiceProvider(runtimeId).initialization].filter((value) => value !== undefined);
+  const selectedProviders = await initializationProviders(configurationPath, options.prompts);
+  const initializations = selectedProviders.flatMap((provider) => provider.initialization ? [provider.initialization] : []);
 
-  const environmentValues: Record<string, string> = { OPENBOT_RUNTIME_PROVIDER: runtimeId };
+  const environmentValues: Record<string, string> = {};
   const secretValues: Record<string, string> = {};
   const deploymentSecretValues: Record<string, string> = {};
   for (const question of initializations.flatMap((initialization) => initialization.questions)) {
@@ -119,10 +141,11 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   const encryptedDocument = parseYaml(encrypted.stdout) as { sops?: unknown } | undefined;
   if (!encryptedDocument?.sops || encrypted.stdout.includes(sandboxIdentity.identity)) throw new Error("SOPS returned an invalid encrypted configuration");
 
-  await writeFileAtomically(sopsConfigPath, stringifyYaml({ creation_rules: [creationRule] }), 0o600);
-  await writeFileAtomically(secretsPath, encrypted.stdout, 0o600);
-  await writeFileAtomically(identityPath, `${JSON.stringify({ version: 1, ownerIdentity: owner.metadata } satisfies StoredIdentityMetadata, null, 2)}\n`, 0o600);
+  await writeFileAtomically(sopsConfigPath, await renderDocument(stringifyYaml({ creation_rules: [creationRule] })), 0o600);
+  await writeFileAtomically(secretsPath, await renderDocument(encrypted.stdout), 0o600);
+  await writeFileAtomically(identityPath, await renderDocument(JSON.stringify({ version: 1, ownerIdentity: owner.metadata } satisfies StoredIdentityMetadata, null, 2)), 0o600);
   await updateEnvironmentFile(environmentPath, environmentValues);
+  await scaffoldDefaultAgent(configurationDirectory);
 }
 
 export async function loadDeploymentConfiguration(
@@ -363,20 +386,74 @@ async function readEnvironmentFile(path: string): Promise<Record<string, string>
 
 async function createBlankEnvironment(path: string): Promise<void> {
   try {
-    await writeFile(path, "", { flag: "wx", mode: 0o600 });
+    await materializeFileTemplate(fileTemplates.empty, path, {}, { flag: "wx", mode: 0o600 });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
   }
 }
 
+async function createConfiguration(path: string, asset: string): Promise<void> {
+  try {
+    await materializeFileTemplate(asset, path, {}, { flag: "wx", mode: 0o600 });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+  }
+}
+
+async function scaffoldDefaultAgent(configurationDirectory: string): Promise<void> {
+  for (const [relativePath, asset] of defaultAgentTemplates) {
+    await createConfiguration(
+      resolve(configurationDirectory, relativePath),
+      fileURLToPath(new URL(asset, import.meta.url)),
+    );
+  }
+}
+
+async function initializationProviders(path: string, prompts: InitializationPrompts): Promise<readonly InitializableProvider[]> {
+  if (await exists(path)) {
+    const module = await import(pathToFileURL(path).href) as { default?: OpenBotConfiguration };
+    if (!module.default) throw new Error("configuration/index.ts must export the OpenBot configuration as default");
+    return configuredProviders(module.default);
+  }
+  const runtime = await prompts.select("Where do you want to deploy OpenBot?", [
+    { value: "local", label: "Local", description: "Run OpenBot as user services on this computer." },
+    { value: "vercel", label: "Vercel", description: "Deploy control and agent services as separate Vercel projects." },
+  ]);
+  if (runtime === "local") {
+    await createConfiguration(path, configurationAssets.local);
+    return [new LocalControlServiceProvider(), new LocalAgentServiceProvider(), new MicrosandboxComputerProvider()];
+  }
+  if (runtime === "vercel") {
+    await createConfiguration(path, configurationAssets.vercel);
+    return [new VercelControlServiceProvider(), new VercelAgentServiceProvider(), new VercelSandboxComputerProvider()];
+  }
+  throw new Error(`Unsupported runtime provider: ${runtime}`);
+}
+
+function configuredProviders(configuration: OpenBotConfiguration): InitializableProvider[] {
+  return [
+    configuration.providers.controlService,
+    configuration.providers.agentService,
+    configuration.providers.agent,
+    configuration.providers.computer,
+    configuration.providers.inferenceModel,
+    configuration.providers.skills,
+    configuration.providers.tools,
+  ].filter((provider): provider is InitializableProvider => provider !== undefined);
+}
+
 async function updateEnvironmentFile(path: string, values: Readonly<Record<string, string>>): Promise<void> {
   let contents = await readFile(path, "utf8");
   for (const [name, value] of Object.entries(values)) {
-    const line = `${name}=${JSON.stringify(value)}`;
+    const line = (await renderFileTemplatePath(fileTemplates.environmentEntry, { NAME: name, VALUE: JSON.stringify(value) })).trimEnd();
     const pattern = new RegExp(`^${name}=.*$`, "m");
     contents = pattern.test(contents) ? contents.replace(pattern, line) : `${contents}${contents && !contents.endsWith("\n") ? "\n" : ""}${line}\n`;
   }
   await writeFileAtomically(path, contents, 0o600);
+}
+
+async function renderDocument(contents: string): Promise<string> {
+  return renderFileTemplatePath(fileTemplates.document, { CONTENTS: contents.replace(/\n+$/, "") });
 }
 
 async function writeFileAtomically(path: string, contents: string, mode: number): Promise<void> {

@@ -29,25 +29,6 @@ export class SkillsProviderError extends Error {
   }
 }
 
-export type SkillsProviderCapability =
-  | "skills:list"
-  | "skills:get"
-  | "skills:create"
-  | "skills:update"
-  | "registries:list"
-  | "registries:get"
-  | "registries:register"
-  | "assets:manifest"
-  | "assets:download"
-  | "assets:materialize";
-
-export interface SkillsProviderDescriptor {
-  id: string;
-  version: string;
-  displayName: string;
-  capabilities: readonly SkillsProviderCapability[];
-}
-
 export interface Page<T> {
   items: readonly T[];
   nextPageToken?: string;
@@ -158,7 +139,7 @@ export interface SkillsPromptRequest {
   metadata?: Readonly<Record<string, string>>;
 }
 
-export interface SkillsProviderModelHooks {
+export interface SkillProviderModelHooks {
   registerTools?(
     context: SkillsProviderCallContext,
   ): readonly RegisteredProviderTool[] | Promise<readonly RegisteredProviderTool[]>;
@@ -168,7 +149,7 @@ export interface SkillsProviderModelHooks {
   ): string | undefined | Promise<string | undefined>;
 }
 
-export interface SkillsProvider extends SkillsProviderModelHooks, DeployableProvider {
+export interface SkillProvider extends SkillProviderModelHooks, DeployableProvider {
   listSkills(request: ListSkillsRequest, context: SkillsProviderCallContext): Promise<Page<Skill>>;
   getSkill(id: string, context: SkillsProviderCallContext): Promise<Skill>;
   createSkill(request: CreateSkillRequest, context: SkillsProviderCallContext): Promise<Skill>;

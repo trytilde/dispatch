@@ -1,0 +1,47 @@
+import { createHash } from "node:crypto";
+import type { AgentProvider } from "@openbot/agent-provider-core";
+import type { ComputerProvider } from "@openbot/computer-provider-core";
+import type { InferenceModelProvider } from "@openbot/inference-model-provider-core";
+import type { Buildable, Deployable, InitializableProvider } from "@openbot/runtime-provider-core";
+import type { SkillProvider } from "@openbot/skills-provider-core";
+import type { ToolProvider } from "@openbot/tools-provider-core";
+
+export interface ProviderPluginManifest {
+  readonly id: string;
+  readonly registrations: readonly unknown[];
+}
+
+export type ServiceProvider = Buildable & Deployable & InitializableProvider;
+
+export interface OpenBotProviders {
+  controlService: ServiceProvider;
+  agentService: ServiceProvider;
+  agent?: AgentProvider;
+  computer?: ComputerProvider;
+  inferenceModel?: InferenceModelProvider;
+  skills?: SkillProvider;
+  tools?: ToolProvider;
+}
+
+export interface OpenBotConfiguration {
+  providers: OpenBotProviders;
+}
+
+export interface RepositoryManifest {
+  configuration: OpenBotConfiguration;
+  providerPlugins: readonly ProviderPluginManifest[];
+  files: Readonly<Record<string, string>>;
+  digest: string;
+}
+
+export function Configuration(configuration: OpenBotConfiguration): OpenBotConfiguration {
+  return configuration;
+}
+
+export function repositoryDigest(files: Readonly<Record<string, string>>): string {
+  const hash = createHash("sha256");
+  for (const [path, content] of Object.entries(files).sort(([left], [right]) => left.localeCompare(right))) {
+    hash.update(path).update("\0").update(content).update("\0");
+  }
+  return hash.digest("hex");
+}

@@ -1,17 +1,21 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { materializeFileTemplate } from "@openbot/utilities";
 import type { DeploymentContext } from "@openbot/runtime-provider-core";
 import type { CommandRunner } from "@openbot/control-service-provider";
-import { discoverAgents } from "./discovery.js";
+import { agentTypeScriptPaths, discoverAgents, globalInstrumentationPath } from "./discovery.js";
 
-const configAsset = fileURLToPath(new URL("./assets/agents-tsconfig.json", import.meta.url));
+const configTemplate = fileURLToPath(new URL("./assets/agents-tsconfig.json.hbs", import.meta.url));
 
 export async function checkAgentService(context: DeploymentContext, runner: CommandRunner): Promise<void> {
   const agents = await discoverAgents(context.repositoryRoot);
+  const agentFiles = (await Promise.all(agents.map(agentTypeScriptPaths))).flat();
   const config = resolve(context.repositoryRoot, ".openbot-deploy/generated/agents.tsconfig.json");
-  const base = JSON.parse(await readFile(configAsset, "utf8")) as Record<string, unknown>;
-  await mkdir(dirname(config), { recursive: true });
-  await writeFile(config, `${JSON.stringify({ ...base, files: agents.map((agent) => relative(dirname(config), agent.path)) }, null, 2)}\n`);
+  await materializeFileTemplate(configTemplate, config, {
+    FILES: JSON.stringify([
+      relative(dirname(config), globalInstrumentationPath(context.repositoryRoot)),
+      ...agentFiles.map((path) => relative(dirname(config), path)),
+    ], null, 2),
+  });
   await runner.run("pnpm", ["exec", "tsgo", "-p", config, "--noEmit"], { cwd: context.repositoryRoot, environment: context.environment });
 }

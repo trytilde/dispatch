@@ -30,27 +30,6 @@ export class AgentProviderError extends Error {
   }
 }
 
-export interface AgentProviderDescriptor {
-  id: string;
-  version: string;
-  displayName: string;
-  capabilities: readonly AgentProviderCapability[];
-}
-
-export type AgentProviderCapability =
-  | "agents:list"
-  | "agents:get"
-  | "agents:register"
-  | "agents:update"
-  | "agents:unregister"
-  | "sessions:list"
-  | "sessions:create"
-  | "sessions:rename"
-  | "sessions:mark-unread"
-  | "sessions:interrupt"
-  | "messages:list"
-  | "messages:send";
-
 export interface Page<T> {
   items: readonly T[];
   nextPageToken?: string;

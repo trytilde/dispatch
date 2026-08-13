@@ -1,0 +1,26 @@
+{
+  "name": "@openbot/configuration",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openbot/agent-provider-core": "workspace:*",
+    "@openbot/computer-provider-core": "workspace:*",
+    "@openbot/inference-model-provider-core": "workspace:*",
+    "@openbot/runtime-provider-core": "workspace:*",
+    "@openbot/skills-provider-core": "workspace:*",
+    "@openbot/tools-provider-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.3.0",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}

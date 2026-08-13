@@ -3,7 +3,7 @@
 "@openbot/agent-service-provider": minor
 "@openbot/runtime-provider-core": minor
 "@openbot/cli": patch
-"@openbot/config": patch
+"@openbot/configuration": patch
 "@openbot/agent-provider-core": patch
 "@openbot/computer-provider-core": patch
 "@openbot/inference-model-provider-core": patch

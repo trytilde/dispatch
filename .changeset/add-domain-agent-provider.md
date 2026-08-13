@@ -1,10 +1,8 @@
 ---
 "@openbot/agent-provider": minor
 "@openbot/agent-provider-core": minor
-"@openbot/config": minor
-"@openbot/contracts": minor
+"@openbot/configuration": minor
 "@openbot/control-service-proto": minor
-"@openbot/db": minor
 "@openbot/desktop": minor
 "@openbot/control-service": minor
 "@openbot/ui": minor

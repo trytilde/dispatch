@@ -58,7 +58,7 @@ describe("OpenBot initialization", () => {
       runWithInputFile: processCommandRunner.runWithInputFile,
     };
     const selections = ["onepassword", "local"];
-    const inputs = ["Engineering", "OpenBot owner identity"];
+    const inputs = ["Engineering", "OpenBot owner identity", "ghcr.io/example/openbot-computer"];
     await initializeOpenBot({
       repositoryRoot,
       runner,
@@ -70,14 +70,21 @@ describe("OpenBot initialization", () => {
 
     const loaded = await loadDeploymentConfiguration(repositoryRoot, { runner, environment: { ...process.env } });
     expect(loaded.inputs.sandboxSecrets?.[SANDBOX_SOPS_AGE_KEY]).toMatch(/^AGE-SECRET-KEY-1/);
-    expect(loaded.environment.OPENBOT_RUNTIME_PROVIDER).toBe("local");
+    const configuration = await readFile(join(repositoryRoot, "configuration/index.ts"), "utf8");
+    expect(configuration).toContain("providers: {");
+    expect(configuration).toContain("controlService: new LocalControlServiceProvider()");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/agent.ts"), "utf8")).toContain("export default chatKitEndpoint");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/instructions.ts"), "utf8")).toContain("export default");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/tools/hello-world.ts"), "utf8")).toContain("export default tool");
+    expect(await readFile(join(repositoryRoot, "configuration/agents/hello-world/skills/hello-world/SKILL.md"), "utf8")).toContain("name: hello-world");
+    expect(await readFile(join(repositoryRoot, "configuration/instrumentation.ts"), "utf8")).toContain("defineInstrumentation");
     expect(loaded.environment.SOPS_AGE_KEY).toBeUndefined();
   });
 
   it("stores the owner identity in 1Password and encrypts the sandbox identity", async () => {
     const repositoryRoot = await temporaryRepository();
     const answers = ["onepassword", "vercel"];
-    const inputs = ["Engineering", "OpenBot owner identity", "vercel-secret", "openbot-control", "openbot-agents"];
+    const inputs = ["Engineering", "OpenBot owner identity", "vercel-secret", "openbot-control", "openbot-agents", "ghcr.io/example/openbot-computer"];
     const prompts: InitializationPrompts = {
       select: vi.fn(async () => answers.shift()!),
       input: vi.fn(async () => inputs.shift() ?? ""),
@@ -97,10 +104,14 @@ describe("OpenBot initialization", () => {
     await initializeOpenBot({ repositoryRoot, prompts, runner });
 
     const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
-    expect(environment).toContain('OPENBOT_RUNTIME_PROVIDER="vercel"');
+    expect(environment).not.toContain("OPENBOT_RUNTIME_PROVIDER");
     expect(environment).toContain('OPENBOT_VERCEL_CONTROL_PROJECT="openbot-control"');
     expect(environment).toContain('OPENBOT_VERCEL_AGENT_PROJECT="openbot-agents"');
+    expect(environment).toContain('OPENBOT_COMPUTER_IMAGE_REPOSITORY="ghcr.io/example/openbot-computer"');
     expect(environment).not.toContain("vercel-secret");
+    const configuration = await readFile(join(repositoryRoot, "configuration/index.ts"), "utf8");
+    expect(configuration).toContain("providers: {");
+    expect(configuration).toContain("controlService: new VercelControlServiceProvider()");
     const sopsConfig = await readFile(join(repositoryRoot, "configuration/.sops.yaml"), "utf8");
     expect(sopsConfig.match(/- age1/g)).toHaveLength(2);
     const encrypted = await readFile(join(repositoryRoot, "configuration/secrets.enc.yaml"), "utf8");
@@ -121,7 +132,7 @@ describe("OpenBot initialization", () => {
 
   it("loads runtime values while keeping the sandbox identity sandbox-scoped", async () => {
     const repositoryRoot = await temporaryRepository();
-    await writeFixture(repositoryRoot, "configuration/.env", "OPENBOT_RUNTIME_PROVIDER=local\nOPENAI_MODEL=gpt-test\n");
+    await writeFixture(repositoryRoot, "configuration/.env", "OPENAI_MODEL=gpt-test\n");
     await writeFixture(repositoryRoot, "configuration/secrets.enc.yaml", "encrypted\n");
     const runner: InitializationCommandRunner = {
       run: vi.fn(async () => ({
@@ -136,7 +147,7 @@ describe("OpenBot initialization", () => {
 
     const loaded = await loadDeploymentConfiguration(repositoryRoot, { runner, environment: {} });
 
-    expect(loaded.environment).toMatchObject({ OPENBOT_RUNTIME_PROVIDER: "local", OPENAI_MODEL: "gpt-test", API_TOKEN: "private", VERCEL_TOKEN: "deploy-private" });
+    expect(loaded.environment).toMatchObject({ OPENAI_MODEL: "gpt-test", API_TOKEN: "private", VERCEL_TOKEN: "deploy-private" });
     expect(loaded.inputs.secrets).toEqual({ API_TOKEN: "private" });
     expect(loaded.inputs.deploymentSecrets).toEqual({ VERCEL_TOKEN: "deploy-private" });
     expect(loaded.inputs.sandboxSecrets).toEqual({ [SANDBOX_SOPS_AGE_KEY]: "AGE-SECRET-KEY-1TEST" });

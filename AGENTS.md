@@ -50,7 +50,6 @@ pnpm --filter @openbot/db test
 - `packages/runtime-provider-core`: shared build and phased deployment contracts and coordinator.
 - `packages/control-service-provider`, `packages/agent-service-provider`: independent local and Vercel service artifacts and deployment.
 - `packages/ui`: shared React UI and vendored Beautiful UI components.
-- `server.ts`: portable root Hono entrypoint for Vercel.
 - `scripts/`: non-interactive build helpers that do not belong to the operator CLI.
 - `docs/adrs`: concise records of durable architecture, code, and product design decisions.
 - `tilde.state.yaml`: portable Tilde ChatKit resources; never a secret store.
@@ -69,6 +68,9 @@ pnpm --filter @openbot/db test
 ### Providers
 
 - Define provider contracts in their domain `*-provider-core` package and implementations in the matching provider package. Do not expose internal provider interfaces over RPC by default.
+- Use the `implement-provider` skill whenever adding or editing a provider implementation.
+- Keep small implementations in `<provider>.ts`. When one owns multiple responsibilities or runtime files, use `<provider>/index.ts`, cohesive subfiles, and `assets/`.
+- Store static generated-file sources as real assets, not TypeScript strings. Provider build and deploy lifecycles must bundle or copy those assets into ignored artifacts.
 - Pass `ProviderCallContext` through calls so cancellation, deadlines, request IDs, and idempotency remain available.
 - Convert provider-specific failures to `ProviderError` at the adapter boundary.
 - Keep provider selection in composition code, not UI branches.
@@ -152,5 +154,6 @@ For browser-visible changes, verify the real route, console, network, and visibl
 - `add-db-changes`: Drizzle/libSQL schema and migrations.
 - `e2e-debug-and-qa`: running browser evidence.
 - `diagnose`: evidence-led debugging.
+- `implement-provider`: provider implementation structure, assets, lifecycles, and tests.
 - `vercel`, `tilde`, `turso-cloud`: platform-specific work.
 - `safe-refactor`, `surgical-patch`, `migration`, `lean-build`, `verify-and-stop`: scope-specific engineering workflows.

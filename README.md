@@ -40,7 +40,7 @@ The CLI checks and builds every selected provider that exposes `buildable`, then
 
 `--dry-run` performs native checks, writes local build artifacts, and calls the read-only `plan()` lifecycle. It does not link projects, publish Vercel deployments, or start services. Use `--skip-deploy` when only the artifacts are wanted and no deployment plan is needed.
 
-The production build stages the web app in `public/` for Vercel's static CDN and deploys the bare Hono server for `/healthz` and `/rpc`.
+The production build stages the web app in the control provider's `.vercel/output/static` artifact for Vercel's CDN and deploys its provider-owned Hono Function for `/healthz` and `/rpc`.
 
 ## Current application boundary
 

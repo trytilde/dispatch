@@ -1,9 +1,9 @@
 import { homedir } from "node:os";
-import { resolve } from "node:path";
 import type { Buildable, Deployable, DeploymentContext, DeploymentPlan, DeploymentResult, InitializableProvider, ProviderInitialization } from "@openbot/runtime-provider-core";
-import { buildLocalControlService, checkControlService } from "./artifact.js";
-import { processRunner, type CommandRunner } from "./command.js";
-import { installLocalService, waitForHealth } from "./local-service.js";
+import { checkControlService } from "../check.js";
+import { processRunner, type CommandRunner } from "../command.js";
+import { installLocalService, waitForHealth } from "../local-service.js";
+import { buildLocalControlService } from "./build.js";
 
 export interface LocalControlServiceProviderOptions { platform?: NodeJS.Platform; homeDirectory?: string; uid?: number; runner?: CommandRunner; request?: typeof fetch; command?: readonly string[] }
 

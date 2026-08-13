@@ -6,7 +6,7 @@
 - `apps/control-service` owns the owner-facing Hono and Connect service.
 - `apps/computer-service` is the only API running inside an OpenBot Computer.
 - Remove the legacy `box-host` package and `BoxService` protocol.
-- Generate Vercel-specific control adapters in `control-service-provider`, not the portable application.
+- Keep Vercel-specific control adapters in `control-service-provider`, not the portable application or repository root.
 
 ## Context
 
@@ -23,8 +23,8 @@ transport rather than its domain, and contained a Vercel-only fetch wrapper.
 
 Rename `apps/server` and `@openbot/server` to `apps/control-service` and
 `@openbot/control-service`. Keep its Hono app and local Node entrypoint portable.
-The Vercel control provider generates and bundles the Web fetch adapter as part
-of its prebuilt artifact lifecycle.
+The Vercel control provider owns the Web fetch adapter as a typed asset and
+bundles it as part of its prebuilt artifact lifecycle.
 
 Keep `apps/computer-service` and `computer-service-proto` as the single computer
 RPC boundary. Delete `apps/box-host`, `BoxService`, and `BoxHealth*` rather than
@@ -36,12 +36,12 @@ flowchart LR
   U["Web and desktop"] --> C["control-service"]
   C --> P["computer providers"]
   P --> S["computer-service"]
-  V["Vercel control provider"] -->|"generates adapter"| C
+  V["Vercel control provider"] -->|"bundles adapter asset"| C
 ```
 
 ## Consequences
 
 - Package names identify domain ownership instead of generic hosting roles.
 - There is one capability-protected computer API and one generated computer contract.
-- Control-service source contains no platform-specific Vercel entrypoint.
+- Control-service source and the repository root contain no platform-specific Vercel entrypoint.
 - Removing the private legacy RPC is intentionally breaking for untracked consumers.

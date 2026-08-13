@@ -3,7 +3,6 @@ node_modules/
 .turbo/
 .cache/
 dist/
-/public/
 coverage/
 playwright-report/
 test-results/

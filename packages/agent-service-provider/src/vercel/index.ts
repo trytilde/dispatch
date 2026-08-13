@@ -1,6 +1,9 @@
+import { copyFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import type { Buildable, Deployable, DeploymentContext, DeploymentPlan, DeploymentResult, InitializableProvider, ProviderInitialization } from "@openbot/runtime-provider-core";
 import { deploymentUrl, ensureVercelProject, processRunner, type CommandRunner } from "@openbot/control-service-provider";
-import { agentVercelArtifact, buildVercelAgentService, checkAgentService } from "./artifact.js";
+import { checkAgentService } from "../check.js";
+import { agentVercelArtifact, buildVercelAgentService, vercelProjectConfig } from "./build.js";
 
 export interface VercelAgentServiceProviderOptions { runner?: CommandRunner; request?: typeof fetch }
 
@@ -19,8 +22,9 @@ export class VercelAgentServiceProvider implements Buildable, Deployable, Initia
   async configure(context: DeploymentContext): Promise<DeploymentResult> { const project = requiredProject(context.environment); await ensureVercelProject(this.#runner, context, project); const origin = `https://${project}.vercel.app`; return { outputs: { "agent-service.origin": origin }, environmentVariables: { OPENBOT_AGENT_SERVICE_ORIGIN: origin } }; }
   async deploy(context: DeploymentContext): Promise<DeploymentResult> {
     const project = requiredProject(context.environment);
-    await installVariables(this.#runner, context, project);
     const root = context.inputs.require("agent-service.artifact");
+    await copyFile(vercelProjectConfig, resolve(root, "vercel.json"));
+    await installVariables(this.#runner, context, project);
     const args = ["exec", "vercel", "deploy", "--prebuilt", "--yes", "--json", "--cwd", root, "--project", project, ...scopeArgs(context.environment)];
     if (context.target === "production") args.push("--prod");
     const result = await this.#runner.run("pnpm", args, { cwd: context.repositoryRoot, environment: context.environment });

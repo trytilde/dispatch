@@ -1,16 +1,34 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deployProviders, DeploymentOutputs } from "@openbot/runtime-provider-core";
-import { LocalControlServiceProvider } from "./local.js";
-import { deploymentUrl, VercelControlServiceProvider } from "./vercel.js";
+import { LocalControlServiceProvider } from "./local/index.js";
+import { deploymentUrl, VercelControlServiceProvider } from "./vercel/index.js";
+import { buildVercelControlService } from "./vercel/build.js";
 import type { CommandRunner } from "./command.js";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
 
 describe("control service providers", () => {
+  it("bundles provider-owned Vercel assets into a prebuilt artifact", async () => {
+    const root = await temporaryRoot();
+    await mkdir(join(root, "apps/web/dist"), { recursive: true });
+    await mkdir(join(root, "apps/control-service/src"), { recursive: true });
+    await writeFile(join(root, "apps/web/dist/index.html"), "<!doctype html><title>OpenBot</title>");
+    await writeFile(join(root, "apps/control-service/src/app.ts"), "export default { fetch: () => Response.json({ service: 'openbot-control' }) };\n");
+    const run = vi.fn<CommandRunner["run"]>(async () => ({ stdout: "", stderr: "" }));
+    const result = await buildVercelControlService({
+      target: "production", repositoryRoot: root, environment: {}, inputs: new DeploymentOutputs(), report: () => undefined,
+    }, { run });
+    const artifact = result.outputs?.["control-service.artifact"];
+    expect(artifact).toBe(join(root, ".openbot-deploy/vercel/control"));
+    expect(JSON.parse(await readFile(join(artifact!, ".vercel/output/config.json"), "utf8"))).toMatchObject({ version: 3 });
+    expect(await readFile(join(artifact!, ".vercel/output/functions/control.func/index.mjs"), "utf8")).toContain("openbot-control");
+    expect(await readFile(join(artifact!, ".vercel/output/static/index.html"), "utf8")).toContain("OpenBot");
+  });
+
   it("installs a secret-free local systemd unit", async () => {
     const root = await temporaryRoot();
     const run = vi.fn<CommandRunner["run"]>(async () => ({ stdout: "", stderr: "" }));
@@ -28,14 +46,18 @@ describe("control service providers", () => {
   });
 
   it("deploys the prebuilt control artifact to its own Vercel project", async () => {
+    const root = await temporaryRoot();
+    const artifact = join(root, "control-artifact");
+    await mkdir(artifact);
     const run = vi.fn<CommandRunner["run"]>(async (_command, args) => args.includes("deploy") ? { stdout: "https://control-preview.vercel.app\n", stderr: "" } : { stdout: "", stderr: "" });
     const provider = new VercelControlServiceProvider({ runner: { run }, request: healthy() });
     await deployProviders([{ id: "control", role: "runtime", provider: { deployable: provider } }], {
-      target: "preview", dryRun: false, repositoryRoot: "/repo",
+      target: "preview", dryRun: false, repositoryRoot: root,
       environment: { OPENBOT_VERCEL_CONTROL_PROJECT: "openbot-control" },
-      initialInputs: { outputs: { "control-service.artifact": "/repo/control-artifact" } },
+      initialInputs: { outputs: { "control-service.artifact": artifact } },
     });
-    expect(run).toHaveBeenCalledWith("pnpm", expect.arrayContaining(["deploy", "--prebuilt", "--cwd", "/repo/control-artifact", "--project", "openbot-control"]), expect.anything());
+    expect(run).toHaveBeenCalledWith("pnpm", expect.arrayContaining(["deploy", "--prebuilt", "--cwd", artifact, "--project", "openbot-control"]), expect.anything());
+    expect(JSON.parse(await readFile(join(artifact, "vercel.json"), "utf8"))).toMatchObject({ framework: null });
   });
 
   it("creates a missing Vercel project before configuring it", async () => {

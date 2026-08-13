@@ -90,7 +90,7 @@ pnpm --filter @openbot/cli test
 - Keep `tilde.state.yaml` portable and variable-driven.
 - Do not guess Tilde identifiers or expose one-time API/webhook keys.
 - The agent loop uses Vercel AI SDK. Verify current SDK signatures before changing them.
-- Agent source lives at `configuration/agents/<id>/`. Follow ADR-0011 for its supported Eve-compatible subset, ChatKit entrypoint, instrumentation ordering, and one-time private workspace seeds.
+- Agent source lives at `configuration/agents/<id>/`. Follow ADR-0011 for its supported Eve-compatible subset, ChatKit entrypoint, instrumentation ordering, and one-time `/workspace/<id>` seeds on the shared computer.
 - Keep `sandbox/workspace/` as the sole Eve-compatibility naming exception. Use Computer in runtime APIs and require each agent's `tools/computer-*.ts` tools to call the typed computer-service API with that agent's fixed ID.
 
 ### Sandboxes

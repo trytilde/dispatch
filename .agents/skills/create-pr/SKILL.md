@@ -12,7 +12,7 @@ Use when the user asks to open, publish, prepare, or update a PR for the current
 1. Inspect branch, remotes, worktree, stashes, and existing PRs.
 2. Review the full diff against the actual default branch. Preserve unrelated user changes.
 3. Run `pre-commit-checks` and fix in-scope failures.
-4. Review protobuf, database, `tilde.state.yaml`, environment, deployment, public documentation, and Changesets impact.
+4. Review protobuf, `tilde.state.yaml`, environment, deployment, public documentation, and Changesets impact.
 5. Run the architecture and ADR gate. Resolve any user decision before publishing.
 6. Use a Conventional Commits title and intentional file selection.
 7. Commit, push, and open or update a draft PR only when requested.
@@ -44,7 +44,6 @@ pnpm build
 Add focused checks by surface:
 
 - protobuf: `pnpm contracts:generate`
-- database: `pnpm --filter @openbot/db test`
 - server/providers: corresponding package tests
 - browser flow: `pnpm test:e2e`
 - Electron packaging: `pnpm --filter @openbot/desktop package`
@@ -56,12 +55,11 @@ Record exact commands and failures. Do not claim checks that did not run.
 Review whether the diff changes:
 
 - protobuf compatibility or public HTTP routes
-- local SQLite/libSQL upgrade behavior
 - `tilde.state.yaml` resource identity or variables
-- Vercel rewrites, environment names, Turso provisioning, or deploy checkpoints
+- Vercel routing, environment names, or deploy checkpoints
 - provider contracts or one-time credential handling
 
-Classify each changed field as portable configuration, secret material, control state, or ephemeral runtime state. Secrets must never enter protobuf state, `tilde.state.yaml`, database rows, logs, or PR text. Ask the user only when a real product or migration choice remains unresolved.
+Classify each changed field as portable configuration, secret material, control state, or ephemeral runtime state. Secrets must never enter protobuf state, `tilde.state.yaml`, logs, or PR text. Ask the user only when a real product or migration choice remains unresolved.
 
 ## Architecture And ADR Gate
 
@@ -78,7 +76,7 @@ Review at least:
 
 If no major decision exists, record `ADR review: no new decision` in the PR body.
 
-If one exists, stop before commit, push, or PR mutation. Summarize the candidate decision, state whether an ADR is recommended, and prompt the user through it one question at a time using `grill-with-docs`. Do not infer approval. If accepted, create the next sequential `docs/adrs/NNNN-slug.md` using [ADR-FORMAT.md](../grill-with-docs/ADR-FORMAT.md); if declined, record the decision and the user's rationale in the PR body.
+If one exists, stop before commit, push, or PR mutation. Summarize the candidate decision, state whether an ADR is recommended, and prompt the user through it one question at a time using `grill-with-docs`. Do not infer approval. If accepted, create the next sequential `docs/adrs/NNNN-slug.md` using [ADR-FORMAT.md](../grill-with-docs/ADR-FORMAT.md), or amend the governing ADR and append its required timestamped `Updates` bullet. If declined, record the decision and the user's rationale in the PR body.
 
 ## PR Title
 

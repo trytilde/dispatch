@@ -47,7 +47,9 @@ flowchart TD
 
 ### Ship one fork-update record with every PR
 
-Every upstream PR that changes repository contents must add `docs/updates/<implementation-commit>.md`. The identifier is the PR head commit immediately before the update-note commit. The update-note-only commit is exempt from recursively requiring another note. Rebasing or amending the implementation invalidates the filename and requires regenerating the note.
+Every upstream PR that changes repository contents must add `docs/updates/<pr-number>.md`. PR preparation must first push the initial implementation and open a draft PR, then use the stable GitHub PR number for the record. The same file is refreshed after every later implementation, documentation, rebase, conflict-resolution, or accepted-review change until it describes the complete current PR.
+
+Generating or refreshing the record must analyze the full PR diff, commit history, review discussion, and every thread in the coding agent's database on the current machine rather than relying on the current chat alone. This inspection is read-only. Only PR-relevant conclusions enter the record; unrelated private conversation, credentials, secrets, personal data, and raw transcripts never do. If the local thread set cannot be inspected completely, PR preparation reports the limitation and cannot claim the record is complete.
 
 Each record is detailed but written in caveman style and contains these exact sections:
 
@@ -56,7 +58,7 @@ Each record is detailed but written in caveman style and contains these exact se
 3. `Summarized package changes`
 4. `Critical to apply to forks`, with exactly `yes` or `no` followed by the reason and required fork action
 
-PR preparation and CI treat a missing, stale-hash, or malformed update record as a blocking defect. These records describe the complete PR rather than individual minor commits. They must contain no secrets, generated deployment state, or fork-specific configuration.
+PR preparation and CI treat a missing, stale, wrongly numbered, or malformed update record as a blocking defect. These records describe the complete PR rather than individual minor commits. They must contain no secrets, generated deployment state, fork-specific configuration, or unrelated thread material.
 
 ### Update a customized fork and require semantic review
 
@@ -74,7 +76,7 @@ A follow-up will automatically launch the user's configured default coding agent
 
 ```mermaid
 flowchart LR
-  P["Upstream PR"] --> D["docs/updates/implementation-hash.md"]
+  P["Draft upstream PR"] --> D["docs/updates/PR-number.md"]
   D --> F["Fork openbot update"]
   F --> N["configuration/docs/update-notes/upstream-hash.md"]
   F --> M{"Merge result"}
@@ -88,10 +90,11 @@ flowchart LR
 - Fresh users receive a repository they own before any credentials or fork configuration exist.
 - Public repositories preserve GitHub fork relationships; private repositories sacrifice fork-network metadata for actual privacy.
 - The CLI needs an independently installable bootstrap distribution before this init flow can replace repository-local initialization.
-- Update notes add one mechanical PR commit and must be regenerated after history rewriting.
+- Update notes require the draft PR to exist first and must be refreshed as its implementation or review outcome changes.
 - Merge automation handles Git history only. Coding-agent review owns semantic preservation of arbitrary fork customizations.
 - Direct GitHub CLI orchestration is accepted temporary coupling until the code-forge provider exists.
 
 ## Updates
 
 - 2026-08-13T16:59:19+02:00: Added follow-up boundaries for a forge-specific repository provider and automatic default coding-agent launch after every update result, with safe manual fallback and no implied review completion.
+- 2026-08-13T17:08:19+02:00: Replaced commit-hash update records with stable PR-number records, required draft-PR creation before generation, required continuous refresh, and expanded evidence gathering to every local coding-agent thread with strict privacy filtering.

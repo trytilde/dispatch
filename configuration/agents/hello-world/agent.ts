@@ -2,12 +2,12 @@ import { OpenAIApiKeyInferenceModelProvider } from "@openbot/inference-model-pro
 import { chatKitEndpoint, convertToAiSdkMessages, createClient, createMCPClient } from "@trytilde/harness-sdk-vercel-ai-node";
 import { consumeStream, convertToModelMessages, stepCountIs, streamText } from "ai";
 import instructions from "./instructions.js";
-import computerExec from "./tools/computer-exec.js";
-import computerInput from "./tools/computer-input.js";
-import computerReadFile from "./tools/computer-read-file.js";
-import computerScreenshot from "./tools/computer-screenshot.js";
-import computerWriteFile from "./tools/computer-write-file.js";
+import bash from "./tools/bash.js";
+import glob from "./tools/glob.js";
+import grep from "./tools/grep.js";
 import helloWorld from "./tools/hello-world.js";
+import readFile from "./tools/read_file.js";
+import writeFile from "./tools/write_file.js";
 
 function requiredEnv(...names: string[]): string {
   for (const name of names) {
@@ -46,12 +46,12 @@ export default chatKitEndpoint({
         system: instructions,
         tools: {
           ...runtimeTools,
-          computer_exec: computerExec,
-          computer_input: computerInput,
-          computer_read_file: computerReadFile,
-          computer_screenshot: computerScreenshot,
-          computer_write_file: computerWriteFile,
+          bash,
+          glob,
+          grep,
           hello_world: helloWorld,
+          read_file: readFile,
+          write_file: writeFile,
         },
         onAbort: close,
         onError: close,

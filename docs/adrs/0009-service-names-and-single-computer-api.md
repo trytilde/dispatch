@@ -45,7 +45,7 @@ flowchart LR
 ## Consequences
 
 - Package names identify domain ownership instead of generic hosting roles.
-- There is one capability-protected computer API and one generated computer contract.
+- There is one API-key-protected computer API and one generated computer contract.
 - Control-service source and the repository root contain no platform-specific Vercel entrypoint.
 - Removing the private legacy RPC is intentionally breaking for untracked consumers.
 

@@ -19,7 +19,7 @@ export function computerService() {
 
 export function computerCallOptions(signal?: AbortSignal) {
   return {
-    headers: { authorization: `Bearer ${requiredEnvironment("OPENBOT_COMPUTER_SERVICE_CAPABILITY")}` },
+    headers: { authorization: `Bearer ${requiredEnvironment("OPENBOT_COMPUTER_SERVICE_API_KEY")}` },
     ...(signal ? { signal } : {}),
   };
 }

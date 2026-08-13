@@ -18,8 +18,14 @@ exec unshare --mount --propagation private --fork -- bash -c '
   mount --bind "$agent_root" /workspace
   mount --make-private /workspace
   cd "$logical_cwd"
-  exec runuser --user "$agent_user" -- env \
+  # Start from an empty environment so the service API key and other runtime
+  # secrets cannot cross into model-controlled agent processes.
+  exec runuser --user "$agent_user" -- env -i \
     HOME=/workspace \
+    USER="$agent_user" \
+    LOGNAME="$agent_user" \
+    LANG=C.UTF-8 \
+    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     OPENBOT_COMPUTER_WORKSPACE=/workspace \
     "$@"
 ' openbot-agent-exec "$agent_root" "$agent_user" "$logical_cwd" "$@"

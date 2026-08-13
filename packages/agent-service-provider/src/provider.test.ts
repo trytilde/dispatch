@@ -26,7 +26,7 @@ describe("agent service artifacts", () => {
     await writeFile(join(root, "configuration/instrumentation.ts"), "export default { setup() {} }\n");
     for (const slug of ["alpha", "beta"]) {
       await mkdir(join(root, `configuration/agents/${slug}/tools`));
-      for (const name of ["computer-exec.ts", "computer-input.ts", "computer-read-file.ts", "computer-screenshot.ts", "computer-write-file.ts"]) {
+      for (const name of ["bash.ts", "glob.ts", "grep.ts", "read_file.ts", "write_file.ts"]) {
         await writeFile(join(root, `configuration/agents/${slug}/tools/${name}`), "export default {}\n");
       }
     }

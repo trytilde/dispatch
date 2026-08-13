@@ -23,7 +23,7 @@ Provider setup also needs interactive input, but provider packages must not depe
 
 Both recipients occupy the same SOPS key group, so either can decrypt. Threshold key groups are not used. The sandbox private identity is stored only inside `configuration/secrets.enc.yaml` at `openbot.sandbox.sops_age_key`. On the first deployment, the owner recipient decrypts that file. The sandbox deployment participant consumes the value through the sandbox-only deployment secret channel and installs it as `SOPS_AGE_KEY`. Later deployments running inside that trusted sandbox can decrypt the same file directly.
 
-The trusted development sandbox is a deployment controller and secret-bearing boundary. Ordinary OpenBot Computers created for agents never receive the SOPS identity. Deployment credentials such as `VERCEL_TOKEN` are a separate secret class: deployment participants and the trusted sandbox can use them, but the final runtime does not install them. Runtime application secrets remain separate, and runtime providers receive them without receiving sandbox-only secrets.
+The trusted development sandbox is a deployment controller and secret-bearing boundary. Ordinary OpenBot Computers created for agents never receive the SOPS identity. Deployment credentials such as `VERCEL_TOKEN` are a separate secret class: deployment participants and the trusted sandbox can use them, but the final runtime does not install them. Runtime application secrets remain separate, and runtime providers receive them without receiving sandbox-only secrets. Init generates `OPENBOT_COMPUTER_SERVICE_API_KEY` as one static runtime secret. Control, agent, and computer services receive the same key through secret installation; provider deployment outputs never contain it.
 
 Providers may expose serializable initialization metadata: label, description, questions, validation, choices, and a destination mapping to either `.env` or encrypted secrets. Providers do not expose terminal components or browser components. The CLI renders that schema with Ink; a later browser flow can render the same schema.
 
@@ -53,3 +53,4 @@ flowchart LR
 ## Updates
 
 - 2026-08-13T12:53:05+02:00: Implemented the trusted development sandbox as a sandbox-role deployment participant that seeds repository source once, installs the aggregate deployment environment with mode `0600`, verifies SOPS decryption, and remains separate from ordinary agent workspaces.
+- 2026-08-13T14:49:44+02:00: Added a SOPS-generated static computer-service API key shared only with control, agent, and computer runtimes; computer RPC authorization validates that exact bearer key, and model-controlled Linux processes start with a clean allowlisted environment that excludes it.

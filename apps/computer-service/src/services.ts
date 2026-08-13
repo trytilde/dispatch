@@ -5,15 +5,15 @@ import { promisify } from "node:util";
 import { Code, ConnectError, type ConnectRouter, type HandlerContext } from "@connectrpc/connect";
 import { ComputerService } from "@openbot/computer-service-proto";
 import { agentCommand, logicalWorkspacePath } from "./agent.js";
-import { validComputerCapability } from "./capability.js";
+import { validComputerServiceApiKey } from "./capability.js";
 import { applyLifecycleBundle, lifecycleDigest, runLifecycle } from "./lifecycle.js";
 
 const execute = promisify(execFile);
 
 function authorized(context: HandlerContext): void {
-  const token = process.env.OPENBOT_COMPUTER_CAPABILITY;
-  if (!token || token.length < 32) throw new ConnectError("Computer capability is not configured", Code.Unavailable);
-  if (!validComputerCapability(context.requestHeader.get("authorization"), token)) throw new ConnectError("Computer capability required", Code.PermissionDenied);
+  const token = process.env.OPENBOT_COMPUTER_SERVICE_API_KEY;
+  if (!token || token.length < 32) throw new ConnectError("Computer service API key is not configured", Code.Unavailable);
+  if (!validComputerServiceApiKey(context.requestHeader.get("authorization"), token)) throw new ConnectError("Computer service API key required", Code.PermissionDenied);
 }
 
 async function vncReady(): Promise<boolean> {

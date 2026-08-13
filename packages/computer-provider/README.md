@@ -6,7 +6,7 @@ The internal computer boundary, shared image/build behavior, and Microsandbox an
 
 ### Provider classes
 
-- `BaseComputerProvider` supplies AI SDK tool registration, prompt injection, OCI image build/deploy lifecycles, per-agent workspace registration, and trusted development-sandbox setup.
+- `BaseComputerProvider` supplies AI SDK registration for `bash`, `read_file`, `write_file`, `glob`, and `grep`, prompt injection, OCI image build/deploy lifecycles, per-agent workspace registration, and trusted development-sandbox setup.
 - `MicrosandboxComputerProvider` implements `ComputerProvider` with Microsandbox.
 - `VercelSandboxComputerProvider` implements `ComputerProvider` with Vercel Sandbox.
 - `ComputerProviderError` normalizes provider failures and retryability.
@@ -15,7 +15,8 @@ The internal computer boundary, shared image/build behavior, and Microsandbox an
 
 - `asRegisteredComputerTool(typeId, manifest, aiTool)` combines a Vercel AI SDK tool with its Tilde custom-tool manifest.
 - `ensurePublishedComputerImage(provider, spec, previous, context)` reuses a matching content digest or builds and publishes a new image.
-- `scopedCapability(scope, computerId, secret?)` derives a computer- or VNC-scoped capability from the installation secret.
+- `computerServiceApiKey(value?)` validates and returns the SOPS-backed static computer-service key.
+- `scopedCapability("vnc", computerId, secret?)` derives a per-computer VNC capability without exposing that key.
 - `randomCapability()` creates a random capability value.
 - `deterministicComputerId(prefix, requested?)` validates a requested computer ID or generates one.
 - `imageSourceDigest(parts)` calculates a stable SHA-256 source digest.
@@ -42,4 +43,4 @@ An agent sees its own directory mounted at `/workspace` and runs as its own Linu
 
 Files under `configuration/agents/<id>/sandbox/workspace/` seed only a newly registered workspace. Later edits do not affect an existing deployed computer.
 
-`deployAgentWorkspaces()` also returns the typed computer-service URL and capability for the later agent-service deployment. Agent-authored computer tools send their fixed agent ID through that service; computer-service, rather than the tool or provider SDK, maps it to the registered Linux user and private workspace.
+`deployAgentWorkspaces()` returns the typed computer-service URL for later service deployment. The static `OPENBOT_COMPUTER_SERVICE_API_KEY` originates in SOPS and is installed independently into control, agent, and computer runtimes rather than being emitted as a provider output. Agent-authored computer tools send their fixed agent ID through that service; computer-service, rather than the tool or provider SDK, maps it to the registered Linux user and private workspace.

@@ -1,20 +1,14 @@
 import { jsonSchema, tool } from "ai";
 import { agentId, computerCallOptions, computerService } from "../lib/computer-service.js";
 
-interface ComputerExecInput {
-  command: string;
-  arguments?: string[];
-  cwd?: string;
-  timeout_ms?: number;
-}
+interface BashInput { command: string; cwd?: string; timeout_ms?: number }
 
 export default tool({
-  description: "Run a command as this agent inside its private computer workspace.",
-  inputSchema: jsonSchema<ComputerExecInput>({
+  description: "Run a Bash command as this agent inside its private /workspace.",
+  inputSchema: jsonSchema<BashInput>({
     type: "object",
     properties: {
       command: { type: "string" },
-      arguments: { type: "array", items: { type: "string" } },
       cwd: { type: "string" },
       timeout_ms: { type: "integer", minimum: 1, maximum: 1_200_000 },
     },
@@ -23,9 +17,9 @@ export default tool({
   }),
   execute: async (input, options) => computerService().exec({
     agentId,
-    command: input.command,
-    arguments: input.arguments ?? [],
-    cwd: input.cwd ?? "",
+    command: "bash",
+    arguments: ["-lc", input.command],
+    cwd: input.cwd ?? "/workspace",
     timeoutMilliseconds: input.timeout_ms ?? 0,
   }, computerCallOptions(options.abortSignal)),
 });

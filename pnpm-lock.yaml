@@ -29,6 +29,12 @@ importers:
       '@changesets/cli':
         specifier: 2.29.7
         version: 2.29.7(@types/node@24.3.0)
+      '@connectrpc/connect':
+        specifier: 2.1.2
+        version: 2.1.2(@bufbuild/protobuf@2.7.0)
+      '@connectrpc/connect-node':
+        specifier: 2.1.2
+        version: 2.1.2(@bufbuild/protobuf@2.7.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.7.0))
       '@openbot/agent-provider':
         specifier: workspace:*
         version: link:packages/agent-provider
@@ -38,6 +44,9 @@ importers:
       '@openbot/computer-provider':
         specifier: workspace:*
         version: link:packages/computer-provider
+      '@openbot/computer-service-proto':
+        specifier: workspace:*
+        version: link:packages/computer-service-proto
       '@openbot/configuration':
         specifier: workspace:*
         version: link:packages/configuration
@@ -362,6 +371,15 @@ importers:
 
   packages/computer-provider:
     dependencies:
+      '@connectrpc/connect':
+        specifier: 2.1.2
+        version: 2.1.2(@bufbuild/protobuf@2.7.0)
+      '@connectrpc/connect-node':
+        specifier: 2.1.2
+        version: 2.1.2(@bufbuild/protobuf@2.7.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.7.0))
+      '@openbot/computer-service-proto':
+        specifier: workspace:*
+        version: link:../computer-service-proto
       '@openbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider

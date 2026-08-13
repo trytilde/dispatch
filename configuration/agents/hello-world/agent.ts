@@ -2,6 +2,12 @@ import { OpenAIApiKeyInferenceModelProvider } from "@openbot/inference-model-pro
 import { chatKitEndpoint, convertToAiSdkMessages, createClient, createMCPClient } from "@trytilde/harness-sdk-vercel-ai-node";
 import { consumeStream, convertToModelMessages, stepCountIs, streamText } from "ai";
 import instructions from "./instructions.js";
+import computerExec from "./tools/computer-exec.js";
+import computerInput from "./tools/computer-input.js";
+import computerReadFile from "./tools/computer-read-file.js";
+import computerScreenshot from "./tools/computer-screenshot.js";
+import computerWriteFile from "./tools/computer-write-file.js";
+import helloWorld from "./tools/hello-world.js";
 
 function requiredEnv(...names: string[]): string {
   for (const name of names) {
@@ -29,6 +35,7 @@ export default chatKitEndpoint({
     const runtime = serverId ? await createMCPClient({ client, serverId }) : undefined;
     const close = async () => runtime?.closeMcp();
     try {
+      const runtimeTools = runtime ? await runtime.mcp.tools() : {};
       const history = await context.session.history();
       const messages = await convertToAiSdkMessages({ messages: [...history.items, ...context.messages], chatkit: context.chatkit });
       const result = streamText({
@@ -37,7 +44,15 @@ export default chatKitEndpoint({
         model: inferenceModelProvider.model(process.env.OPENBOT_OPENAI_MODEL ?? "gpt-5.4"),
         stopWhen: stepCountIs(12),
         system: instructions,
-        tools: await runtime?.mcp.tools(),
+        tools: {
+          ...runtimeTools,
+          computer_exec: computerExec,
+          computer_input: computerInput,
+          computer_read_file: computerReadFile,
+          computer_screenshot: computerScreenshot,
+          computer_write_file: computerWriteFile,
+          hello_world: helloWorld,
+        },
         onAbort: close,
         onError: close,
         onFinish: close,

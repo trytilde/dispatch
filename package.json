@@ -34,6 +34,8 @@
     "typecheck": "pnpm contracts:generate && XDG_CACHE_HOME=.cache turbo run typecheck"
   },
   "devDependencies": {
+    "@connectrpc/connect": "2.1.2",
+    "@connectrpc/connect-node": "2.1.2",
     "@changesets/changelog-github": "0.5.2",
     "@changesets/cli": "2.29.7",
     "@ai-sdk/openai": "3.0.94",
@@ -41,6 +43,7 @@
     "@openbot/agent-service-provider": "workspace:*",
     "@openbot/configuration": "workspace:*",
     "@openbot/computer-provider": "workspace:*",
+    "@openbot/computer-service-proto": "workspace:*",
     "@openbot/control-service-provider": "workspace:*",
     "@openbot/control-service-proto": "workspace:*",
     "@openbot/inference-model-provider": "workspace:*",

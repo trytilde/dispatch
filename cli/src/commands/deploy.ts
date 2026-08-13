@@ -64,19 +64,16 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
   const developmentSandboxId = deploymentConfiguration.environment.OPENBOT_DEVELOPMENT_SANDBOX_ID?.trim() || "openbot-development";
   const participants: DeploymentParticipant[] = [
     ...(options.service === "all" && computer ? [{ id: "computer", provider: computer }] : []),
-    ...(deployAgents ? [{ id: "agent-service", provider: { buildable: agentService, deployable: agentService } }] : []),
     ...(deployAgents && computer ? [{
       id: "agent-workspaces",
       provider: {
         deployable: {
           plan: async () => ({ summary: "Register agent Linux users and seed new private workspaces", steps: ["Keep one shared computer", "Skip workspaces already registered"] }),
-          deploy: async (context: DeploymentContext) => {
-            await computer.deployAgentWorkspaces({ computerId, workspaces: await discoverAgentWorkspaces(context.repositoryRoot) }, context);
-            return { outputs: { "computer.id": computerId }, environmentVariables: { OPENBOT_COMPUTER_ID: computerId } };
-          },
+          deploy: async (context: DeploymentContext) => computer.deployAgentWorkspaces({ computerId, workspaces: await discoverAgentWorkspaces(context.repositoryRoot) }, context),
         },
       },
     }] : []),
+    ...(deployAgents ? [{ id: "agent-service", provider: { buildable: agentService, deployable: agentService } }] : []),
     ...(options.service === "all" && computer ? [{
       id: "development-sandbox",
       role: "sandbox" as const,

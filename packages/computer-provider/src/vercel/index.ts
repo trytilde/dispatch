@@ -146,6 +146,11 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
     return { url, expiresAt: sandbox.expiresAt ?? new Date(Date.now() + 45 * 60 * 1000) };
   }
 
+  protected async computerServiceUrl(id: string): Promise<string> {
+    const sandbox = await this.#attach(id);
+    return new URL("/rpc", sandbox.domain(4101)).toString().replace(/\/$/, "");
+  }
+
   async #attach(id: string): Promise<VercelSandbox> {
     const current = this.#instances.get(id);
     if (current) return current;

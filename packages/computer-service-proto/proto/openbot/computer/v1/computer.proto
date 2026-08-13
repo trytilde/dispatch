@@ -78,6 +78,7 @@ message ExecRequest {
   string cwd = 3;
   uint32 timeout_milliseconds = 4;
   map<string, string> environment = 5;
+  string agent_id = 6;
 }
 
 message ExecResponse {
@@ -86,22 +87,27 @@ message ExecResponse {
   string stderr = 3;
 }
 
-message ReadFileRequest { string path = 1; }
+message ReadFileRequest {
+  string path = 1;
+  string agent_id = 2;
+}
 message ReadFileResponse { bytes content = 1; }
 
 message WriteFileRequest {
   string path = 1;
   bytes content = 2;
   uint32 mode = 3;
+  string agent_id = 4;
 }
 
 message WriteFileResponse { uint64 bytes_written = 1; }
-message ScreenshotRequest {}
+message ScreenshotRequest { string agent_id = 1; }
 message ScreenshotResponse { bytes png = 1; }
 
 message InputRequest {
   string action = 1;
   string payload_json = 2;
+  string agent_id = 3;
 }
 
 message InputResponse { bool accepted = 1; }

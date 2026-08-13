@@ -91,12 +91,14 @@ pnpm --filter @openbot/cli test
 - Do not guess Tilde identifiers or expose one-time API/webhook keys.
 - The agent loop uses Vercel AI SDK. Verify current SDK signatures before changing them.
 - Agent source lives at `configuration/agents/<id>/`. Follow ADR-0011 for its supported Eve-compatible subset, ChatKit entrypoint, instrumentation ordering, and one-time private workspace seeds.
+- Keep `sandbox/workspace/` as the sole Eve-compatibility naming exception. Use Computer in runtime APIs and require each agent's `tools/computer-*.ts` tools to call the typed computer-service API with that agent's fixed ID.
 
 ### Sandboxes
 
 - Linux with KVM and Apple Silicon use Microsandbox by default; Intel macOS or explicit remote mode uses Vercel Sandbox.
 - Never copy control-plane credentials into a sandbox.
 - Preserve capability checks in `apps/computer-service` and provider implementations.
+- Execute agent computer-tool requests through `apps/computer-service`; validate `agent_id` there and map it to the registered Linux user and private `/workspace` mount.
 - Treat browser profiles, screenshots, and sandbox files as sensitive user data.
 
 ### Fork files

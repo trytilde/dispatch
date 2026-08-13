@@ -21,9 +21,10 @@ TypeScript interfaces. Only control and computer services need protobuf APIs.
 
 ## Decision
 
-Provider contracts and implementations use the same domain package. Contracts
-live in `src/core.ts` or `src/core/` when supporting files are useful; concrete
-adapters live beside them. The intended package shape is:
+Provider contracts and implementations use the same domain package. Provider
+contract interfaces live in `src/core.ts`, or `src/core/index.ts` when the core
+needs supporting files; concrete adapters live beside them. The package root
+re-exports the core contract but does not define it. The intended package shape is:
 
 - `control-service-proto`
 - `computer-service-proto`
@@ -99,5 +100,6 @@ surfaces live only in `control-service-proto` and `computer-service-proto`.
 
 - 2026-08-13T11:12:53+02:00: Removed universal provider packages plus default descriptor, health, verification, and selector-factory requirements in favor of explicit domain interfaces and composition.
 - 2026-08-13T12:09:51+02:00: Removed the unused legacy `contracts` package after control and computer callers moved to their domain service protos.
-- 2026-08-13T12:53:05+02:00: Folded every `*-provider-core` package into its owning provider package so each domain has one import surface while preserving a visible `core.ts` or `core/` contract boundary.
+- 2026-08-13T12:53:05+02:00: Folded every `*-provider-core` package into its owning provider package so each domain has one import surface while preserving a visible `src/core.ts` or `src/core/index.ts` contract boundary.
 - 2026-08-13T13:17:11+02:00: Renamed `computer-providers` to singular `computer-provider` so every domain provider package follows the same naming convention.
+- 2026-08-13T13:21:25+02:00: Clarified that provider contract interfaces are defined only in `src/core.ts` or `src/core/index.ts`, with the package root limited to re-exporting them.

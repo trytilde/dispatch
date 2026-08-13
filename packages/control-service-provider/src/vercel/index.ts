@@ -1,4 +1,4 @@
-import type { Buildable, Deployable, DeploymentContext, DeploymentPlan, DeploymentResult, InitializableProvider, ProviderInitialization } from "@openbot/runtime-provider-core";
+import type { Buildable, Deployable, DeploymentContext, DeploymentPlan, DeploymentResult, InitializableProvider, ProviderInitialization } from "@openbot/runtime-provider";
 import { resolve } from "node:path";
 import { materializeFileTemplate } from "@openbot/utilities";
 import { checkControlService } from "../check.js";

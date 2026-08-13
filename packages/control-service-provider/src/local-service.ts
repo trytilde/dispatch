@@ -2,7 +2,7 @@ import { chmod, mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderFileTemplatePath } from "@openbot/utilities";
-import type { DeploymentContext } from "@openbot/runtime-provider-core";
+import type { DeploymentContext } from "@openbot/runtime-provider";
 import type { CommandRunner } from "./command.js";
 
 export interface LocalServiceOptions {
@@ -26,9 +26,9 @@ export async function installLocalService(context: DeploymentContext, runner: Co
     const unitPath = resolve(options.homeDirectory, `.config/systemd/user/${options.id}.service`);
     const unit = await renderFileTemplatePath(systemdTemplate, {
       DESCRIPTION: options.description,
-      WORKING_DIRECTORY: quote(context.repositoryRoot),
+      WORKING_DIRECTORY: systemdPath(context.repositoryRoot),
       DEPLOYMENT_ENVIRONMENT: quote(`OPENBOT_DEPLOYMENT_ENV_FILE=${environmentFile}`),
-      ENVIRONMENT_FILE: quote(environmentFile),
+      ENVIRONMENT_FILE: systemdPath(environmentFile),
       COMMAND: options.command.map(quote).join(" "),
     });
     await atomicWrite(unitPath, unit, 0o644);
@@ -79,4 +79,8 @@ async function renderEnvironment(context: DeploymentContext): Promise<string> {
 }
 async function atomicWrite(path: string, contents: string, mode: number): Promise<void> { await mkdir(dirname(path), { recursive: true, mode: 0o700 }); const temporary = `${path}.${process.pid}.tmp`; await writeFile(temporary, contents, { mode }); await chmod(temporary, mode); await rename(temporary, path); }
 function quote(value: string): string { if (/[\n\r\0]/.test(value)) throw new Error("Service values must not contain control characters"); return `"${value.replace(/%/g, "%%").replace(/([\\"])/g, "\\$1")}"`; }
+function systemdPath(value: string): string {
+  if (!value.startsWith("/") || /[\n\r\0]/.test(value)) throw new Error("Systemd service paths must be absolute and contain no control characters");
+  return value.replace(/%/g, "%%").replace(/\\/g, "\\x5c").replace(/ /g, "\\x20").replace(/\t/g, "\\x09");
+}
 function xml(value: string): string { return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;"); }

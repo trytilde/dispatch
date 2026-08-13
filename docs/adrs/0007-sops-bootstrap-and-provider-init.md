@@ -48,4 +48,8 @@ flowchart LR
 - Compromise of the trusted sandbox exposes this installation's secrets and deployment authority; use a unique age identity per installation.
 - Changing recipients remains an owner maintenance operation using `sops updatekeys` and, after compromise, `sops rotate`.
 - 1Password secret references and native-keychain metadata are non-secret and may be committed; private identities are not.
-- A concrete development-sandbox provider still owns VM creation, source placement, and secure environment installation.
+- The computer provider owns trusted sandbox creation, source placement, and root-only environment installation.
+
+## Updates
+
+- 2026-08-13T12:53:05+02:00: Implemented the trusted development sandbox as a sandbox-role deployment participant that seeds repository source once, installs the aggregate deployment environment with mode `0600`, verifies SOPS decryption, and remains separate from ordinary agent workspaces.

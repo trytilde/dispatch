@@ -11,8 +11,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openbot/agent-provider-core": "workspace:*",
-    "@trytilde/harness-sdk": "0.1.2"
+    "@openbot/runtime-provider": "workspace:*",
+    "@trytilde/harness-sdk": "0.1.2",
+    "ai": "6.0.250"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

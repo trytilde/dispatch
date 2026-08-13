@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { build } from "tsdown";
 import { materializeFileTemplate } from "@openbot/utilities";
-import type { DeploymentContext, DeploymentResult } from "@openbot/runtime-provider-core";
+import type { DeploymentContext, DeploymentResult } from "@openbot/runtime-provider";
 import type { CommandRunner } from "../command.js";
 
 export const controlVercelArtifact = ".openbot-deploy/vercel/control";

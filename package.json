@@ -7,6 +7,18 @@
   "engines": {
     "node": "24.x"
   },
+  "pnpm": {
+    "packageExtensions": {
+      "@trytilde/api-client@*": {
+        "dependencies": {
+          "@types/node": "24.3.0",
+          "typescript": "5.9.3",
+          "vite": "8.0.16",
+          "vite-plugin-dts": "4.5.4"
+        }
+      }
+    }
+  },
   "scripts": {
     "build": "pnpm contracts:generate && XDG_CACHE_HOME=.cache turbo run build",
     "changeset": "changeset",
@@ -26,7 +38,6 @@
     "@changesets/cli": "2.29.7",
     "@ai-sdk/openai": "3.0.94",
     "@openbot/agent-provider": "workspace:*",
-    "@openbot/agent-provider-core": "workspace:*",
     "@openbot/agent-service-provider": "workspace:*",
     "@openbot/configuration": "workspace:*",
     "@openbot/computer-providers": "workspace:*",
@@ -34,9 +45,8 @@
     "@openbot/control-service-proto": "workspace:*",
     "@openbot/inference-model-provider": "workspace:*",
     "@openbot/skills-provider": "workspace:*",
-    "@openbot/skills-provider-core": "workspace:*",
     "@openbot/tools-provider": "workspace:*",
-    "@openbot/tools-provider-core": "workspace:*",
+    "@openbot/runtime-provider": "workspace:*",
     "@playwright/test": "1.55.0",
     "@trytilde/cli": "0.1.0",
     "@trytilde/harness-sdk-vercel-ai-node": "0.2.0",

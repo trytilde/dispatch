@@ -1,4 +1,4 @@
-import type { Buildable, Deployable, InitializableProvider } from "@openbot/runtime-provider-core";
+import type { Buildable, Deployable, InitializableProvider } from "@openbot/runtime-provider";
 
 export type ControlServiceProvider = Buildable & Deployable & InitializableProvider;
 export { LocalControlServiceProvider } from "./local/index.js";

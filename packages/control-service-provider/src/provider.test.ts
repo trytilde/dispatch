@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deployProviders, DeploymentOutputs } from "@openbot/runtime-provider-core";
+import { deployProviders, DeploymentOutputs } from "@openbot/runtime-provider";
 import { LocalControlServiceProvider } from "./local/index.js";
 import { deploymentUrl, VercelControlServiceProvider } from "./vercel/index.js";
 import { buildVercelControlService } from "./vercel/build.js";
@@ -31,15 +31,21 @@ describe("control service providers", () => {
 
   it("installs a secret-free local systemd unit", async () => {
     const root = await temporaryRoot();
+    const repository = join(root, "repository with spaces");
+    await mkdir(repository);
     const run = vi.fn<CommandRunner["run"]>(async () => ({ stdout: "", stderr: "" }));
     const provider = new LocalControlServiceProvider({ platform: "linux", homeDirectory: join(root, "home"), runner: { run }, request: healthy(), command: ["/usr/bin/node", "/tmp/control.mjs"] });
     await deployProviders([{ id: "control", role: "runtime", provider: { deployable: provider } }], {
-      target: "production", dryRun: false, repositoryRoot: root,
+      target: "production", dryRun: false, repositoryRoot: repository,
       environment: { OPENBOT_PORT: "4100" },
       initialInputs: { outputs: { "control-service.artifact": "/tmp/control.mjs" }, secrets: { API_KEY: "private-value" } },
     });
     const unit = await readFile(join(root, "home/.config/systemd/user/openbot-control.service"), "utf8");
-    const environment = await readFile(join(root, ".openbot-deploy/control-service.env"), "utf8");
+    const environment = await readFile(join(repository, ".openbot-deploy/control-service.env"), "utf8");
+    expect(unit).toContain(`WorkingDirectory=${root}/repository\\x20with\\x20spaces`);
+    expect(unit).not.toContain("WorkingDirectory=\"");
+    expect(unit).toContain(`EnvironmentFile=${root}/repository\\x20with\\x20spaces/.openbot-deploy/control-service.env`);
+    expect(unit).not.toContain("EnvironmentFile=\"");
     expect(unit).not.toContain("private-value");
     expect(environment).toContain('API_KEY="private-value"');
     expect(run).toHaveBeenCalledWith("systemctl", ["--user", "restart", "openbot-control.service"], expect.anything());

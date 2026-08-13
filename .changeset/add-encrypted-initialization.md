@@ -1,8 +1,6 @@
 ---
 "@openbot/agent-provider": minor
-"@openbot/agent-provider-core": minor
 "@openbot/cli": minor
-"@openbot/computer-provider-core": minor
 "@openbot/computer-providers": minor
 "@openbot/computer-service": minor
 "@openbot/computer-service-proto": minor
@@ -10,15 +8,12 @@
 "@openbot/control-service-proto": minor
 "@openbot/desktop": minor
 "@openbot/inference-model-provider": minor
-"@openbot/inference-model-provider-core": minor
 "@openbot/control-service-provider": minor
 "@openbot/agent-service-provider": minor
-"@openbot/runtime-provider-core": minor
+"@openbot/runtime-provider": minor
 "@openbot/control-service": minor
 "@openbot/skills-provider": minor
-"@openbot/skills-provider-core": minor
 "@openbot/tools-provider": minor
-"@openbot/tools-provider-core": minor
 "@openbot/ui": minor
 "@openbot/web": minor
 ---

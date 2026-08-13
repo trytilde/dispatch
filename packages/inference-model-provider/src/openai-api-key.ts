@@ -1,5 +1,5 @@
 import { createOpenAI, type OpenAIProviderSettings } from "@ai-sdk/openai";
-import type { InferenceModelProvider } from "@openbot/inference-model-provider-core";
+import type { InferenceModelProvider } from "./core.js";
 import { OPENAI_PROMPT_PART, requireCredentialValue, requireModelName } from "./openai-shared.js";
 
 export interface OpenAIApiKeyInferenceModelProviderOptions {

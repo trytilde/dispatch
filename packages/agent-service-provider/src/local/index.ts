@@ -1,5 +1,5 @@
 import { homedir } from "node:os";
-import type { Buildable, Deployable, DeploymentContext, DeploymentPlan, DeploymentResult, InitializableProvider, ProviderInitialization } from "@openbot/runtime-provider-core";
+import type { Buildable, Deployable, DeploymentContext, DeploymentPlan, DeploymentResult, InitializableProvider, ProviderInitialization } from "@openbot/runtime-provider";
 import { installLocalService, processRunner, waitForHealth, type CommandRunner } from "@openbot/control-service-provider";
 import { checkAgentService } from "../check.js";
 import { agentLocalArtifact, buildLocalAgentService } from "./build.js";

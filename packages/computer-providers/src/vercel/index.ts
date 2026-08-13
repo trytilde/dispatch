@@ -6,7 +6,7 @@ import {
   type ComputerHandle,
   type ComputerInput,
   type ComputerSpec,
-} from "@openbot/computer-provider-core";
+} from "../core/index.js";
 import {
   BaseComputerProvider,
   computerWorkspacePath,

@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
-import type { AgentProvider } from "@openbot/agent-provider-core";
-import type { ComputerProvider } from "@openbot/computer-provider-core";
-import type { InferenceModelProvider } from "@openbot/inference-model-provider-core";
-import type { Buildable, Deployable, InitializableProvider } from "@openbot/runtime-provider-core";
-import type { SkillProvider } from "@openbot/skills-provider-core";
-import type { ToolProvider } from "@openbot/tools-provider-core";
+import type { AgentProvider } from "@openbot/agent-provider";
+import type { ComputerProvider } from "@openbot/computer-providers";
+import type { InferenceModelProvider } from "@openbot/inference-model-provider";
+import type { Buildable, Deployable, InitializableProvider } from "@openbot/runtime-provider";
+import type { SkillProvider } from "@openbot/skills-provider";
+import type { ToolProvider } from "@openbot/tools-provider";
 
 export interface ProviderPluginManifest {
   readonly id: string;

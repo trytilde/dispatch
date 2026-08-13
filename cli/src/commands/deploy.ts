@@ -4,7 +4,7 @@ import arg from "arg";
 import { config as loadDotenv } from "dotenv";
 import type { OpenBotConfiguration } from "@openbot/configuration";
 import { discoverAgentWorkspaces } from "@openbot/agent-service-provider";
-import { buildProviders, deployProviders, type DeploymentEvent, type DeploymentParticipant } from "@openbot/runtime-provider-core";
+import { buildProviders, deployProviders, type DeploymentContext, type DeploymentEvent, type DeploymentParticipant } from "@openbot/runtime-provider";
 import { loadDeploymentConfiguration } from "../initialization.js";
 import { repositoryRoot } from "../paths.js";
 
@@ -61,6 +61,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
   const computer = configuration.providers.computer;
   const deployAgents = options.service === "all" || options.service === "agents";
   const computerId = deploymentConfiguration.environment.OPENBOT_COMPUTER_ID?.trim() || "openbot-computer";
+  const developmentSandboxId = deploymentConfiguration.environment.OPENBOT_DEVELOPMENT_SANDBOX_ID?.trim() || "openbot-development";
   const participants: DeploymentParticipant[] = [
     ...(options.service === "all" && computer ? [{ id: "computer", provider: computer }] : []),
     ...(deployAgents ? [{ id: "agent-service", provider: { buildable: agentService, deployable: agentService } }] : []),
@@ -69,10 +70,23 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
       provider: {
         deployable: {
           plan: async () => ({ summary: "Register agent Linux users and seed new private workspaces", steps: ["Keep one shared computer", "Skip workspaces already registered"] }),
-          deploy: async (context) => {
+          deploy: async (context: DeploymentContext) => {
             await computer.deployAgentWorkspaces({ computerId, workspaces: await discoverAgentWorkspaces(context.repositoryRoot) }, context);
             return { outputs: { "computer.id": computerId }, environmentVariables: { OPENBOT_COMPUTER_ID: computerId } };
           },
+        },
+      },
+    }] : []),
+    ...(options.service === "all" && computer ? [{
+      id: "development-sandbox",
+      role: "sandbox" as const,
+      provider: {
+        deployable: {
+          plan: async () => ({
+            summary: "Seed or resume the trusted OpenBot development sandbox",
+            steps: ["Preserve its mutable source tree", "Install the aggregate deployment environment and SOPS identity", "Verify in-sandbox decryption"],
+          }),
+          deploy: async (context: DeploymentContext) => computer.deployDevelopmentSandbox({ computerId: developmentSandboxId }, context),
         },
       },
     }] : []),

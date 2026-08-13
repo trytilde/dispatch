@@ -17,7 +17,7 @@ There is also an ordering cycle: a provider such as Tilde can need the runtime's
 
 ## Decision
 
-`runtime-provider-core` defines a `Deployable` lifecycle with required `plan()` and `deploy()` methods and an optional `configure()` method. Domain provider-core packages re-export this contract and let a provider expose it through an optional `deployable` property. A provider without that property is not a deployment participant and is skipped without lifecycle events.
+`runtime-provider` defines a `Deployable` lifecycle with required `plan()` and `deploy()` methods and an optional `configure()` method. Domain provider packages import this contract and let a provider expose it through an optional `deployable` property. A provider without that property is not a deployment participant and is skipped without lifecycle events.
 
 `plan()` is read-only and is the only lifecycle method called during a dry run. `configure()` may establish stable identities or remote prerequisites that downstream providers require, but it is not required for providers that can deploy directly. Both `configure()` and `deploy()` may return named outputs, secrets, and environment variables.
 
@@ -55,3 +55,4 @@ flowchart LR
 ## Updates
 
 - 2026-08-13T11:12:53+02:00: Added computer providers as non-runtime build and deployment participants that publish content-tagged image references without mutating existing computers.
+- 2026-08-13T12:53:05+02:00: Renamed the lifecycle package to `runtime-provider` as part of eliminating separate core packages; lifecycle semantics are unchanged.

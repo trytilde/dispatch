@@ -127,6 +127,7 @@ describe("OpenBot initialization", () => {
     expect(encryption?.input).toContain("sops_age_key: AGE-SECRET-KEY-1");
     expect(encryption?.input).toContain("deployment_secrets:");
     expect(encryption?.input).toContain("VERCEL_TOKEN: vercel-secret");
+    expect(encryption?.input).toContain("OPENBOT_COMPUTER_CAPABILITY_SECRET:");
     expect(encryption?.args.join(" ")).not.toContain("vercel-secret");
   });
 

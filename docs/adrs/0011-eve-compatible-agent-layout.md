@@ -35,7 +35,7 @@ The optional instrumentation files use Eve's `defineInstrumentation({ setup })` 
 
 Every file under `tools/` default-exports a Vercel AI SDK tool. Every skill is a spec-conformant Markdown file or skill package. `lib/` is ordinary import-only TypeScript. These slots are intentionally inert for now: the OpenBot build preserves and checks their structure but does not auto-register tools or skills. Channels, connections, hooks, schedules, and subagents are not supported.
 
-OpenBot does not reproduce Eve's one-sandbox-per-agent model. One OpenBot Computer is shared by all agents. Agent deployment registers a stable Linux user for each agent and allocates `/workspace/.openbot/agents/<id>/workspace` on the persistent disk. Provider calls scoped to that agent translate its logical `/workspace` into that private directory and execute commands as its Linux user.
+OpenBot does not reproduce Eve's one-sandbox-per-agent model. One OpenBot Computer is shared by all agents. Agent deployment registers a stable Linux user for each agent and allocates `/workspace/.openbot/agents/<id>/workspace` on the persistent disk. Provider calls scoped to that agent enter a private mount namespace, bind that agent's physical directory over logical `/workspace`, and then execute as its Linux user. The backing workspace tree is mode `0700`, and another agent's physical path is not reachable through its logical workspace view.
 
 Files from `configuration/agents/<id>/sandbox/workspace/**` are copied only when the Linux user and workspace are first registered. Ordinary later agent deployments detect the registration marker and leave the persistent workspace untouched. Consequently, edits to authored workspace seeds do not appear for already deployed agents; applying them requires a future explicit workspace reconciliation or destructive computer replacement operation.
 
@@ -58,3 +58,7 @@ flowchart LR
 - Tools and skills can exist before their loading semantics are designed.
 - Persistent agent workspaces are protected from silent seed overwrites.
 - Shared desktop and compute resources remain installation-wide; filesystem identity is per agent.
+
+## Updates
+
+- 2026-08-13T12:53:05+02:00: Strengthened agent filesystem isolation from path translation alone to a private bind-mounted `/workspace` plus Linux-user execution.

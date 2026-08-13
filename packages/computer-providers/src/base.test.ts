@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFile } from "node:fs/promises";
-import type { ComputerCallContext, ComputerExecRequest, ComputerHandle, ComputerInput, ComputerSpec } from "@openbot/computer-provider-core";
-import { DeploymentOutputs } from "@openbot/runtime-provider-core";
+import type { ComputerCallContext, ComputerExecRequest, ComputerHandle, ComputerInput, ComputerSpec } from "./core/index.js";
+import { DeploymentOutputs } from "@openbot/runtime-provider";
 import { computerImageAssets } from "./base/assets.js";
-import { BaseComputerProvider, computerWorkspacePath, type ComputerImageDeploymentConfig } from "./base/index.js";
+import { shellEnvironmentExports } from "./base/development.js";
+import { BaseComputerProvider, computerWorkspacePath, scopeComputerExecRequest, type ComputerImageDeploymentConfig } from "./base/index.js";
 
 class TestComputerProvider extends BaseComputerProvider {
   protected readonly providerId = "test";
@@ -57,6 +58,23 @@ describe("computerWorkspacePath", () => {
     expect(() => computerWorkspacePath("../../etc/passwd")).toThrow(/escapes/);
     expect(() => computerWorkspacePath("/etc/passwd")).toThrow(/inside/);
   });
+
+  it("runs agent commands with a private /workspace mount", () => {
+    expect(scopeComputerExecRequest({ command: "pwd", cwd: "/workspace/project" }, "hello-world")).toEqual({
+      command: "/usr/local/bin/openbot-agent-exec",
+      args: [
+        "/workspace/.openbot/agents/hello-world/workspace",
+        expect.stringMatching(/^ob_[a-f0-9]{16}$/),
+        "/workspace/project",
+        "pwd",
+      ],
+      timeoutMs: undefined,
+    });
+  });
+
+  it("quotes trusted sandbox environment values without exposing shell syntax", () => {
+    expect(shellEnvironmentExports({ TOKEN: "one'two", SIMPLE: "value" })).toBe("export SIMPLE='value'\nexport TOKEN='one'\"'\"'two'");
+  });
 });
 
 describe("computer image lifecycle", () => {
@@ -79,5 +97,42 @@ describe("computer image lifecycle", () => {
     expect(containerfile).toContain("pnpm --filter @openbot/computer-service build");
     expect(containerfile).toContain("COPY --from=computer-service-builder");
     expect(containerfile).not.toMatch(/^COPY apps\/computer-service\/dist/m);
+    expect(containerfile).toContain("openbot-agent-exec");
+    expect(await readFile(computerImageAssets.agentExec, "utf8")).toContain("unshare --mount");
+    expect(await readFile(computerImageAssets.bootstrap, "utf8")).toContain("SOPS_VERSION=3.13.3");
+  });
+});
+
+describe("trusted development sandbox", () => {
+  it("installs the sandbox-only SOPS identity without adding it to a computer spec", async () => {
+    const provider = new TestComputerProvider();
+    const inputs = new DeploymentOutputs();
+    inputs.merge({
+      environmentVariables: { OPENBOT_MODEL: "gpt-test" },
+      deploymentSecrets: { VERCEL_TOKEN: "deployment-token" },
+      sandboxSecrets: { SOPS_AGE_KEY: "AGE-SECRET-KEY-1TEST" },
+    });
+
+    await expect(provider.deployDevelopmentSandbox({ computerId: "development" }, {
+      target: "production",
+      repositoryRoot: process.cwd(),
+      environment: {},
+      inputs,
+      report: vi.fn(),
+    })).resolves.toMatchObject({
+      outputs: { "development-sandbox.computer-id": "computer" },
+      environmentVariables: { OPENBOT_DEVELOPMENT_SANDBOX_ID: "computer" },
+    });
+
+    expect(provider.create).not.toHaveBeenCalled();
+    expect(provider.writeFile).toHaveBeenCalledWith(
+      "computer",
+      "/workspace/.openbot/development/environment.sh",
+      expect.any(Uint8Array),
+      expect.anything(),
+    );
+    expect(provider.exec).toHaveBeenCalledWith("computer", expect.objectContaining({
+      command: "/usr/local/bin/setup-openbot-development",
+    }), expect.anything());
   });
 });

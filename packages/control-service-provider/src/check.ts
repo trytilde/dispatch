@@ -1,4 +1,4 @@
-import type { DeploymentContext } from "@openbot/runtime-provider-core";
+import type { DeploymentContext } from "@openbot/runtime-provider";
 import { runNativeCheck, type CommandRunner } from "./command.js";
 
 export async function checkControlService(context: DeploymentContext, runner: CommandRunner): Promise<void> {

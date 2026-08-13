@@ -89,9 +89,3 @@ Owner: production deployment orchestrator
 Trigger: when computer-providers replaces the legacy production sandbox adapter
 Work: build and publish the OpenBot computer image with ensurePublishedComputerImage, persist its source digest and immutable image reference in redacted deployment state, and prove a second unchanged deployment skips both buildImage and publishImage
 </FOLLOW UP>
-
-<FOLLOW UP>
-Owner: development sandbox deployment participant
-Trigger: when provider composition registers the trusted development sandbox
-Work: create or update the development VM, place the mutable OpenBot source checkout, install the aggregate from sandboxDeploymentEnvironment including SOPS_AGE_KEY, and prove an in-sandbox deploy can decrypt configuration and redeploy the runtime without exposing that identity to ordinary agent computers
-</FOLLOW UP>

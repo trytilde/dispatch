@@ -1,4 +1,4 @@
-import { generateKeyPairSync } from "node:crypto";
+import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { chmod, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -11,7 +11,7 @@ import type { OpenBotConfiguration } from "@openbot/configuration";
 import { MicrosandboxComputerProvider, VercelSandboxComputerProvider } from "@openbot/computer-providers";
 import { LocalControlServiceProvider, VercelControlServiceProvider } from "@openbot/control-service-provider";
 import { materializeFileTemplate, renderFileTemplatePath } from "@openbot/utilities";
-import type { DeploymentResult, InitializableProvider, ProviderInitializationQuestion } from "@openbot/runtime-provider-core";
+import type { DeploymentResult, InitializableProvider, ProviderInitializationQuestion } from "@openbot/runtime-provider";
 
 export const SANDBOX_SOPS_AGE_KEY = "SOPS_AGE_KEY";
 
@@ -116,6 +116,7 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
     else if (question.destination.kind === "deployment-secret") deploymentSecretValues[question.destination.key] = value;
     else environmentValues[question.destination.key] = value;
   }
+  secretValues.OPENBOT_COMPUTER_CAPABILITY_SECRET ??= randomBytes(32).toString("base64url");
 
   const ownerAge = owner.creationRule.age;
   const creationRule: SopsCreationRule = {
@@ -431,7 +432,7 @@ async function initializationProviders(path: string, prompts: InitializationProm
 }
 
 function configuredProviders(configuration: OpenBotConfiguration): InitializableProvider[] {
-  return [
+  const providers: Array<InitializableProvider | undefined> = [
     configuration.providers.controlService,
     configuration.providers.agentService,
     configuration.providers.agent,
@@ -439,7 +440,8 @@ function configuredProviders(configuration: OpenBotConfiguration): Initializable
     configuration.providers.inferenceModel,
     configuration.providers.skills,
     configuration.providers.tools,
-  ].filter((provider): provider is InitializableProvider => provider !== undefined);
+  ];
+  return providers.filter((provider): provider is InitializableProvider => provider !== undefined);
 }
 
 async function updateEnvironmentFile(path: string, values: Readonly<Record<string, string>>): Promise<void> {

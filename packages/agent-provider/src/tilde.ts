@@ -13,8 +13,8 @@ import type {
   RegisterAgentRequest,
   RegisteredAgent,
   UpdateAgentRequest,
-} from "@openbot/agent-provider-core";
-import { AgentProviderError, pageSize, providerSignal } from "@openbot/agent-provider-core";
+} from "./core.js";
+import { AgentProviderError, pageSize, providerSignal } from "./core.js";
 import { createClient, type Client } from "@trytilde/harness-sdk";
 import {
   chatkitDeleteAgent,

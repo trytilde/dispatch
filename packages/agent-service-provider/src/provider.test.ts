@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildVercelAgentService } from "./vercel/build.js";
 import { discoverAgents } from "./discovery.js";
-import { deployProviders, DeploymentOutputs, type DeploymentContext } from "@openbot/runtime-provider-core";
+import { deployProviders, DeploymentOutputs, type DeploymentContext } from "@openbot/runtime-provider";
 import { VercelAgentServiceProvider } from "./vercel/index.js";
 import type { CommandRunner } from "@openbot/control-service-provider";
 

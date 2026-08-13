@@ -31,13 +31,13 @@ import type {
   SkillProvider,
   SkillsProviderCallContext,
   UpdateSkillRequest,
-} from "@openbot/skills-provider-core";
+} from "./core.js";
 import {
   pageSize,
   providerSignal,
   safeSkillAssetPath,
   SkillsProviderError,
-} from "@openbot/skills-provider-core";
+} from "./core.js";
 
 export interface TildeSkillProviderConfig {
   apiKey: string;

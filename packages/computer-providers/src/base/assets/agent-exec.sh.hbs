@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Run one agent command in a private mount namespace. Binding the agent's
+# persistent directory over /workspace prevents paths in the shared backing
+# volume from exposing another agent's files.
+agent_root="$1"
+agent_user="$2"
+logical_cwd="$3"
+shift 3
+
+exec unshare --mount --propagation private --fork -- bash -c '
+  set -euo pipefail
+  agent_root="$1"
+  agent_user="$2"
+  logical_cwd="$3"
+  shift 3
+  mount --bind "$agent_root" /workspace
+  mount --make-private /workspace
+  cd "$logical_cwd"
+  exec runuser --user "$agent_user" -- env \
+    HOME=/workspace \
+    OPENBOT_COMPUTER_WORKSPACE=/workspace \
+    "$@"
+' openbot-agent-exec "$agent_root" "$agent_user" "$logical_cwd" "$@"

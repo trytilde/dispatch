@@ -45,7 +45,7 @@ The production build stages the web app in the control provider's `.vercel/outpu
 ## Current application boundary
 
 - `cli` owns the React Ink repository CLI, development process supervision, and provider deployment coordination.
-- `packages/runtime-provider-core` owns the optional provider deployment contract and runtime-last coordinator.
+- `packages/runtime-provider` owns the optional provider deployment contract and runtime-last coordinator.
 - `packages/control-service-provider` owns local and Vercel control/web builds and deployment.
 - `packages/agent-service-provider` owns Eve-compatible agent-directory discovery, instrumentation startup, concurrent per-agent Vercel bundles, the local agent server, and deployment.
 - `apps/web` owns the UX shell and frontend routes.
@@ -53,7 +53,7 @@ The production build stages the web app in the control provider's `.vercel/outpu
 - `packages/control-service-proto` is the future owner-facing API contract and is intentionally empty.
 - `packages/computer-service-proto` owns the capability-protected internal computer API.
 - No control database is retained while the reset application has no persisted control state.
-- Domain provider packages remain available but are not wired into the application yet.
+- Each domain provider package owns both its TypeScript contract under `core.ts` or `core/` and its concrete adapters; provider contracts are not RPC surfaces.
 
 ```bash
 pnpm check

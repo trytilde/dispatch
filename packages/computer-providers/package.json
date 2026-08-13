@@ -11,9 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openbot/computer-provider-core": "workspace:*",
+    "@openbot/runtime-provider": "workspace:*",
     "@openbot/utilities": "workspace:*",
-    "@openbot/runtime-provider-core": "workspace:*",
     "@vercel/sandbox": "3.0.0",
     "ai": "6.0.250",
     "microsandbox": "0.6.8",

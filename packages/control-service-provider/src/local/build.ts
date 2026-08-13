@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { build } from "tsdown";
-import type { DeploymentContext, DeploymentResult } from "@openbot/runtime-provider-core";
+import type { DeploymentContext, DeploymentResult } from "@openbot/runtime-provider";
 import type { CommandRunner } from "../command.js";
 
 export const controlLocalArtifact = ".openbot-deploy/control-service/service.mjs";

@@ -21,16 +21,18 @@ TypeScript interfaces. Only control and computer services need protobuf APIs.
 
 ## Decision
 
-Provider contracts and implementations use domain packages. The intended
-package shape is:
+Provider contracts and implementations use the same domain package. Contracts
+live in `src/core.ts` or `src/core/` when supporting files are useful; concrete
+adapters live beside them. The intended package shape is:
 
 - `control-service-proto`
 - `computer-service-proto`
-- `computer-provider-core` and `computer-providers`
-- `skills-provider-core` (`SkillProvider`) and `skills-provider`
-- `tools-provider-core` (`ToolProvider`) and `tools-provider`
-- `agent-provider-core` and `agent-provider`
-- `inference-model-provider-core` and `inference-model-provider`
+- `computer-providers`, including `ComputerProvider`
+- `skills-provider`, including `SkillProvider`
+- `tools-provider`, including `ToolProvider`
+- `agent-provider`, including `AgentProvider`
+- `inference-model-provider`, including `InferenceModelProvider`
+- `runtime-provider`, including deployment lifecycle contracts
 
 Domain interfaces contain only the operations required at that application
 boundary. Provider interfaces and implementations do not expose `health()` or
@@ -75,11 +77,11 @@ credentials and applies the account-scoped ChatGPT transport requirements.
 flowchart LR
   W["Web and Electron"] --> C["control-service-proto"]
   C --> S["Control server"]
-  S --> A["agent-provider-core"]
-  A --> T["agent-provider: Tilde"]
+  S --> A["agent-provider core contract"]
+  A --> T["agent-provider Tilde adapter"]
   T --> M["Tilde agents and Mission Control"]
-  S --> I["inference-model-provider-core"]
-  I --> O["inference-model-provider: OpenAI"]
+  S --> I["inference-model-provider core contract"]
+  I --> O["inference-model-provider OpenAI adapters"]
 ```
 
 The universal `contracts`, `provider-sdk`, and `providers` packages are removed;
@@ -97,3 +99,4 @@ surfaces live only in `control-service-proto` and `computer-service-proto`.
 
 - 2026-08-13T11:12:53+02:00: Removed universal provider packages plus default descriptor, health, verification, and selector-factory requirements in favor of explicit domain interfaces and composition.
 - 2026-08-13T12:09:51+02:00: Removed the unused legacy `contracts` package after control and computer callers moved to their domain service protos.
+- 2026-08-13T12:53:05+02:00: Folded every `*-provider-core` package into its owning provider package so each domain has one import surface while preserving a visible `core.ts` or `core/` contract boundary.

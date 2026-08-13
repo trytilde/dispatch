@@ -16,12 +16,12 @@ import type {
   ToolsPromptContext,
   ToolProvider,
   ToolsProviderCallContext,
-} from "@openbot/tools-provider-core";
+} from "./core.js";
 import {
   asRegisteredTool,
   providerSignal,
   ToolsProviderError,
-} from "@openbot/tools-provider-core";
+} from "./core.js";
 
 export interface TildeToolProviderConfig {
   client: Client;

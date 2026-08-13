@@ -10,6 +10,8 @@ import {
   type BuiltComputerImage,
   type ComputerCallContext,
   type ComputerAgentWorkspace,
+  type ComputerExecRequest,
+  type ComputerSeedFile,
   type ComputerImageSpec,
   type ComputerInput,
   type ComputerPromptContext,
@@ -19,14 +21,18 @@ import {
   type RegisteredComputerTool,
   type RegisterComputerToolsContext,
   type DeployAgentWorkspacesRequest,
-} from "@openbot/computer-provider-core";
+  type DeployDevelopmentSandboxRequest,
+} from "../core/index.js";
 import type {
   Buildable,
   Deployable,
   DeploymentContext,
   ProviderInitialization,
-} from "@openbot/runtime-provider-core";
-import { materializeComputerImageContext } from "./assets.js";
+} from "@openbot/runtime-provider";
+import { sandboxDeploymentEnvironment } from "@openbot/runtime-provider";
+import { renderFileTemplatePath } from "@openbot/utilities";
+import { computerImageAssets, materializeComputerImageContext } from "./assets.js";
+import { developmentSandboxSourceFiles, shellEnvironmentExports } from "./development.js";
 
 const execute = promisify(execFile);
 
@@ -52,7 +58,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       label: "Computer image",
       description: "Build and publish the shared OpenBot computer image.",
       questions: [{
-        id: "computer_image_repository",
+        id: "computer-image-repository",
         prompt: "Which OCI repository should receive OpenBot computer images?",
         input: "text",
         required: true,
@@ -227,6 +233,56 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     for (const workspace of request.workspaces) await this.#registerAgentWorkspace(computer.id, workspace, call);
   }
 
+  async deployDevelopmentSandbox(request: DeployDevelopmentSandboxRequest, context: DeploymentContext) {
+    const call: ComputerCallContext = { requestId: "computer:deploy-development-sandbox" };
+    const image = context.inputs.environmentVariables()[this.deployedImageEnvironmentVariable] ?? context.environment[this.deployedImageEnvironmentVariable];
+    let computer;
+    try {
+      computer = await this.get(request.computerId, call);
+    } catch (error) {
+      if (!(error instanceof ComputerProviderError) || error.code !== "not_found") throw error;
+      computer = await this.create({
+        id: request.computerId,
+        ...(image ? { image } : {}),
+        labels: { role: "openbot-development-sandbox" },
+      }, call);
+    }
+    if (computer.state === "sleeping") await this.wake(computer.id, call);
+
+    const stateRoot = "/workspace/.openbot/development";
+    const sourceRoot = "/workspace/openbot";
+    const sourceMarker = `${stateRoot}/source-initialized`;
+    let result = await this.exec(computer.id, { command: "mkdir", args: ["-p", stateRoot, sourceRoot] }, call);
+    if (result.exitCode !== 0) throw new ComputerProviderError("provider_unavailable", `Could not prepare the development sandbox: ${result.stderr}`);
+
+    result = await this.exec(computer.id, { command: "test", args: ["-f", sourceMarker] }, call);
+    if (result.exitCode !== 0) {
+      await this.#writeComputerFiles(computer.id, await developmentSandboxSourceFiles(context.repositoryRoot), call);
+      await this.writeFile(computer.id, sourceMarker, new TextEncoder().encode(await renderMarker("seeded")), call);
+    }
+
+    const environment = sandboxDeploymentEnvironment(context.inputs);
+    if (!environment.SOPS_AGE_KEY) throw new ComputerProviderError("invalid_configuration", "The trusted development sandbox requires the sandbox SOPS age identity");
+    const environmentFile = `${stateRoot}/environment.sh`;
+    const renderedEnvironment = await renderFileTemplatePath(computerImageAssets.developmentEnvironment, {
+      ENVIRONMENT_EXPORTS: shellEnvironmentExports(environment),
+    });
+    await this.writeFile(computer.id, environmentFile, new TextEncoder().encode(renderedEnvironment), call);
+    result = await this.exec(computer.id, { command: "chmod", args: ["0600", environmentFile] }, call);
+    if (result.exitCode !== 0) throw new ComputerProviderError("provider_unavailable", `Could not protect the development sandbox environment: ${result.stderr}`);
+
+    result = await this.exec(computer.id, {
+      command: "/usr/local/bin/setup-openbot-development",
+      args: [environmentFile, sourceRoot],
+      timeoutMs: 1_200_000,
+    }, call);
+    if (result.exitCode !== 0) throw new ComputerProviderError("provider_unavailable", `Could not initialize the development sandbox: ${result.stderr}`);
+    return {
+      outputs: { "development-sandbox.computer-id": computer.id },
+      environmentVariables: { OPENBOT_DEVELOPMENT_SANDBOX_ID: computer.id },
+    };
+  }
+
   async #registerAgentWorkspace(computerId: string, workspace: ComputerAgentWorkspace, context: ComputerCallContext): Promise<void> {
     const root = agentWorkspaceRoot(workspace.agentId);
     const marker = `${root}/.openbot-agent`;
@@ -240,6 +296,8 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     if (result.exitCode !== 0) throw new ComputerProviderError("provider_unavailable", `Could not create workspace for agent ${workspace.agentId}: ${result.stderr}`);
     result = await this.exec(computerId, { command: "chown", args: ["-R", `${username}:${username}`, root] }, context);
     if (result.exitCode !== 0) throw new ComputerProviderError("provider_unavailable", `Could not assign workspace ownership for agent ${workspace.agentId}: ${result.stderr}`);
+    result = await this.exec(computerId, { command: "chmod", args: ["0700", root] }, context);
+    if (result.exitCode !== 0) throw new ComputerProviderError("provider_unavailable", `Could not protect workspace for agent ${workspace.agentId}: ${result.stderr}`);
     result = await this.exec(computerId, { command: "test", args: ["-f", marker] }, context);
     if (result.exitCode === 0) return;
     for (const file of workspace.files) {
@@ -249,9 +307,22 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       await this.writeFile(computerId, destination, file.content, context);
       if (file.executable) await this.exec(computerId, { command: "chmod", args: ["0755", destination] }, context);
     }
-    await this.writeFile(computerId, marker, new TextEncoder().encode(`${workspace.agentId}\n`), context);
+    await this.writeFile(computerId, marker, new TextEncoder().encode(await renderMarker(workspace.agentId)), context);
     result = await this.exec(computerId, { command: "chown", args: ["-R", `${username}:${username}`, root] }, context);
     if (result.exitCode !== 0) throw new ComputerProviderError("provider_unavailable", `Could not assign workspace ownership for agent ${workspace.agentId}: ${result.stderr}`);
+  }
+
+  async #writeComputerFiles(computerId: string, files: readonly ComputerSeedFile[], context: ComputerCallContext): Promise<void> {
+    for (const file of files) {
+      const destination = computerWorkspacePath(file.path);
+      const result = await this.exec(computerId, { command: "mkdir", args: ["-p", posix.dirname(destination)] }, context);
+      if (result.exitCode !== 0) throw new ComputerProviderError("provider_unavailable", `Could not create development source directory: ${result.stderr}`);
+      await this.writeFile(computerId, destination, file.content, context);
+      if (file.executable) {
+        const chmod = await this.exec(computerId, { command: "chmod", args: ["0755", destination] }, context);
+        if (chmod.exitCode !== 0) throw new ComputerProviderError("provider_unavailable", `Could not preserve executable source mode: ${chmod.stderr}`);
+      }
+    }
   }
 
   async buildImage(spec: ComputerImageSpec, context: ComputerCallContext): Promise<BuiltComputerImage> {
@@ -304,6 +375,10 @@ export abstract class BaseComputerProvider implements ComputerProvider {
   }
 }
 
+async function renderMarker(value: string): Promise<string> {
+  return renderFileTemplatePath(computerImageAssets.marker, { VALUE: value });
+}
+
 export function randomCapability(): string {
   return randomBytes(32).toString("base64url");
 }
@@ -336,18 +411,22 @@ export function scopeComputerExecRequest(request: ComputerExecRequest, agentId?:
   const username = agentLinuxUsername(agentId);
   const root = agentWorkspaceRoot(agentId);
   return {
-    command: "runuser",
+    command: "/usr/local/bin/openbot-agent-exec",
     args: [
-      "--user", username, "--", "env",
-      `HOME=${root}`,
-      `OPENBOT_COMPUTER_WORKSPACE=/workspace`,
+      root,
+      username,
+      logicalComputerWorkspacePath(request.cwd ?? "/workspace"),
       ...Object.entries(request.environment ?? {}).map(([name, value]) => `${name}=${value}`),
       request.command,
       ...(request.args ?? []),
     ],
-    cwd: computerWorkspacePath(request.cwd ?? "/workspace", agentId),
     timeoutMs: request.timeoutMs,
   };
+}
+
+export function logicalComputerWorkspacePath(path: string): string {
+  const relative = workspaceRelativePath(path);
+  return relative === "." ? "/workspace" : `/workspace/${relative}`;
 }
 
 export function agentWorkspaceRoot(agentId: string): string {
@@ -360,8 +439,15 @@ export function agentLinuxUsername(agentId: string): string {
 }
 
 function agentWorkspaceRelativePath(path: string): string {
-  const resolved = computerWorkspacePath(path);
-  return resolved === "/workspace" ? "." : resolved.slice("/workspace/".length);
+  return workspaceRelativePath(path);
+}
+
+function workspaceRelativePath(path: string): string {
+  const relative = path.startsWith("/workspace/") ? path.slice("/workspace/".length) : path === "/workspace" ? "." : path;
+  if (!relative || relative.startsWith("/") || relative.includes("\0")) throw new ComputerProviderError("permission_denied", "Computer path must be inside /workspace");
+  const normalized = posix.normalize(relative);
+  if (normalized === ".." || normalized.startsWith("../")) throw new ComputerProviderError("permission_denied", "Computer path escapes /workspace");
+  return normalized;
 }
 
 async function runDocker(args: string[], context: ComputerCallContext): Promise<void> {

@@ -4,7 +4,7 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "tsdown";
 import { materializeFileTemplate } from "@openbot/utilities";
-import type { DeploymentContext, DeploymentResult } from "@openbot/runtime-provider-core";
+import type { DeploymentContext, DeploymentResult } from "@openbot/runtime-provider";
 import { bundleOptions } from "../build.js";
 import { discoverAgents, globalInstrumentationPath, type AgentSource } from "../discovery.js";
 
@@ -33,7 +33,7 @@ export async function buildVercelAgentService(context: DeploymentContext): Promi
     const wrapper = resolve(generated, `${agent.slug}.ts`);
     const functionDirectory = resolve(output, `functions/api/agents/${agent.slug}.func`);
     const digest = digests.get(agent.slug)!;
-    if (await readOptional(resolve(functionDirectory, ".openbot-digest")) === digest && await readOptional(resolve(functionDirectory, "index.mjs"))) return;
+    if ((await readOptional(resolve(functionDirectory, ".openbot-digest")))?.trim() === digest && await readOptional(resolve(functionDirectory, "index.mjs"))) return;
     changed += 1;
     await rm(functionDirectory, { recursive: true, force: true });
     await mkdir(functionDirectory, { recursive: true });

@@ -1,7 +1,7 @@
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { materializeFileTemplate } from "@openbot/utilities";
-import type { DeploymentContext } from "@openbot/runtime-provider-core";
+import type { DeploymentContext } from "@openbot/runtime-provider";
 import type { CommandRunner } from "@openbot/control-service-provider";
 import { agentTypeScriptPaths, discoverAgents, globalInstrumentationPath } from "./discovery.js";
 

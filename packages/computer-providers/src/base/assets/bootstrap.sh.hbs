@@ -3,6 +3,9 @@ set -euo pipefail
 
 BOOTSTRAP_VERSION=2026-08-12.1
 CUA_DRIVER_VERSION=0.19.3
+SOPS_VERSION=3.13.3
+SOPS_SHA256_AMD64=e5bec3346a873ae91d871550f3e698c1aad962aff462a080e40f25fde17fef6b
+SOPS_SHA256_ARM64=53b0abacd38ef1b12a66d6c100956691b9cefce018d91f81e73ddf7438b94d77
 CHROME_VERSION_AMD64=151.0.7922.137-1
 CHROME_SHA256_AMD64=e6dabf044cf9cd0279cfe86efa431682c18bfc06d06339ce055aaa87ae871727
 MARKER=/opt/openbot/.computer-image-version
@@ -19,11 +22,25 @@ fi
 # Install the common desktop, browser automation, VNC, and diagnostic dependencies.
 apt-get update
 apt-get install -y --no-install-recommends \
-  ca-certificates curl dbus-x11 fonts-liberation imagemagick jq \
-  novnc openbox procps tigervnc-standalone-server websockify x11-utils xdotool xterm
+  ca-certificates curl dbus-x11 fonts-liberation git imagemagick jq \
+  novnc openbox passwd procps tigervnc-standalone-server util-linux websockify x11-utils xdotool xterm
 
 # Google publishes a pinned amd64 package; Debian Chromium is the portable fallback.
 architecture="$(dpkg --print-architecture)"
+
+# Install a checksum-pinned SOPS binary so the trusted development sandbox can
+# decrypt configuration in memory using its injected age identity.
+case "$architecture" in
+  amd64) sops_sha256="$SOPS_SHA256_AMD64" ;;
+  arm64) sops_sha256="$SOPS_SHA256_ARM64" ;;
+  *) echo "Unsupported SOPS architecture: $architecture" >&2; exit 1 ;;
+esac
+sops_binary="/tmp/sops-v${SOPS_VERSION}.linux.${architecture}"
+curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${architecture}" -o "$sops_binary"
+echo "$sops_sha256  $sops_binary" | sha256sum -c -
+install -m 0755 "$sops_binary" /usr/local/bin/sops
+rm -f "$sops_binary"
+
 if [[ "$architecture" == "amd64" ]]; then
   chrome_deb=/tmp/google-chrome.deb
   curl -fsSL "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION_AMD64}_amd64.deb" -o "$chrome_deb"

@@ -15,10 +15,10 @@
   },
   "dependencies": {
     "@hono/node-server": "1.19.1",
-    "@openbot/computer-provider-core": "workspace:*",
+    "@openbot/computer-providers": "workspace:*",
     "@openbot/control-service-provider": "workspace:*",
     "@openbot/utilities": "workspace:*",
-    "@openbot/runtime-provider-core": "workspace:*",
+    "@openbot/runtime-provider": "workspace:*",
     "hono": "4.13.1",
     "tsdown": "0.22.14",
     "vercel": "58.9.4"

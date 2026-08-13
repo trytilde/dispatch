@@ -6,7 +6,7 @@ import {
   type ComputerHandle,
   type ComputerInput,
   type ComputerSpec,
-} from "@openbot/computer-provider-core";
+} from "../core/index.js";
 import {
   BaseComputerProvider,
   computerWorkspacePath,
@@ -40,16 +40,38 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
 
   async get(id: string, _context: ComputerCallContext): Promise<ComputerHandle> {
     const handle = this.#handles.get(id);
-    if (!handle) throw new ComputerProviderError("not_found", `Computer ${id} is not attached to this process`);
-    return handle;
+    if (handle) return handle;
+    try {
+      const { Sandbox } = await import("microsandbox");
+      const stored = await Sandbox.get(id);
+      if (stored.status === "running") this.#instances.set(id, await stored.connect());
+      const discovered: ComputerHandle = {
+        id,
+        providerId: this.providerId,
+        state: stored.status === "running" ? "running" : stored.status === "crashed" ? "failed" : "sleeping",
+        createdAt: stored.createdAt ?? new Date(),
+      };
+      this.#handles.set(id, discovered);
+      return discovered;
+    } catch (error) {
+      throw new ComputerProviderError("not_found", `Computer ${id} was not found: ${error instanceof Error ? error.message : "unknown error"}`);
+    }
   }
 
   async wake(id: string, context: ComputerCallContext): Promise<ComputerHandle> {
     const current = await this.get(id, context);
     if (current.state === "running") return current;
+    const { Sandbox } = await import("microsandbox");
+    const stored = await Sandbox.get(id);
+    const resumed = await stored.startDetached();
+    this.#instances.set(id, resumed);
     const spec = this.#specs.get(id);
-    if (!spec) throw new ComputerProviderError("not_found", `Computer ${id} has no resumable specification`);
-    return this.#start(id, spec, "wake", context);
+    await runSpecLifecycle(resumed, spec ?? {}, "wake");
+    const start = await resumed.exec("bash", ["-lc", "nohup /usr/local/bin/start-openbot-computer >/var/log/openbot-computer.log 2>&1 </dev/null &"]);
+    if (!start.success) throw new ComputerProviderError("provider_unavailable", `Computer start failed: ${start.stderr() || start.stdout()}`);
+    const running = { ...current, state: "running" as const };
+    this.#handles.set(id, running);
+    return running;
   }
 
   async sleep(id: string, context: ComputerCallContext): Promise<ComputerHandle> {

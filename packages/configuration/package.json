@@ -11,12 +11,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openbot/agent-provider-core": "workspace:*",
-    "@openbot/computer-provider-core": "workspace:*",
-    "@openbot/inference-model-provider-core": "workspace:*",
-    "@openbot/runtime-provider-core": "workspace:*",
-    "@openbot/skills-provider-core": "workspace:*",
-    "@openbot/tools-provider-core": "workspace:*"
+    "@openbot/agent-provider": "workspace:*",
+    "@openbot/computer-providers": "workspace:*",
+    "@openbot/inference-model-provider": "workspace:*",
+    "@openbot/runtime-provider": "workspace:*",
+    "@openbot/skills-provider": "workspace:*",
+    "@openbot/tools-provider": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

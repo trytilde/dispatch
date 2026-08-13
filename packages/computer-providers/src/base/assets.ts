@@ -7,8 +7,12 @@ import { materializeFileTemplate } from "@openbot/utilities";
 const providerAssetDirectory = fileURLToPath(new URL("./assets/", import.meta.url));
 
 export const computerImageAssets = {
+  agentExec: resolve(providerAssetDirectory, "agent-exec.sh.hbs"),
   bootstrap: resolve(providerAssetDirectory, "bootstrap.sh.hbs"),
   containerfile: resolve(providerAssetDirectory, "Containerfile.hbs"),
+  developmentEnvironment: resolve(providerAssetDirectory, "development-environment.sh.hbs"),
+  developmentSetup: resolve(providerAssetDirectory, "development-setup.sh.hbs"),
+  marker: resolve(providerAssetDirectory, "marker.hbs"),
   start: resolve(providerAssetDirectory, "start.sh.hbs"),
 } as const;
 
@@ -50,8 +54,10 @@ export async function materializeComputerImageContext(repositoryRoot: string, pr
   const assetDestination = resolve(contextDirectory, "packages/computer-providers/src/base/assets");
   await mkdir(assetDestination, { recursive: true });
   await Promise.all([
+    materializeFileTemplate(computerImageAssets.agentExec, resolve(assetDestination, "agent-exec.sh")),
     materializeFileTemplate(computerImageAssets.bootstrap, resolve(assetDestination, "bootstrap.sh")),
     materializeFileTemplate(computerImageAssets.containerfile, resolve(assetDestination, "Containerfile")),
+    materializeFileTemplate(computerImageAssets.developmentSetup, resolve(assetDestination, "development-setup.sh")),
     materializeFileTemplate(computerImageAssets.start, resolve(assetDestination, "start.sh")),
   ]);
 

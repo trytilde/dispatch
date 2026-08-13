@@ -42,12 +42,11 @@ pnpm --filter @openbot/cli test
 - `apps/desktop`: Electron main/preload shell and packaged local server.
 - `apps/computer-service`: capability-protected ConnectRPC service inside computers.
 - `packages/control-service-proto`: browser/Electron control protobuf and generated Connect types.
-- `packages/agent-provider-core`: internal agent, session, and message interfaces.
-- `packages/agent-provider`: Tilde implementation of the agent provider interface.
+- `packages/agent-provider`: internal agent, session, and message interfaces plus the Tilde implementation.
 - `packages/configuration`: typed contract for the fork-owned composition root.
 - `packages/utilities`: shared utilities, including strict Handlebars rendering for generated source, configuration, service, and deployment files.
 - `configuration`: fork-owned Eve-compatible agent directories, runtime skills, sandbox seed, and provider plugins.
-- `packages/runtime-provider-core`: shared build and phased deployment contracts and coordinator.
+- `packages/runtime-provider`: shared build and phased deployment contracts and coordinator.
 - `packages/control-service-provider`, `packages/agent-service-provider`: independent local and Vercel service artifacts and deployment.
 - `packages/ui`: shared React UI and vendored Beautiful UI components.
 - `scripts/`: non-interactive build helpers that do not belong to the operator CLI.
@@ -67,7 +66,7 @@ pnpm --filter @openbot/cli test
 
 ### Providers
 
-- Define provider contracts in their domain `*-provider-core` package and implementations in the matching provider package. Do not expose internal provider interfaces over RPC by default.
+- Define provider contracts in `core.ts` or `core/` inside the owning provider package and keep implementations beside them. Do not expose internal provider interfaces over RPC by default.
 - Use the `implement-provider` skill whenever adding or editing a provider implementation.
 - Keep small implementations in `<provider>.ts`. When one owns multiple responsibilities or runtime files, use `<provider>/index.ts`, cohesive subfiles, and `assets/`.
 - Store generated-file sources as `*.hbs` assets, not TypeScript strings. Provider build and deploy lifecycles render them through `@openbot/utilities` into ignored artifacts; runtime persistence and user-supplied bytes remain byte-preserving data.

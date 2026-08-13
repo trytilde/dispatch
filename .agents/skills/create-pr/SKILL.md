@@ -12,7 +12,7 @@ Use when the user asks to open, publish, prepare, or update a PR for the current
 1. Inspect branch, remotes, worktree, stashes, and existing PRs.
 2. Review the full diff against the actual default branch. Preserve unrelated user changes.
 3. Run `pre-commit-checks` and fix in-scope failures.
-4. Review protobuf, `tilde.state.yaml`, environment, deployment, public documentation, and Changesets impact.
+4. Review protobuf, `tilde.state.yaml`, environment, deployment, package README, public documentation, and Changesets impact.
 5. Run the architecture and ADR gate. Resolve any user decision before publishing.
 6. Use a Conventional Commits title and intentional file selection.
 7. Commit, push, and open or update a draft PR only when requested.
@@ -98,6 +98,19 @@ Use a checked-in template when present; otherwise include:
 ## Changesets Gate
 
 OpenBot uses Changesets and versions all workspace packages as one fixed group. Follow `add-changeset` when a PR changes owner-visible behavior or a package API. Do not edit package versions or changelogs directly; the Changesets workflow owns the unified version pull request. Documentation-only, test-only, CI-only, and internal refactors need no placeholder changeset.
+
+## Package README Gate
+
+Compare the PR base with the current working copy and identify every changed workspace package from its nearest `package.json`. For each affected package, verify its package-root `README.md` remains accurate. Create or update it when required.
+
+Every package README must contain:
+
+- a clear package title
+- a concise description of its ownership and purpose
+- a `Public API` section documenting every publicly exported function
+- the critical publicly exported interfaces and types callers need to implement or consume
+
+Trace exports from the package's declared entrypoints rather than documenting every internal module or every minor exported type. Treat a missing function, stale signature, renamed package, changed provider lifecycle, or changed caller obligation as a blocking documentation defect before PR publication.
 
 ## Frontend Verification
 

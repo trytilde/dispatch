@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vite-plus/test";
-import { developmentServerEnvironment } from "./dev.js";
+import { developmentServerCommand, developmentServerEnvironment } from "./dev.js";
+
+describe("development server command", () => {
+  it("keeps the watched CLI process at the repository root", () => {
+    expect(developmentServerCommand()).toEqual([
+      "pnpm",
+      ["exec", "tsx", "watch", "cli/src/index.tsx", "_serve"],
+    ]);
+  });
+});
 
 describe("development server environment", () => {
   it("resolves workspace packages through their source exports", () => {

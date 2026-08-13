@@ -1,0 +1,16 @@
+import { Configuration } from "@openbot/configuration";
+import { LocalAgentServiceProvider } from "@openbot/agent-service-provider";
+import { LocalControlServiceProvider } from "@openbot/control-service-provider";
+import runtimeProviders from "./runtime-providers.js";
+
+export default Configuration({
+  providers: {
+    controlService: new LocalControlServiceProvider(),
+    agentService: new LocalAgentServiceProvider(),
+    agent: runtimeProviders.agent,
+    computer: runtimeProviders.computer,
+    inferenceModel: runtimeProviders.inferenceModel,
+    skills: runtimeProviders.skills,
+    tools: runtimeProviders.tools,
+  },
+});

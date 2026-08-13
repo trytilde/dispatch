@@ -10,8 +10,16 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command:
-      "OPENBOT_SETUP_CODE=openbot-e2e-setup-code-with-32-bytes OPENBOT_SANDBOX_PROVIDER=vercel-sandbox OPENBOT_NO_DESKTOP=1 DATABASE_URL=file:./.data/openbot-e2e.db vp run dev",
+    command: "pnpm dev",
+    env: {
+      ...process.env,
+      OPENBOT_NO_DESKTOP: "1",
+      OPENBOT_AGENT_HELLO_WORLD_API_KEY: "e2e-agent-api-key",
+      OPENBOT_AGENT_HELLO_WORLD_WEBHOOK_SIGNING_KEY: "e2e-webhook-signing-key",
+      OPENBOT_OPENAI_API_KEY: "e2e-openai-api-key",
+      OPENBOT_TILDE_ORG_ID: "e2e-org",
+      OPENBOT_TILDE_TEAM_ID: "e2e-team",
+    },
     url: "http://127.0.0.1:4173/healthz",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

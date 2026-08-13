@@ -56,6 +56,6 @@ For the selected candidate, resolve constraints, ownership, lifecycle, failure m
 
 - Update a glossary only when a durable domain term is resolved.
 - Offer an ADR only for a load-bearing, surprising trade-off.
+- Amend an existing governing ADR instead of duplicating it, and append the required timestamped `Updates` bullet when its decision changes.
 - Preserve Tilde, database, environment, sandbox, web, desktop, and provider boundaries unless the change deliberately redefines one.
 - Use [INTERFACE-DESIGN.md](INTERFACE-DESIGN.md) when comparing interface shapes and [DEEPENING.md](DEEPENING.md) for deeper examples.
-

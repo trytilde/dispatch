@@ -1,8 +1,10 @@
 packages:
+  - cli
   - apps/*
   - packages/*
 
 onlyBuiltDependencies:
+  - "@trytilde/api-client"
   - "@bufbuild/buf"
   - electron
   - esbuild

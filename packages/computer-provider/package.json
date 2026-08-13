@@ -1,0 +1,32 @@
+{
+  "name": "@openbot/computer-provider",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tools": "./src/tools/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@connectrpc/connect": "2.1.2",
+    "@connectrpc/connect-node": "2.1.2",
+    "@openbot/computer-service-proto": "workspace:*",
+    "@openbot/runtime-provider": "workspace:*",
+    "@openbot/utilities": "workspace:*",
+    "@vercel/sandbox": "3.0.0",
+    "ai": "6.0.250",
+    "microsandbox": "0.6.8",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.3.0",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}

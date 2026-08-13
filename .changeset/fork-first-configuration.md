@@ -1,14 +1,14 @@
 ---
-"@openbot/box-host": minor
-"@openbot/config": minor
-"@openbot/contracts": minor
-"@openbot/db": minor
+"@openbot/configuration": minor
 "@openbot/desktop": minor
-"@openbot/provider-sdk": minor
-"@openbot/providers": minor
-"@openbot/server": minor
+"@openbot/control-service": minor
 "@openbot/ui": minor
 "@openbot/web": minor
+"@openbot/cli": minor
+"@openbot/agent-service-provider": minor
+"@openbot/computer-provider": minor
+"@openbot/computer-service": minor
+"@openbot/computer-service-proto": minor
 ---
 
-Add one fork-owned `configuration/` tree for directly authored Vercel AI SDK-compatible agent endpoints, runtime skills, sandbox setup, and provider integrations, with an interactive terminal CLI for setup and operation. OpenBot discovers committed agent modules without generating or publishing TypeScript at runtime.
+Add one fork-owned `configuration/` tree for directly authored Vercel AI SDK-compatible agent endpoints, agent-scoped skills and workspace seeds, and provider integrations, with an interactive terminal CLI for setup and operation. Concrete implementations are grouped under `Configuration({ providers: { ... } })`; repository resources use canonical file locations instead of configurable paths. OpenBot discovers committed agent modules without generating or publishing TypeScript at runtime.

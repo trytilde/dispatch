@@ -1,4 +1,4 @@
-# @openbot/computer-providers
+# @openbot/computer-provider
 
 The internal computer boundary, shared image/build behavior, and Microsandbox and Vercel Sandbox implementations. This package owns computer lifecycle and capability-backed operations; it is not an owner-facing control API.
 

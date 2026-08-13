@@ -5,7 +5,7 @@
 "@openbot/cli": patch
 "@openbot/configuration": patch
 "@openbot/agent-provider": patch
-"@openbot/computer-providers": patch
+"@openbot/computer-provider": patch
 "@openbot/inference-model-provider": patch
 "@openbot/skills-provider": patch
 "@openbot/tools-provider": patch

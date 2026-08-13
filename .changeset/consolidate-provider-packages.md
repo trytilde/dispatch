@@ -2,7 +2,7 @@
 "@openbot/agent-provider": minor
 "@openbot/agent-service-provider": minor
 "@openbot/cli": minor
-"@openbot/computer-providers": minor
+"@openbot/computer-provider": minor
 "@openbot/computer-service": minor
 "@openbot/computer-service-proto": minor
 "@openbot/configuration": minor

@@ -51,7 +51,7 @@ export async function materializeComputerImageContext(repositoryRoot: string, pr
     await cp(resolve(repositoryRoot, path), destination, { recursive: true });
   }
 
-  const assetDestination = resolve(contextDirectory, "packages/computer-providers/src/base/assets");
+  const assetDestination = resolve(contextDirectory, "packages/computer-provider/src/base/assets");
   await mkdir(assetDestination, { recursive: true });
   await Promise.all([
     materializeFileTemplate(computerImageAssets.agentExec, resolve(assetDestination, "agent-exec.sh")),

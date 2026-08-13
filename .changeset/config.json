@@ -6,7 +6,7 @@
     "@openbot/agent-provider",
     "@openbot/agent-service-provider",
     "@openbot/cli",
-    "@openbot/computer-providers",
+    "@openbot/computer-provider",
     "@openbot/computer-service",
     "@openbot/computer-service-proto",
     "@openbot/configuration",

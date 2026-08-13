@@ -3,7 +3,7 @@
 "@openbot/cli": minor
 "@openbot/agent-service-provider": minor
 "@openbot/control-service-provider": minor
-"@openbot/computer-providers": minor
+"@openbot/computer-provider": minor
 "@openbot/computer-service": minor
 ---
 

@@ -1,5 +1,7 @@
 # ADR-0005: UX-first application reset
 
+> Deployment artifact ownership was refined by ADR-0008 and ADR-0010.
+
 ## In brief
 
 - Design the user experience first, then add the control API it requires.
@@ -16,7 +18,7 @@ The application had accumulated server, RPC, provider, deployment, and setup beh
 
 Reset the application layer to a static UX shell and a bare Hono server. The server exposes `/healthz`, federates generated Connect handlers under `/rpc`, and leaves APIs that have not been designed unimplemented. `control-service-proto` remains empty until the UX identifies a required owner-facing operation.
 
-Build the web app once into `apps/web/dist`. Stage that output in Vercel's `public/` directory so production static assets use its CDN. Keep static-file and SPA fallback handling in Hono as the portable default for local and non-Vercel Node.js hosts. Vercel routing configuration must not duplicate the application route table.
+Build the web app once into `apps/web/dist`. The Vercel control provider copies that output into its prebuilt `.vercel/output/static` artifact so production static assets use the CDN. Keep static-file and SPA fallback handling in Hono as the portable default for local and non-Vercel Node.js hosts. Vercel routing configuration must not duplicate the application route table.
 
 Delete the legacy `providers` and `provider-sdk` packages. Preserve the domain packages without wiring them into `apps/control-service`. Remove setup-code generation, unlock endpoints, browser setup screens, and production setup-secret provisioning.
 

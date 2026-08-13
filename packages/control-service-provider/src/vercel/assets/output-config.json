@@ -1,0 +1,9 @@
+{
+  "version": 3,
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/healthz", "dest": "/control" },
+    { "src": "/rpc(?:/.*)?", "dest": "/control" },
+    { "src": "/.*", "dest": "/index.html" }
+  ]
+}

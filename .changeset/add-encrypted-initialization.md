@@ -28,3 +28,5 @@
 Add interactive encrypted configuration initialization and provider-defined onboarding questions.
 
 Build and deploy control and agent services as independent artifacts with native TypeScript checks, concurrent per-agent Vercel functions, and separate local services.
+
+Keep deployment entrypoints, platform configuration, and service templates as provider-owned assets that are materialized by build and deploy lifecycles.

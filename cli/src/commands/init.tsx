@@ -61,12 +61,7 @@ export function validateNonInteractiveCoreAnswers(
   };
   const runtimeRequired: Record<string, readonly string[]> = {
     local: [],
-    vercel: [
-      "vercel-token",
-      "vercel-control-project",
-      "vercel-agent-project",
-      "computer-image-repository",
-    ],
+    vercel: ["vercel-token", "vercel-control-project", "vercel-agent-project"],
   };
   const owner = answers["owner-identity"];
   const runtime = answers.runtime;

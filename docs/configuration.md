@@ -46,11 +46,11 @@ These locations are conventions, not configuration options. Global `configuratio
 
 Custom provider implementations live under `configuration/providers/` and must be explicitly imported and instantiated in `configuration/index.ts`.
 
-The Vercel Sandbox computer provider reads `OPENBOT_COMPUTER_IMAGE_REPOSITORY`
-as an untagged Vercel Container Registry repository. `openbot init` asks for it
-only when Vercel is selected; alternatively pass `{ repository:
-"registry.vercel.com/example/openbot-computer" }` to its constructor. The local
-Microsandbox provider asks for no registry and tags its local image from the Git
-remote, such as `trytilde/openbot-computer:<content-tag>`.
+The Vercel Sandbox computer provider does not ask for a registry. Deployment
+creates the control and agent Vercel projects first, then authenticates Docker
+with the deployment token and creates `openbot-computer` in the agent project's
+built-in Vercel Container Registry on first push. The local Microsandbox
+provider tags its local image from the Git remote, such as
+`trytilde/openbot-computer:<content-tag>`.
 
 Run `pnpm openbot check` after every configuration change. Provider build checks also run automatically before `pnpm openbot deploy` creates or deploys an artifact.

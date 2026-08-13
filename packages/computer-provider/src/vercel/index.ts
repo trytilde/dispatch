@@ -4,9 +4,11 @@ import {
   type ComputerCallContext,
   type ComputerExecRequest,
   type ComputerHandle,
+  type ComputerImageSpec,
   type ComputerInput,
   type ComputerSpec,
 } from "../core/index.js";
+import type { DeploymentContext } from "@tryopenbot/runtime-provider";
 import {
   BaseComputerProvider,
   computerWorkspacePath,
@@ -16,6 +18,15 @@ import {
 } from "../base/index.js";
 import { computerServiceApiKey, scopedCapability } from "../capability.js";
 
+interface VercelSandboxComputerProviderOptions extends ComputerImageDeploymentConfig {
+  request?: typeof fetch;
+}
+
+interface VercelRegistryIdentity {
+  repository: string;
+  username: string;
+}
+
 export class VercelSandboxComputerProvider extends BaseComputerProvider {
   protected readonly providerId = "vercel-sandbox";
   protected readonly deployedImageEnvironmentVariable = "OPENBOT_VERCEL_COMPUTER_IMAGE";
@@ -23,14 +34,53 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
   readonly #instances = new Map<string, VercelSandbox>();
   readonly #handles = new Map<string, ComputerHandle>();
   readonly #specs = new Map<string, ComputerSpec>();
+  readonly #configuredRepository: string | undefined;
+  readonly #request: typeof fetch;
+  #registryIdentity: Promise<VercelRegistryIdentity> | undefined;
 
-  constructor(imageDeployment: ComputerImageDeploymentConfig = {}) {
+  constructor(options: VercelSandboxComputerProviderOptions = {}) {
+    const { request, ...imageDeployment } = options;
     super(imageDeployment, {
       publish: true,
       buildxPlatform: "linux/amd64",
-      repositoryDescription:
-        "Create or open a Vercel Container Registry, then copy the untagged repository from its Push an image command. See https://vercel.com/docs/container-registry/getting-started#push-an-image",
+      managedRepository: true,
     });
+    this.#configuredRepository = imageDeployment.repository;
+    this.#request = request ?? fetch;
+  }
+
+  protected async imageRepository(
+    context: DeploymentContext,
+    phase: "build" | "plan" | "deploy",
+  ): Promise<string> {
+    if (this.#configuredRepository) return super.imageRepository(context, phase);
+    if (phase === "plan") return "the agent Vercel project's Container Registry";
+    if (phase === "build") return "openbot/vercel-sandbox-computer";
+    return (await this.#vercelRegistryIdentity(context)).repository;
+  }
+
+  protected async authenticateImageRepository(
+    context: DeploymentContext,
+    _spec: ComputerImageSpec,
+    callContext: ComputerCallContext,
+  ): Promise<void> {
+    if (this.#configuredRepository) return;
+    const token = context.inputs.deploymentSecrets().VERCEL_TOKEN;
+    if (!token)
+      throw new ComputerProviderError(
+        "invalid_configuration",
+        "VERCEL_TOKEN is required to publish the Vercel Sandbox computer image",
+      );
+    const identity = await this.#vercelRegistryIdentity(context);
+    await this.runDockerWithInput(
+      ["login", "vcr.vercel.com", "--username", identity.username, "--password-stdin"],
+      token,
+      callContext,
+    );
+  }
+
+  #vercelRegistryIdentity(context: DeploymentContext): Promise<VercelRegistryIdentity> {
+    return (this.#registryIdentity ??= resolveVercelRegistryIdentity(context, this.#request));
   }
 
   async create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle> {
@@ -233,6 +283,52 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
       );
     }
   }
+}
+
+async function resolveVercelRegistryIdentity(
+  context: DeploymentContext,
+  request: typeof fetch = fetch,
+): Promise<VercelRegistryIdentity> {
+  const token = context.inputs.deploymentSecrets().VERCEL_TOKEN;
+  if (!token)
+    throw new ComputerProviderError(
+      "invalid_configuration",
+      "VERCEL_TOKEN is required to resolve the Vercel Container Registry",
+    );
+  const project = context.environment.OPENBOT_VERCEL_AGENT_PROJECT?.trim();
+  if (!project)
+    throw new ComputerProviderError(
+      "invalid_configuration",
+      "OPENBOT_VERCEL_AGENT_PROJECT is required to resolve the Vercel Container Registry",
+    );
+  const team = context.environment.VERCEL_TEAM_ID?.trim();
+  const url = team
+    ? `https://api.vercel.com/v2/teams/${encodeURIComponent(team)}`
+    : "https://api.vercel.com/v2/user";
+  const response = await request(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!response.ok)
+    throw new ComputerProviderError(
+      "provider_unavailable",
+      `Could not resolve the Vercel registry scope (${response.status})`,
+    );
+  const body = (await response.json()) as {
+    id?: unknown;
+    slug?: unknown;
+    username?: unknown;
+    user?: { id?: unknown; username?: unknown };
+  };
+  const account = body.user ?? body;
+  const slug = team ? body.slug : account.username;
+  const username = team ? body.id : account.id;
+  if (typeof slug !== "string" || !slug || typeof username !== "string" || !username)
+    throw new ComputerProviderError(
+      "provider_unavailable",
+      "Vercel did not return the account identity required for its Container Registry",
+    );
+  return {
+    repository: `vcr.vercel.com/${slug}/${project}/openbot-computer`,
+    username,
+  };
 }
 
 function computerEnvironment(id: string, spec: ComputerSpec): Record<string, string> {

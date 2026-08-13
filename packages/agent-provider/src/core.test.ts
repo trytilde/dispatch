@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { AgentProviderError, pageSize, providerSignal } from "./core.js";
 
 describe("agent provider core", () => {

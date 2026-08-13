@@ -1,5 +1,5 @@
 import type { ToolSet } from "ai";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { asRegisteredTool, providerSignal, registeredToolsToToolSet } from "./core.js";
 
 describe("tools provider core", () => {

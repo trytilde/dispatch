@@ -1,13 +1,15 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 import { app, createApp } from "./app.js";
 
 const temporaryRoots: string[] = [];
 
 afterEach(async () => {
-  await Promise.all(temporaryRoots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  await Promise.all(
+    temporaryRoots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
+  );
 });
 
 describe("bare OpenBot server", () => {
@@ -18,9 +20,12 @@ describe("bare OpenBot server", () => {
   });
 
   it("federates the empty control namespace", async () => {
-    const response = await app.request("https://openbot.test/rpc/openbot.control.v1.ControlService/Unknown", {
-      method: "POST",
-    });
+    const response = await app.request(
+      "https://openbot.test/rpc/openbot.control.v1.ControlService/Unknown",
+      {
+        method: "POST",
+      },
+    );
     expect(response.status).toBe(404);
   });
 

@@ -42,3 +42,6 @@ flowchart LR
 - 2026-08-13T11:20:28+02:00: Grouped concrete implementations under `providers` and made agents, skills, custom provider source, and sandbox resources use fixed file-based conventions instead of configurable paths.
 - 2026-08-13T12:27:55+02:00: Replaced flat agent modules with path-identified agent directories modeled on Eve while retaining OpenBot's ChatKit runtime and shared-computer boundary.
 - 2026-08-13T13:23:44+02:00: Removed installation-level skill and sandbox configuration; skills and workspace seeds now exist only inside their owning agent directory.
+- 2026-08-13T16:00:30+02:00: Reduced the repository's initial `configuration/` tree to `.gitkeep`; every fork must run `openbot init` to materialize its composition root, encrypted configuration, instrumentation, and first agent.
+- 2026-08-13T16:21:00+02:00: Prohibited root environment and SOPS configuration. Fork values load only from `configuration/`; contributor and CI values come from the process environment and never become fork defaults.
+- 2026-08-13T16:27:00+02:00: Kept all seven roles explicit in `configuration/index.ts` while moving the five agent-runtime instances to `configuration/runtime-providers.ts`, preventing service build/deploy tooling from entering agent artifacts.

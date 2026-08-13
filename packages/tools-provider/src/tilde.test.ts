@@ -1,6 +1,6 @@
 import { createClient } from "@trytilde/harness-sdk";
 import type { ToolSet } from "ai";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { TildeToolProvider } from "./tilde.js";
 
 const mocks = vi.hoisted(() => {
@@ -12,7 +12,11 @@ const mocks = vi.hoisted(() => {
     tools: vi.fn(async () => tools),
     callTool: vi.fn(async (name: string, input?: Record<string, unknown>) => ({ name, input })),
   };
-  return { mcp, closeMcp: vi.fn(async () => undefined), createMCPClient: vi.fn(async () => ({ mcp, closeMcp: mocks.closeMcp })) };
+  return {
+    mcp,
+    closeMcp: vi.fn(async () => undefined),
+    createMCPClient: vi.fn(async () => ({ mcp, closeMcp: mocks.closeMcp })),
+  };
 });
 
 vi.mock("@trytilde/harness-sdk-vercel-ai-node", () => ({
@@ -21,7 +25,11 @@ vi.mock("@trytilde/harness-sdk-vercel-ai-node", () => ({
 
 describe("TildeToolProvider", () => {
   it("uses the Harness SDK MCP client and registers named AI SDK tools", async () => {
-    const client = createClient({ baseUrl: "https://tilde.test", teamId: "team-one", apiKey: "secret" });
+    const client = createClient({
+      baseUrl: "https://tilde.test",
+      teamId: "team-one",
+      apiKey: "secret",
+    });
     vi.spyOn(client.mcp, "getServer").mockResolvedValue({
       id: "runtime-one",
       name: "OpenBot runtime",
@@ -36,11 +44,20 @@ describe("TildeToolProvider", () => {
 
     expect(mocks.createMCPClient).toHaveBeenCalledWith({ client, serverId: "runtime-one" });
     expect(registered.map((tool) => tool.name)).toEqual(["SEARCH_TOOLS", "MULTI_EXECUTE_TOOL"]);
-    await expect(provider.injectPromptPart({ agentId: "agent", sessionId: "session" }, { requestId: "request-one" })).resolves.toContain("GET_TOOL_SCHEMAS");
+    await expect(
+      provider.injectPromptPart(
+        { agentId: "agent", sessionId: "session" },
+        { requestId: "request-one" },
+      ),
+    ).resolves.toContain("GET_TOOL_SCHEMAS");
   });
 
   it("invokes through and closes the Harness SDK MCP client", async () => {
-    const client = createClient({ baseUrl: "https://tilde.test", teamId: "team-one", apiKey: "secret" });
+    const client = createClient({
+      baseUrl: "https://tilde.test",
+      teamId: "team-one",
+      apiKey: "secret",
+    });
     vi.spyOn(client.mcp, "getServer").mockResolvedValue({
       id: "runtime-one",
       name: "OpenBot runtime",
@@ -51,7 +68,9 @@ describe("TildeToolProvider", () => {
     });
     const provider = new TildeToolProvider({ client, serverId: "runtime-one" });
 
-    await expect(provider.invoke("SEARCH_TOOLS", { query: "email" }, { requestId: "request-one" })).resolves.toEqual({
+    await expect(
+      provider.invoke("SEARCH_TOOLS", { query: "email" }, { requestId: "request-one" }),
+    ).resolves.toEqual({
       name: "SEARCH_TOOLS",
       input: { query: "email" },
     });

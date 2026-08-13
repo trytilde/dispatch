@@ -7,6 +7,7 @@ service ComputerService {
   rpc ApplyLifecycleBundle(ApplyLifecycleBundleRequest) returns (ApplyLifecycleBundleResponse);
   rpc RunLifecycle(RunLifecycleRequest) returns (RunLifecycleResponse);
   rpc Exec(ExecRequest) returns (ExecResponse);
+  rpc AwaitExec(AwaitExecRequest) returns (ExecResponse);
   rpc ReadFile(ReadFileRequest) returns (ReadFileResponse);
   rpc WriteFile(WriteFileRequest) returns (WriteFileResponse);
   rpc Screenshot(ScreenshotRequest) returns (ScreenshotResponse);
@@ -79,12 +80,21 @@ message ExecRequest {
   uint32 timeout_milliseconds = 4;
   map<string, string> environment = 5;
   string agent_id = 6;
+  bool background = 7;
 }
 
 message ExecResponse {
   int32 exit_code = 1;
   string stdout = 2;
   string stderr = 3;
+  string job_id = 4;
+  bool running = 5;
+}
+
+message AwaitExecRequest {
+  string agent_id = 1;
+  string job_id = 2;
+  uint32 timeout_milliseconds = 3;
 }
 
 message ReadFileRequest {

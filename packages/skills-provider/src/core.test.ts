@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { pageSize, providerSignal, safeSkillAssetPath, SkillsProviderError } from "./core.js";
 
 describe("skills provider core", () => {
@@ -15,6 +15,8 @@ describe("skills provider core", () => {
   });
 
   it("honors elapsed deadlines", () => {
-    expect(() => providerSignal({ requestId: "request", deadline: new Date(0) })).toThrow(SkillsProviderError);
+    expect(() => providerSignal({ requestId: "request", deadline: new Date(0) })).toThrow(
+      SkillsProviderError,
+    );
   });
 });

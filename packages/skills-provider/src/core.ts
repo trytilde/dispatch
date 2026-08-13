@@ -153,12 +153,29 @@ export interface SkillProvider extends SkillProviderModelHooks, DeployableProvid
   listSkills(request: ListSkillsRequest, context: SkillsProviderCallContext): Promise<Page<Skill>>;
   getSkill(id: string, context: SkillsProviderCallContext): Promise<Skill>;
   createSkill(request: CreateSkillRequest, context: SkillsProviderCallContext): Promise<Skill>;
-  updateSkill(id: string, request: UpdateSkillRequest, context: SkillsProviderCallContext): Promise<Skill>;
-  listRegistries(request: ListSkillRegistriesRequest, context: SkillsProviderCallContext): Promise<Page<SkillRegistry>>;
+  updateSkill(
+    id: string,
+    request: UpdateSkillRequest,
+    context: SkillsProviderCallContext,
+  ): Promise<Skill>;
+  listRegistries(
+    request: ListSkillRegistriesRequest,
+    context: SkillsProviderCallContext,
+  ): Promise<Page<SkillRegistry>>;
   getRegistry(id: string, context: SkillsProviderCallContext): Promise<SkillRegistry>;
-  registerSkills(request: RegisterSkillsRequest, context: SkillsProviderCallContext): Promise<SkillRegistry>;
-  getSkillAssetManifest(skillId: string, context: SkillsProviderCallContext): Promise<SkillAssetManifest>;
-  downloadSkillAsset(skillId: string, path: string, context: SkillsProviderCallContext): Promise<Uint8Array>;
+  registerSkills(
+    request: RegisterSkillsRequest,
+    context: SkillsProviderCallContext,
+  ): Promise<SkillRegistry>;
+  getSkillAssetManifest(
+    skillId: string,
+    context: SkillsProviderCallContext,
+  ): Promise<SkillAssetManifest>;
+  downloadSkillAsset(
+    skillId: string,
+    path: string,
+    context: SkillsProviderCallContext,
+  ): Promise<Uint8Array>;
   materializeSkillAssets(
     skillId: string,
     destination: SkillAssetDestination,
@@ -174,17 +191,28 @@ export function pageSize(value: number | undefined, fallback: number, maximum = 
   return Math.min(value, maximum);
 }
 
-export function providerSignal(context: SkillsProviderCallContext, fallbackMs = 30_000): AbortSignal {
+export function providerSignal(
+  context: SkillsProviderCallContext,
+  fallbackMs = 30_000,
+): AbortSignal {
   if (context.signal) return context.signal;
   const remaining = context.deadline ? context.deadline.valueOf() - Date.now() : fallbackMs;
-  if (remaining <= 0) throw new SkillsProviderError("deadline_exceeded", "The provider deadline has elapsed", true);
+  if (remaining <= 0)
+    throw new SkillsProviderError("deadline_exceeded", "The provider deadline has elapsed", true);
   return AbortSignal.timeout(Math.min(remaining, fallbackMs));
 }
 
 export function safeSkillAssetPath(path: string): string {
   const normalized = path.replaceAll("\\", "/").replace(/^\.\//, "");
-  if (!normalized || normalized.startsWith("/") || normalized.split("/").some((part) => part === "" || part === "." || part === "..")) {
-    throw new SkillsProviderError("provider_unavailable", `Tilde returned an unsafe skill asset path: ${path}`);
+  if (
+    !normalized ||
+    normalized.startsWith("/") ||
+    normalized.split("/").some((part) => part === "" || part === "." || part === "..")
+  ) {
+    throw new SkillsProviderError(
+      "provider_unavailable",
+      `Tilde returned an unsafe skill asset path: ${path}`,
+    );
   }
   return normalized;
 }

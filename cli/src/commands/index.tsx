@@ -7,19 +7,26 @@ import { Help, Success } from "../ui.js";
 import { runProductionDeploy } from "./deploy.js";
 import { runDevelopment } from "./dev.js";
 import { runInitialization } from "./init.js";
+import { runNewAgent } from "./new-agent.js";
 import { runSecrets } from "./secrets.js";
 import { runDevelopmentServer } from "./serve.js";
 
-export interface CliInvocation { command: string; rest: string[] }
+export interface CliInvocation {
+  command: string;
+  rest: string[];
+}
 
 export function parseInvocation(argv: readonly string[]): CliInvocation {
-  const parsed = arg({
-    "--help": Boolean,
-    "-h": "--help",
-  }, {
-    argv: argv.filter((value) => value !== "--"),
-    stopAtPositional: true,
-  });
+  const parsed = arg(
+    {
+      "--help": Boolean,
+      "-h": "--help",
+    },
+    {
+      argv: argv.filter((value) => value !== "--"),
+      stopAtPositional: true,
+    },
+  );
   if (parsed["--help"]) return { command: "help", rest: [] };
   const [command = "help", ...rest] = parsed._;
   return { command, rest };
@@ -32,6 +39,12 @@ export async function runCommand(command: string, args: readonly string[]): Prom
     await runInitialization();
     return show(<Success title="OpenBot configuration initialized" />);
   }
+  if (command === "new-agent") {
+    const agent = await runNewAgent(args);
+    return show(
+      <Success title={`Agent ${agent.name} created at configuration/agents/${agent.id}`} />,
+    );
+  }
   if (command === "dev") {
     rejectArguments(command, args);
     if (process.stdout.isTTY) show(<Success title="Starting OpenBot development" />);
@@ -43,7 +56,8 @@ export async function runCommand(command: string, args: readonly string[]): Prom
   }
   if (command === "deploy") return runProductionDeploy(args);
   if (command === "secrets") return runSecrets(args);
-  if (command === "check" || command === "build" || command === "test") return delegate(command, args);
+  if (command === "check" || command === "build" || command === "test")
+    return delegate(command, args);
   throw new Error(`Unknown command: ${[command, ...args].join(" ")}`);
 }
 
@@ -63,6 +77,9 @@ async function delegate(script: string, args: readonly string[]): Promise<void> 
     stdio: "inherit",
     env: { ...process.env, NODE_OPTIONS: undefined },
   });
-  const code = await new Promise<number>((resolveCode, reject) => { child.once("error", reject); child.once("exit", (value) => resolveCode(value ?? 1)); });
+  const code = await new Promise<number>((resolveCode, reject) => {
+    child.once("error", reject);
+    child.once("exit", (value) => resolveCode(value ?? 1));
+  });
   if (code) process.exitCode = code;
 }

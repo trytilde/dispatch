@@ -128,11 +128,14 @@ export interface AgentPromptRequest {
   metadata?: Readonly<Record<string, string>>;
 }
 
+/** A Vercel AI SDK tool paired with the name used when composing an agent tool set. */
+export type RegisteredAgentTool = Tool & { readonly name: string };
+
 /** Optional model-facing hooks. Control-plane methods are not tools by default. */
 export interface AgentProviderModelHooks {
   registerTools?(
     context: AgentProviderCallContext,
-  ): readonly Tool[] | Promise<readonly Tool[]>;
+  ): readonly RegisteredAgentTool[] | Promise<readonly RegisteredAgentTool[]>;
   injectPromptPart?(
     request: AgentPromptRequest,
     context: AgentProviderCallContext,
@@ -142,19 +145,48 @@ export interface AgentProviderModelHooks {
 export interface AgentProvider extends AgentProviderModelHooks, DeployableProvider {
   listAgents(request: ListAgentsRequest, context: AgentProviderCallContext): Promise<Page<Agent>>;
   getAgent(id: string, context: AgentProviderCallContext): Promise<Agent>;
-  registerAgent(request: RegisterAgentRequest, context: AgentProviderCallContext): Promise<RegisteredAgent>;
-  updateAgent(id: string, request: UpdateAgentRequest, context: AgentProviderCallContext): Promise<Agent>;
+  registerAgent(
+    request: RegisterAgentRequest,
+    context: AgentProviderCallContext,
+  ): Promise<RegisteredAgent>;
+  updateAgent(
+    id: string,
+    request: UpdateAgentRequest,
+    context: AgentProviderCallContext,
+  ): Promise<Agent>;
   unregisterAgent(id: string, context: AgentProviderCallContext): Promise<void>;
 
-  listSessionGroups(request: ListSessionGroupsRequest, context: AgentProviderCallContext): Promise<Page<AgentSessionGroup>>;
-  listSessions(request: ListSessionsRequest, context: AgentProviderCallContext): Promise<Page<AgentSession>>;
-  createSession(agentId: string, title: string | undefined, context: AgentProviderCallContext): Promise<AgentSession>;
-  renameSession(sessionId: string, title: string, context: AgentProviderCallContext): Promise<AgentSession>;
+  listSessionGroups(
+    request: ListSessionGroupsRequest,
+    context: AgentProviderCallContext,
+  ): Promise<Page<AgentSessionGroup>>;
+  listSessions(
+    request: ListSessionsRequest,
+    context: AgentProviderCallContext,
+  ): Promise<Page<AgentSession>>;
+  createSession(
+    agentId: string,
+    title: string | undefined,
+    context: AgentProviderCallContext,
+  ): Promise<AgentSession>;
+  renameSession(
+    sessionId: string,
+    title: string,
+    context: AgentProviderCallContext,
+  ): Promise<AgentSession>;
   markSessionUnread(sessionId: string, context: AgentProviderCallContext): Promise<AgentSession>;
   interruptSession(sessionId: string, context: AgentProviderCallContext): Promise<void>;
 
-  listMessages(request: ListMessagesRequest, context: AgentProviderCallContext): Promise<Page<AgentMessage>>;
-  sendMessage(agentId: string, sessionId: string, text: string, context: AgentProviderCallContext): Promise<Page<AgentMessage>>;
+  listMessages(
+    request: ListMessagesRequest,
+    context: AgentProviderCallContext,
+  ): Promise<Page<AgentMessage>>;
+  sendMessage(
+    agentId: string,
+    sessionId: string,
+    text: string,
+    context: AgentProviderCallContext,
+  ): Promise<Page<AgentMessage>>;
 }
 
 export function pageSize(value: number | undefined, fallback: number, maximum = 100): number {
@@ -165,9 +197,13 @@ export function pageSize(value: number | undefined, fallback: number, maximum = 
   return Math.min(value, maximum);
 }
 
-export function providerSignal(context: AgentProviderCallContext, fallbackMs = 30_000): AbortSignal {
+export function providerSignal(
+  context: AgentProviderCallContext,
+  fallbackMs = 30_000,
+): AbortSignal {
   if (context.signal) return context.signal;
   const remaining = context.deadline ? context.deadline.valueOf() - Date.now() : fallbackMs;
-  if (remaining <= 0) throw new AgentProviderError("deadline_exceeded", "The provider deadline has elapsed", true);
+  if (remaining <= 0)
+    throw new AgentProviderError("deadline_exceeded", "The provider deadline has elapsed", true);
   return AbortSignal.timeout(Math.min(remaining, fallbackMs));
 }

@@ -8,16 +8,24 @@ import { CommandMenu, Failure } from "./ui.js";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2).filter((value) => value !== "--");
-  const invocation = argv.length === 0 && process.stdin.isTTY && process.stdout.isTTY
-    ? { command: await interactiveCommand(), rest: [] }
-    : parseInvocation(argv);
+  const invocation =
+    argv.length === 0 && process.stdin.isTTY && process.stdout.isTTY
+      ? { command: await interactiveCommand(), rest: [] }
+      : parseInvocation(argv);
   if (!invocation.command) return;
   await runCommand(invocation.command, invocation.rest);
 }
 
 async function interactiveCommand(): Promise<string> {
   let selected = "";
-  const app = render(<CommandMenu onSelect={(command) => { selected = command; }} />, { alternateScreen: true });
+  const app = render(
+    <CommandMenu
+      onSelect={(command) => {
+        selected = command;
+      }}
+    />,
+    { alternateScreen: true },
+  );
   await app.waitUntilExit();
   return selected;
 }
@@ -31,9 +39,12 @@ function printJson(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main().catch((error) => {
-  const message = redact(error instanceof Error ? error.message : String(error), [process.env.VERCEL_TOKEN ?? ""]);
-  if (process.argv.includes("--json")) printJson({ error: message });
-  else show(<Failure message={message} />);
-  process.exitCode = 1;
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href)
+  main().catch((error) => {
+    const message = redact(error instanceof Error ? error.message : String(error), [
+      process.env.VERCEL_TOKEN ?? "",
+    ]);
+    if (process.argv.includes("--json")) printJson({ error: message });
+    else show(<Failure message={message} />);
+    process.exitCode = 1;
+  });

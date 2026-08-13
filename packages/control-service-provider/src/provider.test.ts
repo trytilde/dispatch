@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { deployProviders, DeploymentOutputs } from "@openbot/runtime-provider";
 import { LocalControlServiceProvider } from "./local/index.js";
 import { deploymentUrl, VercelControlServiceProvider } from "./vercel/index.js";
@@ -9,24 +9,45 @@ import { buildVercelControlService } from "./vercel/build.js";
 import type { CommandRunner } from "./command.js";
 
 const roots: string[] = [];
-afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
+afterEach(async () =>
+  Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))),
+);
 
 describe("control service providers", () => {
   it("bundles provider-owned Vercel assets into a prebuilt artifact", async () => {
     const root = await temporaryRoot();
     await mkdir(join(root, "apps/web/dist"), { recursive: true });
     await mkdir(join(root, "apps/control-service/src"), { recursive: true });
-    await writeFile(join(root, "apps/web/dist/index.html"), "<!doctype html><title>OpenBot</title>");
-    await writeFile(join(root, "apps/control-service/src/app.ts"), "export default { fetch: () => Response.json({ service: 'openbot-control' }) };\n");
+    await writeFile(
+      join(root, "apps/web/dist/index.html"),
+      "<!doctype html><title>OpenBot</title>",
+    );
+    await writeFile(
+      join(root, "apps/control-service/src/app.ts"),
+      "export default { fetch: () => Response.json({ service: 'openbot-control' }) };\n",
+    );
     const run = vi.fn<CommandRunner["run"]>(async () => ({ stdout: "", stderr: "" }));
-    const result = await buildVercelControlService({
-      target: "production", repositoryRoot: root, environment: {}, inputs: new DeploymentOutputs(), report: () => undefined,
-    }, { run });
+    const result = await buildVercelControlService(
+      {
+        target: "production",
+        repositoryRoot: root,
+        environment: {},
+        inputs: new DeploymentOutputs(),
+        report: () => undefined,
+      },
+      { run },
+    );
     const artifact = result.outputs?.["control-service.artifact"];
     expect(artifact).toBe(join(root, ".openbot-deploy/vercel/control"));
-    expect(JSON.parse(await readFile(join(artifact!, ".vercel/output/config.json"), "utf8"))).toMatchObject({ version: 3 });
-    expect(await readFile(join(artifact!, ".vercel/output/functions/control.func/index.mjs"), "utf8")).toContain("openbot-control");
-    expect(await readFile(join(artifact!, ".vercel/output/static/index.html"), "utf8")).toContain("OpenBot");
+    expect(
+      JSON.parse(await readFile(join(artifact!, ".vercel/output/config.json"), "utf8")),
+    ).toMatchObject({ version: 3 });
+    expect(
+      await readFile(join(artifact!, ".vercel/output/functions/control.func/index.mjs"), "utf8"),
+    ).toContain("openbot-control");
+    expect(await readFile(join(artifact!, ".vercel/output/static/index.html"), "utf8")).toContain(
+      "OpenBot",
+    );
   });
 
   it("installs a secret-free local systemd unit", async () => {
@@ -34,36 +55,84 @@ describe("control service providers", () => {
     const repository = join(root, "repository with spaces");
     await mkdir(repository);
     const run = vi.fn<CommandRunner["run"]>(async () => ({ stdout: "", stderr: "" }));
-    const provider = new LocalControlServiceProvider({ platform: "linux", homeDirectory: join(root, "home"), runner: { run }, request: healthy(), command: ["/usr/bin/node", "/tmp/control.mjs"] });
-    await deployProviders([{ id: "control", role: "runtime", provider: { deployable: provider } }], {
-      target: "production", dryRun: false, repositoryRoot: repository,
-      environment: { OPENBOT_PORT: "4100" },
-      initialInputs: { outputs: { "control-service.artifact": "/tmp/control.mjs" }, secrets: { API_KEY: "private-value" } },
+    const provider = new LocalControlServiceProvider({
+      platform: "linux",
+      homeDirectory: join(root, "home"),
+      runner: { run },
+      request: healthy(),
+      command: ["/usr/bin/node", "/tmp/control.mjs"],
     });
-    const unit = await readFile(join(root, "home/.config/systemd/user/openbot-control.service"), "utf8");
-    const environment = await readFile(join(repository, ".openbot-deploy/control-service.env"), "utf8");
+    await deployProviders(
+      [{ id: "control", role: "runtime", provider: { deployable: provider } }],
+      {
+        target: "production",
+        dryRun: false,
+        repositoryRoot: repository,
+        environment: { OPENBOT_PORT: "4100" },
+        initialInputs: {
+          outputs: { "control-service.artifact": "/tmp/control.mjs" },
+          secrets: { API_KEY: "private-value" },
+        },
+      },
+    );
+    const unit = await readFile(
+      join(root, "home/.config/systemd/user/openbot-control.service"),
+      "utf8",
+    );
+    const environment = await readFile(
+      join(repository, ".openbot-deploy/control-service.env"),
+      "utf8",
+    );
     expect(unit).toContain(`WorkingDirectory=${root}/repository\\x20with\\x20spaces`);
-    expect(unit).not.toContain("WorkingDirectory=\"");
-    expect(unit).toContain(`EnvironmentFile=${root}/repository\\x20with\\x20spaces/.openbot-deploy/control-service.env`);
-    expect(unit).not.toContain("EnvironmentFile=\"");
+    expect(unit).not.toContain('WorkingDirectory="');
+    expect(unit).toContain(
+      `EnvironmentFile=${root}/repository\\x20with\\x20spaces/.openbot-deploy/control-service.env`,
+    );
+    expect(unit).not.toContain('EnvironmentFile="');
     expect(unit).not.toContain("private-value");
     expect(environment).toContain('API_KEY="private-value"');
-    expect(run).toHaveBeenCalledWith("systemctl", ["--user", "restart", "openbot-control.service"], expect.anything());
+    expect(run).toHaveBeenCalledWith(
+      "systemctl",
+      ["--user", "restart", "openbot-control.service"],
+      expect.anything(),
+    );
   });
 
   it("deploys the prebuilt control artifact to its own Vercel project", async () => {
     const root = await temporaryRoot();
     const artifact = join(root, "control-artifact");
     await mkdir(artifact);
-    const run = vi.fn<CommandRunner["run"]>(async (_command, args) => args.includes("deploy") ? { stdout: "https://control-preview.vercel.app\n", stderr: "" } : { stdout: "", stderr: "" });
+    const run = vi.fn<CommandRunner["run"]>(async (_command, args) =>
+      args.includes("deploy")
+        ? { stdout: "https://control-preview.vercel.app\n", stderr: "" }
+        : { stdout: "", stderr: "" },
+    );
     const provider = new VercelControlServiceProvider({ runner: { run }, request: healthy() });
-    await deployProviders([{ id: "control", role: "runtime", provider: { deployable: provider } }], {
-      target: "preview", dryRun: false, repositoryRoot: root,
-      environment: { OPENBOT_VERCEL_CONTROL_PROJECT: "openbot-control" },
-      initialInputs: { outputs: { "control-service.artifact": artifact } },
+    await deployProviders(
+      [{ id: "control", role: "runtime", provider: { deployable: provider } }],
+      {
+        target: "preview",
+        dryRun: false,
+        repositoryRoot: root,
+        environment: { OPENBOT_VERCEL_CONTROL_PROJECT: "openbot-control" },
+        initialInputs: { outputs: { "control-service.artifact": artifact } },
+      },
+    );
+    expect(run).toHaveBeenCalledWith(
+      "pnpm",
+      expect.arrayContaining([
+        "deploy",
+        "--prebuilt",
+        "--cwd",
+        artifact,
+        "--project",
+        "openbot-control",
+      ]),
+      expect.anything(),
+    );
+    expect(JSON.parse(await readFile(join(artifact, "vercel.json"), "utf8"))).toMatchObject({
+      framework: null,
     });
-    expect(run).toHaveBeenCalledWith("pnpm", expect.arrayContaining(["deploy", "--prebuilt", "--cwd", artifact, "--project", "openbot-control"]), expect.anything());
-    expect(JSON.parse(await readFile(join(artifact, "vercel.json"), "utf8"))).toMatchObject({ framework: null });
   });
 
   it("creates a missing Vercel project before configuring it", async () => {
@@ -73,21 +142,47 @@ describe("control service providers", () => {
     });
     const provider = new VercelControlServiceProvider({ runner: { run }, request: healthy() });
     await provider.configure({
-      target: "preview", repositoryRoot: "/repo", environment: { OPENBOT_VERCEL_CONTROL_PROJECT: "openbot-control" },
-      inputs: new DeploymentOutputs(), report: () => undefined,
+      target: "preview",
+      repositoryRoot: "/repo",
+      environment: { OPENBOT_VERCEL_CONTROL_PROJECT: "openbot-control" },
+      inputs: new DeploymentOutputs(),
+      report: () => undefined,
     });
-    expect(run).toHaveBeenCalledWith("pnpm", expect.arrayContaining(["project", "add", "openbot-control"]), expect.anything());
+    expect(run).toHaveBeenCalledWith(
+      "pnpm",
+      expect.arrayContaining(["project", "add", "openbot-control"]),
+      expect.anything(),
+    );
   });
 
   it("keeps launchd secrets in the private environment file", async () => {
     const root = await temporaryRoot();
     const run = vi.fn<CommandRunner["run"]>(async () => ({ stdout: "", stderr: "" }));
-    const provider = new LocalControlServiceProvider({ platform: "darwin", homeDirectory: join(root, "home"), uid: 501, runner: { run }, request: healthy(), command: ["/usr/bin/node", "/tmp/control.mjs"] });
-    await deployProviders([{ id: "control", role: "runtime", provider: { deployable: provider } }], {
-      target: "production", dryRun: false, repositoryRoot: root, environment: { OPENBOT_PORT: "4100" },
-      initialInputs: { outputs: { "control-service.artifact": "/tmp/control.mjs" }, secrets: { API_KEY: "private-value" } },
+    const provider = new LocalControlServiceProvider({
+      platform: "darwin",
+      homeDirectory: join(root, "home"),
+      uid: 501,
+      runner: { run },
+      request: healthy(),
+      command: ["/usr/bin/node", "/tmp/control.mjs"],
     });
-    const plist = await readFile(join(root, "home/Library/LaunchAgents/ai.openbot.openbot-control.plist"), "utf8");
+    await deployProviders(
+      [{ id: "control", role: "runtime", provider: { deployable: provider } }],
+      {
+        target: "production",
+        dryRun: false,
+        repositoryRoot: root,
+        environment: { OPENBOT_PORT: "4100" },
+        initialInputs: {
+          outputs: { "control-service.artifact": "/tmp/control.mjs" },
+          secrets: { API_KEY: "private-value" },
+        },
+      },
+    );
+    const plist = await readFile(
+      join(root, "home/Library/LaunchAgents/ai.openbot.openbot-control.plist"),
+      "utf8",
+    );
     expect(plist).toContain("--env-file=");
     expect(plist).not.toContain("private-value");
   });
@@ -98,5 +193,11 @@ describe("control service providers", () => {
   });
 });
 
-async function temporaryRoot(): Promise<string> { const root = await mkdtemp(join(tmpdir(), "openbot-control-provider-")); roots.push(root); return root; }
-function healthy(): typeof fetch { return vi.fn(async () => Response.json({ ok: true })) as typeof fetch; }
+async function temporaryRoot(): Promise<string> {
+  const root = await mkdtemp(join(tmpdir(), "openbot-control-provider-"));
+  roots.push(root);
+  return root;
+}
+function healthy(): typeof fetch {
+  return vi.fn(async () => Response.json({ ok: true })) as typeof fetch;
+}

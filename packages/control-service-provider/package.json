@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "build": "tsgo --noEmit",
     "lint": "tsgo --noEmit",
@@ -11,8 +13,8 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
-    "@openbot/utilities": "workspace:*",
     "@openbot/runtime-provider": "workspace:*",
+    "@openbot/utilities": "workspace:*",
     "tsdown": "0.22.14",
     "vercel": "58.9.4"
   },

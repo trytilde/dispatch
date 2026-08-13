@@ -4,4 +4,4 @@ The Electron desktop shell for the OpenBot web UI and local control service. Pri
 
 ## Public API
 
-This package is an Electron application and declares no importable package exports. It starts the packaged local control service, loads the same-origin web surface, and exposes only the preload bridge required by that UI.
+This package is an Electron application and declares no importable package exports. It loads the same-origin web surface, proxies control routes to `OPENBOT_CONTROL_ORIGIN` or the CLI development default at `http://127.0.0.1:4100`, and exposes only the preload bridge required by that UI. It never starts control service; `openbot dev` or a separate deployment owns that process.

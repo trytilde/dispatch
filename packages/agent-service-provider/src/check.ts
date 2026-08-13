@@ -7,15 +7,25 @@ import { agentTypeScriptPaths, discoverAgents, globalInstrumentationPath } from 
 
 const configTemplate = fileURLToPath(new URL("./assets/agents-tsconfig.json.hbs", import.meta.url));
 
-export async function checkAgentService(context: DeploymentContext, runner: CommandRunner): Promise<void> {
+export async function checkAgentService(
+  context: DeploymentContext,
+  runner: CommandRunner,
+): Promise<void> {
   const agents = await discoverAgents(context.repositoryRoot);
   const agentFiles = (await Promise.all(agents.map(agentTypeScriptPaths))).flat();
   const config = resolve(context.repositoryRoot, ".openbot-deploy/generated/agents.tsconfig.json");
   await materializeFileTemplate(configTemplate, config, {
-    FILES: JSON.stringify([
-      relative(dirname(config), globalInstrumentationPath(context.repositoryRoot)),
-      ...agentFiles.map((path) => relative(dirname(config), path)),
-    ], null, 2),
+    FILES: JSON.stringify(
+      [
+        relative(dirname(config), globalInstrumentationPath(context.repositoryRoot)),
+        ...agentFiles.map((path) => relative(dirname(config), path)),
+      ],
+      null,
+      2,
+    ),
   });
-  await runner.run("pnpm", ["exec", "tsgo", "-p", config, "--noEmit"], { cwd: context.repositoryRoot, environment: context.environment });
+  await runner.run("pnpm", ["exec", "tsgo", "-p", config, "--noEmit"], {
+    cwd: context.repositoryRoot,
+    environment: context.environment,
+  });
 }

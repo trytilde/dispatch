@@ -7,7 +7,6 @@ import { materializeFileTemplate } from "@openbot/utilities";
 const providerAssetDirectory = fileURLToPath(new URL("./assets/", import.meta.url));
 
 export const computerImageAssets = {
-  agentExec: resolve(providerAssetDirectory, "agent-exec.sh.hbs"),
   bootstrap: resolve(providerAssetDirectory, "bootstrap.sh.hbs"),
   containerfile: resolve(providerAssetDirectory, "Containerfile.hbs"),
   developmentEnvironment: resolve(providerAssetDirectory, "development-environment.sh.hbs"),
@@ -40,8 +39,17 @@ export interface MaterializedComputerImageContext {
 }
 
 /** Copies the exact image inputs into an ignored, reproducible Docker context. */
-export async function materializeComputerImageContext(repositoryRoot: string, providerId: string): Promise<MaterializedComputerImageContext> {
-  const contextDirectory = resolve(repositoryRoot, ".openbot-deploy", "computer-images", providerId, "context");
+export async function materializeComputerImageContext(
+  repositoryRoot: string,
+  providerId: string,
+): Promise<MaterializedComputerImageContext> {
+  const contextDirectory = resolve(
+    repositoryRoot,
+    ".openbot-deploy",
+    "computer-images",
+    providerId,
+    "context",
+  );
   await rm(contextDirectory, { recursive: true, force: true });
   await mkdir(contextDirectory, { recursive: true });
 
@@ -54,10 +62,18 @@ export async function materializeComputerImageContext(repositoryRoot: string, pr
   const assetDestination = resolve(contextDirectory, "packages/computer-provider/src/base/assets");
   await mkdir(assetDestination, { recursive: true });
   await Promise.all([
-    materializeFileTemplate(computerImageAssets.agentExec, resolve(assetDestination, "agent-exec.sh")),
-    materializeFileTemplate(computerImageAssets.bootstrap, resolve(assetDestination, "bootstrap.sh")),
-    materializeFileTemplate(computerImageAssets.containerfile, resolve(assetDestination, "Containerfile")),
-    materializeFileTemplate(computerImageAssets.developmentSetup, resolve(assetDestination, "development-setup.sh")),
+    materializeFileTemplate(
+      computerImageAssets.bootstrap,
+      resolve(assetDestination, "bootstrap.sh"),
+    ),
+    materializeFileTemplate(
+      computerImageAssets.containerfile,
+      resolve(assetDestination, "Containerfile"),
+    ),
+    materializeFileTemplate(
+      computerImageAssets.developmentSetup,
+      resolve(assetDestination, "development-setup.sh"),
+    ),
     materializeFileTemplate(computerImageAssets.start, resolve(assetDestination, "start.sh")),
   ]);
 
@@ -71,7 +87,11 @@ export async function materializeComputerImageContext(repositoryRoot: string, pr
 async function directoryDigest(root: string): Promise<string> {
   const hash = createHash("sha256");
   for (const path of await filesBelow(root)) {
-    hash.update(relative(root, path)).update("\0").update(await readFile(path)).update("\0");
+    hash
+      .update(relative(root, path))
+      .update("\0")
+      .update(await readFile(path))
+      .update("\0");
   }
   return `sha256:${hash.digest("hex")}`;
 }
@@ -80,7 +100,7 @@ async function filesBelow(root: string): Promise<string[]> {
   const files: string[] = [];
   for (const entry of await readdir(root, { withFileTypes: true })) {
     const path = resolve(root, entry.name);
-    if (entry.isDirectory()) files.push(...await filesBelow(path));
+    if (entry.isDirectory()) files.push(...(await filesBelow(path)));
     else if (entry.isFile()) files.push(path);
   }
   return files.sort();

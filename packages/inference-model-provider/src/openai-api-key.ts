@@ -27,7 +27,9 @@ export class OpenAIApiKeyInferenceModelProvider implements InferenceModelProvide
   }
 }
 
-function openAISettings(options: OpenAIApiKeyInferenceModelProviderOptions): OpenAIProviderSettings {
+function openAISettings(
+  options: OpenAIApiKeyInferenceModelProviderOptions,
+): OpenAIProviderSettings {
   return {
     apiKey: requireCredentialValue(options.apiKey, "OpenAI API key"),
     ...(options.baseURL ? { baseURL: options.baseURL } : {}),

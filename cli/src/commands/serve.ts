@@ -24,7 +24,7 @@ export async function runDevelopmentServer(): Promise<void> {
       console.log(`OpenBot listening at http://127.0.0.1:${port}`);
     });
     const shutdown = (): void => {
-      server.close((error) => error ? reject(error) : resolvePromise());
+      server.close((error) => (error ? reject(error) : resolvePromise()));
     };
     server.once("error", reject);
     process.once("SIGINT", shutdown);

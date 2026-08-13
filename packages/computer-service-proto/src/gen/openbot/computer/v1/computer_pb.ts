@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file openbot/computer/v1/computer.proto.
  */
 export const file_openbot_computer_v1_computer: GenFile = /*@__PURE__*/
-  fileDesc("CiJvcGVuYm90L2NvbXB1dGVyL3YxL2NvbXB1dGVyLnByb3RvEhNvcGVuYm90LmNvbXB1dGVyLnYxIg8KDUhlYWx0aFJlcXVlc3QiXwoOSGVhbHRoUmVzcG9uc2USDwoHaGVhbHRoeRgBIAEoCBIPCgd2ZXJzaW9uGAIgASgJEhgKEGxpZmVjeWNsZV9kaWdlc3QYAyABKAkSEQoJdm5jX3JlYWR5GAQgASgIIkwKDUxpZmVjeWNsZUZpbGUSDAoEcGF0aBgBIAEoCRIPCgdjb250ZW50GAIgASgMEgwKBG1vZGUYAyABKA0SDgoGc2hhMjU2GAQgASgJImAKD0xpZmVjeWNsZVNjcmlwdBIKCgJpZBgBIAEoCRIMCgRwYXRoGAIgASgJEjMKBnBoYXNlcxgDIAMoDjIjLm9wZW5ib3QuY29tcHV0ZXIudjEuTGlmZWN5Y2xlUGhhc2UilwEKG0FwcGx5TGlmZWN5Y2xlQnVuZGxlUmVxdWVzdBIOCgZkaWdlc3QYASABKAkSMQoFZmlsZXMYAiADKAsyIi5vcGVuYm90LmNvbXB1dGVyLnYxLkxpZmVjeWNsZUZpbGUSNQoHc2NyaXB0cxgDIAMoCzIkLm9wZW5ib3QuY29tcHV0ZXIudjEuTGlmZWN5Y2xlU2NyaXB0Ij8KHEFwcGx5TGlmZWN5Y2xlQnVuZGxlUmVzcG9uc2USDgoGZGlnZXN0GAEgASgJEg8KB2NoYW5nZWQYAiABKAgiYgoTUnVuTGlmZWN5Y2xlUmVxdWVzdBIyCgVwaGFzZRgBIAEoDjIjLm9wZW5ib3QuY29tcHV0ZXIudjEuTGlmZWN5Y2xlUGhhc2USFwoPZXhwZWN0ZWRfZGlnZXN0GAIgASgJIlcKD0xpZmVjeWNsZVJlc3VsdBIRCglzY3JpcHRfaWQYASABKAkSEQoJZXhpdF9jb2RlGAIgASgFEg4KBnN0ZG91dBgDIAEoCRIOCgZzdGRlcnIYBCABKAkiXQoUUnVuTGlmZWN5Y2xlUmVzcG9uc2USDgoGZGlnZXN0GAEgASgJEjUKB3Jlc3VsdHMYAiADKAsyJC5vcGVuYm90LmNvbXB1dGVyLnYxLkxpZmVjeWNsZVJlc3VsdCLqAQoLRXhlY1JlcXVlc3QSDwoHY29tbWFuZBgBIAEoCRIRCglhcmd1bWVudHMYAiADKAkSCwoDY3dkGAMgASgJEhwKFHRpbWVvdXRfbWlsbGlzZWNvbmRzGAQgASgNEkYKC2Vudmlyb25tZW50GAUgAygLMjEub3BlbmJvdC5jb21wdXRlci52MS5FeGVjUmVxdWVzdC5FbnZpcm9ubWVudEVudHJ5EhAKCGFnZW50X2lkGAYgASgJGjIKEEVudmlyb25tZW50RW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJBCgxFeGVjUmVzcG9uc2USEQoJZXhpdF9jb2RlGAEgASgFEg4KBnN0ZG91dBgCIAEoCRIOCgZzdGRlcnIYAyABKAkiMQoPUmVhZEZpbGVSZXF1ZXN0EgwKBHBhdGgYASABKAkSEAoIYWdlbnRfaWQYAiABKAkiIwoQUmVhZEZpbGVSZXNwb25zZRIPCgdjb250ZW50GAEgASgMIlEKEFdyaXRlRmlsZVJlcXVlc3QSDAoEcGF0aBgBIAEoCRIPCgdjb250ZW50GAIgASgMEgwKBG1vZGUYAyABKA0SEAoIYWdlbnRfaWQYBCABKAkiKgoRV3JpdGVGaWxlUmVzcG9uc2USFQoNYnl0ZXNfd3JpdHRlbhgBIAEoBCIlChFTY3JlZW5zaG90UmVxdWVzdBIQCghhZ2VudF9pZBgBIAEoCSIhChJTY3JlZW5zaG90UmVzcG9uc2USCwoDcG5nGAEgASgMIkYKDElucHV0UmVxdWVzdBIOCgZhY3Rpb24YASABKAkSFAoMcGF5bG9hZF9qc29uGAIgASgJEhAKCGFnZW50X2lkGAMgASgJIiEKDUlucHV0UmVzcG9uc2USEAoIYWNjZXB0ZWQYASABKAgiEgoQTGlzdFBvcnRzUmVxdWVzdCImCgRQb3J0EgwKBHBvcnQYASABKA0SEAoIcHJvdG9jb2wYAiABKAkiPQoRTGlzdFBvcnRzUmVzcG9uc2USKAoFcG9ydHMYASADKAsyGS5vcGVuYm90LmNvbXB1dGVyLnYxLlBvcnQiIAoQVHVubmVsVm5jUmVxdWVzdBIMCgRkYXRhGAEgASgMIiEKEVR1bm5lbFZuY1Jlc3BvbnNlEgwKBGRhdGEYASABKAwqiAEKDkxpZmVjeWNsZVBoYXNlEh8KG0xJRkVDWUNMRV9QSEFTRV9VTlNQRUNJRklFRBAAEh8KG0xJRkVDWUNMRV9QSEFTRV9JTUFHRV9CVUlMRBABEhoKFkxJRkVDWUNMRV9QSEFTRV9DUkVBVEUQAhIYChRMSUZFQ1lDTEVfUEhBU0VfV0FLRRADMrMHCg9Db21wdXRlclNlcnZpY2USUQoGSGVhbHRoEiIub3BlbmJvdC5jb21wdXRlci52MS5IZWFsdGhSZXF1ZXN0GiMub3BlbmJvdC5jb21wdXRlci52MS5IZWFsdGhSZXNwb25zZRJ7ChRBcHBseUxpZmVjeWNsZUJ1bmRsZRIwLm9wZW5ib3QuY29tcHV0ZXIudjEuQXBwbHlMaWZlY3ljbGVCdW5kbGVSZXF1ZXN0GjEub3BlbmJvdC5jb21wdXRlci52MS5BcHBseUxpZmVjeWNsZUJ1bmRsZVJlc3BvbnNlEmMKDFJ1bkxpZmVjeWNsZRIoLm9wZW5ib3QuY29tcHV0ZXIudjEuUnVuTGlmZWN5Y2xlUmVxdWVzdBopLm9wZW5ib3QuY29tcHV0ZXIudjEuUnVuTGlmZWN5Y2xlUmVzcG9uc2USSwoERXhlYxIgLm9wZW5ib3QuY29tcHV0ZXIudjEuRXhlY1JlcXVlc3QaIS5vcGVuYm90LmNvbXB1dGVyLnYxLkV4ZWNSZXNwb25zZRJXCghSZWFkRmlsZRIkLm9wZW5ib3QuY29tcHV0ZXIudjEuUmVhZEZpbGVSZXF1ZXN0GiUub3BlbmJvdC5jb21wdXRlci52MS5SZWFkRmlsZVJlc3BvbnNlEloKCVdyaXRlRmlsZRIlLm9wZW5ib3QuY29tcHV0ZXIudjEuV3JpdGVGaWxlUmVxdWVzdBomLm9wZW5ib3QuY29tcHV0ZXIudjEuV3JpdGVGaWxlUmVzcG9uc2USXQoKU2NyZWVuc2hvdBImLm9wZW5ib3QuY29tcHV0ZXIudjEuU2NyZWVuc2hvdFJlcXVlc3QaJy5vcGVuYm90LmNvbXB1dGVyLnYxLlNjcmVlbnNob3RSZXNwb25zZRJOCgVJbnB1dBIhLm9wZW5ib3QuY29tcHV0ZXIudjEuSW5wdXRSZXF1ZXN0GiIub3BlbmJvdC5jb21wdXRlci52MS5JbnB1dFJlc3BvbnNlEloKCUxpc3RQb3J0cxIlLm9wZW5ib3QuY29tcHV0ZXIudjEuTGlzdFBvcnRzUmVxdWVzdBomLm9wZW5ib3QuY29tcHV0ZXIudjEuTGlzdFBvcnRzUmVzcG9uc2USXgoJVHVubmVsVm5jEiUub3BlbmJvdC5jb21wdXRlci52MS5UdW5uZWxWbmNSZXF1ZXN0GiYub3BlbmJvdC5jb21wdXRlci52MS5UdW5uZWxWbmNSZXNwb25zZSgBMAFiBnByb3RvMw");
+  fileDesc("CiJvcGVuYm90L2NvbXB1dGVyL3YxL2NvbXB1dGVyLnByb3RvEhNvcGVuYm90LmNvbXB1dGVyLnYxIg8KDUhlYWx0aFJlcXVlc3QiXwoOSGVhbHRoUmVzcG9uc2USDwoHaGVhbHRoeRgBIAEoCBIPCgd2ZXJzaW9uGAIgASgJEhgKEGxpZmVjeWNsZV9kaWdlc3QYAyABKAkSEQoJdm5jX3JlYWR5GAQgASgIIkwKDUxpZmVjeWNsZUZpbGUSDAoEcGF0aBgBIAEoCRIPCgdjb250ZW50GAIgASgMEgwKBG1vZGUYAyABKA0SDgoGc2hhMjU2GAQgASgJImAKD0xpZmVjeWNsZVNjcmlwdBIKCgJpZBgBIAEoCRIMCgRwYXRoGAIgASgJEjMKBnBoYXNlcxgDIAMoDjIjLm9wZW5ib3QuY29tcHV0ZXIudjEuTGlmZWN5Y2xlUGhhc2UilwEKG0FwcGx5TGlmZWN5Y2xlQnVuZGxlUmVxdWVzdBIOCgZkaWdlc3QYASABKAkSMQoFZmlsZXMYAiADKAsyIi5vcGVuYm90LmNvbXB1dGVyLnYxLkxpZmVjeWNsZUZpbGUSNQoHc2NyaXB0cxgDIAMoCzIkLm9wZW5ib3QuY29tcHV0ZXIudjEuTGlmZWN5Y2xlU2NyaXB0Ij8KHEFwcGx5TGlmZWN5Y2xlQnVuZGxlUmVzcG9uc2USDgoGZGlnZXN0GAEgASgJEg8KB2NoYW5nZWQYAiABKAgiYgoTUnVuTGlmZWN5Y2xlUmVxdWVzdBIyCgVwaGFzZRgBIAEoDjIjLm9wZW5ib3QuY29tcHV0ZXIudjEuTGlmZWN5Y2xlUGhhc2USFwoPZXhwZWN0ZWRfZGlnZXN0GAIgASgJIlcKD0xpZmVjeWNsZVJlc3VsdBIRCglzY3JpcHRfaWQYASABKAkSEQoJZXhpdF9jb2RlGAIgASgFEg4KBnN0ZG91dBgDIAEoCRIOCgZzdGRlcnIYBCABKAkiXQoUUnVuTGlmZWN5Y2xlUmVzcG9uc2USDgoGZGlnZXN0GAEgASgJEjUKB3Jlc3VsdHMYAiADKAsyJC5vcGVuYm90LmNvbXB1dGVyLnYxLkxpZmVjeWNsZVJlc3VsdCL+AQoLRXhlY1JlcXVlc3QSDwoHY29tbWFuZBgBIAEoCRIRCglhcmd1bWVudHMYAiADKAkSCwoDY3dkGAMgASgJEhwKFHRpbWVvdXRfbWlsbGlzZWNvbmRzGAQgASgNEkYKC2Vudmlyb25tZW50GAUgAygLMjEub3BlbmJvdC5jb21wdXRlci52MS5FeGVjUmVxdWVzdC5FbnZpcm9ubWVudEVudHJ5EhAKCGFnZW50X2lkGAYgASgJEhIKCmJhY2tncm91bmQYByABKAgaMgoQRW52aXJvbm1lbnRFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBImIKDEV4ZWNSZXNwb25zZRIRCglleGl0X2NvZGUYASABKAUSDgoGc3Rkb3V0GAIgASgJEg4KBnN0ZGVychgDIAEoCRIOCgZqb2JfaWQYBCABKAkSDwoHcnVubmluZxgFIAEoCCJSChBBd2FpdEV4ZWNSZXF1ZXN0EhAKCGFnZW50X2lkGAEgASgJEg4KBmpvYl9pZBgCIAEoCRIcChR0aW1lb3V0X21pbGxpc2Vjb25kcxgDIAEoDSIxCg9SZWFkRmlsZVJlcXVlc3QSDAoEcGF0aBgBIAEoCRIQCghhZ2VudF9pZBgCIAEoCSIjChBSZWFkRmlsZVJlc3BvbnNlEg8KB2NvbnRlbnQYASABKAwiUQoQV3JpdGVGaWxlUmVxdWVzdBIMCgRwYXRoGAEgASgJEg8KB2NvbnRlbnQYAiABKAwSDAoEbW9kZRgDIAEoDRIQCghhZ2VudF9pZBgEIAEoCSIqChFXcml0ZUZpbGVSZXNwb25zZRIVCg1ieXRlc193cml0dGVuGAEgASgEIiUKEVNjcmVlbnNob3RSZXF1ZXN0EhAKCGFnZW50X2lkGAEgASgJIiEKElNjcmVlbnNob3RSZXNwb25zZRILCgNwbmcYASABKAwiRgoMSW5wdXRSZXF1ZXN0Eg4KBmFjdGlvbhgBIAEoCRIUCgxwYXlsb2FkX2pzb24YAiABKAkSEAoIYWdlbnRfaWQYAyABKAkiIQoNSW5wdXRSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCCISChBMaXN0UG9ydHNSZXF1ZXN0IiYKBFBvcnQSDAoEcG9ydBgBIAEoDRIQCghwcm90b2NvbBgCIAEoCSI9ChFMaXN0UG9ydHNSZXNwb25zZRIoCgVwb3J0cxgBIAMoCzIZLm9wZW5ib3QuY29tcHV0ZXIudjEuUG9ydCIgChBUdW5uZWxWbmNSZXF1ZXN0EgwKBGRhdGEYASABKAwiIQoRVHVubmVsVm5jUmVzcG9uc2USDAoEZGF0YRgBIAEoDCqIAQoOTGlmZWN5Y2xlUGhhc2USHwobTElGRUNZQ0xFX1BIQVNFX1VOU1BFQ0lGSUVEEAASHwobTElGRUNZQ0xFX1BIQVNFX0lNQUdFX0JVSUxEEAESGgoWTElGRUNZQ0xFX1BIQVNFX0NSRUFURRACEhgKFExJRkVDWUNMRV9QSEFTRV9XQUtFEAMyiggKD0NvbXB1dGVyU2VydmljZRJRCgZIZWFsdGgSIi5vcGVuYm90LmNvbXB1dGVyLnYxLkhlYWx0aFJlcXVlc3QaIy5vcGVuYm90LmNvbXB1dGVyLnYxLkhlYWx0aFJlc3BvbnNlEnsKFEFwcGx5TGlmZWN5Y2xlQnVuZGxlEjAub3BlbmJvdC5jb21wdXRlci52MS5BcHBseUxpZmVjeWNsZUJ1bmRsZVJlcXVlc3QaMS5vcGVuYm90LmNvbXB1dGVyLnYxLkFwcGx5TGlmZWN5Y2xlQnVuZGxlUmVzcG9uc2USYwoMUnVuTGlmZWN5Y2xlEigub3BlbmJvdC5jb21wdXRlci52MS5SdW5MaWZlY3ljbGVSZXF1ZXN0Gikub3BlbmJvdC5jb21wdXRlci52MS5SdW5MaWZlY3ljbGVSZXNwb25zZRJLCgRFeGVjEiAub3BlbmJvdC5jb21wdXRlci52MS5FeGVjUmVxdWVzdBohLm9wZW5ib3QuY29tcHV0ZXIudjEuRXhlY1Jlc3BvbnNlElUKCUF3YWl0RXhlYxIlLm9wZW5ib3QuY29tcHV0ZXIudjEuQXdhaXRFeGVjUmVxdWVzdBohLm9wZW5ib3QuY29tcHV0ZXIudjEuRXhlY1Jlc3BvbnNlElcKCFJlYWRGaWxlEiQub3BlbmJvdC5jb21wdXRlci52MS5SZWFkRmlsZVJlcXVlc3QaJS5vcGVuYm90LmNvbXB1dGVyLnYxLlJlYWRGaWxlUmVzcG9uc2USWgoJV3JpdGVGaWxlEiUub3BlbmJvdC5jb21wdXRlci52MS5Xcml0ZUZpbGVSZXF1ZXN0GiYub3BlbmJvdC5jb21wdXRlci52MS5Xcml0ZUZpbGVSZXNwb25zZRJdCgpTY3JlZW5zaG90EiYub3BlbmJvdC5jb21wdXRlci52MS5TY3JlZW5zaG90UmVxdWVzdBonLm9wZW5ib3QuY29tcHV0ZXIudjEuU2NyZWVuc2hvdFJlc3BvbnNlEk4KBUlucHV0EiEub3BlbmJvdC5jb21wdXRlci52MS5JbnB1dFJlcXVlc3QaIi5vcGVuYm90LmNvbXB1dGVyLnYxLklucHV0UmVzcG9uc2USWgoJTGlzdFBvcnRzEiUub3BlbmJvdC5jb21wdXRlci52MS5MaXN0UG9ydHNSZXF1ZXN0GiYub3BlbmJvdC5jb21wdXRlci52MS5MaXN0UG9ydHNSZXNwb25zZRJeCglUdW5uZWxWbmMSJS5vcGVuYm90LmNvbXB1dGVyLnYxLlR1bm5lbFZuY1JlcXVlc3QaJi5vcGVuYm90LmNvbXB1dGVyLnYxLlR1bm5lbFZuY1Jlc3BvbnNlKAEwAWIGcHJvdG8z");
 
 /**
  * @generated from message openbot.computer.v1.HealthRequest
@@ -274,6 +274,11 @@ export type ExecRequest = Message<"openbot.computer.v1.ExecRequest"> & {
    * @generated from field: string agent_id = 6;
    */
   agentId: string;
+
+  /**
+   * @generated from field: bool background = 7;
+   */
+  background: boolean;
 };
 
 /**
@@ -301,6 +306,16 @@ export type ExecResponse = Message<"openbot.computer.v1.ExecResponse"> & {
    * @generated from field: string stderr = 3;
    */
   stderr: string;
+
+  /**
+   * @generated from field: string job_id = 4;
+   */
+  jobId: string;
+
+  /**
+   * @generated from field: bool running = 5;
+   */
+  running: boolean;
 };
 
 /**
@@ -309,6 +324,33 @@ export type ExecResponse = Message<"openbot.computer.v1.ExecResponse"> & {
  */
 export const ExecResponseSchema: GenMessage<ExecResponse> = /*@__PURE__*/
   messageDesc(file_openbot_computer_v1_computer, 10);
+
+/**
+ * @generated from message openbot.computer.v1.AwaitExecRequest
+ */
+export type AwaitExecRequest = Message<"openbot.computer.v1.AwaitExecRequest"> & {
+  /**
+   * @generated from field: string agent_id = 1;
+   */
+  agentId: string;
+
+  /**
+   * @generated from field: string job_id = 2;
+   */
+  jobId: string;
+
+  /**
+   * @generated from field: uint32 timeout_milliseconds = 3;
+   */
+  timeoutMilliseconds: number;
+};
+
+/**
+ * Describes the message openbot.computer.v1.AwaitExecRequest.
+ * Use `create(AwaitExecRequestSchema)` to create a new message.
+ */
+export const AwaitExecRequestSchema: GenMessage<AwaitExecRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_computer_v1_computer, 11);
 
 /**
  * @generated from message openbot.computer.v1.ReadFileRequest
@@ -330,7 +372,7 @@ export type ReadFileRequest = Message<"openbot.computer.v1.ReadFileRequest"> & {
  * Use `create(ReadFileRequestSchema)` to create a new message.
  */
 export const ReadFileRequestSchema: GenMessage<ReadFileRequest> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 11);
+  messageDesc(file_openbot_computer_v1_computer, 12);
 
 /**
  * @generated from message openbot.computer.v1.ReadFileResponse
@@ -347,7 +389,7 @@ export type ReadFileResponse = Message<"openbot.computer.v1.ReadFileResponse"> &
  * Use `create(ReadFileResponseSchema)` to create a new message.
  */
 export const ReadFileResponseSchema: GenMessage<ReadFileResponse> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 12);
+  messageDesc(file_openbot_computer_v1_computer, 13);
 
 /**
  * @generated from message openbot.computer.v1.WriteFileRequest
@@ -379,7 +421,7 @@ export type WriteFileRequest = Message<"openbot.computer.v1.WriteFileRequest"> &
  * Use `create(WriteFileRequestSchema)` to create a new message.
  */
 export const WriteFileRequestSchema: GenMessage<WriteFileRequest> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 13);
+  messageDesc(file_openbot_computer_v1_computer, 14);
 
 /**
  * @generated from message openbot.computer.v1.WriteFileResponse
@@ -396,7 +438,7 @@ export type WriteFileResponse = Message<"openbot.computer.v1.WriteFileResponse">
  * Use `create(WriteFileResponseSchema)` to create a new message.
  */
 export const WriteFileResponseSchema: GenMessage<WriteFileResponse> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 14);
+  messageDesc(file_openbot_computer_v1_computer, 15);
 
 /**
  * @generated from message openbot.computer.v1.ScreenshotRequest
@@ -413,7 +455,7 @@ export type ScreenshotRequest = Message<"openbot.computer.v1.ScreenshotRequest">
  * Use `create(ScreenshotRequestSchema)` to create a new message.
  */
 export const ScreenshotRequestSchema: GenMessage<ScreenshotRequest> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 15);
+  messageDesc(file_openbot_computer_v1_computer, 16);
 
 /**
  * @generated from message openbot.computer.v1.ScreenshotResponse
@@ -430,7 +472,7 @@ export type ScreenshotResponse = Message<"openbot.computer.v1.ScreenshotResponse
  * Use `create(ScreenshotResponseSchema)` to create a new message.
  */
 export const ScreenshotResponseSchema: GenMessage<ScreenshotResponse> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 16);
+  messageDesc(file_openbot_computer_v1_computer, 17);
 
 /**
  * @generated from message openbot.computer.v1.InputRequest
@@ -457,7 +499,7 @@ export type InputRequest = Message<"openbot.computer.v1.InputRequest"> & {
  * Use `create(InputRequestSchema)` to create a new message.
  */
 export const InputRequestSchema: GenMessage<InputRequest> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 17);
+  messageDesc(file_openbot_computer_v1_computer, 18);
 
 /**
  * @generated from message openbot.computer.v1.InputResponse
@@ -474,7 +516,7 @@ export type InputResponse = Message<"openbot.computer.v1.InputResponse"> & {
  * Use `create(InputResponseSchema)` to create a new message.
  */
 export const InputResponseSchema: GenMessage<InputResponse> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 18);
+  messageDesc(file_openbot_computer_v1_computer, 19);
 
 /**
  * @generated from message openbot.computer.v1.ListPortsRequest
@@ -487,7 +529,7 @@ export type ListPortsRequest = Message<"openbot.computer.v1.ListPortsRequest"> &
  * Use `create(ListPortsRequestSchema)` to create a new message.
  */
 export const ListPortsRequestSchema: GenMessage<ListPortsRequest> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 19);
+  messageDesc(file_openbot_computer_v1_computer, 20);
 
 /**
  * @generated from message openbot.computer.v1.Port
@@ -509,7 +551,7 @@ export type Port = Message<"openbot.computer.v1.Port"> & {
  * Use `create(PortSchema)` to create a new message.
  */
 export const PortSchema: GenMessage<Port> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 20);
+  messageDesc(file_openbot_computer_v1_computer, 21);
 
 /**
  * @generated from message openbot.computer.v1.ListPortsResponse
@@ -526,7 +568,7 @@ export type ListPortsResponse = Message<"openbot.computer.v1.ListPortsResponse">
  * Use `create(ListPortsResponseSchema)` to create a new message.
  */
 export const ListPortsResponseSchema: GenMessage<ListPortsResponse> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 21);
+  messageDesc(file_openbot_computer_v1_computer, 22);
 
 /**
  * @generated from message openbot.computer.v1.TunnelVncRequest
@@ -543,7 +585,7 @@ export type TunnelVncRequest = Message<"openbot.computer.v1.TunnelVncRequest"> &
  * Use `create(TunnelVncRequestSchema)` to create a new message.
  */
 export const TunnelVncRequestSchema: GenMessage<TunnelVncRequest> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 22);
+  messageDesc(file_openbot_computer_v1_computer, 23);
 
 /**
  * @generated from message openbot.computer.v1.TunnelVncResponse
@@ -560,7 +602,7 @@ export type TunnelVncResponse = Message<"openbot.computer.v1.TunnelVncResponse">
  * Use `create(TunnelVncResponseSchema)` to create a new message.
  */
 export const TunnelVncResponseSchema: GenMessage<TunnelVncResponse> = /*@__PURE__*/
-  messageDesc(file_openbot_computer_v1_computer, 23);
+  messageDesc(file_openbot_computer_v1_computer, 24);
 
 /**
  * @generated from enum openbot.computer.v1.LifecyclePhase
@@ -627,6 +669,14 @@ export const ComputerService: GenService<{
   exec: {
     methodKind: "unary";
     input: typeof ExecRequestSchema;
+    output: typeof ExecResponseSchema;
+  },
+  /**
+   * @generated from rpc openbot.computer.v1.ComputerService.AwaitExec
+   */
+  awaitExec: {
+    methodKind: "unary";
+    input: typeof AwaitExecRequestSchema;
     output: typeof ExecResponseSchema;
   },
   /**

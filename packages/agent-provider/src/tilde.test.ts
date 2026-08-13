@@ -1,7 +1,12 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { TildeAgentProvider } from "./tilde.js";
 
-const config = { apiKey: "secret", orgId: "org-one", teamId: "team-one", baseUrl: "https://tilde.test" };
+const config = {
+  apiKey: "secret",
+  orgId: "org-one",
+  teamId: "team-one",
+  baseUrl: "https://tilde.test",
+};
 const context = { requestId: "request-one" };
 
 afterEach(() => vi.unstubAllGlobals());
@@ -13,19 +18,29 @@ describe("TildeAgentProvider", () => {
       expect(url).toContain("/chatkit/mission-control/sidebar?");
       expect(url).toContain("agent_sort=updated_at");
       return Response.json({
-        items: [{
-          id: "agent-one",
-          display_name: "Scout",
-          provider_id: "chatkit.http-vercel-ai-sdk",
-          status: "enabled",
-          has_vercel_ui_endpoint: true,
-          created_at: "2026-08-12T00:00:00.000Z",
-          updated_at: "2026-08-12T01:00:00.000Z",
-          sessions: {
-            items: [{ id: "session-one", title: "Hello", unread: true, created_at: "2026-08-12T00:00:00.000Z", updated_at: "2026-08-12T01:00:00.000Z" }],
-            next_page_token: "sessions-next",
+        items: [
+          {
+            id: "agent-one",
+            display_name: "Scout",
+            provider_id: "chatkit.http-vercel-ai-sdk",
+            status: "enabled",
+            has_vercel_ui_endpoint: true,
+            created_at: "2026-08-12T00:00:00.000Z",
+            updated_at: "2026-08-12T01:00:00.000Z",
+            sessions: {
+              items: [
+                {
+                  id: "session-one",
+                  title: "Hello",
+                  unread: true,
+                  created_at: "2026-08-12T00:00:00.000Z",
+                  updated_at: "2026-08-12T01:00:00.000Z",
+                },
+              ],
+              next_page_token: "sessions-next",
+            },
           },
-        }],
+        ],
         next_page_token: "agents-next",
       });
     });
@@ -35,7 +50,10 @@ describe("TildeAgentProvider", () => {
     expect(result.nextPageToken).toBe("agents-next");
     expect(result.items[0]).toMatchObject({
       agent: { id: "agent-one", displayName: "Scout" },
-      sessions: { nextPageToken: "sessions-next", items: [{ id: "session-one", agentId: "agent-one", unread: true }] },
+      sessions: {
+        nextPageToken: "sessions-next",
+        items: [{ id: "session-one", agentId: "agent-one", unread: true }],
+      },
     });
   });
 
@@ -48,7 +66,14 @@ describe("TildeAgentProvider", () => {
       const body = input instanceof Request ? await input.clone().text() : String(init?.body ?? "");
       expect(body).toContain("https://openbot.test/api/agents/scout");
       return Response.json({
-        agent: { id: "scout", configuration: { display_name: "Scout", endpoint_url: "https://openbot.test/api/agents/scout" }, status: "enabled" },
+        agent: {
+          id: "scout",
+          configuration: {
+            display_name: "Scout",
+            endpoint_url: "https://openbot.test/api/agents/scout",
+          },
+          status: "enabled",
+        },
         api_key: "agent-api-key",
         webhook_signing_key: "signing-key",
       });
@@ -56,8 +81,18 @@ describe("TildeAgentProvider", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const provider = new TildeAgentProvider(config);
-    const registered = await provider.registerAgent({ id: "scout", displayName: "Scout", endpointUrl: new URL("https://openbot.test/api/agents/scout") }, context);
-    expect(registered).toMatchObject({ agent: { id: "scout" }, credentials: { apiKey: "agent-api-key" } });
+    const registered = await provider.registerAgent(
+      {
+        id: "scout",
+        displayName: "Scout",
+        endpointUrl: new URL("https://openbot.test/api/agents/scout"),
+      },
+      context,
+    );
+    expect(registered).toMatchObject({
+      agent: { id: "scout" },
+      credentials: { apiKey: "agent-api-key" },
+    });
     expect("registerTools" in provider).toBe(false);
     await provider.unregisterAgent("scout", context);
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -67,12 +102,32 @@ describe("TildeAgentProvider", () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
       const url = requestUrl(input);
       if (url.endsWith("/sessions")) {
-        return Response.json({ session: { id: "session-one", created_at: "2026-08-12T00:00:00.000Z", updated_at: "2026-08-12T00:00:00.000Z" } });
+        return Response.json({
+          session: {
+            id: "session-one",
+            created_at: "2026-08-12T00:00:00.000Z",
+            updated_at: "2026-08-12T00:00:00.000Z",
+          },
+        });
       }
-      return Response.json({ items: [
-        { id: "message-user", session_id: "session-one", role: "user", text: "hello", created_at: "2026-08-12T00:00:01.000Z" },
-        { id: "message-agent", session_id: "session-one", role: "assistant", parts: [{ text: "hi" }], created_at: "2026-08-12T00:00:02.000Z" },
-      ] });
+      return Response.json({
+        items: [
+          {
+            id: "message-user",
+            session_id: "session-one",
+            role: "user",
+            text: "hello",
+            created_at: "2026-08-12T00:00:01.000Z",
+          },
+          {
+            id: "message-agent",
+            session_id: "session-one",
+            role: "assistant",
+            parts: [{ text: "hi" }],
+            created_at: "2026-08-12T00:00:02.000Z",
+          },
+        ],
+      });
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -80,7 +135,10 @@ describe("TildeAgentProvider", () => {
     const session = await provider.createSession("agent-one", undefined, context);
     const messages = await provider.sendMessage("agent-one", session.id, "hello", context);
     expect(session).toMatchObject({ id: "session-one", agentId: "agent-one" });
-    expect(messages.items.map((message) => [message.role, message.text])).toEqual([["user", "hello"], ["assistant", "hi"]]);
+    expect(messages.items.map((message) => [message.role, message.text])).toEqual([
+      ["user", "hello"],
+      ["assistant", "hi"],
+    ]);
   });
 });
 

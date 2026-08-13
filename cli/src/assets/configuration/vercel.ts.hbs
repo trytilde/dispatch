@@ -1,12 +1,16 @@
 import { Configuration } from "@openbot/configuration";
 import { VercelAgentServiceProvider } from "@openbot/agent-service-provider";
 import { VercelControlServiceProvider } from "@openbot/control-service-provider";
-import { VercelSandboxComputerProvider } from "@openbot/computer-provider";
+import runtimeProviders from "./runtime-providers.js";
 
 export default Configuration({
   providers: {
     controlService: new VercelControlServiceProvider(),
     agentService: new VercelAgentServiceProvider(),
-    computer: new VercelSandboxComputerProvider(),
+    agent: runtimeProviders.agent,
+    computer: runtimeProviders.computer,
+    inferenceModel: runtimeProviders.inferenceModel,
+    skills: runtimeProviders.skills,
+    tools: runtimeProviders.tools,
   },
 });

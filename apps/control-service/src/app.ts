@@ -13,9 +13,16 @@ const controlRouter = createConnectRouter();
 registerControlServices(controlRouter);
 
 const controlHandlers = new Map(
-  controlRouter.handlers.map((handler) => [`/rpc${handler.requestPath}`, createFetchHandler(handler)]),
+  controlRouter.handlers.map((handler) => [
+    `/rpc${handler.requestPath}`,
+    createFetchHandler(handler),
+  ]),
 );
-const defaultWebRoot = process.env.OPENBOT_WEB_ROOT ?? resolve(process.cwd(), "apps/web/dist");
+const sourceWebRoot = fileURLToPath(new URL("../../web/dist", import.meta.url));
+const workingDirectoryWebRoot = resolve(process.cwd(), "apps/web/dist");
+const defaultWebRoot =
+  process.env.OPENBOT_WEB_ROOT ??
+  (existsSync(sourceWebRoot) ? sourceWebRoot : workingDirectoryWebRoot);
 
 export interface AppOptions {
   webRoot?: string;
@@ -29,11 +36,16 @@ export function createApp(options: AppOptions = {}): Hono {
   app.get("/healthz", (context) => context.json({ ok: true, service: "openbot" }));
   app.all("/rpc/*", async (context) => {
     const handler = controlHandlers.get(new URL(context.req.url).pathname);
-    return handler ? await handler(context.req.raw) : context.json({ error: "Control method not found" }, 404);
+    return handler
+      ? await handler(context.req.raw)
+      : context.json({ error: "Control method not found" }, 404);
   });
 
   if (existsSync(webRoot)) {
-    const cacheHeaders = (path: string, context: { header(name: string, value: string): void }): void => {
+    const cacheHeaders = (
+      path: string,
+      context: { header(name: string, value: string): void },
+    ): void => {
       context.header(
         "cache-control",
         path.endsWith("index.html") ? "no-cache" : "public, max-age=31536000, immutable",

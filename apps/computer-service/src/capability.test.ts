@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { validComputerServiceApiKey } from "./capability.js";
 
 test("requires the exact computer-service bearer API key", () => {

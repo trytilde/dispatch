@@ -19,9 +19,9 @@ Read the smallest relevant set:
 
 - `README.md`: product, setup, runtime, deployment, and ownership boundaries.
 - `AGENTS.md`: coding and validation rules.
-- `packages/contracts/proto/openbot/v1/openbot.proto`: public control contract.
-- `packages/provider-sdk/src/index.ts`: provider seams.
-- `packages/db/src/schema.ts`: persisted OpenBot control state.
+- `packages/control-service-proto/proto/openbot/control/v1/control.proto`: owner-facing control contract.
+- `packages/computer-service-proto/proto/openbot/computer/v1/computer.proto`: internal computer contract.
+- `packages/<domain>-provider/src/core.ts` or `packages/<domain>-provider/src/core/index.ts`: domain provider seams; the package root only re-exports them.
 - `tilde.state.yaml`: portable Tilde resources.
 - `PROVENANCE.md`: copied-source and clean-room constraints.
 
@@ -34,9 +34,9 @@ Read `CONTEXT.md` and relevant records under `docs/adrs/` when they exist. Creat
 Keep these distinctions explicit:
 
 - OpenBot control state vs Tilde-owned agents, chats, tools, skills, and memory.
-- Local/Vercel environment secrets vs database state vs sandbox files.
+- Local/Vercel environment secrets vs future persisted control state vs sandbox files.
 - Provider interface vs concrete adapter vs UI/client.
-- Web app vs Electron shell vs box-host sandbox service.
+- Web app vs Electron shell vs computer-service sandbox API.
 - Portable Tilde configuration vs runtime or one-time credentials.
 
 Call out any plan that crosses one of these boundaries without a reason.
@@ -51,11 +51,15 @@ Probe local development, Vercel production, fresh installation, upgrade, provide
 
 ### Cross-reference with code
 
-Verify claims at the public entrypoint and owning implementation. Surface contradictions between the plan, protobuf, routes, provider contracts, database ownership, and deployment scripts.
+Verify claims at the public entrypoint and owning implementation. Surface contradictions between the plan, protobuf, routes, provider contracts, state ownership, and deployment scripts. The reset application currently has no control database package; treat persistence as a new architecture decision if a UX/API requires it.
 
 ### Update documentation inline
 
 Update existing authoritative files when the decision changes their contract. Keep `CONTEXT.md`, if created, as a glossary rather than an implementation plan. Use [CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md).
+
+When changing a decision already governed by an ADR, update the ADR's current
+prose and append a timestamped bullet under `## Updates` as specified by
+[ADR-FORMAT.md](./ADR-FORMAT.md). Preserve every earlier update entry.
 
 ### Guide major decisions into ADRs
 

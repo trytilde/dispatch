@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+environment_file="$1"
+source_directory="$2"
+
+# Load deployment authority only into this trusted setup process. Ordinary
+# agent computer processes never receive this file or its environment.
+set -a
+# shellcheck disable=SC1090
+source "$environment_file"
+set +a
+
+cd "$source_directory"
+test -f configuration/secrets.enc.yaml
+sops decrypt --output /dev/null configuration/secrets.enc.yaml
+pnpm install --frozen-lockfile
+touch /workspace/.openbot/development/ready

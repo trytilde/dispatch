@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package openbot.computer.v1;
+
+service ComputerService {
+  rpc Health(HealthRequest) returns (HealthResponse);
+  rpc ApplyLifecycleBundle(ApplyLifecycleBundleRequest) returns (ApplyLifecycleBundleResponse);
+  rpc RunLifecycle(RunLifecycleRequest) returns (RunLifecycleResponse);
+  rpc Exec(ExecRequest) returns (ExecResponse);
+  rpc AwaitExec(AwaitExecRequest) returns (ExecResponse);
+  rpc ReadFile(ReadFileRequest) returns (ReadFileResponse);
+  rpc WriteFile(WriteFileRequest) returns (WriteFileResponse);
+  rpc Screenshot(ScreenshotRequest) returns (ScreenshotResponse);
+  rpc Input(InputRequest) returns (InputResponse);
+  rpc ListPorts(ListPortsRequest) returns (ListPortsResponse);
+  rpc TunnelVnc(stream TunnelVncRequest) returns (stream TunnelVncResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  bool healthy = 1;
+  string version = 2;
+  string lifecycle_digest = 3;
+  bool vnc_ready = 4;
+}
+
+enum LifecyclePhase {
+  LIFECYCLE_PHASE_UNSPECIFIED = 0;
+  LIFECYCLE_PHASE_IMAGE_BUILD = 1;
+  LIFECYCLE_PHASE_CREATE = 2;
+  LIFECYCLE_PHASE_WAKE = 3;
+}
+
+message LifecycleFile {
+  string path = 1;
+  bytes content = 2;
+  uint32 mode = 3;
+  string sha256 = 4;
+}
+
+message LifecycleScript {
+  string id = 1;
+  string path = 2;
+  repeated LifecyclePhase phases = 3;
+}
+
+message ApplyLifecycleBundleRequest {
+  string digest = 1;
+  repeated LifecycleFile files = 2;
+  repeated LifecycleScript scripts = 3;
+}
+
+message ApplyLifecycleBundleResponse {
+  string digest = 1;
+  bool changed = 2;
+}
+
+message RunLifecycleRequest {
+  LifecyclePhase phase = 1;
+  string expected_digest = 2;
+}
+
+message LifecycleResult {
+  string script_id = 1;
+  int32 exit_code = 2;
+  string stdout = 3;
+  string stderr = 4;
+}
+
+message RunLifecycleResponse {
+  string digest = 1;
+  repeated LifecycleResult results = 2;
+}
+
+message ExecRequest {
+  string command = 1;
+  repeated string arguments = 2;
+  string cwd = 3;
+  uint32 timeout_milliseconds = 4;
+  map<string, string> environment = 5;
+  string agent_id = 6;
+  bool background = 7;
+}
+
+message ExecResponse {
+  int32 exit_code = 1;
+  string stdout = 2;
+  string stderr = 3;
+  string job_id = 4;
+  bool running = 5;
+}
+
+message AwaitExecRequest {
+  string agent_id = 1;
+  string job_id = 2;
+  uint32 timeout_milliseconds = 3;
+}
+
+message ReadFileRequest {
+  string path = 1;
+  string agent_id = 2;
+}
+message ReadFileResponse { bytes content = 1; }
+
+message WriteFileRequest {
+  string path = 1;
+  bytes content = 2;
+  uint32 mode = 3;
+  string agent_id = 4;
+}
+
+message WriteFileResponse { uint64 bytes_written = 1; }
+message ScreenshotRequest { string agent_id = 1; }
+message ScreenshotResponse { bytes png = 1; }
+
+message InputRequest {
+  string action = 1;
+  string payload_json = 2;
+  string agent_id = 3;
+}
+
+message InputResponse { bool accepted = 1; }
+message ListPortsRequest {}
+
+message Port {
+  uint32 port = 1;
+  string protocol = 2;
+}
+
+message ListPortsResponse { repeated Port ports = 1; }
+
+message TunnelVncRequest { bytes data = 1; }
+message TunnelVncResponse { bytes data = 1; }

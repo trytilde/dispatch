@@ -1,0 +1,70 @@
+import { chatKitEndpoint, convertToAiSdkMessages, createClient } from "@trytilde/harness-sdk-vercel-ai-node";
+import { consumeStream, convertToModelMessages, stepCountIs, streamText, type ToolSet } from "ai";
+import providers from "../../runtime-providers.js";
+import { agentName } from "./lib/identity.js";
+import instructions from "./instructions.js";
+import awaitShell from "./tools/await_shell.js";
+import bash from "./tools/bash.js";
+import copyFromComputer from "./tools/copy_from_computer.js";
+import copyToComputer from "./tools/copy_to_computer.js";
+import glob from "./tools/glob.js";
+import grep from "./tools/grep.js";
+import readFile from "./tools/read_file.js";
+import screenshot from "./tools/screenshot.js";
+import writeFile from "./tools/write_file.js";
+
+function requiredEnv(...names: string[]): string {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  throw new Error(`${names.join(" or ")} is required`);
+}
+
+const client = createClient({
+  apiKey: requiredEnv("OPENBOT_AGENT_{{AGENT_ENV_PREFIX}}_API_KEY", "OPENBOT_TILDE_API_KEY"),
+  baseUrl: process.env.TILDE_BASE_URL ?? "https://api.trytilde.ai",
+  orgId: requiredEnv("OPENBOT_TILDE_ORG_ID"),
+  orgSubdomain: false,
+  teamId: requiredEnv("OPENBOT_TILDE_TEAM_ID"),
+});
+function addTools(target: ToolSet, source: readonly ({ readonly name: string } & ToolSet[string])[]): void {
+  for (const providerTool of source) {
+    if (target[providerTool.name]) throw new Error(`Duplicate agent tool: ${providerTool.name}`);
+    target[providerTool.name] = providerTool;
+  }
+}
+
+export default chatKitEndpoint({
+  client,
+  webhookSigningKey: requiredEnv("OPENBOT_AGENT_{{AGENT_ENV_PREFIX}}_WEBHOOK_SIGNING_KEY", "OPENBOT_TILDE_WEBHOOK_SIGNING_KEY"),
+  requestTimeoutMs: 285_000,
+  async handler(request, context) {
+    const callContext = { requestId: context.webhookId, signal: request.signal };
+    const modelContext = { agentId: agentName, sessionId: context.sessionId, ...(context.userId ? { userId: context.userId } : {}) };
+    const tools: ToolSet = { await_shell: awaitShell, bash, copy_from_computer: copyFromComputer, copy_to_computer: copyToComputer, glob, grep, read_file: readFile, screenshot, write_file: writeFile };
+    addTools(tools, await providers.agent.registerTools?.(callContext) ?? []);
+    addTools(tools, await providers.skills.registerTools?.(callContext) ?? []);
+    addTools(tools, await providers.tools.registerTools(callContext));
+
+    const promptParts = await Promise.all([
+      providers.agent.injectPromptPart?.({ agent: { id: agentName, displayName: {{{AGENT_NAME_JSON}}} }, sessionId: context.sessionId }, callContext),
+      providers.skills.injectPromptPart?.(modelContext, callContext),
+      providers.tools.injectPromptPart(modelContext, callContext),
+      providers.inferenceModel.injectPromptPart?.(modelContext),
+      providers.computer.injectPromptPart({ agentId: agentName, sessionId: context.sessionId }, callContext),
+    ]);
+    const system = [instructions, `Your name is ${agentName}.`, ...promptParts.map((part) => typeof part === "string" ? part : part?.content).filter((part): part is string => Boolean(part))].join("\n\n");
+    const history = await context.session.history();
+    const messages = await convertToAiSdkMessages({ messages: [...history.items, ...context.messages], chatkit: context.chatkit });
+    const result = streamText({
+      abortSignal: request.signal,
+      messages: await convertToModelMessages(messages),
+      model: providers.inferenceModel.model(process.env.OPENBOT_OPENAI_MODEL ?? "gpt-5.4"),
+      stopWhen: stepCountIs(12),
+      system,
+      tools,
+    });
+    return result.toUIMessageStreamResponse({ consumeSseStream: consumeStream, originalMessages: messages });
+  },
+});

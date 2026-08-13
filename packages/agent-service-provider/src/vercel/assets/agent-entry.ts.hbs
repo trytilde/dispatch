@@ -1,0 +1,8 @@
+import globalInstrumentation from {{{GLOBAL_INSTRUMENTATION}}};
+{{{AGENT_INSTRUMENTATION_IMPORT}}}
+
+await globalInstrumentation.setup?.({ agentName: {{{AGENT_NAME}}} });
+{{{AGENT_INSTRUMENTATION_SETUP}}}
+const { default: endpoint } = await import({{{AGENT_SOURCE}}});
+
+export default { fetch: endpoint };

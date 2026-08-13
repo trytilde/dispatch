@@ -43,13 +43,9 @@ _Avoid_: agent state, chat state
 Secret-free declarative configuration used to create or update the Tilde resources required by an **OpenBot Installation**.
 _Avoid_: credentials, runtime state
 
-**Setup Code**:
-The installation-specific secret that unlocks initial OpenBot configuration.
-_Avoid_: API key, password
-
 ## Relationships
 
-- An **Owner** configures an **OpenBot Installation**.
+- An **Owner** opens an **OpenBot Installation** without a pairing-code gate.
 - An **OpenBot Installation** presents one **OpenBot Workspace**.
 - An **OpenBot Installation** connects to one **Tilde Organization** and **Tilde Team**.
 - A **Tilde Team** owns one or more **Tilde Agents** and their **ChatKit Sessions**.
@@ -67,3 +63,29 @@ _Avoid_: API key, password
 - "workspace" can mean the **OpenBot Workspace**, a Tilde team, or the computer filesystem; use the explicit term.
 - "agent" can mean a **Tilde Agent** or the software implementing its behavior; use **Tilde Agent** for the registered runtime resource.
 - "state" can mean **Control State**, **Portable Tilde State**, or Tilde-owned runtime data; name the owner and kind.
+
+## Follow-up markers
+
+Known, intentionally deferred work must be written as a standalone block using
+the exact tags below. PR preparation and merged-PR review should search for
+these blocks rather than relying on an unstructured TODO comment.
+
+```text
+<FOLLOW UP>
+Owner: <package or subsystem>
+Trigger: <the change that makes this work actionable>
+Work: <specific remaining behavior and its acceptance proof>
+</FOLLOW UP>
+```
+
+<FOLLOW UP>
+Owner: control service and web workspace
+Trigger: when the owner-facing desktop preview becomes a product requirement
+Work: design the narrow preview-only transport without exposing general computer lifecycle, file, process, input, provider URL, or credential methods to the renderer; prove the chosen route on web and Electron
+</FOLLOW UP>
+
+<FOLLOW UP>
+Owner: production deployment orchestrator
+Trigger: when computer-provider replaces the legacy production sandbox adapter
+Work: build and publish the OpenBot computer image with ensurePublishedComputerImage, persist its source digest and immutable image reference in redacted deployment state, and prove a second unchanged deployment skips both buildImage and publishImage
+</FOLLOW UP>

@@ -12,5 +12,4 @@ test-results
 apps/desktop/out
 apps/desktop/release
 apps/*/dist
-packages/contracts/src/gen
 *.log

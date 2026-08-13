@@ -4,6 +4,12 @@ ADRs live in `docs/adrs/` and use sequential names such as `0001-slug.md`. Scan 
 
 Keep records short. The decision and its reason matter more than exhaustive ceremony. Add options, status, or consequences only when they preserve useful context.
 
+When a later decision amends or materially clarifies an ADR, update its current
+prose and append a chronological bullet under `## Updates` using
+`- YYYY-MM-DDTHH:mm:ssZ: What changed and why.` Use a complete ISO 8601
+timestamp with an offset or `Z`. Never rewrite or remove older entries. New
+ADRs omit `Updates` until they are amended.
+
 ## Required shape
 
 ````md
@@ -27,6 +33,10 @@ Keep records short. The decision and its reason matter more than exhaustive cere
 flowchart LR
   A["Owning boundary"] -->|"defined interaction"| B["Dependent boundary"]
 ```
+
+## Updates
+
+- {ISO 8601 timestamp}: {What changed and why.}
 ````
 
 The `In brief` bullets must use caveman style: terse fragments, exact nouns, explicit `no`, `not`, and `never`. Write all other sections in concise normal prose.
@@ -44,6 +54,6 @@ Always review a PR diff for major architecture, strongly opinionated code, or du
 - product interaction or visual-system rules applied across multiple flows
 - deliberate deviations, non-obvious constraints, or rejected alternatives
 
-Do not create an ADR for routine implementation details, reversible local choices, or a change already governed by an existing ADR.
+Do not create an ADR for routine implementation details, reversible local choices, or a change already governed by an existing ADR. Amend the governing ADR and append a timestamped `Updates` bullet when the durable decision itself changes.
 
 When a qualifying decision appears, summarize it and ask the user one question at a time. Give a recommended answer. Do not invent consent. If the user declines an ADR, preserve that outcome and rationale in the PR body.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create or Update Agent"
+  short_description: "Maintain OpenBot agent project layouts"
+  default_prompt: "Use $create-or-update-agent to create or update an OpenBot agent under configuration/agents."

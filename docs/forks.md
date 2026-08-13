@@ -14,4 +14,4 @@ vp run check
 vp run build
 ```
 
-Treat `openbot.config.ts` and the complete `configuration/` tree as fork-owned during conflict resolution. The `.agents/skills/update-openbot` workflow gives coding agents the same rule. Put generally useful contracts and implementations in a focused upstream pull request; keep business-specific agents and secrets in the fork.
+Treat `configuration/index.ts` and the complete `configuration/` tree as fork-owned during conflict resolution. The `.agents/skills/update-openbot` workflow gives coding agents the same rule. Put generally useful contracts and implementations in a focused upstream pull request; keep business-specific agents and secrets in the fork.

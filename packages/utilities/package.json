@@ -1,0 +1,25 @@
+{
+  "name": "@openbot/utilities",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./file-template": "./src/file-template.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "vp lint",
+    "test": "vp test run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "handlebars": "4.7.9"
+  },
+  "devDependencies": {
+    "@types/node": "24.3.0",
+    "typescript": "5.9.2",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

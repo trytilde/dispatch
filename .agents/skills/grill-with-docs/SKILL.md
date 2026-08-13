@@ -21,7 +21,7 @@ Read the smallest relevant set:
 - `AGENTS.md`: coding and validation rules.
 - `packages/control-service-proto/proto/openbot/control/v1/control.proto`: owner-facing control contract.
 - `packages/computer-service-proto/proto/openbot/computer/v1/computer.proto`: internal computer contract.
-- `packages/*-provider-core/src/index.ts`: domain provider seams.
+- `packages/*-provider/src/core.ts` or `packages/*-providers/src/core/`: domain provider seams.
 - `tilde.state.yaml`: portable Tilde resources.
 - `PROVENANCE.md`: copied-source and clean-room constraints.
 

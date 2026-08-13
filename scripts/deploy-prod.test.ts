@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { readFileSync } from "node:fs";
 import {
   findMarketplaceResources,
@@ -13,7 +13,12 @@ import {
 
 describe("deploy-prod", () => {
   it("parses only supported unattended options", () => {
-    expect(parseOptions(["--", "--yes", "--resume", "--json"])).toEqual({ yes: true, dryRun: false, resume: true, json: true });
+    expect(parseOptions(["--", "--yes", "--resume", "--json"])).toEqual({
+      yes: true,
+      dryRun: false,
+      resume: true,
+      json: true,
+    });
     expect(() => parseOptions(["--force"])).toThrow("Unknown deploy option");
   });
 
@@ -25,7 +30,9 @@ describe("deploy-prod", () => {
   });
 
   it("finds Turso resources in evolving Marketplace response envelopes", () => {
-    const resources = findMarketplaceResources({ resources: [{ id: "ir_1", name: "openbot-db", integration: { slug: "tursocloud" } }] });
+    const resources = findMarketplaceResources({
+      resources: [{ id: "ir_1", name: "openbot-db", integration: { slug: "tursocloud" } }],
+    });
     expect(resources.some((resource) => resource.id === "ir_1")).toBe(true);
   });
 
@@ -86,9 +93,7 @@ describe("deploy-prod", () => {
       errors: [],
     });
     expect(result.resources["chatkit/agent/openbot-gateway"]?.id).toBe("agent-1");
-    expect(result.resources["chatkit/agent/openbot-gateway"]?.action).toBe(
-      "created",
-    );
+    expect(result.resources["chatkit/agent/openbot-gateway"]?.action).toBe("created");
     expect(result.environment).toEqual({
       TILDE_API_KEY: "application-key",
       TILDE_WEBHOOK_SIGNING_KEY: "signing-key",
@@ -112,16 +117,20 @@ describe("deploy-prod", () => {
   });
 
   it("rejects failed and incomplete Tilde imports without echoing response payloads", () => {
-    expect(() => parseTildeImportSummary({
-      import_id: "import-2",
-      status: "failed",
-      errors: ["agent validation failed"],
-      outputs: {},
-    })).toThrow("agent validation failed");
-    expect(() => parseTildeImportSummary({
-      import_id: "import-3",
-      status: "applying",
-      outputs: { environment_file: { contents: "TILDE_API_KEY=never-echo-this" } },
-    })).toThrow("unexpected status: applying");
+    expect(() =>
+      parseTildeImportSummary({
+        import_id: "import-2",
+        status: "failed",
+        errors: ["agent validation failed"],
+        outputs: {},
+      }),
+    ).toThrow("agent validation failed");
+    expect(() =>
+      parseTildeImportSummary({
+        import_id: "import-3",
+        status: "applying",
+        outputs: { environment_file: { contents: "TILDE_API_KEY=never-echo-this" } },
+      }),
+    ).toThrow("unexpected status: applying");
   });
 });

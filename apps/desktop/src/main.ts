@@ -2,7 +2,8 @@ import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { join } from "node:path";
 import { startRendererServer, type RendererServer } from "./local-server.js";
 
-if (process.platform === "win32") throw new Error("OpenBot Desktop currently supports macOS and Linux");
+if (process.platform === "win32")
+  throw new Error("OpenBot Desktop currently supports macOS and Linux");
 
 let window: BrowserWindow | undefined;
 let rendererServer: RendererServer | undefined;
@@ -48,15 +49,22 @@ async function main(): Promise<void> {
   ipcMain.handle("openbot:open-external", async (_event, value: unknown) => {
     if (typeof value !== "string") throw new Error("A URL is required");
     const url = new URL(value);
-    if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("Only web links may be opened externally");
+    if (url.protocol !== "https:" && url.protocol !== "http:")
+      throw new Error("Only web links may be opened externally");
     await shell.openExternal(url.toString());
   });
 
   await app.whenReady();
   await createWindow();
-  app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) void createWindow(); });
-  app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
-  app.on("before-quit", () => { void rendererServer?.close(); });
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) void createWindow();
+  });
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") app.quit();
+  });
+  app.on("before-quit", () => {
+    void rendererServer?.close();
+  });
 }
 
 void main().catch((error: unknown) => {

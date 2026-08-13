@@ -4,7 +4,7 @@ import {
   TILDE_WEBHOOK_SIGNATURE_HEADER,
   TILDE_WEBHOOK_TIMESTAMP_HEADER,
 } from "@trytilde/harness-sdk-vercel-ai-node";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { httpApp, sandboxToolEndpoint } from "./http.js";
 
 process.env.OPENBOT_SETUP_CODE = "openbot-http-test-setup-code";
@@ -27,16 +27,22 @@ describe("HTTP route boundaries", () => {
       [TILDE_WEBHOOK_TIMESTAMP_HEADER]: String(timestamp),
       [TILDE_WEBHOOK_SIGNATURE_HEADER]: signBody(key, timestamp, new Uint8Array()),
     };
-    const response = await sandboxToolEndpoint(new Request("https://openbot.test/api/tilde/tools/sandbox", { headers }), key);
+    const response = await sandboxToolEndpoint(
+      new Request("https://openbot.test/api/tilde/tools/sandbox", { headers }),
+      key,
+    );
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
       invoke_url: "https://openbot.test/api/tilde/tools/sandbox",
       tools: [{ type_id: "sandbox_exec" }],
     });
 
-    const rejected = await sandboxToolEndpoint(new Request("https://openbot.test/api/tilde/tools/sandbox", {
-      headers: { ...headers, [TILDE_WEBHOOK_SIGNATURE_HEADER]: "hmac-sha256=incorrect" },
-    }), key);
+    const rejected = await sandboxToolEndpoint(
+      new Request("https://openbot.test/api/tilde/tools/sandbox", {
+        headers: { ...headers, [TILDE_WEBHOOK_SIGNATURE_HEADER]: "hmac-sha256=incorrect" },
+      }),
+      key,
+    );
     expect(rejected.status).toBe(401);
   });
 });

@@ -37,7 +37,10 @@ export class OpenAiProvider implements AiProvider {
 
   languageModel(modelId: string, credential: AiCredential) {
     if (credential.mode !== "api_key") {
-      throw new ProviderError("not_supported", "OpenAI OAuth cannot fall back to API-key inference");
+      throw new ProviderError(
+        "not_supported",
+        "OpenAI OAuth cannot fall back to API-key inference",
+      );
     }
     return createOpenAI({ apiKey: credential.apiKey }).responses(modelId);
   }

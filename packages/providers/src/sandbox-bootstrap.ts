@@ -1,7 +1,8 @@
 export const DESKTOP_BOOTSTRAP_VERSION = "2026-08-12.3";
 export const CUA_DRIVER_VERSION = "0.19.3";
 export const CHROME_VERSION_AMD64 = "151.0.7922.137-1";
-export const CHROME_SHA256_AMD64 = "e6dabf044cf9cd0279cfe86efa431682c18bfc06d06339ce055aaa87ae871727";
+export const CHROME_SHA256_AMD64 =
+  "e6dabf044cf9cd0279cfe86efa431682c18bfc06d06339ce055aaa87ae871727";
 
 export const desktopBootstrapScript = String.raw`#!/usr/bin/env bash
 set -euo pipefail

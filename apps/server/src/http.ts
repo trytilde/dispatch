@@ -24,37 +24,56 @@ export const httpApp = new Hono();
 
 httpApp.use("*", secureHeaders());
 
-httpApp.get("/healthz", (context) => context.json({ ok: true, service: "openbot", version: "0.1.0" }));
+httpApp.get("/healthz", (context) =>
+  context.json({ ok: true, service: "openbot", version: "0.1.0" }),
+);
 
 httpApp.post("/api/setup/unlock", async (context) => {
-  const body: { setupCode?: string } = await context.req.json<{ setupCode?: string }>().catch(() => ({}));
+  const body: { setupCode?: string } = await context.req
+    .json<{ setupCode?: string }>()
+    .catch(() => ({}));
   if (!body.setupCode || !matchesSetupCode(body.setupCode, setupCode())) {
     return context.json({ error: "Invalid setup code" }, 401);
   }
   await ensureInstallation(publicOrigin(context.req.raw));
-  context.header("Set-Cookie", issueSessionCookie(setupCode(), new URL(context.req.url).protocol === "https:"));
+  context.header(
+    "Set-Cookie",
+    issueSessionCookie(setupCode(), new URL(context.req.url).protocol === "https:"),
+  );
   return context.json({ ok: true });
 });
 
 httpApp.get("/api/configuration", async (context) => {
-  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode())) return context.json({ error: "Setup session required" }, 401);
+  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode()))
+    return context.json({ error: "Setup session required" }, 401);
   const repository = await loadRepository();
-  return context.json({ digest: repository.digest, agents: repository.agents.map(({ id, displayName }) => ({ id, displayName })), skills: repository.skills.map(({ name, description }) => ({ name, description })) });
+  return context.json({
+    digest: repository.digest,
+    agents: repository.agents.map(({ id, displayName }) => ({ id, displayName })),
+    skills: repository.skills.map(({ name, description }) => ({ name, description })),
+  });
 });
 
 httpApp.post("/api/admin/reconcile", async (context) => {
-  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode())) return context.json({ error: "Setup session required" }, 401);
+  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode()))
+    return context.json({ error: "Setup session required" }, 401);
   const report = await reconcileRepository({ origin: publicOrigin(context.req.raw) });
   return context.json(report, report.errors.length ? 502 : 200);
 });
 
 httpApp.use("/api/chat", async (context, next) => {
-  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode())) return context.json({ error: "Setup session required" }, 401);
+  if (!hasValidSession(context.req.header("cookie") ?? null, setupCode()))
+    return context.json({ error: "Setup session required" }, 401);
   await next();
 });
 
 httpApp.post("/api/chat", async (context) => {
-  const body = await context.req.json<{ agentId?: string; sessionId?: string; text?: string; messages?: unknown[] }>();
+  const body = await context.req.json<{
+    agentId?: string;
+    sessionId?: string;
+    text?: string;
+    messages?: unknown[];
+  }>();
   const tilde = await tildeEnvironment();
   if (!tilde) return context.json({ error: "Tilde is not configured" }, 409);
   const agentId = body.agentId || tilde.agentId;
@@ -64,15 +83,29 @@ httpApp.post("/api/chat", async (context) => {
   const provider = new TildeChatProvider(tilde);
   const session = body.sessionId
     ? { id: body.sessionId }
-    : await provider.createSession(agentId, undefined, providerContext(undefined, context.req.raw.signal));
-  const messages = await provider.sendMessage(agentId, session.id, text, providerContext(undefined, context.req.raw.signal));
+    : await provider.createSession(
+        agentId,
+        undefined,
+        providerContext(undefined, context.req.raw.signal),
+      );
+  const messages = await provider.sendMessage(
+    agentId,
+    session.id,
+    text,
+    providerContext(undefined, context.req.raw.signal),
+  );
   return context.json({
     sessionId: session.id,
-    messages: messages.map((message) => ({ ...message, createdAt: message.createdAt.toISOString() })),
+    messages: messages.map((message) => ({
+      ...message,
+      createdAt: message.createdAt.toISOString(),
+    })),
   });
 });
 
-httpApp.all("/api/agents/:agentId", (context) => handleAgentEndpoint(context, context.req.param("agentId")));
+httpApp.all("/api/agents/:agentId", (context) =>
+  handleAgentEndpoint(context, context.req.param("agentId")),
+);
 httpApp.all("/api/tilde/chatkit", (context) => handleAgentEndpoint(context, "openbot"));
 
 async function handleAgentEndpoint(context: Context, agentId: string) {
@@ -94,10 +127,14 @@ const sandboxExecInput = z.object({
   arguments: z.array(z.string()).default([]),
 });
 
-export async function sandboxToolEndpoint(request: Request, webhookSigningKey: string): Promise<Response> {
+export async function sandboxToolEndpoint(
+  request: Request,
+  webhookSigningKey: string,
+): Promise<Response> {
   if (request.method === "GET") {
     const verificationError = verifySignedDiscovery(request, webhookSigningKey);
-    if (verificationError) return Response.json({ type: "error", message: verificationError }, { status: 401 });
+    if (verificationError)
+      return Response.json({ type: "error", message: verificationError }, { status: 401 });
     return Response.json({
       provider: {
         name: "OpenBot sandbox",
@@ -105,13 +142,18 @@ export async function sandboxToolEndpoint(request: Request, webhookSigningKey: s
         version: "1.0.0",
       },
       invoke_url: new URL("/api/tilde/tools/sandbox", publicOrigin(request)).toString(),
-      tools: [{
-        type_id: "sandbox_exec",
-        name: "Run sandbox command",
-        description: "Run a command in this OpenBot installation's active computer.",
-        input_schema: z.toJSONSchema(sandboxExecInput, { target: "draft-7" }),
-        output_schema: z.toJSONSchema(z.object({ exitCode: z.number().int(), stdout: z.string(), stderr: z.string() }), { target: "draft-7" }),
-      }],
+      tools: [
+        {
+          type_id: "sandbox_exec",
+          name: "Run sandbox command",
+          description: "Run a command in this OpenBot installation's active computer.",
+          input_schema: z.toJSONSchema(sandboxExecInput, { target: "draft-7" }),
+          output_schema: z.toJSONSchema(
+            z.object({ exitCode: z.number().int(), stdout: z.string(), stderr: z.string() }),
+            { target: "draft-7" },
+          ),
+        },
+      ],
     });
   }
 
@@ -125,27 +167,35 @@ export async function sandboxToolEndpoint(request: Request, webhookSigningKey: s
     throw error;
   }
 
-  if (request.method !== "POST") return Response.json({ error: "Method not allowed" }, { status: 405 });
+  if (request.method !== "POST")
+    return Response.json({ error: "Method not allowed" }, { status: 405 });
   const invocation = verified.json;
   if (!isRecord(invocation) || invocation.tool_source_type_id !== "sandbox_exec") {
-    return Response.json({ type: "error", message: "Unknown or invalid tool invocation" }, { status: 400 });
+    return Response.json(
+      { type: "error", message: "Unknown or invalid tool invocation" },
+      { status: 400 },
+    );
   }
   const input = await sandboxExecInput.safeParseAsync(invocation.params);
-  if (!input.success) return Response.json({ type: "error", message: z.prettifyError(input.error) });
+  if (!input.success)
+    return Response.json({ type: "error", message: z.prettifyError(input.error) });
   try {
     const installation = await ensureInstallation();
     if (!installation.sandboxInstanceId) {
       return Response.json({ type: "error", message: "The OpenBot computer has not been started" });
     }
-    const output = await (await configuredProvider<SandboxProvider>("sandbox")).exec(
-      installation.sandboxInstanceId,
-      input.data.command,
-      input.data.arguments,
-      { requestId: crypto.randomUUID(), signal: request.signal },
-    );
+    const output = await (
+      await configuredProvider<SandboxProvider>("sandbox")
+    ).exec(installation.sandboxInstanceId, input.data.command, input.data.arguments, {
+      requestId: crypto.randomUUID(),
+      signal: request.signal,
+    });
     return Response.json({ ...output, type: "success" });
   } catch (error) {
-    return Response.json({ type: "error", message: error instanceof Error ? error.message : "Tool execution failed" });
+    return Response.json({
+      type: "error",
+      message: error instanceof Error ? error.message : "Tool execution failed",
+    });
   }
 }
 
@@ -159,11 +209,15 @@ function verifySignedDiscovery(request: Request, webhookSigningKey: string): str
   if (!/^-?\d+$/.test(timestampValue)) return "Invalid webhook timestamp";
   const timestamp = Number(timestampValue);
   if (!Number.isSafeInteger(timestamp)) return "Invalid webhook timestamp";
-  if (Math.abs(Math.floor(Date.now() / 1000) - timestamp) > 300) return "Webhook timestamp is outside tolerance";
+  if (Math.abs(Math.floor(Date.now() / 1000) - timestamp) > 300)
+    return "Webhook timestamp is outside tolerance";
   const expected = signBody(webhookSigningKey, timestamp, new Uint8Array());
   const receivedBytes = Buffer.from(signature);
   const expectedBytes = Buffer.from(expected);
-  if (receivedBytes.length !== expectedBytes.length || !timingSafeEqual(receivedBytes, expectedBytes)) {
+  if (
+    receivedBytes.length !== expectedBytes.length ||
+    !timingSafeEqual(receivedBytes, expectedBytes)
+  ) {
     return "Invalid webhook signature";
   }
   return undefined;
@@ -185,7 +239,7 @@ function lastUserText(messages: unknown[] | undefined): string | undefined {
     if (typeof message.content === "string") return message.content.trim() || undefined;
     if (!Array.isArray(message.parts)) continue;
     const value = message.parts
-      .map((part) => isRecord(part) && typeof part.text === "string" ? part.text : "")
+      .map((part) => (isRecord(part) && typeof part.text === "string" ? part.text : ""))
       .join("")
       .trim();
     if (value) return value;

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import {
   CHROME_SHA256_AMD64,
   CHROME_VERSION_AMD64,
@@ -21,14 +21,12 @@ describe("desktop sandbox bootstrap", () => {
   it("requires a desktop capability before exposing noVNC", () => {
     expect(desktopStartScript).toContain("OPENBOT_DESKTOP_CAPABILITY is required");
     expect(desktopStartScript).toContain("--token-plugin TokenFile");
-    expect(desktopStartScript).toContain(
-      "CUA_DRIVER_SOCKET=/tmp/openbot-cua-driver.sock",
-    );
+    expect(desktopStartScript).toContain("CUA_DRIVER_SOCKET=/tmp/openbot-cua-driver.sock");
     expect(desktopStartScript).toContain("getent passwd 1000");
     expect(desktopStartScript).toContain('"$CUA_EXECUTABLE" serve --socket "$CUA_DRIVER_SOCKET"');
     expect(desktopStartScript).toContain("--dangerously-bypass-approvals");
     expect(desktopStartScript).toContain("/proc/sys/kernel/random/boot_id");
-    expect(desktopStartScript).toContain("kill -0 \"$locked_pid\"");
+    expect(desktopStartScript).toContain('kill -0 "$locked_pid"');
     expect(desktopStartScript).toContain("has not published its owner yet");
     expect(desktopStartScript).not.toContain("0.0.0.0:5901");
   });

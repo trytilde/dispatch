@@ -14,7 +14,7 @@ const honoHandler = getRequestListener(httpApp.fetch);
 export const requestHandler: RequestListener = (request, response) => {
   const path = new URL(request.url ?? "/", "http://openbot.local").pathname;
   if (path === "/rpc" || path.startsWith("/rpc/")) {
-    void connectHandler(request, response);
+    connectHandler(request, response);
     return;
   }
   void honoHandler(request, response);

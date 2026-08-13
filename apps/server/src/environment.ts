@@ -21,11 +21,16 @@ export function environmentProvider(vercelApiToken?: string): EnvProvider {
   return defaultEnvProvider();
 }
 
-export function providerContext(requestId: string = crypto.randomUUID(), signal?: AbortSignal): ProviderCallContext {
+export function providerContext(
+  requestId: string = crypto.randomUUID(),
+  signal?: AbortSignal,
+): ProviderCallContext {
   return { requestId, ...(signal ? { signal } : {}) };
 }
 
-export async function configuredEnvironmentNames(provider = environmentProvider()): Promise<Set<string>> {
+export async function configuredEnvironmentNames(
+  provider = environmentProvider(),
+): Promise<Set<string>> {
   return new Set((await provider.list("OPENBOT_", providerContext())).map((entry) => entry.name));
 }
 
@@ -35,11 +40,20 @@ export async function setEnvironment(
 ): Promise<void> {
   const context = providerContext();
   for (const [name, value] of Object.entries(values)) {
-    if (value) await provider.set(name, value, { sensitive: name !== environmentNames.openaiModel }, context);
+    if (value)
+      await provider.set(
+        name,
+        value,
+        { sensitive: name !== environmentNames.openaiModel },
+        context,
+      );
   }
 }
 
-export async function getEnvironment(name: string, provider = environmentProvider()): Promise<string | undefined> {
+export async function getEnvironment(
+  name: string,
+  provider = environmentProvider(),
+): Promise<string | undefined> {
   return provider.get(name, providerContext());
 }
 

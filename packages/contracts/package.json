@@ -10,8 +10,8 @@
   "scripts": {
     "build": "tsc --noEmit",
     "generate": "cd ../.. && BUF_CACHE_DIR=$PWD/.cache/buf buf generate",
-    "lint": "cd ../.. && BUF_CACHE_DIR=$PWD/.cache/buf buf lint",
-    "test": "vitest run --passWithNoTests",
+    "lint": "vp lint && cd ../.. && BUF_CACHE_DIR=$PWD/.cache/buf buf lint",
+    "test": "vp test run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -22,6 +22,7 @@
     "@bufbuild/protoc-gen-es": "2.7.0",
     "@types/node": "24.3.0",
     "typescript": "5.9.2",
-    "vitest": "3.2.4"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

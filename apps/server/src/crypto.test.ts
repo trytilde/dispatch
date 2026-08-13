@@ -1,9 +1,5 @@
-import { describe, expect, it } from "vitest";
-import {
-  hasValidSession,
-  issueSessionCookie,
-  matchesSetupCode,
-} from "./crypto.js";
+import { describe, expect, it } from "vite-plus/test";
+import { hasValidSession, issueSessionCookie, matchesSetupCode } from "./crypto.js";
 
 describe("installation cryptography", () => {
   const code = "a-long-setup-code-with-enough-entropy";

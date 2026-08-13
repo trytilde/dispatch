@@ -31,7 +31,9 @@ export function defineConfig(config: OpenBotConfig): OpenBotConfig {
 
 export function repositoryDigest(files: Readonly<Record<string, string>>): string {
   const hash = createHash("sha256");
-  for (const [path, content] of Object.entries(files).sort(([left], [right]) => left.localeCompare(right))) {
+  for (const [path, content] of Object.entries(files).sort(([left], [right]) =>
+    left.localeCompare(right),
+  )) {
     hash.update(path).update("\0").update(content).update("\0");
   }
   return hash.digest("hex");
@@ -39,15 +41,24 @@ export function repositoryDigest(files: Readonly<Record<string, string>>): strin
 
 export function validateConfig(config: OpenBotConfig): string[] {
   const errors: string[] = [];
-  const paths = [config.providers.directory, config.skills.directory, config.agents.directory, config.sandbox.assetsDirectory, config.sandbox.bootstrap];
+  const paths = [
+    config.providers.directory,
+    config.skills.directory,
+    config.agents.directory,
+    config.sandbox.assetsDirectory,
+    config.sandbox.bootstrap,
+  ];
   for (const path of paths) {
-    if (!path || path.startsWith("/") || path.split(/[\\/]/).includes("..")) errors.push(`Configuration path must stay inside the repository: ${path}`);
+    if (!path || path.startsWith("/") || path.split(/[\\/]/).includes(".."))
+      errors.push(`Configuration path must stay inside the repository: ${path}`);
   }
   if (!config.agents.routePrefix.startsWith("/api/") || config.agents.routePrefix.endsWith("/")) {
     errors.push("agents.routePrefix must start with /api/ and must not end with /");
   }
-  if (!/^[a-zA-Z0-9._ -]+$/.test(config.skills.registryName)) errors.push("skills.registryName contains unsupported characters");
+  if (!/^[a-zA-Z0-9._ -]+$/.test(config.skills.registryName))
+    errors.push("skills.registryName contains unsupported characters");
   const serialized = JSON.stringify(config);
-  if (/(api[_-]?key|token|password|secret)["']?\s*:/i.test(serialized)) errors.push("Configuration must not contain secret-shaped keys");
+  if (/(api[_-]?key|token|password|secret)["']?\s*:/i.test(serialized))
+    errors.push("Configuration must not contain secret-shaped keys");
   return errors;
 }

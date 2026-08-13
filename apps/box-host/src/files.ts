@@ -9,7 +9,8 @@ export function workspacePath(path: string): string {
   const root = workspaceRoot();
   const target = resolve(root, isAbsolute(path) ? `.${path}` : path);
   const child = relative(root, target);
-  if (child.startsWith("..") || isAbsolute(child)) throw new Error("Path is outside the sandbox workspace");
+  if (child.startsWith("..") || isAbsolute(child))
+    throw new Error("Path is outside the sandbox workspace");
   return target;
 }
 

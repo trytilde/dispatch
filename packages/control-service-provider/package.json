@@ -30,6 +30,7 @@
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
+    "@tryopenbot/platform-integrations": "workspace:*",
     "@tryopenbot/runtime-provider": "workspace:*",
     "@tryopenbot/utilities": "workspace:*",
     "tsdown": "0.22.14",

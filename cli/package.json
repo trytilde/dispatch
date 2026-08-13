@@ -30,13 +30,17 @@
     "@tryopenbot/configuration": "workspace:*",
     "@tryopenbot/control-service": "workspace:*",
     "@tryopenbot/control-service-provider": "workspace:*",
+    "@tryopenbot/inference-model-provider": "workspace:*",
+    "@tryopenbot/platform-integrations": "workspace:*",
     "@tryopenbot/runtime-provider": "workspace:*",
+    "@tryopenbot/tools-provider": "workspace:*",
     "@tryopenbot/utilities": "workspace:*",
     "arg": "5.0.2",
     "dotenv": "17.2.1",
     "hono": "4.13.1",
     "ink": "7.1.1",
     "react": "19.2.8",
+    "tsx": "4.20.4",
     "yaml": "2.9.0"
   },
   "devDependencies": {
@@ -44,7 +48,6 @@
     "@types/react": "19.2.18",
     "ink-testing-library": "4.0.0",
     "tsdown": "0.22.14",
-    "tsx": "4.20.4",
     "typescript": "5.9.2",
     "vitest": "3.2.4"
   }

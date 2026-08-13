@@ -42,6 +42,7 @@
     "@connectrpc/connect": "2.1.2",
     "@connectrpc/connect-node": "2.1.2",
     "@tryopenbot/computer-service-proto": "workspace:*",
+    "@tryopenbot/platform-integrations": "workspace:*",
     "@tryopenbot/runtime-provider": "workspace:*",
     "@tryopenbot/utilities": "workspace:*",
     "@vercel/sandbox": "3.0.0",

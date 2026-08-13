@@ -1,5 +1,4 @@
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import arg from "arg";
 import { AgentProviderError, type AgentProvider } from "@tryopenbot/agent-provider";
 import type { OpenBotConfiguration } from "@tryopenbot/configuration";
@@ -12,6 +11,7 @@ import {
   type DeploymentParticipant,
 } from "@tryopenbot/runtime-provider";
 import { loadDeploymentConfiguration, setEncryptedSecret } from "../initialization.js";
+import { loadConfigurationModule } from "../configuration-loader.js";
 import { repositoryRoot } from "../paths.js";
 
 export interface DeployOptions {
@@ -76,11 +76,9 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
   const controlService = configuration.providers.controlService;
   const computer = configuration.providers.computer;
   const deployAgents = options.service === "all" || options.service === "agents";
-  const computerId =
-    deploymentConfiguration.environment.OPENBOT_COMPUTER_ID?.trim() || "openbot-computer";
+  const computerId = deploymentConfiguration.environment.COMPUTER_ID?.trim() || "openbot-computer";
   const developmentSandboxId =
-    deploymentConfiguration.environment.OPENBOT_DEVELOPMENT_SANDBOX_ID?.trim() ||
-    "openbot-development";
+    deploymentConfiguration.environment.DEVELOPMENT_SANDBOX_ID?.trim() || "openbot-development";
   const participants: DeploymentParticipant[] = [
     ...(options.service === "all" && computer ? [{ id: "computer", provider: computer }] : []),
     ...(deployAgents && computer
@@ -181,15 +179,22 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
 export async function configureAgentRegistrations(
   agentProvider: AgentProvider,
   context: DeploymentContext,
-  persistSecret: (name: string, value: string) => Promise<void> = (name, value) =>
-    setEncryptedSecret(context.repositoryRoot, name, value, { environment: context.environment }),
+  persistSecret: (name: string, value: string, description: string) => Promise<void> = (
+    name,
+    value,
+    description,
+  ) =>
+    setEncryptedSecret(context.repositoryRoot, name, value, {
+      environment: context.environment,
+      description,
+    }),
 ) {
   const origin = context.inputs.require("agent-service.origin");
   const secrets: Record<string, string> = {};
   for (const agent of await discoverAgents(context.repositoryRoot)) {
     const prefix = agent.slug.replaceAll("-", "_").toUpperCase();
-    const apiKeyName = `OPENBOT_AGENT_${prefix}_API_KEY`;
-    const webhookKeyName = `OPENBOT_AGENT_${prefix}_WEBHOOK_SIGNING_KEY`;
+    const apiKeyName = `AGENT_${prefix}_API_KEY`;
+    const webhookKeyName = `AGENT_${prefix}_WEBHOOK_SIGNING_KEY`;
     const endpointUrl = new URL(`/api/agents/${agent.slug}`, `${origin}/`);
     try {
       await agentProvider.getAgent(agent.slug, { requestId: `deploy:agent:${agent.slug}` });
@@ -220,8 +225,16 @@ export async function configureAgentRegistrations(
       );
       secrets[apiKeyName] = registered.credentials.apiKey;
       secrets[webhookKeyName] = registered.credentials.webhookSigningKey;
-      await persistSecret(apiKeyName, registered.credentials.apiKey);
-      await persistSecret(webhookKeyName, registered.credentials.webhookSigningKey);
+      await persistSecret(
+        apiKeyName,
+        registered.credentials.apiKey,
+        `ChatKit API key for the ${agent.slug} agent endpoint.`,
+      );
+      await persistSecret(
+        webhookKeyName,
+        registered.credentials.webhookSigningKey,
+        `ChatKit webhook signing key for the ${agent.slug} agent endpoint.`,
+      );
     }
   }
   return Object.keys(secrets).length ? { secrets } : undefined;
@@ -229,7 +242,7 @@ export async function configureAgentRegistrations(
 
 async function loadRepositoryConfiguration(): Promise<OpenBotConfiguration> {
   const path = resolve(repositoryRoot, "configuration/index.ts");
-  const module = (await import(pathToFileURL(path).href)) as { default?: OpenBotConfiguration };
+  const module = await loadConfigurationModule<{ default?: OpenBotConfiguration }>(path);
   if (!module.default)
     throw new Error("configuration/index.ts must export the OpenBot configuration as default");
   return module.default;

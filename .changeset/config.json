@@ -15,6 +15,7 @@
       "@tryopenbot/desktop",
       "@tryopenbot/utilities",
       "@tryopenbot/inference-model-provider",
+      "@tryopenbot/platform-integrations",
       "@tryopenbot/control-service-provider",
       "@tryopenbot/runtime-provider",
       "@tryopenbot/control-service",

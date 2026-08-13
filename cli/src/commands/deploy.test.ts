@@ -107,13 +107,21 @@ describe("deploy-prod", () => {
       expect.anything(),
     );
     expect(persistSecret.mock.calls).toEqual([
-      ["OPENBOT_AGENT_HELLO_WORLD_API_KEY", "agent-api-key-value"],
-      ["OPENBOT_AGENT_HELLO_WORLD_WEBHOOK_SIGNING_KEY", "agent-webhook-key-value"],
+      [
+        "AGENT_HELLO_WORLD_API_KEY",
+        "agent-api-key-value",
+        "ChatKit API key for the hello-world agent endpoint.",
+      ],
+      [
+        "AGENT_HELLO_WORLD_WEBHOOK_SIGNING_KEY",
+        "agent-webhook-key-value",
+        "ChatKit webhook signing key for the hello-world agent endpoint.",
+      ],
     ]);
     expect(result).toEqual({
       secrets: {
-        OPENBOT_AGENT_HELLO_WORLD_API_KEY: "agent-api-key-value",
-        OPENBOT_AGENT_HELLO_WORLD_WEBHOOK_SIGNING_KEY: "agent-webhook-key-value",
+        AGENT_HELLO_WORLD_API_KEY: "agent-api-key-value",
+        AGENT_HELLO_WORLD_WEBHOOK_SIGNING_KEY: "agent-webhook-key-value",
       },
     });
   });

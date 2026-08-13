@@ -46,6 +46,10 @@ function registry() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("TildeSkillProvider", () => {
+  it("depends on the shared Tilde setup", () => {
+    expect(new TildeSkillProvider(config).platforms.map(({ id }) => id)).toEqual(["tilde"]);
+  });
+
   it("uses the typed SDK for skill and registry control operations", async () => {
     const requests: Request[] = [];
     vi.stubGlobal(

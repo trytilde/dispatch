@@ -1,10 +1,69 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import {
   buildProviders,
+  collectProviderInitializations,
   deployProviders,
   DeploymentOutputs,
   sandboxDeploymentEnvironment,
 } from "./core.js";
+
+describe("provider initialization", () => {
+  it("collects a shared platform dependency once across domain providers", () => {
+    const platform = {
+      id: "vercel",
+      initialization: {
+        id: "vercel",
+        label: "Vercel",
+        questions: [
+          {
+            id: "vercel-token",
+            prompt: "Vercel token",
+            input: "secret" as const,
+            destination: { kind: "deployment-secret" as const, key: "VERCEL_TOKEN" },
+          },
+        ],
+      },
+    };
+    const collected = collectProviderInitializations([
+      { platforms: [platform] },
+      {
+        platforms: [platform],
+        initialization: { id: "vercel-agents", label: "Vercel agents", questions: [] },
+      },
+    ]);
+
+    expect(collected.map(({ id }) => id)).toEqual(["vercel", "vercel-agents"]);
+  });
+
+  it("rejects conflicting definitions for one platform dependency", () => {
+    expect(() =>
+      collectProviderInitializations([
+        {
+          platforms: [
+            { id: "tilde", initialization: { id: "tilde", label: "Tilde", questions: [] } },
+          ],
+        },
+        {
+          platforms: [
+            { id: "tilde", initialization: { id: "tilde", label: "Other", questions: [] } },
+          ],
+        },
+      ]),
+    ).toThrow("Providers define conflicting initialization dependency: tilde");
+  });
+
+  it("rejects a platform whose identity differs from its initialization", () => {
+    expect(() =>
+      collectProviderInitializations([
+        {
+          platforms: [
+            { id: "vercel", initialization: { id: "other", label: "Vercel", questions: [] } },
+          ],
+        },
+      ]),
+    ).toThrow("Platform vercel has mismatched initialization metadata");
+  });
+});
 
 describe("provider deployment", () => {
   it("checks and builds artifacts in participant order", async () => {
@@ -165,9 +224,9 @@ describe("provider deployment", () => {
 
   it("rejects conflicting output values", () => {
     const outputs = new DeploymentOutputs();
-    outputs.merge({ environmentVariables: { OPENBOT_PORT: "4100" } });
-    expect(() => outputs.merge({ environmentVariables: { OPENBOT_PORT: "4200" } })).toThrow(
-      "Conflicting deployment environment variable: OPENBOT_PORT",
+    outputs.merge({ environmentVariables: { PORT: "4100" } });
+    expect(() => outputs.merge({ environmentVariables: { PORT: "4200" } })).toThrow(
+      "Conflicting deployment environment variable: PORT",
     );
     expect(() => outputs.require("missing")).toThrow(
       "Required deployment output is unavailable: missing",

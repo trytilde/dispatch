@@ -21,8 +21,7 @@ const controlHandlers = new Map(
 const sourceWebRoot = fileURLToPath(new URL("../../web/dist", import.meta.url));
 const workingDirectoryWebRoot = resolve(process.cwd(), "apps/web/dist");
 const defaultWebRoot =
-  process.env.OPENBOT_WEB_ROOT ??
-  (existsSync(sourceWebRoot) ? sourceWebRoot : workingDirectoryWebRoot);
+  process.env.WEB_ROOT ?? (existsSync(sourceWebRoot) ? sourceWebRoot : workingDirectoryWebRoot);
 
 export interface AppOptions {
   webRoot?: string;

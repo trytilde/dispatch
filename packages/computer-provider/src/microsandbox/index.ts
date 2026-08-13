@@ -22,7 +22,7 @@ type MicroSandbox = Awaited<
 
 export class MicrosandboxComputerProvider extends BaseComputerProvider {
   protected readonly providerId = "microsandbox";
-  protected readonly deployedImageEnvironmentVariable = "OPENBOT_MICROSANDBOX_COMPUTER_IMAGE";
+  protected readonly deployedImageEnvironmentVariable = "MICROSANDBOX_COMPUTER_IMAGE";
 
   readonly #instances = new Map<string, MicroSandbox>();
   readonly #handles = new Map<string, ComputerHandle>();
@@ -188,13 +188,13 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
 
   protected async computerServiceUrl(id: string): Promise<string> {
     await this.get(id, { requestId: "computer-service-url" });
-    const configured = process.env.OPENBOT_MICROSANDBOX_COMPUTER_SERVICE_URL?.trim();
+    const configured = process.env.MICROSANDBOX_COMPUTER_SERVICE_URL?.trim();
     if (configured) return configured;
     const port = this.#servicePorts.get(id);
     if (!port)
       throw new ComputerProviderError(
         "invalid_configuration",
-        "The Microsandbox computer-service port is unknown; set OPENBOT_MICROSANDBOX_COMPUTER_SERVICE_URL when attaching to an existing computer",
+        "The Microsandbox computer-service port is unknown; set MICROSANDBOX_COMPUTER_SERVICE_URL when attaching to an existing computer",
       );
     return `http://127.0.0.1:${port}/rpc`;
   }
@@ -208,11 +208,11 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
     const { Sandbox } = await import("microsandbox");
     const desktopPort = this.#desktopPorts.get(id) ?? (await availablePort(6080));
     const servicePort = await availablePort(4101);
-    const image = spec.image ?? process.env.OPENBOT_MICROSANDBOX_COMPUTER_IMAGE;
+    const image = spec.image ?? process.env.MICROSANDBOX_COMPUTER_IMAGE;
     if (!image)
       throw new ComputerProviderError(
         "invalid_configuration",
-        "Deploy the Microsandbox computer provider or set OPENBOT_MICROSANDBOX_COMPUTER_IMAGE before creating a computer",
+        "Deploy the Microsandbox computer provider or set MICROSANDBOX_COMPUTER_IMAGE before creating a computer",
       );
 
     const sandbox = await Sandbox.builder(id)
@@ -228,11 +228,11 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
       .envs({
         CUA_DRIVER_SOCKET: "/tmp/openbot-cua-driver.sock",
         DISPLAY: ":1",
-        OPENBOT_COMPUTER_SERVICE_API_KEY: computerServiceApiKey(),
-        OPENBOT_COMPUTER_EXPOSED_PORTS: "6080,4101",
-        OPENBOT_COMPUTER_SERVICE_PORT: "4101",
-        OPENBOT_COMPUTER_WORKSPACE: "/workspace",
-        OPENBOT_VNC_CAPABILITY: scopedCapability("vnc", id),
+        COMPUTER_SERVICE_API_KEY: computerServiceApiKey(),
+        COMPUTER_EXPOSED_PORTS: "6080,4101",
+        COMPUTER_SERVICE_PORT: "4101",
+        COMPUTER_WORKSPACE: "/workspace",
+        VNC_CAPABILITY: scopedCapability("vnc", id),
         ...spec.environment,
       })
       .detached(true)

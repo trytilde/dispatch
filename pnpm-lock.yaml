@@ -62,6 +62,9 @@ importers:
       '@tryopenbot/inference-model-provider':
         specifier: workspace:*
         version: link:packages/inference-model-provider
+      '@tryopenbot/platform-integrations':
+        specifier: workspace:*
+        version: link:packages/platform-integrations
       '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:packages/runtime-provider
@@ -284,9 +287,18 @@ importers:
       '@tryopenbot/control-service-provider':
         specifier: workspace:*
         version: link:../packages/control-service-provider
+      '@tryopenbot/inference-model-provider':
+        specifier: workspace:*
+        version: link:../packages/inference-model-provider
+      '@tryopenbot/platform-integrations':
+        specifier: workspace:*
+        version: link:../packages/platform-integrations
       '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../packages/runtime-provider
+      '@tryopenbot/tools-provider':
+        specifier: workspace:*
+        version: link:../packages/tools-provider
       '@tryopenbot/utilities':
         specifier: workspace:*
         version: link:../packages/utilities
@@ -305,6 +317,9 @@ importers:
       react:
         specifier: 19.2.8
         version: 19.2.8
+      tsx:
+        specifier: 4.20.4
+        version: 4.20.4
       yaml:
         specifier: 2.9.0
         version: 2.9.0
@@ -321,9 +336,6 @@ importers:
       tsdown:
         specifier: 0.22.14
         version: 0.22.14(@typescript/native-preview@7.0.0-dev.20260707.2)(@volar/typescript@2.4.28)(tsx@4.20.4)(typescript@5.9.2)
-      tsx:
-        specifier: 4.20.4
-        version: 4.20.4
       typescript:
         specifier: 5.9.2
         version: 5.9.2
@@ -333,6 +345,9 @@ importers:
 
   packages/agent-provider:
     dependencies:
+      '@tryopenbot/platform-integrations':
+        specifier: workspace:*
+        version: link:../platform-integrations
       '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
@@ -364,6 +379,9 @@ importers:
       '@tryopenbot/control-service-provider':
         specifier: workspace:*
         version: link:../control-service-provider
+      '@tryopenbot/platform-integrations':
+        specifier: workspace:*
+        version: link:../platform-integrations
       '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
@@ -404,6 +422,9 @@ importers:
       '@tryopenbot/computer-service-proto':
         specifier: workspace:*
         version: link:../computer-service-proto
+      '@tryopenbot/platform-integrations':
+        specifier: workspace:*
+        version: link:../platform-integrations
       '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
@@ -510,6 +531,9 @@ importers:
 
   packages/control-service-provider:
     dependencies:
+      '@tryopenbot/platform-integrations':
+        specifier: workspace:*
+        version: link:../platform-integrations
       '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
@@ -561,6 +585,25 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
+  packages/platform-integrations:
+    dependencies:
+      '@tryopenbot/runtime-provider':
+        specifier: workspace:*
+        version: link:../runtime-provider
+      '@trytilde/harness-sdk':
+        specifier: 0.1.2
+        version: 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0)
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
+
   packages/runtime-provider:
     devDependencies:
       '@types/node':
@@ -575,6 +618,9 @@ importers:
 
   packages/skills-provider:
     dependencies:
+      '@tryopenbot/platform-integrations':
+        specifier: workspace:*
+        version: link:../platform-integrations
       '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
@@ -603,6 +649,9 @@ importers:
 
   packages/tools-provider:
     dependencies:
+      '@tryopenbot/platform-integrations':
+        specifier: workspace:*
+        version: link:../platform-integrations
       '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider

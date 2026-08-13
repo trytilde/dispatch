@@ -11,7 +11,7 @@ Keep provider-specific behavior behind its domain core contract and keep composi
 
 1. Identify the owning domain and read the contract in the provider package's `src/core.ts` or `src/core/index.ts`. Do not expose an internal provider interface through RPC unless a user-facing service boundary requires it.
 2. Read the matching provider package, configuration composition, and tests. Preserve `ProviderCallContext`, `ProviderError`, cancellation, deadlines, request IDs, and idempotency where the contract defines them.
-3. Add the smallest provider-specific implementation. Keep selection in composition code and keep vendor SDK calls inside the adapter.
+3. Add the smallest provider-specific implementation. Keep selection in composition code. Before adding vendor helpers, inspect `@tryopenbot/platform-integrations`: shared platform clients, authentication, request/error normalization, account lookup, deployment commands, and other cross-domain vendor operations belong under `src/<platform>/<responsibility>.ts`. Domain-specific API calls and record mapping stay in the adapter.
 4. Implement only the optional capabilities the provider supports, such as `Buildable`, `Deployable`, initialization questions, `registerTools()`, or `injectPromptPart()`.
 5. Add focused contract and artifact tests, then run the provider package checks before broader repository gates.
 
@@ -25,6 +25,14 @@ Keep provider-specific behavior behind its domain core contract and keep composi
 - Prefer a file per provider. Split by responsibility, not by arbitrary line count.
 - Do not add provider descriptors or generic `createProvider(type)` selectors. The fork explicitly imports and constructs concrete implementations under `Configuration({ providers: { ... } })` in `configuration/index.ts`.
 - Do not add `health()` or `verify()` to provider interfaces or implementations unless an explicit domain requirement calls for that exact operation. Keep service health endpoints and deployment smoke checks at their owning service/runtime boundary.
+
+## Shared platforms
+
+- Providers that use the same external platform reference one concrete `Platform` instance through `platforms`; they do not duplicate platform initialization metadata.
+- Put shared Tilde behavior under `packages/platform-integrations/src/tilde/` and shared Vercel behavior under `packages/platform-integrations/src/vercel/`, split by cohesive responsibility such as `errors.ts`, `fetch.ts`, `deployment.ts`, or `registry.ts`.
+- Move common vendor helpers into the platform package when implementing or updating a provider. Do not make one domain provider the utility dependency of another domain provider.
+- Keep domain contracts, domain error translation, entity mapping, prompts specific to one provider role, and lifecycle behavior specific to one artifact in the owning provider package.
+- Add focused platform contract tests for shared helpers and focused provider tests proving each adapter still maps platform results and failures to its domain contract.
 
 ## Provider-owned assets
 
@@ -55,4 +63,4 @@ Keep provider-specific behavior behind its domain core contract and keep composi
 
 ## Verification
 
-Run the focused provider tests and typecheck. Audit the diff for provider contract interfaces outside `src/core.ts` or `src/core/index.ts`, embedded whole-file templates, non-Handlebars generation, raw provider-asset copies, stale flat-provider imports, secrets, and unrelated generated output. Run `pnpm check` and `pnpm build` when the change affects deployment artifacts or shared contracts.
+Run the focused platform and provider tests and typechecks. Audit the diff for duplicated Tilde/Vercel helpers, cross-domain provider utility imports, provider contract interfaces outside `src/core.ts` or `src/core/index.ts`, embedded whole-file templates, non-Handlebars generation, raw provider-asset copies, stale flat-provider imports, secrets, and unrelated generated output. Run `pnpm check` and `pnpm build` when the change affects deployment artifacts or shared contracts.

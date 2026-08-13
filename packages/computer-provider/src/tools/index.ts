@@ -35,7 +35,7 @@ async function service(options: ComputerToolOptions) {
   return createClient(
     ComputerService,
     createConnectTransport({
-      baseUrl: await resolveValue(options.baseUrl, "OPENBOT_COMPUTER_SERVICE_URL"),
+      baseUrl: await resolveValue(options.baseUrl, "COMPUTER_SERVICE_URL"),
       httpVersion: "1.1",
     }),
   );
@@ -44,7 +44,7 @@ async function service(options: ComputerToolOptions) {
 async function callOptions(options: ComputerToolOptions, signal?: AbortSignal) {
   return {
     headers: {
-      authorization: `Bearer ${await resolveValue(options.apiKey, "OPENBOT_COMPUTER_SERVICE_API_KEY")}`,
+      authorization: `Bearer ${await resolveValue(options.apiKey, "COMPUTER_SERVICE_API_KEY")}`,
     },
     ...(signal ? { signal } : {}),
   };

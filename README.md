@@ -43,9 +43,9 @@ pnpm deploy:prod -- --yes
 
 Root `.env`, `.env.local`, and root SOPS files are intentionally unsupported. Fork configuration comes only from `configuration/.env` and `configuration/secrets.enc.yaml`; contributor machines and CI supply repository-maintenance values through their process environment, so contributor configuration cannot silently propagate into forks.
 
-Use `pnpm openbot secrets set NAME` and `pnpm openbot secrets unset NAME` to maintain encrypted values without learning SOPS commands. Setting a value requires a current SOPS release with `set --value-stdin` support so plaintext never appears in the process list.
+Use `pnpm openbot secrets set NAME --description "Purpose"` and `pnpm openbot secrets unset NAME` to maintain encrypted values without learning SOPS commands. Every secret is stored as `{ description, value }`; SOPS leaves the description readable and encrypts only `value`. Setting a value requires a current SOPS release with `set --value-stdin` support so plaintext never appears in the process list. Use `pnpm openbot env set NAME VALUE --description "Purpose"` and `pnpm openbot env unset NAME` for plaintext configuration; descriptions are rendered as comments immediately above assignments.
 
-Commit `configuration/index.ts`, `.sops.yaml`, `sops.identity.json`, and `secrets.enc.yaml` after initialization. Never commit `configuration/.env`. The sandbox age private key is encrypted at `openbot.sandbox.sops_age_key` and is reserved for the trusted development-sandbox deployment participant.
+Commit `configuration/index.ts`, `.sops.yaml`, `sops.identity.json`, and `secrets.enc.yaml` after initialization. Never commit `configuration/.env`. The sandbox age private key is encrypted as `SECRETS_SOPS_AGE_KEY.value` and is reserved for the trusted development-sandbox deployment participant.
 
 The CLI checks and builds every selected provider that exposes `buildable`, then plans and deploys providers that expose `deployable`. `openbot deploy --skip-deploy` stops after producing artifacts. `openbot deploy --service agents --yes` builds and deploys the agent project without compiling or redeploying control; `--service control` does the inverse. A configured computer provider builds its shared image before agent functions and the control runtime. For Vercel Sandbox, deployment creates the Vercel projects first and then creates the agent project's VCR repository on the first image push; local Microsandbox keeps the content-tagged Docker image local. Provider outputs contribute named outputs, environment variables, and secrets without a second operator command. Sandbox-only secrets remain excluded from service runtimes.
 
@@ -59,7 +59,7 @@ each command and which may source an optional `.bashrc`. Like every workspace
 seed, the profile is copied only when that agent is first registered; editing
 it does not modify an existing deployed workspace.
 
-`openbot init` also generates `OPENBOT_COMPUTER_SERVICE_API_KEY` directly into the SOPS-encrypted runtime secrets. Agent and control services receive it through their normal secret installation, and each computer receives the same value when it is created. Computer-service rejects every RPC without the exact bearer key; the key is never returned as a deployment output or written into a generated public artifact.
+`openbot init` also generates `COMPUTER_SERVICE_API_KEY` in the SOPS document and preserves that name in the runtime environment. Agent and control services receive it through their normal secret installation, and each computer receives the same value when it is created. Computer-service rejects every RPC without the exact bearer key; the key is never returned as a deployment output or written into a generated public artifact.
 
 - `vercel` builds a control/web project and a separate agent project. Every configured agent is a parallel-built Vercel Function; both projects deploy from prebuilt artifacts.
 - `local` builds separate control and agent Hono servers, writes private service environments, and installs two user-level systemd services on Linux or launchd agents on macOS. Development still hosts control and agents in one Hono process.

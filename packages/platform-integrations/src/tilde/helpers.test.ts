@@ -1,0 +1,33 @@
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { tildeErrorMessage, tildeErrorStatus } from "./errors.js";
+import { tildeFetch } from "./fetch.js";
+
+afterEach(() => vi.unstubAllGlobals());
+
+describe("Tilde platform helpers", () => {
+  it("normalizes generated-client and SDK errors", () => {
+    expect(tildeErrorStatus({ status: 429 })).toBe(429);
+    expect(tildeErrorStatus({ response: new Response(null, { status: 503 }) })).toBe(503);
+    expect(tildeErrorMessage({ msg: "rate limited" })).toBe("rate limited");
+    expect(tildeErrorMessage({}, "fallback")).toBe("fallback");
+  });
+
+  it("composes provider cancellation into Tilde fetches", async () => {
+    const provider = new AbortController();
+    const request = new AbortController();
+    let receivedInit: RequestInit | undefined;
+    const fetchMock = vi.fn<typeof fetch>(async (_input, init) => {
+      receivedInit = init;
+      return new Response("ok");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await tildeFetch(provider.signal)("https://tilde.test", { signal: request.signal });
+
+    const signal = receivedInit?.signal;
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(signal?.aborted).toBe(false);
+    provider.abort();
+    expect(signal?.aborted).toBe(true);
+  });
+});

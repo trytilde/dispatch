@@ -5,9 +5,10 @@
 - Choose age for sandbox automation. No PGP bootstrap.
 - Two SOPS recipients, one group. Sandbox age or owner identity decrypts.
 - Owner prefers Vault or cloud KMS. 1Password and native keychain remain local fallbacks.
-- Sandbox private identity lives encrypted at `openbot.sandbox.sops_age_key`.
+- Sandbox private identity lives encrypted at `SECRETS_SOPS_AGE_KEY.value`.
 - First deploy uses owner authority. Trusted development sandbox receives `SOPS_AGE_KEY`.
 - Provider questions stay declarative. Ink and browser renderers own presentation.
+- Shared platform setup runs once; domain providers retain only role-specific questions.
 - Deployment credentials reach providers and sandbox. Never final runtime.
 - Sandbox-only secrets never reach final runtime environment.
 
@@ -21,11 +22,15 @@ Provider setup also needs interactive input, but provider packages must not depe
 
 `openbot init` creates `configuration/.env` first, then generates an X25519 age identity dedicated to the trusted development sandbox. Age is smaller and easier to automate safely than a generated PGP identity. The owner selects a second independent recipient: HashiCorp Vault Transit, Azure Key Vault, Google Cloud KMS, AWS KMS, a generated age identity stored in 1Password, or a generated age identity stored in the operating system keychain.
 
-Both recipients occupy the same SOPS key group, so either can decrypt. Threshold key groups are not used. The sandbox private identity is stored only inside `configuration/secrets.enc.yaml` at `openbot.sandbox.sops_age_key`. On the first deployment, the owner recipient decrypts that file. The sandbox deployment participant consumes the value through the sandbox-only deployment secret channel and installs it as `SOPS_AGE_KEY`. Later deployments running inside that trusted sandbox can decrypt the same file directly.
+Both recipients occupy the same SOPS key group, so either can decrypt. Threshold key groups are not used. Every top-level secret is a `{ description, value }` mapping; `encrypted_regex: ^value$` keeps descriptions readable while encrypting values. The sandbox private identity is stored only inside `configuration/secrets.enc.yaml` at `SECRETS_SOPS_AGE_KEY.value`. On the first deployment, the owner recipient decrypts that file. The sandbox deployment participant consumes the value through the sandbox-only deployment secret channel and installs it as `SOPS_AGE_KEY`. Later deployments running inside that trusted sandbox can decrypt the same file directly.
 
-The trusted development sandbox is a deployment controller and secret-bearing boundary. Ordinary OpenBot Computers created for agents never receive the SOPS identity. Deployment credentials such as `VERCEL_TOKEN` are a separate secret class: deployment participants and the trusted sandbox can use them, but the final runtime does not install them. Runtime application secrets remain separate, and runtime providers receive them without receiving sandbox-only secrets. Init generates `OPENBOT_COMPUTER_SERVICE_API_KEY` as one static runtime secret. Control, agent, and computer services receive the same key through secret installation; provider deployment outputs never contain it.
+The trusted development sandbox is a deployment controller and secret-bearing boundary. Ordinary OpenBot Computers created for agents never receive the SOPS identity. The reserved `VERCEL_TOKEN` entry is deployment-only: deployment participants and the trusted sandbox can use it, but the final runtime does not install it. Other entries are runtime application secrets except reserved `SECRETS_SOPS_AGE_KEY`. Init generates `COMPUTER_SERVICE_API_KEY` and preserves that name in the runtime environment. Control, agent, and computer services receive the same key through secret installation; provider deployment outputs never contain it.
 
 Providers may expose serializable initialization metadata: label, description, questions, validation, choices, and a destination mapping to either `.env` or encrypted secrets. Providers do not expose terminal components or browser components. The CLI renders that schema with Ink; a later browser flow can render the same schema.
+
+When several domain providers use the same external platform, they reference one concrete `Platform` implementation by stable ID. The initializer collects its initialization contract once and rejects conflicting definitions. `TildePlatform` owns one shared connection and lazily cached Harness SDK client, plus shared request, cancellation, and error-normalization helpers used by its agent, skills, and tools adapters. `VercelPlatform` owns the shared credential and account scope plus common project, environment, deployment-output, and registry operations used by its control-service, agent-service, and computer adapters. Domain providers continue to own role-specific inputs, entity mapping, domain error translation, and artifact behavior. Destination-key deduplication remains a final collision check rather than the ownership mechanism.
+
+After the initial bootstrap, running `openbot init` inside the configured repository is a reconciliation operation. It loads the active provider graph, decrypts current described secrets, pre-populates each platform and provider question from its destination, and updates only the destinations represented by that graph. Unknown environment and secret entries remain intact. The existing SOPS creation rule and owner metadata remain authoritative, and `vp install` runs after reconciliation. Changing SOPS recipients is an explicit owner maintenance operation, not an init prompt.
 
 Plaintext sent to SOPS stays in memory. The CLI uses a private named pipe for SOPS versions that require an input filename; the FIFO contains no stored file data. Generated owner age identities are passed to 1Password or native keychain commands over standard input, never command arguments.
 
@@ -53,6 +58,10 @@ flowchart LR
 - The computer provider owns trusted sandbox creation, source placement, and root-only environment installation.
 
 ## Updates
+
+- 2026-08-14T00:21:24+02:00: Replaced metadata-only initialization dependencies with concrete `Platform` implementations, moved common Tilde and Vercel operations out of domain providers, and made init re-runnable with stored prompt defaults, config reconciliation, existing SOPS ownership, and dependency installation preserved.
+- 2026-08-13T23:59:56+02:00: Added stable shared platform initialization dependencies so Tilde and Vercel setup is collected once across their domain providers while role-specific questions remain with the consuming provider.
+- 2026-08-13T23:34:00+02:00: Replaced grouped secret mappings with mandatory described top-level entries, encrypted only `value`, adopted concise repository-facing built-in names, and added described `openbot env set|unset` management for plaintext configuration.
 
 - 2026-08-13T12:53:05+02:00: Implemented the trusted development sandbox as a sandbox-role deployment participant that seeds repository source once, installs the aggregate deployment environment with mode `0600`, verifies SOPS decryption, and remains separate from ordinary agent workspaces.
 - 2026-08-13T14:49:44+02:00: Added a SOPS-generated static computer-service API key shared only with control, agent, and computer runtimes; computer RPC authorization validates that exact bearer key, and model-controlled Linux processes start with a clean allowlisted environment that excludes it.

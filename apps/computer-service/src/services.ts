@@ -13,7 +13,7 @@ const execute = promisify(execFile);
 const backgroundExec = new BackgroundExecRegistry();
 
 function authorized(context: HandlerContext): void {
-  const token = process.env.OPENBOT_COMPUTER_SERVICE_API_KEY;
+  const token = process.env.COMPUTER_SERVICE_API_KEY;
   if (!token || token.length < 32)
     throw new ConnectError("Computer service API key is not configured", Code.Unavailable);
   if (!validComputerServiceApiKey(context.requestHeader.get("authorization"), token))
@@ -24,7 +24,7 @@ async function vncReady(): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = createConnection({
       host: "127.0.0.1",
-      port: Number(process.env.OPENBOT_COMPUTER_VNC_PORT ?? 5901),
+      port: Number(process.env.COMPUTER_VNC_PORT ?? 5901),
     });
     const finish = (ready: boolean) => {
       socket.destroy();
@@ -157,7 +157,7 @@ export function registerComputerService(router: ConnectRouter): void {
     },
     async listPorts(_request, context) {
       authorized(context);
-      const ports = (process.env.OPENBOT_COMPUTER_EXPOSED_PORTS ?? "6080,4101")
+      const ports = (process.env.COMPUTER_EXPOSED_PORTS ?? "6080,4101")
         .split(",")
         .map(Number)
         .filter((port) => Number.isSafeInteger(port) && port > 0 && port <= 65_535);
@@ -167,7 +167,7 @@ export function registerComputerService(router: ConnectRouter): void {
       authorized(context);
       const socket = createConnection({
         host: "127.0.0.1",
-        port: Number(process.env.OPENBOT_COMPUTER_VNC_PORT ?? 5901),
+        port: Number(process.env.COMPUTER_VNC_PORT ?? 5901),
       });
       const writer = (async () => {
         for await (const frame of request) {

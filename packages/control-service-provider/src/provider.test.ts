@@ -14,6 +14,14 @@ afterEach(async () =>
 );
 
 describe("control service providers", () => {
+  it("depends on shared Vercel setup but owns only its control project question", () => {
+    const provider = new VercelControlServiceProvider();
+    expect(provider.platforms.map(({ id }) => id)).toEqual(["vercel"]);
+    expect(provider.initialization.questions.map(({ id }) => id)).toEqual([
+      "vercel-control-project",
+    ]);
+  });
+
   it("bundles provider-owned Vercel assets into a prebuilt artifact", async () => {
     const root = await temporaryRoot();
     await mkdir(join(root, "apps/web/dist"), { recursive: true });
@@ -68,7 +76,7 @@ describe("control service providers", () => {
         target: "production",
         dryRun: false,
         repositoryRoot: repository,
-        environment: { OPENBOT_PORT: "4100" },
+        environment: { PORT: "4100" },
         initialInputs: {
           outputs: { "control-service.artifact": "/tmp/control.mjs" },
           secrets: { API_KEY: "private-value" },
@@ -114,7 +122,7 @@ describe("control service providers", () => {
         target: "preview",
         dryRun: false,
         repositoryRoot: root,
-        environment: { OPENBOT_VERCEL_CONTROL_PROJECT: "openbot-control" },
+        environment: { VERCEL_CONTROL_PROJECT: "openbot-control" },
         initialInputs: { outputs: { "control-service.artifact": artifact } },
       },
     );
@@ -144,7 +152,7 @@ describe("control service providers", () => {
     await provider.configure({
       target: "preview",
       repositoryRoot: "/repo",
-      environment: { OPENBOT_VERCEL_CONTROL_PROJECT: "openbot-control" },
+      environment: { VERCEL_CONTROL_PROJECT: "openbot-control" },
       inputs: new DeploymentOutputs(),
       report: () => undefined,
     });
@@ -172,7 +180,7 @@ describe("control service providers", () => {
         target: "production",
         dryRun: false,
         repositoryRoot: root,
-        environment: { OPENBOT_PORT: "4100" },
+        environment: { PORT: "4100" },
         initialInputs: {
           outputs: { "control-service.artifact": "/tmp/control.mjs" },
           secrets: { API_KEY: "private-value" },

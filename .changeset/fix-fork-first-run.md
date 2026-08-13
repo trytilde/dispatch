@@ -19,4 +19,4 @@
 "@tryopenbot/web": patch
 ---
 
-Install initialized forks, resolve development packages from source, and create Vercel image repositories automatically.
+Install initialized forks, resolve development packages from source, create Vercel image repositories automatically, and manage described secret and environment values through the CLI.

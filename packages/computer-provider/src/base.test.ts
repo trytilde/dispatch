@@ -41,7 +41,7 @@ class TestVercelSandboxComputerProvider extends VercelSandboxComputerProvider {
 
 class TestComputerProvider extends BaseComputerProvider {
   protected readonly providerId = "test";
-  protected readonly deployedImageEnvironmentVariable = "OPENBOT_TEST_COMPUTER_IMAGE";
+  protected readonly deployedImageEnvironmentVariable = "TEST_COMPUTER_IMAGE";
   protected async computerServiceUrl() {
     return "https://computer.test/rpc";
   }
@@ -135,8 +135,8 @@ describe("computerWorkspacePath", () => {
       cwd: "/workspace/hello-world/project",
       environment: {
         HOME: "/workspace/hello-world",
-        OPENBOT_AGENT_ID: "hello-world",
-        OPENBOT_COMPUTER_WORKSPACE: "/workspace/hello-world",
+        AGENT_ID: "hello-world",
+        COMPUTER_WORKSPACE: "/workspace/hello-world",
       },
       timeoutMs: undefined,
     });
@@ -172,7 +172,7 @@ describe("agent workspace deployment", () => {
       {
         target: "production",
         repositoryRoot: process.cwd(),
-        environment: { OPENBOT_COMPUTER_SERVICE_API_KEY: "x".repeat(32) },
+        environment: { COMPUTER_SERVICE_API_KEY: "x".repeat(32) },
         inputs: new DeploymentOutputs(),
         report: vi.fn(),
       },
@@ -204,6 +204,7 @@ describe("computer image lifecycle", () => {
   it("does not ask for a Vercel repository and describes its managed publish target", async () => {
     const vercel = new VercelSandboxComputerProvider({});
     expect(vercel.initialization).toBeUndefined();
+    expect(vercel.platforms.map(({ id }) => id)).toEqual(["vercel"]);
     await expect(
       vercel.deployable.plan({
         target: "production",
@@ -240,11 +241,11 @@ describe("computer image lifecycle", () => {
     inputs.merge({
       deploymentSecrets: { VERCEL_TOKEN: "vercel-secret" },
       outputs: {
-        OPENBOT_VERCEL_SANDBOX_IMAGE_CONTEXT: "/tmp/context",
-        OPENBOT_VERCEL_SANDBOX_IMAGE_DOCKERFILE: "/tmp/context/Containerfile",
-        OPENBOT_VERCEL_SANDBOX_IMAGE_LOCAL_REFERENCE:
+        VERCEL_SANDBOX_IMAGE_CONTEXT: "/tmp/context",
+        VERCEL_SANDBOX_IMAGE_DOCKERFILE: "/tmp/context/Containerfile",
+        VERCEL_SANDBOX_IMAGE_LOCAL_REFERENCE:
           "openbot/vercel-sandbox-computer:openbot-computer-aaaaaaaaaaaa",
-        OPENBOT_VERCEL_SANDBOX_IMAGE_SOURCE_DIGEST: `sha256:${"a".repeat(64)}`,
+        VERCEL_SANDBOX_IMAGE_SOURCE_DIGEST: `sha256:${"a".repeat(64)}`,
       },
     });
 
@@ -254,14 +255,14 @@ describe("computer image lifecycle", () => {
         repositoryRoot: "/repository",
         environment: {
           VERCEL_TEAM_ID: "team_123",
-          OPENBOT_VERCEL_AGENT_PROJECT: "openbot-agents",
+          VERCEL_AGENT_PROJECT: "openbot-agents",
         },
         inputs,
         report: vi.fn(),
       }),
     ).resolves.toMatchObject({
       environmentVariables: {
-        OPENBOT_VERCEL_COMPUTER_IMAGE:
+        VERCEL_COMPUTER_IMAGE:
           "vcr.vercel.com/tryopenbot/openbot-agents/openbot-computer:openbot-computer-aaaaaaaaaaaa",
       },
     });
@@ -340,7 +341,7 @@ describe("trusted development sandbox", () => {
     const provider = new TestComputerProvider();
     const inputs = new DeploymentOutputs();
     inputs.merge({
-      environmentVariables: { OPENBOT_MODEL: "gpt-test" },
+      environmentVariables: { MODEL: "gpt-test" },
       deploymentSecrets: { VERCEL_TOKEN: "deployment-token" },
       sandboxSecrets: { SOPS_AGE_KEY: "AGE-SECRET-KEY-1TEST" },
     });
@@ -358,7 +359,7 @@ describe("trusted development sandbox", () => {
       ),
     ).resolves.toMatchObject({
       outputs: { "development-sandbox.computer-id": "computer" },
-      environmentVariables: { OPENBOT_DEVELOPMENT_SANDBOX_ID: "computer" },
+      environmentVariables: { DEVELOPMENT_SANDBOX_ID: "computer" },
     });
 
     expect(provider.create).not.toHaveBeenCalled();
@@ -380,7 +381,7 @@ describe("trusted development sandbox", () => {
 
 describe("agent computer-service deployment", () => {
   it("returns the typed service transport after registering agent users", async () => {
-    vi.stubEnv("OPENBOT_COMPUTER_SERVICE_API_KEY", "a".repeat(32));
+    vi.stubEnv("COMPUTER_SERVICE_API_KEY", "a".repeat(32));
     const provider = new TestComputerProvider();
     const result = await provider.deployAgentWorkspaces(
       { computerId: "computer", workspaces: [{ agentId: "hello-world", files: [] }] },
@@ -397,8 +398,8 @@ describe("agent computer-service deployment", () => {
     expect(result).toMatchObject({
       outputs: { "computer.id": "computer" },
       environmentVariables: {
-        OPENBOT_COMPUTER_ID: "computer",
-        OPENBOT_COMPUTER_SERVICE_URL: "https://computer.test/rpc",
+        COMPUTER_ID: "computer",
+        COMPUTER_SERVICE_URL: "https://computer.test/rpc",
       },
     });
     expect(result.secrets).toBeUndefined();

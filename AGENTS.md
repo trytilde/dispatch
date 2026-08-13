@@ -111,8 +111,8 @@ pnpm --filter openbot test
 
 - Default web URL: `http://127.0.0.1:4173`.
 - Default control server: `http://127.0.0.1:4100`.
-- Use `OPENBOT_NO_DESKTOP=1` for headless work.
-- Use `OPENBOT_SANDBOX_PROVIDER=vercel-sandbox` when local KVM is unavailable and remote credentials are configured.
+- Use `NO_DESKTOP=1` for headless work.
+- Use `SANDBOX_PROVIDER=vercel-sandbox` when local KVM is unavailable and remote credentials are configured.
 - Do not expose generated setup codes or files under `.data/`.
 
 ## Security

@@ -33,6 +33,15 @@
 
 <!-- Describe migrations, compatibility, deployment, and security impact. -->
 
+## Configuration ownership
+
+- [ ] The actual PR base repository was read from GitHub; it was not inferred from `origin`.
+- [ ] For a `trytilde/openbot` contribution, tracked `configuration/` contains only the canonical ignore-all `.gitignore` sentinel.
+- [ ] For a fork PR, the sentinel is deleted and initialized fork-owned configuration is tracked, excluding `configuration/.env`.
+- [ ] No root environment or SOPS files are committed.
+
+<!-- State whether this targets trytilde/openbot or a fork, then describe the tracked configuration result. Mark the non-applicable conditional checkbox as such below. -->
+
 ## Architecture and ADR review
 
 - [ ] The complete diff was reviewed against `CONTEXT.md`, `AGENTS.md`, and relevant ADRs.

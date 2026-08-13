@@ -42,8 +42,8 @@ packages/db/src/migrations.test.ts
 ## Tests
 
 ```bash
-pnpm --filter @openbot/db test
-pnpm --filter @openbot/control-service test
+pnpm --filter @tryopenbot/db test
+pnpm --filter @tryopenbot/control-service test
 pnpm check
 ```
 

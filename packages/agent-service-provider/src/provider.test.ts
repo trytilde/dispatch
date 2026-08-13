@@ -9,9 +9,9 @@ import {
   deployProviders,
   DeploymentOutputs,
   type DeploymentContext,
-} from "@openbot/runtime-provider";
+} from "@tryopenbot/runtime-provider";
 import { VercelAgentServiceProvider } from "./vercel/index.js";
-import type { CommandRunner } from "@openbot/control-service-provider";
+import type { CommandRunner } from "@tryopenbot/control-service-provider";
 
 const roots: string[] = [];
 afterEach(async () =>

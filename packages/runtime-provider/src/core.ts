@@ -28,6 +28,7 @@ export type InitializationValueDestination = "environment" | "secret" | "deploym
 export interface ProviderInitializationQuestion {
   id: string;
   prompt: string;
+  description?: string;
   input: "text" | "secret" | "select";
   required?: boolean;
   choices?: readonly { value: string; label: string; description?: string }[];

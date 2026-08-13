@@ -3,8 +3,8 @@ import { readFile, readdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "tsdown";
-import { materializeFileTemplate } from "@openbot/utilities";
-import type { DeploymentContext, DeploymentResult } from "@openbot/runtime-provider";
+import { materializeFileTemplate } from "@tryopenbot/utilities";
+import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
 import { bundleOptions } from "../build.js";
 import { discoverAgents, globalInstrumentationPath, type AgentSource } from "../discovery.js";
 

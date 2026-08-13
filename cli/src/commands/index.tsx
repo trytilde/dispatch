@@ -35,12 +35,24 @@ export function parseInvocation(argv: readonly string[]): CliInvocation {
 export async function runCommand(command: string, args: readonly string[]): Promise<void> {
   if (["help", "--help", "-h"].includes(command)) return show(<Help />);
   if (command === "init") {
-    rejectArguments(command, args);
-    await runInitialization();
+    const result = await runInitialization(args);
+    if (result.json) {
+      process.stdout.write(
+        `${JSON.stringify({ ok: true, command: "init", mode: result.mode, repository: repositoryRoot })}\n`,
+      );
+      return;
+    }
     return show(<Success title="OpenBot configuration initialized" />);
   }
   if (command === "new-agent") {
-    const agent = await runNewAgent(args);
+    const result = await runNewAgent(args);
+    const { agent } = result;
+    if (result.json) {
+      process.stdout.write(
+        `${JSON.stringify({ ok: true, command: "new-agent", agent: { id: agent.id, name: agent.name }, path: `configuration/agents/${agent.id}` })}\n`,
+      );
+      return;
+    }
     return show(
       <Success title={`Agent ${agent.name} created at configuration/agents/${agent.id}`} />,
     );
@@ -55,7 +67,14 @@ export async function runCommand(command: string, args: readonly string[]): Prom
     return runDevelopmentServer();
   }
   if (command === "deploy") return runProductionDeploy(args);
-  if (command === "secrets") return runSecrets(args);
+  if (command === "secrets") {
+    const result = await runSecrets(args);
+    if (result.json)
+      process.stdout.write(
+        `${JSON.stringify({ ok: true, command: "secrets", operation: result.operation, name: result.name })}\n`,
+      );
+    return;
+  }
   if (command === "check" || command === "build" || command === "test")
     return delegate(command, args);
   throw new Error(`Unknown command: ${[command, ...args].join(" ")}`);

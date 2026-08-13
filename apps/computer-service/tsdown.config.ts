@@ -11,8 +11,8 @@ export default defineConfig({
   deps: {
     alwaysBundle: [
       /@connectrpc\//,
-      /@openbot\/computer-service-proto/,
-      /@openbot\/utilities/,
+      /@tryopenbot\/computer-service-proto/,
+      /@tryopenbot\/utilities/,
       /handlebars/,
     ],
   },

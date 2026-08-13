@@ -1,14 +1,31 @@
 {
-  "name": "@openbot/runtime-provider",
+  "name": "@tryopenbot/runtime-provider",
   "version": "0.1.0",
-  "private": true,
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
   "exports": {
-    ".": "./src/core.ts"
+    ".": {
+      "types": "./src/core.ts",
+      "development": "./src/core.ts",
+      "import": "./dist/core.js"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/core.d.ts",
+        "import": "./dist/core.js"
+      }
+    },
+    "access": "public"
   },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsc --noEmit && tsdown --config ../../tsdown.package.config.ts && node ../../scripts/copy-package-assets.mjs",
     "lint": "tsc --noEmit",
+    "prepack": "pnpm build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

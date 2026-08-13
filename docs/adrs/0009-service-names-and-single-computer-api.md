@@ -21,8 +21,8 @@ transport rather than its domain, and contained a Vercel-only fetch wrapper.
 
 ## Decision
 
-Rename `apps/server` and `@openbot/server` to `apps/control-service` and
-`@openbot/control-service`. Keep its Hono app and local Node entrypoint portable.
+Rename `apps/server` and `@tryopenbot/server` to `apps/control-service` and
+`@tryopenbot/control-service`. Keep its Hono app and local Node entrypoint portable.
 The Vercel control provider owns the Web fetch adapter as a typed asset and
 bundles it as part of its prebuilt artifact lifecycle.
 
@@ -53,3 +53,4 @@ flowchart LR
 
 - 2026-08-13T11:12:53+02:00: Required the shared computer image to compile the sole computer service in a multi-stage container build instead of copying a host-built bundle.
 - 2026-08-13T12:09:51+02:00: Removed the obsolete legacy contracts package after `computer-service-proto` became the only computer RPC contract.
+- 2026-08-13T17:33:29+02:00: Renamed the private workspace package scope from `@openbot` to `@tryopenbot` while retaining the `openbot` CLI command.

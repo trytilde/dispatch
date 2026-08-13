@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { execFile } from "node:child_process";
-import { posix } from "node:path";
+import { basename, posix } from "node:path";
 import { promisify } from "node:util";
 import {
   ComputerProviderError,
@@ -26,9 +26,9 @@ import type {
   DeploymentContext,
   DeploymentResult,
   ProviderInitialization,
-} from "@openbot/runtime-provider";
-import { sandboxDeploymentEnvironment } from "@openbot/runtime-provider";
-import { renderFileTemplatePath } from "@openbot/utilities";
+} from "@tryopenbot/runtime-provider";
+import { sandboxDeploymentEnvironment } from "@tryopenbot/runtime-provider";
+import { renderFileTemplatePath } from "@tryopenbot/utilities";
 import { computerImageAssets, materializeComputerImageContext } from "./assets.js";
 import { developmentSandboxSourceFiles, shellEnvironmentExports } from "./development.js";
 import { computerServiceApiKey } from "../capability.js";
@@ -54,6 +54,12 @@ export interface ComputerImageDeploymentConfig {
   buildArguments?: Readonly<Record<string, string>>;
 }
 
+interface ComputerImageLifecycleOptions {
+  publish: boolean;
+  buildxPlatform?: string;
+  repositoryDescription?: string;
+}
+
 export abstract class BaseComputerProvider implements ComputerProvider {
   protected abstract readonly providerId: string;
   protected abstract readonly deployedImageEnvironmentVariable: string;
@@ -62,39 +68,50 @@ export abstract class BaseComputerProvider implements ComputerProvider {
   readonly buildable: Buildable;
   readonly deployable: Deployable;
   readonly #imageDeployment: ComputerImageDeploymentConfig;
+  readonly #imageLifecycle: ComputerImageLifecycleOptions;
 
-  protected constructor(imageDeployment: ComputerImageDeploymentConfig = {}) {
+  protected constructor(
+    imageDeployment: ComputerImageDeploymentConfig = {},
+    imageLifecycle: ComputerImageLifecycleOptions = { publish: true },
+  ) {
     this.#imageDeployment = imageDeployment;
-    this.initialization = imageDeployment.repository
-      ? undefined
-      : {
-          id: "computer-image",
-          label: "Computer image",
-          description: "Build and publish the shared OpenBot computer image.",
-          questions: [
-            {
-              id: "computer-image-repository",
-              prompt: "Which OCI repository should receive OpenBot computer images?",
-              input: "text",
-              required: true,
-              destination: { kind: "environment", key: "OPENBOT_COMPUTER_IMAGE_REPOSITORY" },
-            },
-          ],
-        };
+    this.#imageLifecycle = imageLifecycle;
+    this.initialization =
+      imageDeployment.repository || !imageLifecycle.publish
+        ? undefined
+        : {
+            id: "computer-image",
+            label: "Computer image",
+            description: "Build and publish the shared OpenBot computer image.",
+            questions: [
+              {
+                id: "computer-image-repository",
+                prompt: "Which OCI repository should receive OpenBot computer images?",
+                description:
+                  imageLifecycle.repositoryDescription ??
+                  "Use an untagged OCI repository that the deployment environment can push to.",
+                input: "text",
+                required: true,
+                destination: { kind: "environment", key: "OPENBOT_COMPUTER_IMAGE_REPOSITORY" },
+              },
+            ],
+          };
     this.buildable = {
       check: async (context) => {
-        this.#imageRepository(context);
+        await this.#imageRepository(context);
         await runDocker(
           ["version", "--format", "{{.Server.Version}}"],
           deploymentCallContext("check"),
         );
+        if (this.#imageLifecycle.buildxPlatform)
+          await runDocker(["buildx", "version"], deploymentCallContext("check"));
       },
       build: async (context) => {
         const materialized = await materializeComputerImageContext(
           context.repositoryRoot,
           this.providerId,
         );
-        const spec = this.#imageSpec(context, materialized);
+        const spec = await this.#imageSpec(context, materialized);
         const image = await this.buildImage(spec, deploymentCallContext("build"));
         return {
           outputs: {
@@ -107,27 +124,34 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       },
     };
     this.deployable = {
-      plan: async (context) => ({
-        summary: `Publish the ${this.providerId} computer image to ${this.#imageRepository(context)}`,
-        steps: [
-          "Push the content-addressed OCI image",
-          `Set ${this.deployedImageEnvironmentVariable} for future computers`,
-        ],
-      }),
+      plan: async (context) => {
+        const repository = await this.#imageRepository(context);
+        return this.#imageLifecycle.publish
+          ? {
+              summary: `Publish the ${this.providerId} computer image to ${repository}`,
+              steps: [
+                "Push the content-addressed OCI image",
+                `Set ${this.deployedImageEnvironmentVariable} for future computers`,
+              ],
+            }
+          : {
+              summary: `Use the locally built ${repository} computer image`,
+              steps: [`Set ${this.deployedImageEnvironmentVariable} for local computers`],
+            };
+      },
       deploy: async (context) => {
-        const spec = this.#imageSpec(context, {
+        const spec = await this.#imageSpec(context, {
           contextDirectory: context.inputs.require(this.#outputName("CONTEXT")),
           dockerfilePath: context.inputs.require(this.#outputName("DOCKERFILE")),
           sourceDigest: context.inputs.require(this.#outputName("SOURCE_DIGEST")),
         });
-        const image = await this.publishImage(
-          {
-            localReference: context.inputs.require(this.#outputName("LOCAL_REFERENCE")),
-            sourceDigest: spec.sourceDigest,
-          },
-          spec,
-          deploymentCallContext("deploy"),
-        );
+        const built = {
+          localReference: context.inputs.require(this.#outputName("LOCAL_REFERENCE")),
+          sourceDigest: spec.sourceDigest,
+        };
+        const image = this.#imageLifecycle.publish
+          ? await this.publishImage(built, spec, deploymentCallContext("deploy"))
+          : { ...built, reference: built.localReference, publishedAt: new Date() };
         return {
           outputs: { [this.#outputName("REFERENCE")]: image.reference },
           environmentVariables: { [this.deployedImageEnvironmentVariable]: image.reference },
@@ -549,8 +573,15 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     ensureDigest(spec.sourceDigest);
     const tag = `${spec.tagPrefix ?? "openbot-computer"}-${spec.sourceDigest.slice("sha256:".length, "sha256:".length + 12)}`;
     const localReference = `${spec.repository}:${tag}`;
+    await runDocker(this.buildImageArguments(spec, localReference), context);
+    return { sourceDigest: spec.sourceDigest, localReference };
+  }
+
+  protected buildImageArguments(spec: ComputerImageSpec, localReference: string): string[] {
     const args = [
-      "build",
+      ...(this.#imageLifecycle.buildxPlatform
+        ? ["buildx", "build", "--platform", this.#imageLifecycle.buildxPlatform, "--load"]
+        : ["build"]),
       "--file",
       spec.dockerfilePath,
       "--tag",
@@ -564,8 +595,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       args.push("--build-arg", `${name}=${value}`);
     }
     args.push(spec.contextDirectory);
-    await runDocker(args, context);
-    return { sourceDigest: spec.sourceDigest, localReference };
+    return args;
   }
 
   async publishImage(
@@ -582,20 +612,25 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     return { ...image, reference, publishedAt: new Date() };
   }
 
-  #imageRepository(context: DeploymentContext): string {
+  async #imageRepository(context: DeploymentContext): Promise<string> {
     const repository =
       this.#imageDeployment.repository ?? context.environment.OPENBOT_COMPUTER_IMAGE_REPOSITORY;
-    if (!repository?.trim())
+    const selected =
+      repository?.trim() ||
+      (!this.#imageLifecycle.publish
+        ? await localComputerImageRepository(context.repositoryRoot)
+        : undefined);
+    if (!selected)
       throw new ComputerProviderError(
         "invalid_configuration",
         "OPENBOT_COMPUTER_IMAGE_REPOSITORY is required to build and deploy computer images",
       );
-    if (repository.includes("://") || /\s/.test(repository))
+    if (selected.includes("://") || /\s/.test(selected))
       throw new ComputerProviderError(
         "invalid_configuration",
         "Computer image repository must be an OCI repository without a URL scheme or whitespace",
       );
-    const normalized = repository.trim().replace(/\/$/, "");
+    const normalized = selected.replace(/\/$/, "");
     if (
       normalized.includes("@") ||
       normalized.slice(normalized.lastIndexOf("/") + 1).includes(":")
@@ -608,13 +643,13 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     return normalized;
   }
 
-  #imageSpec(
+  async #imageSpec(
     context: DeploymentContext,
     materialized: { contextDirectory: string; dockerfilePath: string; sourceDigest: string },
-  ): ComputerImageSpec {
+  ): Promise<ComputerImageSpec> {
     return {
       ...materialized,
-      repository: this.#imageRepository(context),
+      repository: await this.#imageRepository(context),
       ...(this.#imageDeployment.tagPrefix ? { tagPrefix: this.#imageDeployment.tagPrefix } : {}),
       ...(this.#imageDeployment.buildArguments
         ? { buildArguments: this.#imageDeployment.buildArguments }
@@ -625,6 +660,33 @@ export abstract class BaseComputerProvider implements ComputerProvider {
   #outputName(suffix: string): string {
     return `OPENBOT_${this.providerId.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase()}_IMAGE_${suffix}`;
   }
+}
+
+async function localComputerImageRepository(repositoryRoot: string): Promise<string> {
+  try {
+    const { stdout } = await execute("git", ["config", "--get", "remote.origin.url"], {
+      cwd: repositoryRoot,
+    });
+    const normalized = stdout
+      .trim()
+      .replace(/\.git$/, "")
+      .replace(/\/$/, "");
+    const match = normalized.match(/(?:^|[:/])([^/:]+)\/([^/]+)$/);
+    if (match)
+      return `${dockerRepositoryPart(match[1]!)}/${dockerRepositoryPart(match[2]!)}-computer`;
+  } catch {
+    // A source archive may not have Git metadata; use a stable local-only fallback.
+  }
+  return `openbot/${dockerRepositoryPart(basename(repositoryRoot))}-computer`;
+}
+
+function dockerRepositoryPart(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, "-")
+      .replace(/^[._-]+|[._-]+$/g, "") || "openbot"
+  );
 }
 
 async function renderMarker(value: string): Promise<string> {

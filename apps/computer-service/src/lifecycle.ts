@@ -5,8 +5,11 @@ import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { Code, ConnectError } from "@connectrpc/connect";
-import { LifecyclePhase, type ApplyLifecycleBundleRequest } from "@openbot/computer-service-proto";
-import { materializeFileTemplate } from "@openbot/utilities";
+import {
+  LifecyclePhase,
+  type ApplyLifecycleBundleRequest,
+} from "@tryopenbot/computer-service-proto";
+import { materializeFileTemplate } from "@tryopenbot/utilities";
 
 const execute = promisify(execFile);
 const manifestTemplate = fileURLToPath(new URL("./assets/manifest.json.hbs", import.meta.url));

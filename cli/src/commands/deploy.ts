@@ -1,16 +1,16 @@
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import arg from "arg";
-import { AgentProviderError, type AgentProvider } from "@openbot/agent-provider";
-import type { OpenBotConfiguration } from "@openbot/configuration";
-import { discoverAgents, discoverAgentWorkspaces } from "@openbot/agent-service-provider";
+import { AgentProviderError, type AgentProvider } from "@tryopenbot/agent-provider";
+import type { OpenBotConfiguration } from "@tryopenbot/configuration";
+import { discoverAgents, discoverAgentWorkspaces } from "@tryopenbot/agent-service-provider";
 import {
   buildProviders,
   deployProviders,
   type DeploymentContext,
   type DeploymentEvent,
   type DeploymentParticipant,
-} from "@openbot/runtime-provider";
+} from "@tryopenbot/runtime-provider";
 import { loadDeploymentConfiguration, setEncryptedSecret } from "../initialization.js";
 import { repositoryRoot } from "../paths.js";
 

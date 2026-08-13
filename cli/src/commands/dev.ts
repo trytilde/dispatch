@@ -13,12 +13,12 @@ export async function runDevelopment(): Promise<never> {
 
   const server = run(
     "pnpm",
-    ["--filter", "@openbot/cli", "exec", "tsx", "watch", "src/index.tsx", "_serve"],
+    ["--filter", "openbot", "exec", "tsx", "watch", "src/index.tsx", "_serve"],
     env,
   );
   const web = run(
     "pnpm",
-    ["--filter", "@openbot/web", "dev", "--port", webPort],
+    ["--filter", "@tryopenbot/web", "dev", "--port", webPort],
     publicEnvironment,
   );
   const children = [server, web];
@@ -32,7 +32,7 @@ export async function runDevelopment(): Promise<never> {
       OPENBOT_CONTROL_ORIGIN: `http://127.0.0.1:${serverPort}`,
       OPENBOT_DESKTOP_DEV_URL: `http://127.0.0.1:${webPort}`,
     };
-    children.push(run("pnpm", ["--filter", "@openbot/desktop", "dev"], desktopEnv));
+    children.push(run("pnpm", ["--filter", "@tryopenbot/desktop", "dev"], desktopEnv));
   } else {
     console.log(
       "OpenBot desktop: skipped (set DISPLAY/WAYLAND_DISPLAY, or run on macOS; OPENBOT_NO_DESKTOP=1 disables it explicitly)",

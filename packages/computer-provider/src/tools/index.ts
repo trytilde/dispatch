@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-node";
-import { ComputerService } from "@openbot/computer-service-proto";
+import { ComputerService } from "@tryopenbot/computer-service-proto";
 import { tool } from "ai";
 import { z } from "zod";
 

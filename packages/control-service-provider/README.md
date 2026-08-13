@@ -1,4 +1,4 @@
-# @openbot/control-service-provider
+# @tryopenbot/control-service-provider
 
 Build and deployment providers for the control service plus web UI. Local deployment installs a user service; Vercel deployment creates a provider-owned Build Output artifact and serves static UI through Vercel's CDN.
 

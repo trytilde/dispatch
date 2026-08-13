@@ -1,7 +1,7 @@
 import { access, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { materializeFileTemplate } from "@openbot/utilities";
+import { materializeFileTemplate } from "@tryopenbot/utilities";
 
 const agentTemplates = [
   ["agent.ts", "./assets/agents/hello-world/agent.ts.hbs"],

@@ -1,7 +1,6 @@
 {
-  "name": "@openbot/desktop",
+  "name": "@tryopenbot/desktop",
   "version": "0.1.0",
-  "private": true,
   "description": "OpenBot desktop client",
   "license": "MIT",
   "author": {
@@ -9,15 +8,23 @@
     "email": "opensource@trytilde.ai"
   },
   "repository": "https://github.com/trytilde/openbot",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
   "main": "dist/main.cjs",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsgo --noEmit && tsdown",
     "dev": "vp run build && electron .",
     "lint": "vp lint",
-    "package": "vp run --filter @openbot/web build && vp run build && node scripts/package-current.mjs",
-    "package:linux": "vp run --filter @openbot/web build && vp run build && electron-builder --linux",
-    "package:mac": "vp run --filter @openbot/web build && vp run build && electron-builder --mac",
+    "package": "vp run --filter @tryopenbot/web build && vp run build && node scripts/package-current.mjs",
+    "package:linux": "vp run --filter @tryopenbot/web build && vp run build && electron-builder --linux",
+    "package:mac": "vp run --filter @tryopenbot/web build && vp run build && electron-builder --mac",
+    "prepack": "pnpm build",
     "test": "vp test run --passWithNoTests",
     "typecheck": "tsgo --noEmit"
   },

@@ -1,21 +1,21 @@
 ---
-"@openbot/agent-provider": minor
-"@openbot/cli": minor
-"@openbot/computer-provider": minor
-"@openbot/computer-service": minor
-"@openbot/computer-service-proto": minor
-"@openbot/configuration": minor
-"@openbot/control-service-proto": minor
-"@openbot/desktop": minor
-"@openbot/inference-model-provider": minor
-"@openbot/control-service-provider": minor
-"@openbot/agent-service-provider": minor
-"@openbot/runtime-provider": minor
-"@openbot/control-service": minor
-"@openbot/skills-provider": minor
-"@openbot/tools-provider": minor
-"@openbot/ui": minor
-"@openbot/web": minor
+"@tryopenbot/agent-provider": minor
+"openbot": minor
+"@tryopenbot/computer-provider": minor
+"@tryopenbot/computer-service": minor
+"@tryopenbot/computer-service-proto": minor
+"@tryopenbot/configuration": minor
+"@tryopenbot/control-service-proto": minor
+"@tryopenbot/desktop": minor
+"@tryopenbot/inference-model-provider": minor
+"@tryopenbot/control-service-provider": minor
+"@tryopenbot/agent-service-provider": minor
+"@tryopenbot/runtime-provider": minor
+"@tryopenbot/control-service": minor
+"@tryopenbot/skills-provider": minor
+"@tryopenbot/tools-provider": minor
+"@tryopenbot/ui": minor
+"@tryopenbot/web": minor
 ---
 
 Add interactive encrypted configuration initialization and provider-defined onboarding questions.

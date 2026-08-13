@@ -1,4 +1,4 @@
-# @openbot/utilities
+# @tryopenbot/utilities
 
 Small shared utilities without domain ownership. It currently centralizes Handlebars-based file generation so providers and CLI commands do not embed generated files as TypeScript strings.
 
@@ -14,4 +14,4 @@ Small shared utilities without domain ownership. It currently centralizes Handle
 
 - `FileTemplateValues` is the read-only mapping passed to templates.
 
-The functions are exported from both the package root and `@openbot/utilities/file-template`.
+The functions are exported from both the package root and `@tryopenbot/utilities/file-template`.

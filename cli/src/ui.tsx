@@ -27,9 +27,10 @@ export interface SyncReportView {
 }
 
 const commands = [
-  ["init", "Initialize OpenBot configuration and encrypted secrets"],
-  ["new-agent [name]", "Scaffold a new authored agent"],
-  ["secrets set NAME", "Set an encrypted configuration secret"],
+  ["init", "Initialize OpenBot interactively"],
+  ["init --non-interactive --json", "Initialize from JSON answers on stdin"],
+  ["new-agent NAME --json", "Scaffold an agent non-interactively"],
+  ["secrets set NAME --stdin --json", "Set a secret from stdin"],
   ["secrets unset NAME", "Remove an encrypted configuration secret"],
   ["dev", "Start the local OpenBot development environment"],
   ["check", "Run repository validation"],
@@ -67,7 +68,7 @@ export function Help() {
       <Text bold>Usage</Text>
       <Text>
         {" "}
-        pnpm openbot <Text color="cyan">&lt;command&gt;</Text> <Text dimColor>[options]</Text>
+        openbot <Text color="cyan">&lt;command&gt;</Text> <Text dimColor>[options]</Text>
       </Text>
       <Box flexDirection="column" marginTop={1}>
         <Text bold>Commands</Text>

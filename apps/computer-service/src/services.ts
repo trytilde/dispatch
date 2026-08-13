@@ -3,7 +3,7 @@ import { createConnection } from "node:net";
 import { posix } from "node:path";
 import { promisify } from "node:util";
 import { Code, ConnectError, type ConnectRouter, type HandlerContext } from "@connectrpc/connect";
-import { ComputerService } from "@openbot/computer-service-proto";
+import { ComputerService } from "@tryopenbot/computer-service-proto";
 import { agentCommand, agentVisiblePath } from "./agent.js";
 import { BackgroundExecRegistry } from "./background-exec.js";
 import { validComputerServiceApiKey } from "./capability.js";

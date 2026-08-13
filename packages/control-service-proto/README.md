@@ -1,4 +1,4 @@
-# @openbot/control-service-proto
+# @tryopenbot/control-service-proto
 
 Generated ConnectRPC and protobuf types for the owner-facing control service. The proto is intentionally empty while the UX-first control API is designed.
 

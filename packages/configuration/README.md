@@ -1,4 +1,4 @@
-# @openbot/configuration
+# @tryopenbot/configuration
 
 Typed composition for repository-owned OpenBot configuration. A generated `configuration/index.ts` explicitly constructs provider implementations; agent skills and workspace seeds remain inside their agent directory, and filesystem locations are conventions rather than configurable paths.
 

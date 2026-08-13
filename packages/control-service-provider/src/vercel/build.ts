@@ -2,8 +2,8 @@ import { cp, mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { build } from "tsdown";
-import { materializeFileTemplate } from "@openbot/utilities";
-import type { DeploymentContext, DeploymentResult } from "@openbot/runtime-provider";
+import { materializeFileTemplate } from "@tryopenbot/utilities";
+import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
 import type { CommandRunner } from "../command.js";
 
 export const controlVercelArtifact = ".openbot-deploy/vercel/control";
@@ -22,7 +22,7 @@ export async function buildVercelControlService(
   context: DeploymentContext,
   runner: CommandRunner,
 ): Promise<DeploymentResult> {
-  await runner.run("pnpm", ["--filter", "@openbot/web", "build"], {
+  await runner.run("pnpm", ["--filter", "@tryopenbot/web", "build"], {
     cwd: context.repositoryRoot,
     environment: context.environment,
   });

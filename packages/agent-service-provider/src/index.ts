@@ -1,4 +1,4 @@
-import type { Buildable, Deployable, InitializableProvider } from "@openbot/runtime-provider";
+import type { Buildable, Deployable, InitializableProvider } from "@tryopenbot/runtime-provider";
 
 export type AgentServiceProvider = Buildable & Deployable & InitializableProvider;
 export { createAgentServiceApp } from "./development.js";

@@ -1,8 +1,8 @@
 import { chmod, mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { renderFileTemplatePath } from "@openbot/utilities";
-import type { DeploymentContext } from "@openbot/runtime-provider";
+import { renderFileTemplatePath } from "@tryopenbot/utilities";
+import type { DeploymentContext } from "@tryopenbot/runtime-provider";
 import type { CommandRunner } from "./command.js";
 
 export interface LocalServiceOptions {

@@ -1,4 +1,4 @@
-# @openbot/agent-provider
+# @tryopenbot/agent-provider
 
 Internal agent, session, message, and model-hook boundary with the Tilde Harness SDK implementation. This is a TypeScript application interface, not an RPC service.
 

@@ -1,4 +1,4 @@
-# @openbot/inference-model-provider
+# @tryopenbot/inference-model-provider
 
 Internal inference-model boundary and OpenAI adapters. Model selection stays explicit, while credential acquisition and persistence remain outside this package.
 

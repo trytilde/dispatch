@@ -1,4 +1,4 @@
-# @openbot/computer-provider
+# @tryopenbot/computer-provider
 
 The internal computer boundary, shared image/build behavior, and Microsandbox and Vercel Sandbox implementations. This package owns computer lifecycle and capability-backed operations; it is not an owner-facing control API.
 
@@ -6,7 +6,7 @@ The internal computer boundary, shared image/build behavior, and Microsandbox an
 
 ### Provider classes
 
-- `BaseComputerProvider` supplies AI SDK computer-tool registration, prompt injection, OCI image build/deploy lifecycles, per-agent workspace registration, and trusted development-sandbox setup.
+- `BaseComputerProvider` supplies AI SDK computer-tool registration, prompt injection, local or published image build/deploy lifecycles, per-agent workspace registration, and trusted development-sandbox setup.
 - `MicrosandboxComputerProvider` implements `ComputerProvider` with Microsandbox.
 - `VercelSandboxComputerProvider` implements `ComputerProvider` with Vercel Sandbox.
 - `ComputerProviderError` normalizes provider failures and retryability.
@@ -25,7 +25,7 @@ The internal computer boundary, shared image/build behavior, and Microsandbox an
 - `logicalComputerPath(path, root?)` resolves relative computer paths beneath the selected root and preserves absolute paths.
 - `scopeComputerExecRequest(request, agentId?)` defaults scoped commands and environment values to `/workspace/<agent-id>`.
 - `agentWorkspaceRoot(agentId)` returns `/workspace/<agent-id>`.
-- `createBashTool(options)`, `createAwaitShellTool(options)`, `createReadFileTool(options)`, `createWriteFileTool(options)`, `createCopyToComputerTool(options)`, `createCopyFromComputerTool(options)`, `createGlobTool(options)`, `createGrepTool(options)`, and `createScreenshotTool(options)` create reusable Zod-schema Vercel AI SDK tools from the `@openbot/computer-provider/tools` subpath.
+- `createBashTool(options)`, `createAwaitShellTool(options)`, `createReadFileTool(options)`, `createWriteFileTool(options)`, `createCopyToComputerTool(options)`, `createCopyFromComputerTool(options)`, `createGlobTool(options)`, `createGrepTool(options)`, and `createScreenshotTool(options)` create reusable Zod-schema Vercel AI SDK tools from the `@tryopenbot/computer-provider/tools` subpath.
 
 ### Critical interfaces
 
@@ -39,7 +39,7 @@ The internal computer boundary, shared image/build behavior, and Microsandbox an
 
 ## Deployment behavior
 
-Build creates a multi-stage image that compiles `@openbot/computer-service` inside the container. Deploy publishes the content-tagged OCI image and contributes its immutable reference to later participants. Existing computers are not updated: their image and persistent disk belong to their creation lifecycle.
+Build creates a multi-stage image that compiles `@tryopenbot/computer-service` inside the container. Vercel Sandbox uses Docker Buildx for `linux/amd64`, publishes the content-tagged image to Vercel Container Registry during deploy, and contributes its immutable reference to later participants. Microsandbox keeps its repository-derived Docker image local and contributes that local reference without asking for registry configuration. Existing computers are not updated: their image and persistent disk belong to their creation lifecycle.
 
 Agents share one filesystem and process identity. Their commands default to `/workspace/<agent-id>`, but absolute paths and sibling agent directories remain accessible; these directories are not a security boundary. A separate trusted development sandbox is the only computer that receives aggregate deployment credentials and `SOPS_AGE_KEY`; its environment file is mode `0600` and ordinary agent directories never receive it.
 

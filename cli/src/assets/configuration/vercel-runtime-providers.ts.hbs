@@ -1,9 +1,9 @@
-import { TildeAgentProvider } from "@openbot/agent-provider";
-import { RuntimeProviders } from "@openbot/configuration";
-import { VercelSandboxComputerProvider } from "@openbot/computer-provider";
-import { OpenAIApiKeyInferenceModelProvider } from "@openbot/inference-model-provider";
-import { TildeSkillProvider } from "@openbot/skills-provider";
-import { TildeToolProvider } from "@openbot/tools-provider";
+import { TildeAgentProvider } from "@tryopenbot/agent-provider";
+import { RuntimeProviders } from "@tryopenbot/configuration";
+import { VercelSandboxComputerProvider } from "@tryopenbot/computer-provider";
+import { OpenAIApiKeyInferenceModelProvider } from "@tryopenbot/inference-model-provider";
+import { TildeSkillProvider } from "@tryopenbot/skills-provider";
+import { TildeToolProvider } from "@tryopenbot/tools-provider";
 import { createClient } from "@trytilde/harness-sdk";
 
 function requiredEnvironment(name: string): string {

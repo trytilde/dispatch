@@ -1,4 +1,4 @@
-# @openbot/agent-service-provider
+# @tryopenbot/agent-service-provider
 
 Build and deployment providers for independently compiled agent entrypoints. It discovers Eve-shaped agent folders, runs instrumentation hooks, builds one fast function per agent for Vercel, or federates all agents in one local Hono service.
 
@@ -9,7 +9,7 @@ Build and deployment providers for independently compiled agent entrypoints. It 
 - `createAgentServiceApp(repositoryRoot, options?)` creates the development/local Hono app and mounts discovered `agent.ts` endpoints.
 - `discoverAgents(repositoryRoot)` finds and validates `configuration/agents/<id>/agent.ts` entrypoints.
 - `discoverAgentWorkspaces(repositoryRoot)` reads each agent's `sandbox/workspace/**` seed files for computer deployment.
-- `defineInstrumentation(instrumentation)` is exported from `@openbot/agent-service-provider/instrumentation` and type-checks Eve-shaped server instrumentation.
+- `defineInstrumentation(instrumentation)` is exported from `@tryopenbot/agent-service-provider/instrumentation` and type-checks Eve-shaped server instrumentation.
 
 ### Classes
 

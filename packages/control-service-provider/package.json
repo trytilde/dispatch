@@ -1,20 +1,37 @@
 {
-  "name": "@openbot/control-service-provider",
+  "name": "@tryopenbot/control-service-provider",
   "version": "0.1.0",
-  "private": true,
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    },
+    "access": "public"
   },
   "scripts": {
-    "build": "tsgo --noEmit",
+    "build": "tsgo --noEmit && tsdown --config ../../tsdown.package.config.ts && node ../../scripts/copy-package-assets.mjs",
     "lint": "tsgo --noEmit",
+    "prepack": "pnpm build",
     "test": "vitest run",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
-    "@openbot/runtime-provider": "workspace:*",
-    "@openbot/utilities": "workspace:*",
+    "@tryopenbot/runtime-provider": "workspace:*",
+    "@tryopenbot/utilities": "workspace:*",
     "tsdown": "0.22.14",
     "vercel": "58.9.4"
   },

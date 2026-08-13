@@ -1,4 +1,4 @@
-# @openbot/control-service
+# @tryopenbot/control-service
 
 The portable Hono control application. It serves health, federates generated ConnectRPC handlers under `/rpc`, and serves the built web UI with SPA fallback both locally and in a Vercel Function.
 

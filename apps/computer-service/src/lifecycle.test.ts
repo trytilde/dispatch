@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vite-plus/test";
-import { LifecyclePhase } from "@openbot/computer-service-proto";
+import { LifecyclePhase } from "@tryopenbot/computer-service-proto";
 import { lifecycleBundleDigest } from "./lifecycle.js";
 
 describe("lifecycleBundleDigest", () => {

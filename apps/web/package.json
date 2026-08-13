@@ -1,17 +1,25 @@
 {
-  "name": "@openbot/web",
+  "name": "@tryopenbot/web",
   "version": "0.1.0",
-  "private": true,
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "vp build",
     "dev": "vp dev --host 127.0.0.1 --port 4173",
     "lint": "vp lint",
+    "prepack": "pnpm build",
     "test": "vp test run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@tanstack/react-router": "1.170.27",
+    "@tryopenbot/ui": "workspace:*",
     "react": "19.1.2",
     "react-dom": "19.1.2"
   },

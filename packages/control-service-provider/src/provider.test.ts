@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { deployProviders, DeploymentOutputs } from "@openbot/runtime-provider";
+import { deployProviders, DeploymentOutputs } from "@tryopenbot/runtime-provider";
 import { LocalControlServiceProvider } from "./local/index.js";
 import { deploymentUrl, VercelControlServiceProvider } from "./vercel/index.js";
 import { buildVercelControlService } from "./vercel/build.js";

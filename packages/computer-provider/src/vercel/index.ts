@@ -25,7 +25,12 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
   readonly #specs = new Map<string, ComputerSpec>();
 
   constructor(imageDeployment: ComputerImageDeploymentConfig = {}) {
-    super(imageDeployment);
+    super(imageDeployment, {
+      publish: true,
+      buildxPlatform: "linux/amd64",
+      repositoryDescription:
+        "Create or open a Vercel Container Registry, then copy the untagged repository from its Push an image command. See https://vercel.com/docs/container-registry/getting-started#push-an-image",
+    });
   }
 
   async create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle> {

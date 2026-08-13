@@ -1,27 +1,37 @@
 {
-  "name": "@openbot/cli",
+  "name": "openbot",
   "version": "0.1.0",
-  "private": true,
+  "bin": {
+    "openbot": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "tsc --noEmit",
-    "deploy": "tsx src/index.tsx deploy",
-    "dev": "tsx src/index.tsx dev",
+    "build": "tsc --noEmit && tsdown && node ../scripts/copy-package-assets.mjs",
+    "deploy": "node --conditions=development --import tsx src/index.tsx deploy",
+    "dev": "node --conditions=development --import tsx src/index.tsx dev",
     "lint": "tsc --noEmit",
-    "start": "tsx src/index.tsx",
+    "start": "node --conditions=development --import tsx src/index.tsx",
+    "prepack": "pnpm build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hono/node-server": "1.19.1",
-    "@openbot/agent-provider": "workspace:*",
-    "@openbot/agent-service-provider": "workspace:*",
-    "@openbot/computer-provider": "workspace:*",
-    "@openbot/configuration": "workspace:*",
-    "@openbot/control-service": "workspace:*",
-    "@openbot/control-service-provider": "workspace:*",
-    "@openbot/runtime-provider": "workspace:*",
-    "@openbot/utilities": "workspace:*",
+    "@tryopenbot/agent-provider": "workspace:*",
+    "@tryopenbot/agent-service-provider": "workspace:*",
+    "@tryopenbot/computer-provider": "workspace:*",
+    "@tryopenbot/configuration": "workspace:*",
+    "@tryopenbot/control-service": "workspace:*",
+    "@tryopenbot/control-service-provider": "workspace:*",
+    "@tryopenbot/runtime-provider": "workspace:*",
+    "@tryopenbot/utilities": "workspace:*",
     "arg": "5.0.2",
     "dotenv": "17.2.1",
     "hono": "4.13.1",
@@ -33,6 +43,7 @@
     "@types/node": "24.3.0",
     "@types/react": "19.2.18",
     "ink-testing-library": "4.0.0",
+    "tsdown": "0.22.14",
     "tsx": "4.20.4",
     "typescript": "5.9.2",
     "vitest": "3.2.4"

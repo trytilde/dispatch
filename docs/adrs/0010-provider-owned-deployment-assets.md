@@ -16,7 +16,7 @@ Provider implementations produced complete TypeScript entrypoints, JSON configur
 
 Small providers may remain in `src/<provider>.ts`. Once a provider owns multiple lifecycle responsibilities or runtime files, it moves to `src/<provider>/index.ts`, focused sibling modules, and `src/<provider>/assets/`. Generated-file sources use the target extension followed by `.hbs` and are resolved relative to `import.meta.url`.
 
-`Buildable.build()` bundles executable assets and renders configuration into an ignored deployment artifact. `Deployable.deploy()` renders project configuration that is only needed to invoke the platform. Both use the file-template utilities exported by `@openbot/utilities`, whose strict Handlebars compilation rejects missing values. Values are escaped for their target format before rendering; deliberately pre-encoded fragments use triple braces. Complete files are not stored in TypeScript strings, rendered by ad hoc replacement functions, or copied directly from provider assets.
+`Buildable.build()` bundles executable assets and renders configuration into an ignored deployment artifact. `Deployable.deploy()` renders project configuration that is only needed to invoke the platform. Both use the file-template utilities exported by `@tryopenbot/utilities`, whose strict Handlebars compilation rejects missing values. Values are escaped for their target format before rendering; deliberately pre-encoded fragments use triple braces. Complete files are not stored in TypeScript strings, rendered by ad hoc replacement functions, or copied directly from provider assets.
 
 For Vercel prebuilt deployments, each service provider owns an `assets/vercel.json.hbs`, Function entrypoints, Function configuration, and Build Output configuration as Handlebars assets. The build emits `.vercel/output/config.json`, which owns prebuilt routing. The deploy lifecycle renders `vercel.json` to that service's artifact root immediately before invoking Vercel. No root `vercel.json` is tracked.
 
@@ -51,3 +51,4 @@ flowchart LR
 
 - 2026-08-13T11:12:53+02:00: Standardized generated source, configuration, service, deployment, and provider assets on strict Handlebars templates while keeping runtime persistence and user file bytes byte preserving.
 - 2026-08-13T12:09:51+02:00: Moved file-template helpers into the shared `@openbot/utilities` package so future cross-domain utilities have one neutral home.
+- 2026-08-13T17:33:29+02:00: Renamed the private workspace package scope from `@openbot` to `@tryopenbot`; provider asset ownership and lifecycle boundaries are unchanged.

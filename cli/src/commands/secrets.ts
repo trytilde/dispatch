@@ -3,21 +3,40 @@ import { setEncryptedSecret, unsetEncryptedSecret } from "../initialization.js";
 import { repositoryRoot } from "../paths.js";
 import { inkPrompts } from "./init.js";
 
-export async function runSecrets(argv: readonly string[]): Promise<void> {
-  const parsed = arg({}, { argv: [...argv] });
+export interface SecretsRunResult {
+  json: boolean;
+  operation: "set" | "unset";
+  name: string;
+}
+
+export async function runSecrets(argv: readonly string[]): Promise<SecretsRunResult> {
+  const parsed = arg({ "--stdin": Boolean, "--json": Boolean }, { argv: [...argv] });
   const [operation, name, ...extra] = parsed._;
   if (!operation || !name || extra.length)
-    throw new Error("Usage: openbot secrets <set|unset> NAME");
+    throw new Error("Usage: openbot secrets <set|unset> NAME [--stdin] [--json]");
   if (operation === "set") {
-    if (!process.stdin.isTTY || !process.stdout.isTTY)
-      throw new Error("openbot secrets set requires an interactive terminal");
-    const value = await inkPrompts.input(`Value for ${name}`, { secret: true, required: true });
+    const fromStdin = parsed["--stdin"] ?? false;
+    if (!fromStdin && (!process.stdin.isTTY || !process.stdout.isTTY))
+      throw new Error("Non-interactive secret input requires --stdin");
+    const value = fromStdin
+      ? await readSecretFromStdin()
+      : await inkPrompts.input(`Value for ${name}`, { secret: true, required: true });
     await setEncryptedSecret(repositoryRoot, name, value);
-    return;
+    return { json: parsed["--json"] ?? false, operation, name };
   }
   if (operation === "unset") {
+    if (parsed["--stdin"]) throw new Error("--stdin is only valid with secrets set");
     await unsetEncryptedSecret(repositoryRoot, name);
-    return;
+    return { json: parsed["--json"] ?? false, operation, name };
   }
   throw new Error(`Unknown secrets operation: ${operation}`);
+}
+
+async function readSecretFromStdin(): Promise<string> {
+  let value = "";
+  process.stdin.setEncoding("utf8");
+  for await (const chunk of process.stdin) value += chunk;
+  if (value.endsWith("\n")) value = value.slice(0, -1);
+  if (!value) throw new Error("Secret input on stdin must not be empty");
+  return value;
 }

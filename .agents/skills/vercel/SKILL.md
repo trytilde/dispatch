@@ -43,7 +43,7 @@ Use the deployment coordinator and Vercel service provider with a preview target
 
 ## Preserve OpenBot's Vercel contract
 
-- Keep Vercel entrypoints and configuration as `*.hbs` files in their owning provider's `vercel/assets/` directory. Render them through `@openbot/utilities`; the deploy lifecycle materializes `vercel.json` in the ignored artifact root.
+- Keep Vercel entrypoints and configuration as `*.hbs` files in their owning provider's `vercel/assets/` directory. Render them through `@tryopenbot/utilities`; the deploy lifecycle materializes `vercel.json` in the ignored artifact root.
 - Keep `.vercel/output/config.json` aligned with the generated functions and static assets; it owns routing for prebuilt deployments.
 - Keep `/rpc/*`, `/healthz`, and SPA behavior aligned with `apps/control-service` and `apps/web`.
 - Keep provider secrets in the control-plane environment provider; never copy them into a Sandbox.

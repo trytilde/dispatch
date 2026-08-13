@@ -31,13 +31,13 @@ pnpm build
 `pnpm check` regenerates protobuf contracts, type-checks scripts and packages, and runs package lint/test tasks plus deployment-script tests. Run focused tests first while iterating:
 
 ```bash
-pnpm --filter @openbot/control-service test
-pnpm --filter @openbot/agent-service-provider test
-pnpm --filter @openbot/computer-provider test
-pnpm --filter @openbot/desktop test
+pnpm --filter @tryopenbot/control-service test
+pnpm --filter @tryopenbot/agent-service-provider test
+pnpm --filter @tryopenbot/computer-provider test
+pnpm --filter @tryopenbot/desktop test
 ```
 
-Run `pnpm test:e2e` when browser behavior changed or the user requested end-to-end proof. Run `pnpm --filter @openbot/desktop package` when packaging, preload, Electron startup, or bundled-resource behavior changed.
+Run `pnpm test:e2e` when browser behavior changed or the user requested end-to-end proof. Run `pnpm --filter @tryopenbot/desktop package` when packaging, preload, Electron startup, or bundled-resource behavior changed.
 
 ## TypeScript Fix Policy
 

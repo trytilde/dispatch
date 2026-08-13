@@ -26,10 +26,11 @@ The coordinator plans every registered participant, configures participants that
 Two providers that happen to use Vercel remain two independent deployment participants and reimplement their own lifecycle for now. The coordinator does not deduplicate them by vendor or deployment ID. Shared vendor infrastructure can be extracted later when there is a concrete shared resource and ownership boundary.
 
 The selected computer provider is a non-runtime participant. Its build phase
-creates and content-tags the shared OCI computer image; deploy pushes that image
-and contributes the provider-specific image reference to the runtime. Existing
-computers are intentionally not updated because their image and persistent
-workspace belong to their creation lifecycle.
+creates and content-tags the shared computer image. A remote provider such as
+Vercel Sandbox pushes that image during deploy; the local Microsandbox provider
+keeps the image in Docker and contributes its local reference. Existing computers
+are intentionally not updated because their image and persistent workspace
+belong to their creation lifecycle.
 
 The local runtime implementation writes a private runtime environment file, then installs OpenBot as a user service: systemd on Linux or launchd on macOS. Service definitions contain only the environment-file path, not secret values.
 
@@ -56,3 +57,4 @@ flowchart LR
 
 - 2026-08-13T11:12:53+02:00: Added computer providers as non-runtime build and deployment participants that publish content-tagged image references without mutating existing computers.
 - 2026-08-13T12:53:05+02:00: Renamed the lifecycle package to `runtime-provider` as part of eliminating separate core packages; lifecycle semantics are unchanged.
+- 2026-08-13T17:53:21+02:00: Split computer image delivery by provider: Vercel Sandbox uses Buildx and publishes to Vercel Container Registry, while local Microsandbox derives a local Docker tag from the Git remote and does not ask for or push to a registry.

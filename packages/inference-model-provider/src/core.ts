@@ -1,6 +1,6 @@
 import type { LanguageModelV3 } from "@ai-sdk/provider";
-import type { DeployableProvider } from "@openbot/runtime-provider";
-export type { Deployable } from "@openbot/runtime-provider";
+import type { DeployableProvider } from "@tryopenbot/runtime-provider";
+export type { Deployable } from "@tryopenbot/runtime-provider";
 
 export interface InferenceModelPromptContext {
   agentId: string;

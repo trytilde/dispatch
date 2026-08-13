@@ -7,7 +7,7 @@ import type {
   ComputerInput,
   ComputerSpec,
 } from "./core/index.js";
-import { DeploymentOutputs } from "@openbot/runtime-provider";
+import { DeploymentOutputs } from "@tryopenbot/runtime-provider";
 import { computerImageAssets } from "./base/assets.js";
 import { shellEnvironmentExports } from "./base/development.js";
 import {
@@ -16,6 +16,14 @@ import {
   scopeComputerExecRequest,
   type ComputerImageDeploymentConfig,
 } from "./base/index.js";
+import { MicrosandboxComputerProvider } from "./microsandbox/index.js";
+import { VercelSandboxComputerProvider } from "./vercel/index.js";
+
+class TestVercelSandboxComputerProvider extends VercelSandboxComputerProvider {
+  buildArguments(spec: Parameters<BaseComputerProvider["buildImage"]>[0], reference: string) {
+    return this.buildImageArguments(spec, reference);
+  }
+}
 
 class TestComputerProvider extends BaseComputerProvider {
   protected readonly providerId = "test";
@@ -180,9 +188,11 @@ describe("agent workspace deployment", () => {
 
 describe("computer image lifecycle", () => {
   it("exposes repository initialization and a publish plan", async () => {
-    expect(new TestComputerProvider({}).initialization?.questions[0]?.destination.key).toBe(
-      "OPENBOT_COMPUTER_IMAGE_REPOSITORY",
-    );
+    expect(new VercelSandboxComputerProvider({}).initialization?.questions[0]).toMatchObject({
+      description: expect.stringContaining("vercel.com/docs/container-registry"),
+      destination: { key: "OPENBOT_COMPUTER_IMAGE_REPOSITORY" },
+    });
+    expect(new MicrosandboxComputerProvider().initialization).toBeUndefined();
     const provider = new TestComputerProvider();
     expect(provider.initialization).toBeUndefined();
     await expect(
@@ -198,10 +208,54 @@ describe("computer image lifecycle", () => {
     });
   });
 
+  it("uses a local repository-derived image for Microsandbox", async () => {
+    await expect(
+      new MicrosandboxComputerProvider().deployable.plan({
+        target: "production",
+        repositoryRoot: process.cwd(),
+        environment: {},
+        inputs: new DeploymentOutputs(),
+        report: vi.fn(),
+      }),
+    ).resolves.toMatchObject({
+      summary: expect.stringMatching(/locally built .*\/openbot-computer/),
+    });
+  });
+
+  it("uses Docker Buildx for the Vercel Sandbox image", () => {
+    const provider = new TestVercelSandboxComputerProvider({
+      repository: "registry.vercel.com/example/openbot-computer",
+    });
+    expect(
+      provider.buildArguments(
+        {
+          sourceDigest: `sha256:${"a".repeat(64)}`,
+          contextDirectory: "/tmp/context",
+          dockerfilePath: "/tmp/context/Containerfile",
+          repository: "registry.vercel.com/example/openbot-computer",
+        },
+        "registry.vercel.com/example/openbot-computer:openbot-computer-aaaaaaaaaaaa",
+      ),
+    ).toEqual([
+      "buildx",
+      "build",
+      "--platform",
+      "linux/amd64",
+      "--load",
+      "--file",
+      "/tmp/context/Containerfile",
+      "--tag",
+      "registry.vercel.com/example/openbot-computer:openbot-computer-aaaaaaaaaaaa",
+      "--label",
+      `org.openbot.computer.source-digest=sha256:${"a".repeat(64)}`,
+      "/tmp/context",
+    ]);
+  });
+
   it("builds the computer service inside the shared multi-stage image", async () => {
     const containerfile = await readFile(computerImageAssets.containerfile, "utf8");
     expect(containerfile).toContain("AS computer-service-builder");
-    expect(containerfile).toContain("pnpm --filter @openbot/computer-service build");
+    expect(containerfile).toContain("pnpm --filter @tryopenbot/computer-service build");
     expect(containerfile).toContain("COPY --from=computer-service-builder");
     expect(containerfile).not.toMatch(/^COPY apps\/computer-service\/dist/m);
     expect(containerfile).not.toContain("openbot-agent-exec");

@@ -4,33 +4,29 @@
   "commit": false,
   "fixed": [
     [
-      "@openbot/agent-provider",
-      "@openbot/agent-service-provider",
-      "@openbot/cli",
-      "@openbot/computer-provider",
-      "@openbot/computer-service",
-      "@openbot/computer-service-proto",
-      "@openbot/configuration",
-      "@openbot/control-service-proto",
-      "@openbot/desktop",
-      "@openbot/utilities",
-      "@openbot/inference-model-provider",
-      "@openbot/control-service-provider",
-      "@openbot/runtime-provider",
-      "@openbot/control-service",
-      "@openbot/skills-provider",
-      "@openbot/tools-provider",
-      "@openbot/ui",
-      "@openbot/web"
+      "@tryopenbot/agent-provider",
+      "@tryopenbot/agent-service-provider",
+      "openbot",
+      "@tryopenbot/computer-provider",
+      "@tryopenbot/computer-service",
+      "@tryopenbot/computer-service-proto",
+      "@tryopenbot/configuration",
+      "@tryopenbot/control-service-proto",
+      "@tryopenbot/desktop",
+      "@tryopenbot/utilities",
+      "@tryopenbot/inference-model-provider",
+      "@tryopenbot/control-service-provider",
+      "@tryopenbot/runtime-provider",
+      "@tryopenbot/control-service",
+      "@tryopenbot/skills-provider",
+      "@tryopenbot/tools-provider",
+      "@tryopenbot/ui",
+      "@tryopenbot/web"
     ]
   ],
   "linked": [],
-  "access": "restricted",
+  "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [],
-  "privatePackages": {
-    "version": true,
-    "tag": false
-  }
+  "ignore": []
 }

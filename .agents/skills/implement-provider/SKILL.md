@@ -5,11 +5,11 @@ description: Add or refactor an OpenBot provider implementation while preserving
 
 # Implement an OpenBot provider
 
-Keep provider-specific behavior behind its domain core contract and keep composition outside the adapter. Read the relevant ADRs, the owning package's `core.ts` or `core/`, implementation, runtime selection, and focused tests before editing. Do not create a separate `*-provider-core` package.
+Keep provider-specific behavior behind its domain core contract and keep composition outside the adapter. Read the relevant ADRs, the owning package's `src/core.ts` or `src/core/index.ts`, implementation, runtime selection, and focused tests before editing. Do not create a separate `*-provider-core` package.
 
 ## Workflow
 
-1. Identify the owning domain and read the contract in the provider package's `core.ts` or `core/`. Do not expose an internal provider interface through RPC unless a user-facing service boundary requires it.
+1. Identify the owning domain and read the contract in the provider package's `src/core.ts` or `src/core/index.ts`. Do not expose an internal provider interface through RPC unless a user-facing service boundary requires it.
 2. Read the matching provider package, configuration composition, and tests. Preserve `ProviderCallContext`, `ProviderError`, cancellation, deadlines, request IDs, and idempotency where the contract defines them.
 3. Add the smallest provider-specific implementation. Keep selection in composition code and keep vendor SDK calls inside the adapter.
 4. Implement only the optional capabilities the provider supports, such as `Buildable`, `Deployable`, initialization questions, `registerTools()`, or `injectPromptPart()`.
@@ -17,6 +17,8 @@ Keep provider-specific behavior behind its domain core contract and keep composi
 
 ## Provider layout
 
+- Define every domain provider contract interface, such as `AgentProvider`, `ComputerProvider`, `SkillProvider`, or `ToolProvider`, in `src/core.ts`. When the contract needs supporting core modules, use `src/core/index.ts` as its entrypoint instead.
+- Re-export the core contract from the package root. Never define a provider contract interface in `src/index.ts`, a concrete adapter file, or a provider-specific directory. Adapter configuration and SDK-specific types stay with their adapter.
 - A small implementation may live at `src/<provider>.ts`.
 - When an implementation has multiple responsibilities or owns files used at runtime, use `src/<provider>/index.ts`, cohesive sibling modules, and `src/<provider>/assets/`.
 - Export the public implementation from `<provider>/index.ts`, then re-export it from the package root.
@@ -52,4 +54,4 @@ Keep provider-specific behavior behind its domain core contract and keep composi
 
 ## Verification
 
-Run the focused provider tests and typecheck. Audit the diff for embedded whole-file templates, non-Handlebars generation, raw provider-asset copies, stale flat-provider imports, secrets, and unrelated generated output. Run `pnpm check` and `pnpm build` when the change affects deployment artifacts or shared contracts.
+Run the focused provider tests and typecheck. Audit the diff for provider contract interfaces outside `src/core.ts` or `src/core/index.ts`, embedded whole-file templates, non-Handlebars generation, raw provider-asset copies, stale flat-provider imports, secrets, and unrelated generated output. Run `pnpm check` and `pnpm build` when the change affects deployment artifacts or shared contracts.

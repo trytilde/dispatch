@@ -31,6 +31,7 @@ configuration/
 - Keep reusable import-only TypeScript in `lib/`.
 - Default-export one Vercel AI SDK tool from each file in `tools/`.
 - Store specification-conformant skill Markdown files or skill folders under `skills/`.
+- Keep skills and sandbox workspace seeds inside their owning agent directory. Never create, read, or migrate content to global `configuration/skills/` or `configuration/sandbox/` directories; those paths are unsupported.
 - Do not add channels, connections, hooks, schedules, or subagents.
 - Treat `tools/` and `skills/` as authored structure only until their loading semantics are explicitly implemented. Do not auto-register them while making an unrelated agent change.
 

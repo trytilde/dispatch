@@ -30,10 +30,12 @@ configuration/
 - Default-export TypeScript instructions from `instructions.ts`. Do not add `instructions.md`.
 - Keep reusable import-only TypeScript in `lib/`.
 - Default-export one Vercel AI SDK tool from each file in `tools/`.
+- Require `tools/computer-exec.ts`, `computer-read-file.ts`, `computer-write-file.ts`, `computer-screenshot.ts`, and `computer-input.ts` in every agent. Import them explicitly in `agent.ts` and add them to its Vercel AI SDK tool set.
+- Route every computer tool through the generated `ComputerService` Connect client. Include the path-derived agent ID in each request; never call Microsandbox, Vercel Sandbox, `fetch`, or an untyped computer endpoint from an agent tool.
 - Store specification-conformant skill Markdown files or skill folders under `skills/`.
 - Keep skills and sandbox workspace seeds inside their owning agent directory. Never create, read, or migrate content to global `configuration/skills/` or `configuration/sandbox/` directories; those paths are unsupported.
 - Do not add channels, connections, hooks, schedules, or subagents.
-- Treat `tools/` and `skills/` as authored structure only until their loading semantics are explicitly implemented. Do not auto-register them while making an unrelated agent change.
+- Do not directory-load arbitrary tools or skills. Computer tools are the required exception and are explicitly imported by `agent.ts`.
 
 ## Instrument startup
 
@@ -47,6 +49,8 @@ Treat each `agent.ts` as an independently buildable agent-service entrypoint. Ke
 
 All agents share one OpenBot Computer, but deployment registers a stable Linux user and private persistent workspace for each agent. Provider operations scoped to an agent present that directory as logical `/workspace` and run as that agent's user.
 
+Keep the authored directory name `sandbox/` only because OpenBot follows Eve's project layout where possible. Use Computer for APIs, environment variables, classes, tool filenames, and prose about the runtime. Computer-service owns agent-ID validation, Linux-user mapping, the private mount namespace, and OS-user execution; callers must not send a username.
+
 Seed `sandbox/workspace/**` only when registering a new agent workspace. Never overwrite an existing deployed workspace during an ordinary agent deployment. State clearly when changing seed files that already-deployed agents will not receive those changes without explicit future reconciliation or computer replacement. Reject symlinks in agent source and workspace seeds.
 
 ## Initialize examples
@@ -55,7 +59,7 @@ Keep `openbot init` capable of generating a hello-world agent with:
 
 - `agent.ts` importing `instructions.ts`
 - an empty global and agent instrumentation hook
-- one example tool and one specification-conformant skill
+- all five computer-service tools, one example tool, and one specification-conformant skill
 - a `lib/` helper
 - a sandbox workspace seed
 
@@ -63,4 +67,4 @@ Generate source files from Handlebars assets through `@openbot/utilities`; do no
 
 ## Verify
 
-Run focused agent-service provider discovery, build, and initialization tests when implementation changes are in scope. Check that every agent is discoverable by directory, imports its instructions, and preserves the supported tree. Do not claim tools or skills load automatically.
+Run focused agent-service provider discovery, build, computer-service, and initialization tests when implementation changes are in scope. Check that every agent is discoverable by directory, imports its instructions and required computer tools, and preserves the supported tree. Do not claim skills or arbitrary tools load automatically.

@@ -16,7 +16,10 @@ export function renderFileTemplate(source: string, values: FileTemplateValues = 
   });
 }
 
-export async function renderFileTemplatePath(path: string, values: FileTemplateValues = {}): Promise<string> {
+export async function renderFileTemplatePath(
+  path: string,
+  values: FileTemplateValues = {},
+): Promise<string> {
   return renderFileTemplate(await readFile(path, "utf8"), values);
 }
 

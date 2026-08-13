@@ -1,7 +1,11 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { repositoryRoot } from "./paths.js";
 
-export function run(command: string, args: readonly string[], environment: NodeJS.ProcessEnv = process.env): ChildProcess {
+export function run(
+  command: string,
+  args: readonly string[],
+  environment: NodeJS.ProcessEnv = process.env,
+): ChildProcess {
   return spawn(command, [...args], {
     cwd: repositoryRoot,
     env: environment,

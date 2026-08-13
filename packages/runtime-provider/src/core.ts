@@ -67,7 +67,12 @@ export class DeploymentOutputs {
     this.#mergeMap(this.#secrets, result.secrets, "secret", true);
     this.#mergeMap(this.#deploymentSecrets, result.deploymentSecrets, "deployment secret", true);
     this.#mergeMap(this.#sandboxSecrets, result.sandboxSecrets, "sandbox secret", true);
-    this.#mergeMap(this.#environmentVariables, result.environmentVariables, "environment variable", true);
+    this.#mergeMap(
+      this.#environmentVariables,
+      result.environmentVariables,
+      "environment variable",
+      true,
+    );
   }
 
   get(name: string): string | undefined {
@@ -110,24 +115,39 @@ export class DeploymentOutputs {
     };
   }
 
-  #mergeMap(target: Map<string, string>, values: Readonly<Record<string, string>> | undefined, kind: string, environmentName: boolean): void {
+  #mergeMap(
+    target: Map<string, string>,
+    values: Readonly<Record<string, string>> | undefined,
+    kind: string,
+    environmentName: boolean,
+  ): void {
     for (const [name, value] of Object.entries(values ?? {})) {
       if (!name || !value) throw new Error(`Deployment ${kind} names and values must not be empty`);
-      if (environmentName && !/^[A-Z][A-Z0-9_]*$/.test(name)) throw new Error(`Invalid ${kind} name: ${name}`);
+      if (environmentName && !/^[A-Z][A-Z0-9_]*$/.test(name))
+        throw new Error(`Invalid ${kind} name: ${name}`);
       const existing = target.get(name);
-      if (existing !== undefined && existing !== value) throw new Error(`Conflicting deployment ${kind}: ${name}`);
+      if (existing !== undefined && existing !== value)
+        throw new Error(`Conflicting deployment ${kind}: ${name}`);
       target.set(name, value);
     }
   }
 }
 
 /** Values installed in the trusted development sandbox, including its SOPS identity. */
-export function sandboxDeploymentEnvironment(inputs: DeploymentOutputs): Readonly<Record<string, string>> {
+export function sandboxDeploymentEnvironment(
+  inputs: DeploymentOutputs,
+): Readonly<Record<string, string>> {
   const values = new Map<string, string>();
-  for (const source of [inputs.environmentVariables(), inputs.secrets(), inputs.deploymentSecrets(), inputs.sandboxSecrets()]) {
+  for (const source of [
+    inputs.environmentVariables(),
+    inputs.secrets(),
+    inputs.deploymentSecrets(),
+    inputs.sandboxSecrets(),
+  ]) {
     for (const [name, value] of Object.entries(source)) {
       const existing = values.get(name);
-      if (existing !== undefined && existing !== value) throw new Error(`Conflicting sandbox environment value: ${name}`);
+      if (existing !== undefined && existing !== value)
+        throw new Error(`Conflicting sandbox environment value: ${name}`);
       values.set(name, value);
     }
   }
@@ -195,7 +215,10 @@ export async function buildProviders(
   for (const participant of participants) {
     const buildable = participant.provider.buildable;
     if (!buildable) continue;
-    const scopedContext = participant.role === "sandbox" ? context : { ...context, inputs: withoutSandboxSecrets(inputs) };
+    const scopedContext =
+      participant.role === "sandbox"
+        ? context
+        : { ...context, inputs: withoutSandboxSecrets(inputs) };
     report({ event: "build.provider.check.started", details: { providerId: participant.id } });
     await buildable.check(scopedContext);
     report({ event: "build.provider.check.complete", details: { providerId: participant.id } });
@@ -211,14 +234,17 @@ export async function deployProviders(
   options: DeploymentRunOptions,
 ): Promise<DeploymentOutputs> {
   assertUniqueParticipantIds(participants);
-  const deployable = participants.flatMap((participant) => participant.provider.deployable
-    ? [{ ...participant, deployable: participant.provider.deployable }]
-    : []);
+  const deployable = participants.flatMap((participant) =>
+    participant.provider.deployable
+      ? [{ ...participant, deployable: participant.provider.deployable }]
+      : [],
+  );
   for (const participant of deployable) {
     if (!participant.id) throw new Error("Deployment participant id must not be empty");
   }
   const runtime = deployable.filter((participant) => participant.role === "runtime");
-  if (runtime.length > 1) throw new Error("Only one runtime deployment participant may be registered");
+  if (runtime.length > 1)
+    throw new Error("Only one runtime deployment participant may be registered");
 
   const inputs = new DeploymentOutputs();
   inputs.merge(options.initialInputs);
@@ -230,33 +256,51 @@ export async function deployProviders(
     inputs,
     report,
   };
-  const contextFor = (participant: { role?: DeploymentParticipant["role"] }): DeploymentContext => participant.role === "sandbox"
-    ? context
-    : { ...context, inputs: withoutSandboxSecrets(inputs) };
+  const contextFor = (participant: { role?: DeploymentParticipant["role"] }): DeploymentContext =>
+    participant.role === "sandbox"
+      ? context
+      : { ...context, inputs: withoutSandboxSecrets(inputs) };
 
   for (const participant of deployable) {
     report({ event: "deployment.provider.plan.started", details: { providerId: participant.id } });
     const plan = await participant.deployable.plan(contextFor(participant));
-    report({ event: "deployment.provider.plan.complete", details: { providerId: participant.id, summary: plan.summary, steps: plan.steps ?? [] } });
+    report({
+      event: "deployment.provider.plan.complete",
+      details: { providerId: participant.id, summary: plan.summary, steps: plan.steps ?? [] },
+    });
   }
   if (options.dryRun) return inputs;
 
   for (const participant of deployable) {
     if (!participant.deployable.configure) continue;
-    report({ event: "deployment.provider.configure.started", details: { providerId: participant.id } });
+    report({
+      event: "deployment.provider.configure.started",
+      details: { providerId: participant.id },
+    });
     inputs.merge(await participant.deployable.configure(contextFor(participant)));
-    report({ event: "deployment.provider.configure.complete", details: { providerId: participant.id } });
+    report({
+      event: "deployment.provider.configure.complete",
+      details: { providerId: participant.id },
+    });
   }
 
   const ordered = [
-    ...deployable.filter((participant) => participant.role !== "runtime" && participant.role !== "sandbox"),
+    ...deployable.filter(
+      (participant) => participant.role !== "runtime" && participant.role !== "sandbox",
+    ),
     ...deployable.filter((participant) => participant.role === "sandbox"),
     ...runtime,
   ];
   for (const participant of ordered) {
-    report({ event: "deployment.provider.deploy.started", details: { providerId: participant.id, role: participant.role ?? "provider" } });
+    report({
+      event: "deployment.provider.deploy.started",
+      details: { providerId: participant.id, role: participant.role ?? "provider" },
+    });
     inputs.merge(await participant.deployable.deploy(contextFor(participant)));
-    report({ event: "deployment.provider.deploy.complete", details: { providerId: participant.id, role: participant.role ?? "provider" } });
+    report({
+      event: "deployment.provider.deploy.complete",
+      details: { providerId: participant.id, role: participant.role ?? "provider" },
+    });
   }
   return inputs;
 }
@@ -265,7 +309,8 @@ function assertUniqueParticipantIds(participants: readonly DeploymentParticipant
   const ids = new Set<string>();
   for (const participant of participants) {
     if (!participant.id) throw new Error("Deployment participant id must not be empty");
-    if (ids.has(participant.id)) throw new Error(`Duplicate deployment participant id: ${participant.id}`);
+    if (ids.has(participant.id))
+      throw new Error(`Duplicate deployment participant id: ${participant.id}`);
     ids.add(participant.id);
   }
 }

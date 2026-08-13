@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { openAIChatGPTAccountId, OpenAIOAuthInferenceModelProvider } from "./openai-oauth.js";
 
 describe("OpenAIOAuthInferenceModelProvider", () => {
@@ -10,31 +10,35 @@ describe("OpenAIOAuthInferenceModelProvider", () => {
   });
 
   it("resolves fresh OAuth credentials for each request", async () => {
-    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json({
-      id: "response-1",
-      created_at: 1,
-      model: "gpt-test",
-      object: "response",
-      output: [{
-        id: "message-1",
-        type: "message",
-        role: "assistant",
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      Response.json({
+        id: "response-1",
+        created_at: 1,
+        model: "gpt-test",
+        object: "response",
+        output: [
+          {
+            id: "message-1",
+            type: "message",
+            role: "assistant",
+            status: "completed",
+            content: [{ type: "output_text", text: "done", annotations: [], logprobs: [] }],
+          },
+        ],
+        parallel_tool_calls: false,
         status: "completed",
-        content: [{ type: "output_text", text: "done", annotations: [], logprobs: [] }],
-      }],
-      parallel_tool_calls: false,
-      status: "completed",
-      text: { format: { type: "text" } },
-      tool_choice: "auto",
-      tools: [],
-      usage: {
-        input_tokens: 1,
-        input_tokens_details: { cached_tokens: 0 },
-        output_tokens: 1,
-        output_tokens_details: { reasoning_tokens: 0 },
-        total_tokens: 2,
-      },
-    }));
+        text: { format: { type: "text" } },
+        tool_choice: "auto",
+        tools: [],
+        usage: {
+          input_tokens: 1,
+          input_tokens_details: { cached_tokens: 0 },
+          output_tokens: 1,
+          output_tokens_details: { reasoning_tokens: 0 },
+          total_tokens: 2,
+        },
+      }),
+    );
     const credential = vi.fn().mockResolvedValue({
       accessToken: jwt({ "https://api.openai.com/auth": { chatgpt_account_id: "account-123" } }),
     });
@@ -56,5 +60,7 @@ describe("OpenAIOAuthInferenceModelProvider", () => {
 });
 
 function jwt(payload: Record<string, unknown>): string {
-  return ["header", Buffer.from(JSON.stringify(payload)).toString("base64url"), "signature"].join(".");
+  return ["header", Buffer.from(JSON.stringify(payload)).toString("base64url"), "signature"].join(
+    ".",
+  );
 }

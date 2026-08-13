@@ -17,11 +17,7 @@ import type {
   ToolProvider,
   ToolsProviderCallContext,
 } from "./core.js";
-import {
-  asRegisteredTool,
-  providerSignal,
-  ToolsProviderError,
-} from "./core.js";
+import { asRegisteredTool, providerSignal, ToolsProviderError } from "./core.js";
 
 export interface TildeToolProviderConfig {
   client: Client;
@@ -56,16 +52,28 @@ export class TildeToolProvider implements ToolProvider {
     });
   }
 
-  async invoke(name: string, input: JsonObject, context: ToolsProviderCallContext): Promise<JsonValue> {
+  async invoke(
+    name: string,
+    input: JsonObject,
+    context: ToolsProviderCallContext,
+  ): Promise<JsonValue> {
     providerSignal(context);
     try {
       const { mcp } = await this.#connect();
       const result = await mcp.callTool(name, input as TildeJsonObject);
-      if (!isJsonValue(result)) throw new ToolsProviderError("provider_unavailable", `Tilde tool ${name} returned a non-JSON result`);
+      if (!isJsonValue(result))
+        throw new ToolsProviderError(
+          "provider_unavailable",
+          `Tilde tool ${name} returned a non-JSON result`,
+        );
       return result;
     } catch (error) {
       if (error instanceof ToolsProviderError) throw error;
-      throw new ToolsProviderError("provider_unavailable", `Unable to invoke Tilde tool ${name}: ${errorMessage(error)}`, true);
+      throw new ToolsProviderError(
+        "provider_unavailable",
+        `Unable to invoke Tilde tool ${name}: ${errorMessage(error)}`,
+        true,
+      );
     }
   }
 
@@ -100,29 +108,51 @@ export class TildeToolProvider implements ToolProvider {
       const tools = await mcp.tools();
       return Object.entries(tools).map(([name, aiTool]) => asRegisteredTool(name, aiTool));
     } catch (error) {
-      throw new ToolsProviderError("provider_unavailable", `Unable to load Tilde tools: ${errorMessage(error)}`, true);
+      throw new ToolsProviderError(
+        "provider_unavailable",
+        `Unable to load Tilde tools: ${errorMessage(error)}`,
+        true,
+      );
     }
   }
 
   #connect(): Promise<TildeToolsConnection> {
     this.#connection ??= (async () => {
       const server = await this.#config.client.mcp.getServer({ id: this.#config.serverId });
-      return { server, ...await createMCPClient({ client: this.#config.client, serverId: server.id }) };
+      return {
+        server,
+        ...(await createMCPClient({ client: this.#config.client, serverId: server.id })),
+      };
     })();
     return this.#connection;
   }
 }
 
 function jsonObject(value: unknown): JsonObject | undefined {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : undefined;
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as JsonObject)
+    : undefined;
 }
 
 function isJsonValue(value: ToolResult): value is JsonValue {
-  if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  )
+    return true;
   if (Array.isArray(value)) return value.every((item) => isJsonValue(item as ToolResult));
-  return typeof value === "object" && Object.values(value).every((item) => isJsonValue(item as ToolResult));
+  return (
+    typeof value === "object" &&
+    Object.values(value).every((item) => isJsonValue(item as ToolResult))
+  );
 }
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : typeof error === "string" ? error : "unknown error";
+  return error instanceof Error
+    ? error.message
+    : typeof error === "string"
+      ? error
+      : "unknown error";
 }

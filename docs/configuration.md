@@ -1,6 +1,8 @@
 # Repository configuration
 
-`configuration/index.ts` is the single fork-owned configuration entrypoint. `openbot init` creates it with explicit provider instances for the selected runtime. Replace or add concrete provider instances under `providers`; provider packages do not select implementations from string IDs. `Configuration()` types provider selection only. The file must not contain credentials; providers read secret values from the initialized environment.
+The repository initially tracks only `configuration/.gitkeep`; every fresh fork must run `pnpm openbot init`. Init creates `configuration/index.ts` as the single fork-owned composition root and `configuration/runtime-providers.ts` for the provider instances imported by agent functions. `index.ts` still names every provider role explicitly; the split prevents deployment-only compilers and platform SDKs from entering agent bundles. Provider packages do not select implementations from string IDs. `Configuration()` and `RuntimeProviders()` type provider selection only. These files must not contain credentials; providers read secret values from the initialized environment.
+
+OpenBot never loads root `.env`, `.env.local`, or a root SOPS document. Fork-owned values live only in `configuration/.env` and `configuration/secrets.enc.yaml`. Contributors and CI use their process environment for repository-maintenance credentials.
 
 ```ts
 import { Configuration } from "@openbot/configuration";
@@ -49,4 +51,4 @@ untagged OCI repository. `openbot init` asks for it; alternatively pass
 `{ repository: "ghcr.io/example/openbot-computer" }` to the concrete computer
 provider constructor.
 
-Run `vp run openbot check` after every configuration change. `vp run openbot doctor` also checks the selected providers without exposing secret values.
+Run `pnpm openbot check` after every configuration change. Provider build checks also run automatically before `pnpm openbot deploy` creates or deploys an artifact.

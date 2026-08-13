@@ -94,8 +94,7 @@ async function handleRequest(
 }
 
 function isControlPath(pathname: string): boolean {
-  return pathname === "/healthz"
-    || pathname === "/rpc" || pathname.startsWith("/rpc/");
+  return pathname === "/healthz" || pathname === "/rpc" || pathname.startsWith("/rpc/");
 }
 
 async function proxyRequest(

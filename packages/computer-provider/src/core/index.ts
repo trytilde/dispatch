@@ -1,5 +1,9 @@
 import type { Tool } from "ai";
-import type { DeployableProvider, DeploymentContext, DeploymentResult } from "@openbot/runtime-provider";
+import type {
+  DeployableProvider,
+  DeploymentContext,
+  DeploymentResult,
+} from "@openbot/runtime-provider";
 export type { Deployable } from "@openbot/runtime-provider";
 
 export type ComputerState = "creating" | "running" | "sleeping" | "failed";
@@ -158,10 +162,19 @@ export interface PublishedComputerImage extends BuiltComputerImage {
 }
 
 export interface ComputerProvider extends DeployableProvider {
-  injectPromptPart(context: ComputerPromptContext, callContext: ComputerCallContext): ComputerPromptPart | undefined | Promise<ComputerPromptPart | undefined>;
+  injectPromptPart(
+    context: ComputerPromptContext,
+    callContext: ComputerCallContext,
+  ): ComputerPromptPart | undefined | Promise<ComputerPromptPart | undefined>;
   registerTools(context: RegisterComputerToolsContext): readonly RegisteredComputerTool[];
-  deployAgentWorkspaces(request: DeployAgentWorkspacesRequest, context: DeploymentContext): Promise<DeploymentResult>;
-  deployDevelopmentSandbox(request: DeployDevelopmentSandboxRequest, context: DeploymentContext): Promise<DeploymentResult>;
+  deployAgentWorkspaces(
+    request: DeployAgentWorkspacesRequest,
+    context: DeploymentContext,
+  ): Promise<DeploymentResult>;
+  deployDevelopmentSandbox(
+    request: DeployDevelopmentSandboxRequest,
+    context: DeploymentContext,
+  ): Promise<DeploymentResult>;
 
   create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle>;
   get(id: string, context: ComputerCallContext): Promise<ComputerHandle>;
@@ -169,15 +182,28 @@ export interface ComputerProvider extends DeployableProvider {
   sleep(id: string, context: ComputerCallContext): Promise<ComputerHandle>;
   delete(id: string, context: ComputerCallContext): Promise<void>;
 
-  exec(id: string, request: ComputerExecRequest, context: ComputerCallContext): Promise<ComputerExecResult>;
+  exec(
+    id: string,
+    request: ComputerExecRequest,
+    context: ComputerCallContext,
+  ): Promise<ComputerExecResult>;
   readFile(id: string, path: string, context: ComputerCallContext): Promise<Uint8Array>;
-  writeFile(id: string, path: string, content: Uint8Array, context: ComputerCallContext): Promise<void>;
+  writeFile(
+    id: string,
+    path: string,
+    content: Uint8Array,
+    context: ComputerCallContext,
+  ): Promise<void>;
   screenshot(id: string, context: ComputerCallContext): Promise<Uint8Array>;
   input(id: string, input: ComputerInput, context: ComputerCallContext): Promise<void>;
   vnc(id: string, context: ComputerCallContext): Promise<ComputerVncEndpoint>;
 
   buildImage(spec: ComputerImageSpec, context: ComputerCallContext): Promise<BuiltComputerImage>;
-  publishImage(image: BuiltComputerImage, spec: ComputerImageSpec, context: ComputerCallContext): Promise<PublishedComputerImage>;
+  publishImage(
+    image: BuiltComputerImage,
+    spec: ComputerImageSpec,
+    context: ComputerCallContext,
+  ): Promise<PublishedComputerImage>;
 }
 
 export async function ensurePublishedComputerImage(
@@ -189,7 +215,10 @@ export async function ensurePublishedComputerImage(
   if (previous?.sourceDigest === spec.sourceDigest) return { image: previous, changed: false };
   const built = await provider.buildImage(spec, context);
   if (built.sourceDigest !== spec.sourceDigest) {
-    throw new ComputerProviderError("internal", "Computer image build returned the wrong source digest");
+    throw new ComputerProviderError(
+      "internal",
+      "Computer image build returned the wrong source digest",
+    );
   }
   return { image: await provider.publishImage(built, spec, context), changed: true };
 }

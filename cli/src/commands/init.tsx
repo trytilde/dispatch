@@ -1,36 +1,61 @@
 import React, { useRef, useState } from "react";
 import { Box, Text, render, useApp, useInput } from "ink";
-import { initializeOpenBot, type InitializationPrompts, type SelectChoice } from "../initialization.js";
+import {
+  initializeOpenBot,
+  type InitializationPrompts,
+  type SelectChoice,
+} from "../initialization.js";
 import { repositoryRoot } from "../paths.js";
 import { Brand } from "../ui.js";
 
 export async function runInitialization(): Promise<void> {
-  if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error("openbot init requires an interactive terminal");
+  if (!process.stdin.isTTY || !process.stdout.isTTY)
+    throw new Error("openbot init requires an interactive terminal");
   await initializeOpenBot({ repositoryRoot, prompts: inkPrompts });
 }
 
 export const inkPrompts: InitializationPrompts = {
   select(prompt, choices) {
-    return renderQuestion<string>((complete, cancel) => <SelectQuestion prompt={prompt} choices={choices} complete={complete} cancel={cancel} />);
+    return renderQuestion<string>((complete, cancel) => (
+      <SelectQuestion prompt={prompt} choices={choices} complete={complete} cancel={cancel} />
+    ));
   },
   input(prompt, options = {}) {
-    return renderQuestion<string>((complete, cancel) => <InputQuestion prompt={prompt} secret={options.secret ?? false} required={options.required ?? false} complete={complete} cancel={cancel} />);
+    return renderQuestion<string>((complete, cancel) => (
+      <InputQuestion
+        prompt={prompt}
+        secret={options.secret ?? false}
+        required={options.required ?? false}
+        complete={complete}
+        cancel={cancel}
+      />
+    ));
   },
 };
 
-async function renderQuestion<T>(view: (complete: (value: T) => void, cancel: () => void) => React.ReactElement): Promise<T> {
+async function renderQuestion<T>(
+  view: (complete: (value: T) => void, cancel: () => void) => React.ReactElement,
+): Promise<T> {
   let resolveValue!: (value: T) => void;
   let rejectValue!: (error: Error) => void;
   const result = new Promise<T>((resolvePromise, reject) => {
     resolveValue = resolvePromise;
     rejectValue = reject;
   });
-  const app = render(view(resolveValue, () => rejectValue(new Error("Initialization cancelled"))), { patchConsole: false });
+  const app = render(
+    view(resolveValue, () => rejectValue(new Error("Initialization cancelled"))),
+    { patchConsole: false },
+  );
   await app.waitUntilExit();
   return result;
 }
 
-function SelectQuestion({ prompt, choices, complete, cancel }: {
+function SelectQuestion({
+  prompt,
+  choices,
+  complete,
+  cancel,
+}: {
   prompt: string;
   choices: readonly SelectChoice[];
   complete: (value: string) => void;
@@ -54,20 +79,42 @@ function SelectQuestion({ prompt, choices, complete, cancel }: {
       exit();
     }
   });
-  return <Box flexDirection="column">
-    <Brand subtitle={prompt} />
-    {choices.map((choice, index) => <Box key={choice.value} flexDirection="column">
-      <Box>
-        <Box width={3}><Text color={selected === index ? "cyan" : undefined}>{selected === index ? "❯" : " "}</Text></Box>
-        <Text bold={selected === index} color={selected === index ? "cyan" : undefined}>{choice.label}</Text>
+  return (
+    <Box flexDirection="column">
+      <Brand subtitle={prompt} />
+      {choices.map((choice, index) => (
+        <Box key={choice.value} flexDirection="column">
+          <Box>
+            <Box width={3}>
+              <Text color={selected === index ? "cyan" : undefined}>
+                {selected === index ? "❯" : " "}
+              </Text>
+            </Box>
+            <Text bold={selected === index} color={selected === index ? "cyan" : undefined}>
+              {choice.label}
+            </Text>
+          </Box>
+          {choice.description && selected === index ? (
+            <Box marginLeft={3}>
+              <Text dimColor>{choice.description}</Text>
+            </Box>
+          ) : null}
+        </Box>
+      ))}
+      <Box marginTop={1}>
+        <Text dimColor>↑/↓ move enter select esc cancel</Text>
       </Box>
-      {choice.description && selected === index ? <Box marginLeft={3}><Text dimColor>{choice.description}</Text></Box> : null}
-    </Box>)}
-    <Box marginTop={1}><Text dimColor>↑/↓ move  enter select  esc cancel</Text></Box>
-  </Box>;
+    </Box>
+  );
 }
 
-function InputQuestion({ prompt, secret, required, complete, cancel }: {
+function InputQuestion({
+  prompt,
+  secret,
+  required,
+  complete,
+  cancel,
+}: {
   prompt: string;
   secret: boolean;
   required: boolean;
@@ -98,10 +145,18 @@ function InputQuestion({ prompt, secret, required, complete, cancel }: {
     setValue(valueRef.current);
     setError("");
   });
-  return <Box flexDirection="column">
-    <Brand subtitle={prompt} />
-    <Text><Text color="cyan">❯ </Text>{secret ? "•".repeat(value.length) : value}<Text inverse> </Text></Text>
-    {error ? <Text color="red">{error}</Text> : null}
-    <Box marginTop={1}><Text dimColor>enter continue  esc cancel</Text></Box>
-  </Box>;
+  return (
+    <Box flexDirection="column">
+      <Brand subtitle={prompt} />
+      <Text>
+        <Text color="cyan">❯ </Text>
+        {secret ? "•".repeat(value.length) : value}
+        <Text inverse> </Text>
+      </Text>
+      {error ? <Text color="red">{error}</Text> : null}
+      <Box marginTop={1}>
+        <Text dimColor>enter continue esc cancel</Text>
+      </Box>
+    </Box>
+  );
 }

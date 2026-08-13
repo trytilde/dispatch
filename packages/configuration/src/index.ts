@@ -16,12 +16,17 @@ export type ServiceProvider = Buildable & Deployable & InitializableProvider;
 export interface OpenBotProviders {
   controlService: ServiceProvider;
   agentService: ServiceProvider;
-  agent?: AgentProvider;
-  computer?: ComputerProvider;
-  inferenceModel?: InferenceModelProvider;
-  skills?: SkillProvider;
-  tools?: ToolProvider;
+  agent: AgentProvider;
+  computer: ComputerProvider;
+  inferenceModel: InferenceModelProvider;
+  skills: SkillProvider;
+  tools: ToolProvider;
 }
+
+export type AgentRuntimeProviders = Pick<
+  OpenBotProviders,
+  "agent" | "computer" | "inferenceModel" | "skills" | "tools"
+>;
 
 export interface OpenBotConfiguration {
   providers: OpenBotProviders;
@@ -38,9 +43,15 @@ export function Configuration(configuration: OpenBotConfiguration): OpenBotConfi
   return configuration;
 }
 
+export function RuntimeProviders(providers: AgentRuntimeProviders): AgentRuntimeProviders {
+  return providers;
+}
+
 export function repositoryDigest(files: Readonly<Record<string, string>>): string {
   const hash = createHash("sha256");
-  for (const [path, content] of Object.entries(files).sort(([left], [right]) => left.localeCompare(right))) {
+  for (const [path, content] of Object.entries(files).sort(([left], [right]) =>
+    left.localeCompare(right),
+  )) {
     hash.update(path).update("\0").update(content).update("\0");
   }
   return hash.digest("hex");

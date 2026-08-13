@@ -12,7 +12,9 @@ export interface OpenAIOAuthCredential {
 }
 
 export interface OpenAIOAuthInferenceModelProviderOptions {
-  credential: OpenAIOAuthCredential | (() => OpenAIOAuthCredential | Promise<OpenAIOAuthCredential>);
+  credential:
+    | OpenAIOAuthCredential
+    | (() => OpenAIOAuthCredential | Promise<OpenAIOAuthCredential>);
   fetch?: typeof globalThis.fetch;
 }
 
@@ -24,9 +26,10 @@ export class OpenAIOAuthInferenceModelProvider implements InferenceModelProvider
   readonly #openai: ReturnType<typeof createOpenAI>;
 
   constructor(options: OpenAIOAuthInferenceModelProviderOptions) {
-    const resolveCredential = typeof options.credential === "function"
-      ? options.credential
-      : () => options.credential as OpenAIOAuthCredential;
+    const resolveCredential =
+      typeof options.credential === "function"
+        ? options.credential
+        : () => options.credential as OpenAIOAuthCredential;
     const transport = options.fetch ?? globalThis.fetch;
     this.#openai = createOpenAI({
       apiKey: "oauth-token-resolved-per-request",
@@ -34,7 +37,10 @@ export class OpenAIOAuthInferenceModelProvider implements InferenceModelProvider
       name: "openai.chatgpt",
       fetch: async (input, init) => {
         const credential = await resolveCredential();
-        const accessToken = requireCredentialValue(credential.accessToken, "OpenAI OAuth access token");
+        const accessToken = requireCredentialValue(
+          credential.accessToken,
+          "OpenAI OAuth access token",
+        );
         const accountId = credential.accountId?.trim() || openAIChatGPTAccountId(accessToken);
         if (!accountId) {
           throw new Error("OpenAI OAuth credential is missing its ChatGPT account ID");
@@ -87,7 +93,7 @@ function decodeJwtPayload(token: string): Record<string, unknown> | undefined {
   try {
     const parsed: unknown = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
     return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? parsed as Record<string, unknown>
+      ? (parsed as Record<string, unknown>)
       : undefined;
   } catch {
     return undefined;

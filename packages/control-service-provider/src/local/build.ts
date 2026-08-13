@@ -6,8 +6,14 @@ import type { CommandRunner } from "../command.js";
 
 export const controlLocalArtifact = ".openbot-deploy/control-service/service.mjs";
 
-export async function buildLocalControlService(context: DeploymentContext, runner: CommandRunner): Promise<DeploymentResult> {
-  await runner.run("pnpm", ["--filter", "@openbot/web", "build"], { cwd: context.repositoryRoot, environment: context.environment });
+export async function buildLocalControlService(
+  context: DeploymentContext,
+  runner: CommandRunner,
+): Promise<DeploymentResult> {
+  await runner.run("pnpm", ["--filter", "@openbot/web", "build"], {
+    cwd: context.repositoryRoot,
+    environment: context.environment,
+  });
   const outfile = resolve(context.repositoryRoot, controlLocalArtifact);
   await mkdir(dirname(outfile), { recursive: true });
   await build({

@@ -9,7 +9,7 @@
 - Local production uses separate user services and ports. Development uses one Hono process.
 - Software-producing providers implement `Buildable.check()` and `Buildable.build()` as well as `Deployable`.
 - `openbot deploy` always checks and builds selected services first. `--skip-deploy` stops after artifacts exist.
-- Use native Go TypeScript (`tsgo`) for checks and tsdown/Rolldown for bundles. Do not adopt Vite+ wholesale yet.
+- Use native Go TypeScript (`tsgo`) for artifact checks and tsdown/Rolldown for bundles. Vite+ owns repository orchestration and validation.
 
 ## Context
 
@@ -27,7 +27,7 @@ Local builds emit two Node artifacts. Deployment installs `openbot-control` and 
 
 The deploy coordinator runs all selected `check()` and `build()` methods before any provider deploy lifecycle. Build outputs feed planning and deployment. `--service agents` avoids control compilation and deployment; `--service control` does the inverse. `--skip-deploy` is a safe build-only exit. Providers without `Buildable` remain deployable, and providers without `Deployable` remain buildable.
 
-Native `@typescript/native-preview` is deliberately limited to artifact checks while it remains a preview. tsdown replaces tsup for server bundles and supplies direct programmatic, concurrent builds over Rolldown. Vite+ currently bundles this family of tools, but adopting its runtime, package-manager, formatting, linting, testing, and task orchestration would unnecessarily replace pnpm, Turborepo, and existing repository gates.
+Native `@typescript/native-preview` is deliberately limited to artifact checks while it remains a preview. tsdown replaces tsup for server bundles and supplies direct programmatic, concurrent builds over Rolldown. Vite+ owns the repository command surface and delegates dependency installation to pnpm; the provider build implementations continue to call the artifact tools that match their output.
 
 ```mermaid
 flowchart LR
@@ -54,3 +54,5 @@ flowchart LR
 ## Updates
 
 - 2026-08-13T12:27:55+02:00: Made each directory-owned `agent.ts` the independent build entrypoint and included the full authored agent tree in invalidation.
+- 2026-08-13T16:09:00+02:00: Reconciled this artifact decision with ADR-0004: Vite+ replaces Turbo for orchestration while `tsgo` and tsdown/Rolldown remain the service artifact compiler path.
+- 2026-08-13T16:27:00+02:00: Split agent-runtime provider construction from the full composition module so independently bundled agent entrypoints cannot retain control/agent deployment compilers or their native bindings.

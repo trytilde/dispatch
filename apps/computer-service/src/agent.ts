@@ -1,28 +1,24 @@
-import { createHash } from "node:crypto";
 import { posix } from "node:path";
 import { Code, ConnectError } from "@connectrpc/connect";
 
 export interface AgentCommand {
   command: string;
   arguments: string[];
-}
-
-export function agentLinuxUsername(agentId: string): string {
-  validateAgentId(agentId);
-  return `ob_${createHash("sha256").update(agentId).digest("hex").slice(0, 16)}`;
+  cwd: string;
+  environment: Record<string, string>;
 }
 
 export function agentWorkspaceRoot(agentId: string): string {
   validateAgentId(agentId);
-  return `/workspace/.openbot/agents/${agentId}/workspace`;
+  return `/workspace/${agentId}`;
 }
 
-export function logicalWorkspacePath(path: string): string {
-  const relative = path.startsWith("/workspace/") ? path.slice("/workspace/".length) : path === "/workspace" ? "." : path;
-  if (!relative || relative.startsWith("/") || relative.includes("\0")) throw new ConnectError("Computer path must be inside /workspace", Code.PermissionDenied);
-  const normalized = posix.normalize(relative);
-  if (normalized === ".." || normalized.startsWith("../")) throw new ConnectError("Computer path escapes /workspace", Code.PermissionDenied);
-  return normalized === "." ? "/workspace" : `/workspace/${normalized}`;
+export function agentVisiblePath(agentId: string, path: string): string {
+  if (!path || path.includes("\0"))
+    throw new ConnectError("A valid computer path is required", Code.InvalidArgument);
+  return path.startsWith("/")
+    ? posix.normalize(path)
+    : posix.resolve(agentWorkspaceRoot(agentId), path);
 }
 
 export function agentCommand(
@@ -32,19 +28,25 @@ export function agentCommand(
   options: { cwd?: string; environment?: Readonly<Record<string, string>> } = {},
 ): AgentCommand {
   if (!command) throw new ConnectError("Command is required", Code.InvalidArgument);
+  const root = agentWorkspaceRoot(agentId);
   return {
-    command: "/usr/local/bin/openbot-agent-exec",
-    arguments: [
-      agentWorkspaceRoot(agentId),
-      agentLinuxUsername(agentId),
-      logicalWorkspacePath(options.cwd ?? "/workspace"),
-      ...Object.entries(options.environment ?? {}).map(([name, value]) => `${name}=${value}`),
-      command,
-      ...args,
-    ],
+    command,
+    arguments: [...args],
+    cwd: options.cwd ? agentVisiblePath(agentId, options.cwd) : root,
+    environment: {
+      HOME: root,
+      LANG: process.env.LANG ?? "C.UTF-8",
+      LOGNAME: process.env.LOGNAME ?? "root",
+      OPENBOT_AGENT_ID: agentId,
+      OPENBOT_COMPUTER_WORKSPACE: root,
+      PATH: process.env.PATH ?? "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      USER: process.env.USER ?? "root",
+      ...options.environment,
+    },
   };
 }
 
 function validateAgentId(agentId: string): void {
-  if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(agentId)) throw new ConnectError("A valid agent_id is required", Code.InvalidArgument);
+  if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(agentId))
+    throw new ConnectError("A valid agent_id is required", Code.InvalidArgument);
 }

@@ -7,9 +7,9 @@ coverage/
 playwright-report/
 test-results/
 .data/
-.env
-.env.*
-!.env.example
+/.env
+/.env.*
+configuration/.env
 .vercel/
 .openbot-deploy/
 .openbot/
@@ -18,5 +18,3 @@ apps/web/src/routeTree.gen.ts
 apps/desktop/out/
 apps/desktop/release/
 .vercel
-.env*
-!.env.example

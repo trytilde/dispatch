@@ -71,14 +71,21 @@ export function registeredToolsToToolSet(tools: readonly RegisteredTool[]): Tool
   return result;
 }
 
-export function providerSignal(context: ToolsProviderCallContext, fallbackMs = 30_000): AbortSignal {
+export function providerSignal(
+  context: ToolsProviderCallContext,
+  fallbackMs = 30_000,
+): AbortSignal {
   if (context.signal?.aborted) {
     throw new ToolsProviderError("deadline_exceeded", "The tools provider call was aborted", true);
   }
   if (context.signal) return context.signal;
   const remaining = context.deadline ? context.deadline.valueOf() - Date.now() : fallbackMs;
   if (remaining <= 0) {
-    throw new ToolsProviderError("deadline_exceeded", "The tools provider deadline has elapsed", true);
+    throw new ToolsProviderError(
+      "deadline_exceeded",
+      "The tools provider deadline has elapsed",
+      true,
+    );
   }
   return AbortSignal.timeout(Math.min(remaining, fallbackMs));
 }

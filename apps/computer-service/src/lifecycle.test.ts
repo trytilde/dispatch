@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { LifecyclePhase } from "@openbot/computer-service-proto";
 import { lifecycleBundleDigest } from "./lifecycle.js";
 
@@ -18,9 +18,17 @@ describe("lifecycleBundleDigest", () => {
       path: "start.sh",
       phases: [LifecyclePhase.CREATE],
     };
-    const left = lifecycleBundleDigest({ files: [file("b.sh", "b"), file("a.sh", "a")], scripts: [script] });
-    const right = lifecycleBundleDigest({ files: [file("a.sh", "a"), file("b.sh", "b")], scripts: [script] });
+    const left = lifecycleBundleDigest({
+      files: [file("b.sh", "b"), file("a.sh", "a")],
+      scripts: [script],
+    });
+    const right = lifecycleBundleDigest({
+      files: [file("a.sh", "a"), file("b.sh", "b")],
+      scripts: [script],
+    });
     expect(left).toBe(right);
-    expect(lifecycleBundleDigest({ files: [file("a.sh", "changed")], scripts: [script] })).not.toBe(left);
+    expect(lifecycleBundleDigest({ files: [file("a.sh", "changed")], scripts: [script] })).not.toBe(
+      left,
+    );
   });
 });

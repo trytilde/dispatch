@@ -5,10 +5,10 @@
 - Agent is `configuration/agents/<id>/`. Path owns identity.
 - Keep Eve-shaped authored slots where useful. No Eve runtime or loader.
 - `agent.ts` default-exports `chatKitEndpoint`. `instructions.ts` feeds its system prompt.
-- One shared computer. One Linux user and private persistent workspace per agent.
+- One shared computer, filesystem, and process identity. Each populated agent seed gets `/workspace/<id>`.
 - Seed workspace once. Never overwrite deployed agent files implicitly.
-- Keep Eve's authored `sandbox/` folder and five default tool names; use computer terminology elsewhere.
-- Give every agent Eve's five explicit typed computer tools routed through computer-service.
+- Keep Eve's authored `sandbox/` folder and familiar tool names; use computer terminology elsewhere.
+- Scaffold explicit typed computer tools whose shared implementations live in computer-provider.
 
 ## Context
 
@@ -37,13 +37,19 @@ The optional instrumentation files use Eve's `defineInstrumentation({ setup })` 
 
 Every file under `tools/` default-exports a Vercel AI SDK tool. Every skill is a spec-conformant Markdown file or skill package. `lib/` is ordinary import-only TypeScript. Skills remain authored structure without automatic loading. Tools are explicitly imported by `agent.ts`; OpenBot does not use a directory loader. Channels, connections, hooks, schedules, and subagents are not supported.
 
-OpenBot terminology calls the runtime a Computer, so new APIs, environment variables, and provider contracts use `computer`. The authored `sandbox/workspace/**` path and Eve's five model-facing default tool names are deliberate compatibility exceptions that keep OpenBot agent repositories structurally familiar without changing the shared-computer model.
+OpenBot terminology calls the runtime a Computer, so new APIs, environment variables, and provider contracts use `computer`. The authored `sandbox/workspace/**` path and familiar model-facing tool names are deliberate compatibility exceptions that keep OpenBot agent repositories structurally familiar without changing the shared-computer model.
 
-Every agent contains Eve's five default sandbox tools as `tools/bash.ts`, `read_file.ts`, `write_file.ts`, `glob.ts`, and `grep.ts`. Each default-exports a Vercel AI SDK tool and calls the typed `ComputerService` Connect client. Agent code does not call Microsandbox, Vercel Sandbox, or an untyped HTTP endpoint directly. Each tool hardcodes the path-derived agent ID outside its model-visible schema. The API-key-protected computer-service validates the request, maps that ID to the stable Linux user, enters the user's private `/workspace` mount, and executes the operation as that user. Desktop screenshot and input remain typed service capabilities but are not implicit model tools.
+Every agent explicitly contains `await_shell.ts`, `bash.ts`, `copy_from_computer.ts`, `copy_to_computer.ts`, `read_file.ts`, `write_file.ts`, `glob.ts`, `grep.ts`, and `screenshot.ts`. Each file is a thin default export from `@openbot/computer-provider/tools` with the path-derived agent ID fixed outside its model-visible schema. Computer-provider owns the reusable Vercel AI SDK tools and Zod schemas; computer-service-proto remains transport-only. Agent code does not call Microsandbox, Vercel Sandbox, or an untyped HTTP endpoint directly. The API-key-protected computer-service validates the request and uses the fixed agent ID to select `/workspace/<id>` as the default directory and to scope durable background-job handles.
 
-OpenBot does not reproduce Eve's one-sandbox-per-agent model. One OpenBot Computer is shared by all agents. Agent deployment registers a stable Linux user for each agent and allocates `/workspace/.openbot/agents/<id>/workspace` on the persistent disk. Provider calls scoped to that agent enter a private mount namespace, bind that agent's physical directory over logical `/workspace`, and then execute as its Linux user. The backing workspace tree is mode `0700`, and another agent's physical path is not reachable through its logical workspace view.
+Bash tools invoke `bash -lc` with `HOME=/workspace/<id>`, making the agent's
+directory the login-shell home. Init scaffolds `sandbox/workspace/.profile` so
+every Bash command has one deterministic startup file; that profile may source
+an optional `.bashrc`. The profile contains no secrets and follows the same
+one-time seed semantics as every other authored workspace file.
 
-Files from `configuration/agents/<id>/sandbox/workspace/**` are copied only when the Linux user and workspace are first registered. Ordinary later agent deployments detect the registration marker and leave the persistent workspace untouched. Consequently, edits to authored workspace seeds do not appear for already deployed agents; applying them requires a future explicit workspace reconciliation or destructive computer replacement operation.
+OpenBot does not reproduce Eve's one-sandbox-per-agent model. One OpenBot Computer, filesystem, and service process identity are shared by all agents. When an agent has authored workspace seed files, deployment creates `/workspace/<id>` and copies them there. Commands and relative file paths default to that directory, while absolute paths can address the wider machine. Agent IDs provide routing context, not filesystem isolation: agents can inspect or modify sibling directories and administer the shared machine subject to the computer process's operating-system privileges.
+
+Files from `configuration/agents/<id>/sandbox/workspace/**` are copied only when the populated agent directory is first seeded. Empty seed trees do not create `/workspace/<id>`. Ordinary later agent deployments detect the marker and leave the persistent directory untouched. Consequently, edits to authored workspace seeds do not appear for already deployed agents; applying them requires a future explicit workspace reconciliation or destructive computer replacement operation.
 
 Agent-service discovery, checking, content digests, local federation, and parallel Vercel function builds use `agent.ts` inside each directory as the entrypoint. OpenBot follows Eve's layout where possible, but it does not load these folders with Eve and does not claim behavioral compatibility.
 
@@ -56,8 +62,8 @@ flowchart LR
   F --> T["agent computer tools"]
   T --> C["typed computer-service RPC"]
   C --> U
-  W["agents/id/sandbox/workspace"] --> U["Linux user private workspace"]
-  U --> S["one shared OpenBot Computer"]
+  W["agents/id/sandbox/workspace"] --> U["/workspace/id seeded once"]
+  U --> S["one shared Computer and filesystem"]
 ```
 
 ## Consequences
@@ -66,7 +72,7 @@ flowchart LR
 - Each agent remains an independently compiled function entrypoint.
 - Required computer tools are explicit; arbitrary tools and skills remain author-controlled.
 - Persistent agent workspaces are protected from silent seed overwrites.
-- Shared desktop and compute resources remain installation-wide; filesystem identity is per agent.
+- Desktop, compute, process identity, and filesystem access are installation-wide; `/workspace/<id>` is a convention, not a security boundary.
 - The Eve-compatible authored folder and default tools retain Eve names; runtime and API language says `computer`.
 
 ## Updates
@@ -74,3 +80,7 @@ flowchart LR
 - 2026-08-13T12:53:05+02:00: Strengthened agent filesystem isolation from path translation alone to a private bind-mounted `/workspace` plus Linux-user execution.
 - 2026-08-13T14:29:49+02:00: Kept `sandbox/workspace` solely for Eve layout compatibility, required one typed computer tool file per supported operation, and moved agent-to-user execution enforcement into computer-service.
 - 2026-08-13T14:49:44+02:00: Standardized required scaffolding on Eve's `bash`, `read_file`, `write_file`, `glob`, and `grep`; each tool fixes its agent ID outside model input and routes through computer-service.
+- 2026-08-13T15:19:48+02:00: Standardized agent Bash commands on login-shell startup and scaffolded a one-time workspace `.profile` that may source `.bashrc`.
+- 2026-08-13T15:36:39+02:00: Made `openbot new-agent` the canonical agent scaffolder, reused it from init, centralized standard tool implementations in computer-provider, and removed the redundant hello-world tool.
+- 2026-08-13T15:41:25+02:00: Replaced per-agent Linux users and mount namespaces with one shared filesystem; populated seeds now initialize `/workspace/<agent-id>` and commands default there without treating it as a security boundary.
+- 2026-08-13T16:42:00+02:00: Added explicit copy-to, copy-from, screenshot, background-shell, and await-shell scaffolding with Zod schemas; background job state now survives computer-service restarts on the Computer's persistent disk.

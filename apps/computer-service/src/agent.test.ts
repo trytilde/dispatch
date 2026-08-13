@@ -1,26 +1,32 @@
-import { createHash } from "node:crypto";
-import { describe, expect, it } from "vitest";
-import { agentCommand, agentLinuxUsername, logicalWorkspacePath } from "./agent.js";
+import { describe, expect, it } from "vite-plus/test";
+import { agentCommand, agentVisiblePath, agentWorkspaceRoot } from "./agent.js";
 
 describe("agent computer execution", () => {
-  it("maps an agent id to the stable deployed Linux user", () => {
-    expect(agentLinuxUsername("hello-world")).toBe(`ob_${createHash("sha256").update("hello-world").digest("hex").slice(0, 16)}`);
+  it("maps an agent id to its directory on the shared workspace", () => {
+    expect(agentWorkspaceRoot("hello-world")).toBe("/workspace/hello-world");
   });
 
-  it("routes commands through the private workspace launcher", () => {
-    expect(agentCommand("hello-world", "pwd", [], { cwd: "/workspace/project" })).toEqual({
-      command: "/usr/local/bin/openbot-agent-exec",
-      arguments: [
-        "/workspace/.openbot/agents/hello-world/workspace",
-        agentLinuxUsername("hello-world"),
-        "/workspace/project",
-        "pwd",
-      ],
+  it("runs commands directly from the agent directory with an allowlisted environment", () => {
+    const command = agentCommand("hello-world", "pwd", [], { cwd: "project" });
+    expect(command).toMatchObject({
+      command: "pwd",
+      arguments: [],
+      cwd: "/workspace/hello-world/project",
+      environment: {
+        HOME: "/workspace/hello-world",
+        OPENBOT_AGENT_ID: "hello-world",
+        OPENBOT_COMPUTER_WORKSPACE: "/workspace/hello-world",
+      },
     });
+    expect(command.environment).not.toHaveProperty("OPENBOT_COMPUTER_SERVICE_API_KEY");
   });
 
-  it("rejects invalid agent ids and escaping paths", () => {
+  it("rejects invalid agent ids while allowing the visible computer filesystem", () => {
     expect(() => agentCommand("../owner", "pwd")).toThrow("valid agent_id");
-    expect(() => logicalWorkspacePath("/workspace/../other-agent")).toThrow("escapes /workspace");
+    expect(agentVisiblePath("hello-world", "notes/today.md")).toBe(
+      "/workspace/hello-world/notes/today.md",
+    );
+    expect(agentVisiblePath("hello-world", "/etc/systemd/system")).toBe("/etc/systemd/system");
+    expect(() => agentVisiblePath("hello-world", "bad\0path")).toThrow("valid computer path");
   });
 });

@@ -14,8 +14,14 @@ const server = createServer(requestHandler);
 server.listen(port, "127.0.0.1", () => {
   console.log(`OpenBot server listening at http://127.0.0.1:${port}`);
   const origin = process.env.OPENBOT_PUBLIC_ORIGIN ?? process.env.TILDE_LOCAL_RUNTIME_TUNNEL_ORIGIN;
-  void reconcileRepository({ ...(origin ? { origin } : {}) })
-    .then((report) => console.log(report.skipped ? `Repository reconciliation skipped: ${report.skipped}` : `Repository reconciliation complete (${report.agents.length} agents, ${report.skills.length} skills)`))
+  void reconcileRepository(origin ? { origin } : {})
+    .then((report) =>
+      console.log(
+        report.skipped
+          ? `Repository reconciliation skipped: ${report.skipped}`
+          : `Repository reconciliation complete (${report.agents.length} agents, ${report.skills.length} skills)`,
+      ),
+    )
     .catch((error) => console.error("Repository reconciliation failed", error));
 });
 

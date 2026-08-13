@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.js" },
+  "exports": {
+    ".": "./src/index.js"
+  },
   "scripts": {
     "build": "tsc --noEmit",
-    "lint": "tsc --noEmit",
+    "lint": "vp lint",
     "migrate": "tsx src/migrate.ts",
-    "test": "vitest run",
+    "test": "vp test run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -19,6 +21,7 @@
     "@types/node": "24.3.0",
     "tsx": "4.20.4",
     "typescript": "5.9.2",
-    "vitest": "3.2.4"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

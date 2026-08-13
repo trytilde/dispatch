@@ -18,26 +18,33 @@ const contentTypes: Record<string, string> = {
   ".woff2": "font/woff2",
 };
 
-export async function startRendererServer(staticRoot: string, controlOrigin: string): Promise<RendererServer> {
+export async function startRendererServer(
+  staticRoot: string,
+  controlOrigin: string,
+): Promise<RendererServer> {
   const normalizedRoot = resolve(staticRoot);
   const upstreamOrigin = new URL(controlOrigin).origin;
   const server = createServer((request, response) => {
-    void handleRequest(request, response, normalizedRoot, upstreamOrigin).catch((error: unknown) => {
-      if (response.headersSent) response.destroy(error instanceof Error ? error : undefined);
-      else {
-        response.writeHead(502, { "content-type": "application/json; charset=utf-8" });
-        response.end(JSON.stringify({ error: "The OpenBot control server is unavailable." }));
-      }
-    });
+    void handleRequest(request, response, normalizedRoot, upstreamOrigin).catch(
+      (error: unknown) => {
+        if (response.headersSent) response.destroy(error instanceof Error ? error : undefined);
+        else {
+          response.writeHead(502, { "content-type": "application/json; charset=utf-8" });
+          response.end(JSON.stringify({ error: "The OpenBot control server is unavailable." }));
+        }
+      },
+    );
   });
   await listen(server);
   const address = server.address();
-  if (!address || typeof address === "string") throw new Error("Electron renderer server did not bind to loopback");
+  if (!address || typeof address === "string")
+    throw new Error("Electron renderer server did not bind to loopback");
   return {
     origin: `http://127.0.0.1:${address.port}`,
-    close: () => new Promise<void>((resolvePromise, reject) => {
-      server.close((error) => error ? reject(error) : resolvePromise());
-    }),
+    close: () =>
+      new Promise<void>((resolvePromise, reject) => {
+        server.close((error) => (error ? reject(error) : resolvePromise()));
+      }),
   };
 }
 
@@ -58,7 +65,9 @@ async function handleRequest(
     return;
   }
 
-  const relativePath = decodeURIComponent(url.pathname === "/" ? "index.html" : url.pathname.slice(1));
+  const relativePath = decodeURIComponent(
+    url.pathname === "/" ? "index.html" : url.pathname.slice(1),
+  );
   let path = resolve(staticRoot, relativePath);
   if (path !== staticRoot && !path.startsWith(`${staticRoot}${sep}`)) {
     response.writeHead(400);
@@ -73,8 +82,11 @@ async function handleRequest(
     content = await readFile(path);
   }
   response.writeHead(200, {
-    "cache-control": path.endsWith("index.html") ? "no-cache" : "public, max-age=31536000, immutable",
-    "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http: https:; connect-src 'self'; frame-src http: https:; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'",
+    "cache-control": path.endsWith("index.html")
+      ? "no-cache"
+      : "public, max-age=31536000, immutable",
+    "content-security-policy":
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http: https:; connect-src 'self'; frame-src http: https:; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'",
     "content-type": contentTypes[extname(path)] ?? "application/octet-stream",
     "x-content-type-options": "nosniff",
   });
@@ -82,21 +94,30 @@ async function handleRequest(
 }
 
 function isControlPath(pathname: string): boolean {
-  return pathname === "/healthz"
-    || pathname === "/api" || pathname.startsWith("/api/")
-    || pathname === "/rpc" || pathname.startsWith("/rpc/");
+  return (
+    pathname === "/healthz" ||
+    pathname === "/api" ||
+    pathname.startsWith("/api/") ||
+    pathname === "/rpc" ||
+    pathname.startsWith("/rpc/")
+  );
 }
 
-async function proxyRequest(request: IncomingMessage, response: ServerResponse, upstream: URL): Promise<void> {
+async function proxyRequest(
+  request: IncomingMessage,
+  response: ServerResponse,
+  upstream: URL,
+): Promise<void> {
   const headers = new Headers();
   for (const [name, value] of Object.entries(request.headers)) {
     if (value === undefined || name === "host" || name === "content-length") continue;
     headers.set(name, Array.isArray(value) ? value.join(", ") : value);
   }
   headers.set("accept-encoding", "identity");
-  const body = request.method === "GET" || request.method === "HEAD"
-    ? undefined
-    : new Uint8Array(await requestBody(request));
+  const body =
+    request.method === "GET" || request.method === "HEAD"
+      ? undefined
+      : new Uint8Array(await requestBody(request));
   const upstreamResponse = await fetch(upstream, {
     method: request.method,
     headers,
@@ -107,10 +128,14 @@ async function proxyRequest(request: IncomingMessage, response: ServerResponse, 
 
   const responseHeaders: Record<string, string | string[]> = {};
   upstreamResponse.headers.forEach((value, name) => {
-    if (name !== "set-cookie" && name !== "content-length" && name !== "content-encoding") responseHeaders[name] = value;
+    if (name !== "set-cookie" && name !== "content-length" && name !== "content-encoding")
+      responseHeaders[name] = value;
   });
-  const setCookies = (upstreamResponse.headers as Headers & { getSetCookie?(): string[] }).getSetCookie?.()
-    ?? (upstreamResponse.headers.get("set-cookie") ? [upstreamResponse.headers.get("set-cookie")!] : []);
+  const setCookies =
+    (upstreamResponse.headers as Headers & { getSetCookie?(): string[] }).getSetCookie?.() ??
+    (upstreamResponse.headers.get("set-cookie")
+      ? [upstreamResponse.headers.get("set-cookie")!]
+      : []);
   if (setCookies.length) {
     // The proxy only listens on loopback. Keep HttpOnly/SameSite protections,
     // but Secure cannot be sent back to its random plain-HTTP loopback origin.
@@ -125,7 +150,8 @@ async function proxyRequest(request: IncomingMessage, response: ServerResponse, 
   while (true) {
     const part = await reader.read();
     if (part.done) break;
-    if (!response.write(part.value)) await new Promise<void>((resolvePromise) => response.once("drain", resolvePromise));
+    if (!response.write(part.value))
+      await new Promise<void>((resolvePromise) => response.once("drain", resolvePromise));
   }
   response.end();
 }

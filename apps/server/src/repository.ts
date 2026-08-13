@@ -1,5 +1,5 @@
 import { lstat, readFile } from "node:fs/promises";
-import { basename, dirname, relative, resolve, sep } from "node:path";
+import { basename, dirname, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { repositoryDigest, validateConfig, type OpenBotConfig } from "@openbot/config";
 import type { ProviderPlugin, SandboxAsset, SkillRegistration } from "@openbot/provider-sdk";
@@ -41,7 +41,9 @@ let loaded: Promise<LoadedRepository> | undefined;
 
 export function loadRepository(): Promise<LoadedRepository> {
   const bundledRepositoryRoot = new URL("../../..", import.meta.url).pathname;
-  loaded ??= loadRepositoryAt(resolve(process.env.OPENBOT_REPOSITORY_ROOT ?? bundledRepositoryRoot));
+  loaded ??= loadRepositoryAt(
+    resolve(process.env.OPENBOT_REPOSITORY_ROOT ?? bundledRepositoryRoot),
+  );
   return loaded;
 }
 
@@ -66,27 +68,44 @@ export async function loadRepositoryAt(root: string): Promise<LoadedRepository> 
   };
 }
 
-function loadAgents(modules: readonly RepositoryAgentModule[], paths: readonly string[]): RepositoryAgent[] {
+function loadAgents(
+  modules: readonly RepositoryAgentModule[],
+  paths: readonly string[],
+): RepositoryAgent[] {
   const ids = new Set<string>();
   const agents = modules.map((module, index) => {
     const id = basename(paths[index] ?? "").replace(/\.[^.]+$/, "");
-    if (!/^[a-z][a-z0-9-]{0,62}$/.test(id)) throw new Error(`Invalid agent filename: ${paths[index]}`);
-    if (typeof module.POST !== "function") throw new Error(`Agent ${id} must export a POST(request) endpoint`);
+    if (!/^[a-z][a-z0-9-]{0,62}$/.test(id))
+      throw new Error(`Invalid agent filename: ${paths[index]}`);
+    if (typeof module.POST !== "function")
+      throw new Error(`Agent ${id} must export a POST(request) endpoint`);
     if (ids.has(id)) throw new Error(`Duplicate agent id: ${id}`);
     ids.add(id);
-    const displayName = module.displayName?.trim() || id.split("-").map((part) => part[0]?.toUpperCase() + part.slice(1)).join(" ");
+    const displayName =
+      module.displayName?.trim() ||
+      id
+        .split("-")
+        .map((part) => part[0]?.toUpperCase() + part.slice(1))
+        .join(" ");
     return { ...module, id, displayName };
   });
-  if (!agents.length) throw new Error("At least one configuration/agents/<id>.ts endpoint is required");
+  if (!agents.length)
+    throw new Error("At least one configuration/agents/<id>.ts endpoint is required");
   return agents;
 }
 
-function validateProviderPlugins(plugins: readonly ProviderPlugin[], paths: readonly string[]): void {
+function validateProviderPlugins(
+  plugins: readonly ProviderPlugin[],
+  paths: readonly string[],
+): void {
   const pluginIds = new Set<string>();
   const providerIds = new Set<string>();
   for (const [index, plugin] of plugins.entries()) {
     const expected = basename(dirname(paths[index] ?? ""));
-    if (!plugin.id || plugin.id !== expected) throw new Error(`Provider plugin id ${plugin.id || "<empty>"} must match directory ${expected}`);
+    if (!plugin.id || plugin.id !== expected)
+      throw new Error(
+        `Provider plugin id ${plugin.id || "<empty>"} must match directory ${expected}`,
+      );
     if (pluginIds.has(plugin.id)) throw new Error(`Duplicate provider plugin id: ${plugin.id}`);
     pluginIds.add(plugin.id);
     for (const registration of plugin.registrations) {
@@ -99,7 +118,9 @@ function validateProviderPlugins(plugins: readonly ProviderPlugin[], paths: read
 
 async function loadSkills(root: string, directory: string): Promise<SkillRegistration[]> {
   const prefix = `${directory.replace(/\/$/, "")}/`;
-  const paths = repositoryFilePaths.filter((path) => path.startsWith(prefix) && path.endsWith("/SKILL.md"));
+  const paths = repositoryFilePaths.filter(
+    (path) => path.startsWith(prefix) && path.endsWith("/SKILL.md"),
+  );
   const skills: SkillRegistration[] = [];
   const names = new Set<string>();
   for (const sourcePath of paths) {
@@ -107,8 +128,10 @@ async function loadSkills(root: string, directory: string): Promise<SkillRegistr
     const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/.exec(content);
     if (!match) throw new Error(`Skill is missing YAML frontmatter: ${sourcePath}`);
     const metadata = parseYaml(match[1] ?? "") as { name?: unknown; description?: unknown };
-    if (typeof metadata.name !== "string" || !/^[a-z0-9-]+$/.test(metadata.name)) throw new Error(`Skill has an invalid name: ${sourcePath}`);
-    if (typeof metadata.description !== "string" || !metadata.description.trim()) throw new Error(`Skill has no description: ${sourcePath}`);
+    if (typeof metadata.name !== "string" || !/^[a-z0-9-]+$/.test(metadata.name))
+      throw new Error(`Skill has an invalid name: ${sourcePath}`);
+    if (typeof metadata.description !== "string" || !metadata.description.trim())
+      throw new Error(`Skill has no description: ${sourcePath}`);
     if (names.has(metadata.name)) throw new Error(`Duplicate skill name: ${metadata.name}`);
     names.add(metadata.name);
     skills.push({
@@ -122,10 +145,15 @@ async function loadSkills(root: string, directory: string): Promise<SkillRegistr
   return skills.sort((left, right) => left.name.localeCompare(right.name));
 }
 
-async function loadSandbox(root: string, config: OpenBotConfig): Promise<LoadedRepository["sandbox"]> {
+async function loadSandbox(
+  root: string,
+  config: OpenBotConfig,
+): Promise<LoadedRepository["sandbox"]> {
   const assetPrefix = `${config.sandbox.assetsDirectory.replace(/\/$/, "")}/`;
   const assets: SandboxAsset[] = [];
-  for (const sourcePath of repositoryFilePaths.filter((path) => path.startsWith(assetPrefix) && basename(path) !== ".gitkeep")) {
+  for (const sourcePath of repositoryFilePaths.filter(
+    (path) => path.startsWith(assetPrefix) && basename(path) !== ".gitkeep",
+  )) {
     const stat = await lstat(resolveInside(root, sourcePath));
     if (!stat.isFile()) throw new Error(`Sandbox asset is not a regular file: ${sourcePath}`);
     assets.push({
@@ -139,12 +167,17 @@ async function loadSandbox(root: string, config: OpenBotConfig): Promise<LoadedR
 }
 
 async function optionalText(root: string, path: string): Promise<string | undefined> {
-  try { return await readFile(resolveInside(root, path), "utf8"); } catch { return undefined; }
+  try {
+    return await readFile(resolveInside(root, path), "utf8");
+  } catch {
+    return undefined;
+  }
 }
 
 function resolveInside(root: string, path: string): string {
   const resolved = resolve(root, path);
   const prefix = `${resolve(root)}${sep}`;
-  if (resolved !== resolve(root) && !resolved.startsWith(prefix)) throw new Error(`Path escapes repository: ${path}`);
+  if (resolved !== resolve(root) && !resolved.startsWith(prefix))
+    throw new Error(`Path escapes repository: ${path}`);
   return resolved;
 }

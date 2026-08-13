@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { TildeAgentProvider, TildeChatProvider } from "./tilde.js";
 
 const config = {
@@ -19,13 +19,18 @@ describe("Tilde providers", () => {
       expect(headers.get("x-api-key")).toBe("tilde-test-key");
       expect(headers.get("x-tilde-org-id")).toBe("org-test");
       return Response.json({
-        items: [{
-          id: "agent-one",
-          status: "enabled",
-          configuration: { display_name: "Scout", endpoint_url: "https://openbot.test/api/tilde/chatkit" },
-          created_at: "2026-08-12T00:00:00.000Z",
-          updated_at: "2026-08-12T01:00:00.000Z",
-        }],
+        items: [
+          {
+            id: "agent-one",
+            status: "enabled",
+            configuration: {
+              display_name: "Scout",
+              endpoint_url: "https://openbot.test/api/tilde/chatkit",
+            },
+            created_at: "2026-08-12T00:00:00.000Z",
+            updated_at: "2026-08-12T01:00:00.000Z",
+          },
+        ],
       });
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -41,14 +46,36 @@ describe("Tilde providers", () => {
       const url = String(input);
       if (url.endsWith("/sessions")) {
         expect(init?.method).toBe("POST");
-        return Response.json({ session: { id: "session-one", created_at: "2026-08-12T00:00:00.000Z", updated_at: "2026-08-12T00:00:00.000Z" } });
+        return Response.json({
+          session: {
+            id: "session-one",
+            created_at: "2026-08-12T00:00:00.000Z",
+            updated_at: "2026-08-12T00:00:00.000Z",
+          },
+        });
       }
       expect(url).toContain("/sessions/session-one/messages");
       expect(init?.body).toContain("hello");
-      return Response.json({ items: [
-        { id: "message-user", session_id: "session-one", role: "user", type: "text", text: "hello", created_at: "2026-08-12T00:00:01.000Z" },
-        { id: "message-agent", session_id: "session-one", role: "assistant", type: "ui", parts: [{ type: "text", text: "hi" }], created_at: "2026-08-12T00:00:02.000Z" },
-      ] });
+      return Response.json({
+        items: [
+          {
+            id: "message-user",
+            session_id: "session-one",
+            role: "user",
+            type: "text",
+            text: "hello",
+            created_at: "2026-08-12T00:00:01.000Z",
+          },
+          {
+            id: "message-agent",
+            session_id: "session-one",
+            role: "assistant",
+            type: "ui",
+            parts: [{ type: "text", text: "hi" }],
+            created_at: "2026-08-12T00:00:02.000Z",
+          },
+        ],
+      });
     });
     vi.stubGlobal("fetch", fetchMock);
     const provider = new TildeChatProvider(config);
@@ -56,6 +83,9 @@ describe("Tilde providers", () => {
     const messages = await provider.sendMessage("agent-one", session.id, "hello", context);
 
     expect(session).toMatchObject({ id: "session-one", agentId: "agent-one" });
-    expect(messages.map((message) => [message.role, message.text])).toEqual([["user", "hello"], ["assistant", "hi"]]);
+    expect(messages.map((message) => [message.role, message.text])).toEqual([
+      ["user", "hello"],
+      ["assistant", "hi"],
+    ]);
   });
 });

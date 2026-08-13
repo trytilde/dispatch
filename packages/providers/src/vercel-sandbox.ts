@@ -25,7 +25,9 @@ export class VercelSandboxProvider implements SandboxProvider {
   readonly #desktopCapabilities = new Map<string, string>();
 
   async health(_context: ProviderCallContext) {
-    const configured = Boolean(process.env.VERCEL || process.env.VERCEL_OIDC_TOKEN || process.env.VERCEL_TOKEN);
+    const configured = Boolean(
+      process.env.VERCEL || process.env.VERCEL_OIDC_TOKEN || process.env.VERCEL_TOKEN,
+    );
     return configured
       ? { healthy: true }
       : { healthy: false, message: "Link the Vercel project or provide Vercel credentials" };
@@ -59,14 +61,32 @@ export class VercelSandboxProvider implements SandboxProvider {
     try {
       const desktopCapability = sandboxCapability("desktop", sandbox.name);
       const boxCapability = sandboxCapability("box", sandbox.name);
-      const bundlePath = fileURLToPath(new URL("../../../apps/box-host/dist/index.js", import.meta.url));
+      const bundlePath = fileURLToPath(
+        new URL("../../../apps/box-host/dist/index.js", import.meta.url),
+      );
       const boxHostBundle = await readFile(bundlePath);
       await sandbox.writeFiles([
-        { path: "/opt/openbot/bootstrap-openbot-desktop", content: desktopBootstrapScript, mode: 0o755 },
+        {
+          path: "/opt/openbot/bootstrap-openbot-desktop",
+          content: desktopBootstrapScript,
+          mode: 0o755,
+        },
         { path: "/opt/openbot/start-openbot-desktop", content: desktopStartScript, mode: 0o755 },
         { path: "/opt/openbot/box-host.mjs", content: boxHostBundle, mode: 0o755 },
-        ...(spec.repository?.bootstrap ? [{ path: "/opt/openbot/repository-bootstrap", content: spec.repository.bootstrap, mode: 0o755 }] : []),
-        ...(spec.repository?.assets.map((asset) => ({ path: `/workspace/${asset.path}`, content: Buffer.from(asset.contentBase64, "base64"), mode: asset.executable ? 0o755 : 0o644 })) ?? []),
+        ...(spec.repository?.bootstrap
+          ? [
+              {
+                path: "/opt/openbot/repository-bootstrap",
+                content: spec.repository.bootstrap,
+                mode: 0o755,
+              },
+            ]
+          : []),
+        ...(spec.repository?.assets.map((asset) => ({
+          path: `/workspace/${asset.path}`,
+          content: Buffer.from(asset.contentBase64, "base64"),
+          mode: asset.executable ? 0o755 : 0o644,
+        })) ?? []),
       ]);
       if (!snapshotId) {
         const bootstrap = await sandbox.runCommand({
@@ -90,9 +110,13 @@ export class VercelSandboxProvider implements SandboxProvider {
           cmd: "bash",
           args: ["-lc", "cd /workspace && /opt/openbot/repository-bootstrap"],
           signal: _context.signal,
-          env: { ...(spec.repository.environment ?? {}) },
+          env: { ...spec.repository.environment },
         });
-        if (repositoryBootstrap.exitCode !== 0) throw new ProviderError("provider_unavailable", "Repository sandbox bootstrap failed; inspect the sandbox bootstrap log");
+        if (repositoryBootstrap.exitCode !== 0)
+          throw new ProviderError(
+            "provider_unavailable",
+            "Repository sandbox bootstrap failed; inspect the sandbox bootstrap log",
+          );
       }
       await sandbox.runCommand({
         cmd: "bash",
@@ -106,7 +130,7 @@ export class VercelSandboxProvider implements SandboxProvider {
           OPENBOT_DESKTOP_CAPABILITY: desktopCapability,
           OPENBOT_EXPOSED_PORTS: "6080,4101",
           OPENBOT_WORKSPACE: "/workspace",
-          ...(spec.repository?.environment ?? {}),
+          ...spec.repository?.environment,
         },
       });
       const id = sandbox.name;
@@ -169,7 +193,11 @@ export class VercelSandboxProvider implements SandboxProvider {
     const sandbox = await this.#instance(id);
     const handle = await this.get(id, _context);
     const snapshot = await sandbox.snapshot();
-    const checkpointed = { ...handle, state: "stopped" as const, checkpointId: snapshot.snapshotId };
+    const checkpointed = {
+      ...handle,
+      state: "stopped" as const,
+      checkpointId: snapshot.snapshotId,
+    };
     this.#handles.set(id, checkpointed);
     this.#instances.delete(id);
     return checkpointed;
@@ -195,7 +223,10 @@ export class VercelSandboxProvider implements SandboxProvider {
         onResume: async (resumed) => {
           await resumed.runCommand({
             cmd: "bash",
-            args: ["-lc", "if [[ -x /opt/openbot/repository-bootstrap ]]; then cd /workspace && /opt/openbot/repository-bootstrap; fi"],
+            args: [
+              "-lc",
+              "if [[ -x /opt/openbot/repository-bootstrap ]]; then cd /workspace && /opt/openbot/repository-bootstrap; fi",
+            ],
           });
           await resumed.runCommand({
             cmd: "bash",
@@ -217,7 +248,10 @@ export class VercelSandboxProvider implements SandboxProvider {
       this.#desktopCapabilities.set(id, sandboxCapability("desktop", id));
       return sandbox;
     } catch (error) {
-      throw new ProviderError("not_found", `Sandbox ${id} could not be resumed: ${error instanceof Error ? error.message : "unknown error"}`);
+      throw new ProviderError(
+        "not_found",
+        `Sandbox ${id} could not be resumed: ${error instanceof Error ? error.message : "unknown error"}`,
+      );
     }
   }
 }

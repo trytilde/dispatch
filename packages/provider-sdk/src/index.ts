@@ -54,7 +54,10 @@ export interface Provider {
 }
 
 export interface SystemPromptInjectingProvider extends Provider {
-  injectSystemPrompt(request: PromptRequest, context: ProviderCallContext): string | undefined | Promise<string | undefined>;
+  injectSystemPrompt(
+    request: PromptRequest,
+    context: ProviderCallContext,
+  ): string | undefined | Promise<string | undefined>;
 }
 
 export type AiCredential =
@@ -97,7 +100,14 @@ export interface PromptSection {
 
 export interface PromptPlugin {
   readonly id: string;
-  contribute(request: PromptRequest, context: ProviderCallContext): PromptSection | readonly PromptSection[] | undefined | Promise<PromptSection | readonly PromptSection[] | undefined>;
+  contribute(
+    request: PromptRequest,
+    context: ProviderCallContext,
+  ):
+    | PromptSection
+    | readonly PromptSection[]
+    | undefined
+    | Promise<PromptSection | readonly PromptSection[] | undefined>;
 }
 
 export interface ComposedPrompt {
@@ -191,7 +201,11 @@ export interface AgentProvider extends Provider {
   list(context: ProviderCallContext): Promise<readonly AgentRecord[]>;
   get(id: string, context: ProviderCallContext): Promise<AgentRecord>;
   create(spec: CreateAgentSpec, context: ProviderCallContext): Promise<CreatedAgent>;
-  update(id: string, patch: { displayName?: string; endpointUrl?: URL }, context: ProviderCallContext): Promise<AgentRecord>;
+  update(
+    id: string,
+    patch: { displayName?: string; endpointUrl?: URL },
+    context: ProviderCallContext,
+  ): Promise<AgentRecord>;
   register(spec: AgentRegistrationSpec, context: ProviderCallContext): Promise<RegisteredAgent>;
   inspect(id: string, context: ProviderCallContext): Promise<RegisteredAgent>;
   disable(id: string, context: ProviderCallContext): Promise<void>;
@@ -216,9 +230,18 @@ export interface ChatMessage {
 
 export interface ChatProvider extends Provider {
   listSessions(agentId: string, context: ProviderCallContext): Promise<readonly ChatSession[]>;
-  createSession(agentId: string, title: string | undefined, context: ProviderCallContext): Promise<ChatSession>;
+  createSession(
+    agentId: string,
+    title: string | undefined,
+    context: ProviderCallContext,
+  ): Promise<ChatSession>;
   listMessages(sessionId: string, context: ProviderCallContext): Promise<readonly ChatMessage[]>;
-  sendMessage(agentId: string, sessionId: string, text: string, context: ProviderCallContext): Promise<readonly ChatMessage[]>;
+  sendMessage(
+    agentId: string,
+    sessionId: string,
+    text: string,
+    context: ProviderCallContext,
+  ): Promise<readonly ChatMessage[]>;
   interrupt(sessionId: string, context: ProviderCallContext): Promise<void>;
 }
 
@@ -231,7 +254,12 @@ export interface EnvEntry {
 export interface EnvProvider extends Provider {
   get(name: string, context: ProviderCallContext): Promise<string | undefined>;
   list(prefix: string | undefined, context: ProviderCallContext): Promise<readonly EnvEntry[]>;
-  set(name: string, value: string, options: { sensitive?: boolean }, context: ProviderCallContext): Promise<void>;
+  set(
+    name: string,
+    value: string,
+    options: { sensitive?: boolean },
+    context: ProviderCallContext,
+  ): Promise<void>;
   delete(name: string, context: ProviderCallContext): Promise<void>;
 }
 
@@ -249,7 +277,10 @@ export interface ToolProvider extends SystemPromptInjectingProvider {
 export interface SkillProvider extends SystemPromptInjectingProvider {
   listSkills(context: ProviderCallContext): Promise<readonly PromptSkillSummary[]>;
   readSkill(id: string, context: ProviderCallContext): Promise<string>;
-  reconcileRegistry?(spec: SkillRegistrySpec, context: ProviderCallContext): Promise<SkillRegistryResult>;
+  reconcileRegistry?(
+    spec: SkillRegistrySpec,
+    context: ProviderCallContext,
+  ): Promise<SkillRegistryResult>;
   inspectRegistry?(id: string, context: ProviderCallContext): Promise<SkillRegistryResult>;
 }
 
@@ -288,7 +319,10 @@ export interface WorkspaceStorageProvider extends SystemPromptInjectingProvider 
 }
 
 export interface DeploymentProvider extends Provider {
-  deploymentForCommit(commitSha: string, context: ProviderCallContext): Promise<{
+  deploymentForCommit(
+    commitSha: string,
+    context: ProviderCallContext,
+  ): Promise<{
     id: string;
     url?: URL;
     status: "pending" | "ready" | "failed" | "unknown";

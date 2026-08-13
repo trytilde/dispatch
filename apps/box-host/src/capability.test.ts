@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "vite-plus/test";
 import { validCapability } from "./capability.js";
 
 test("requires an exact bearer capability", () => {

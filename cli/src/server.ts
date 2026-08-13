@@ -1,6 +1,9 @@
 import { serve } from "@hono/node-server";
 import { app } from "@openbot/server";
+import { createAgentServiceApp } from "@openbot/agent-service-provider";
+import { Hono } from "hono";
 import { loadLocalEnvironment } from "./environment.js";
+import { repositoryRoot } from "./paths.js";
 
 export function parsePort(value: string | undefined): number {
   const port = Number.parseInt(value ?? "4100", 10);
@@ -13,8 +16,11 @@ export function parsePort(value: string | undefined): number {
 export async function runDevelopmentServer(): Promise<void> {
   const environment = await loadLocalEnvironment();
   const port = parsePort(environment.OPENBOT_PORT);
+  const combined = new Hono();
+  combined.route("/", await createAgentServiceApp(repositoryRoot, { health: false }));
+  combined.route("/", app);
   await new Promise<void>((resolvePromise, reject) => {
-    const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
+    const server = serve({ fetch: combined.fetch, port, hostname: "127.0.0.1" }, () => {
       console.log(`OpenBot listening at http://127.0.0.1:${port}`);
     });
     const shutdown = (): void => {

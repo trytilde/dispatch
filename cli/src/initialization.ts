@@ -5,7 +5,8 @@ import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { parse as parseDotenv } from "dotenv";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
-import { runtimeProviderInitializations } from "@openbot/runtime-provider";
+import { createAgentServiceProvider } from "@openbot/agent-service-provider";
+import { createControlServiceProvider } from "@openbot/control-service-provider";
 import type { DeploymentResult, ProviderInitializationQuestion } from "@openbot/runtime-provider-core";
 
 export const SANDBOX_SOPS_AGE_KEY = "SOPS_AGE_KEY";
@@ -77,19 +78,16 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   const ownerKind = await options.prompts.select("How should owners decrypt OpenBot secrets?", identityChoices);
   const owner = await configureOwnerIdentity(ownerKind, options, runner);
 
-  const providers = runtimeProviderInitializations();
-  const runtimeId = await options.prompts.select("Where do you want to deploy OpenBot?", providers.map((provider) => ({
-    value: provider.id,
-    label: provider.label,
-    description: provider.description,
-  })));
-  const runtime = providers.find((provider) => provider.id === runtimeId);
-  if (!runtime) throw new Error(`Unsupported runtime provider: ${runtimeId}`);
+  const runtimeId = await options.prompts.select("Where do you want to deploy OpenBot?", [
+    { value: "local", label: "Local", description: "Run OpenBot as user services on this computer." },
+    { value: "vercel", label: "Vercel", description: "Deploy control and agent services as separate Vercel projects." },
+  ]);
+  const initializations = [createControlServiceProvider(runtimeId).initialization, createAgentServiceProvider(runtimeId).initialization].filter((value) => value !== undefined);
 
   const environmentValues: Record<string, string> = { OPENBOT_RUNTIME_PROVIDER: runtimeId };
   const secretValues: Record<string, string> = {};
   const deploymentSecretValues: Record<string, string> = {};
-  for (const question of runtime.questions) {
+  for (const question of initializations.flatMap((initialization) => initialization.questions)) {
     const value = await askProviderQuestion(options.prompts, question);
     if (!value) continue;
     if (question.destination.kind === "secret") secretValues[question.destination.key] = value;

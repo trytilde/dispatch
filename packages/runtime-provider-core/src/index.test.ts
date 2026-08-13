@@ -1,7 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
-import { deployProviders, DeploymentOutputs, sandboxDeploymentEnvironment } from "./index.js";
+import { buildProviders, deployProviders, DeploymentOutputs, sandboxDeploymentEnvironment } from "./index.js";
 
 describe("provider deployment", () => {
+  it("checks and builds artifacts in participant order", async () => {
+    const calls: string[] = [];
+    const outputs = await buildProviders([
+      { id: "agents", provider: { buildable: {
+        check: async () => { calls.push("agents.check"); },
+        build: async () => { calls.push("agents.build"); return { outputs: { "agents.digest": "one" } }; },
+      } } },
+      { id: "control", role: "runtime", provider: { buildable: {
+        check: async ({ inputs }) => { calls.push(`control.check:${inputs.require("agents.digest")}`); },
+        build: async () => { calls.push("control.build"); return { outputs: { "control.digest": "two" } }; },
+      } } },
+    ], { target: "production", dryRun: false, repositoryRoot: "/repo" });
+
+    expect(calls).toEqual(["agents.check", "agents.build", "control.check:one", "control.build"]);
+    expect(outputs.outputs()).toEqual({ "agents.digest": "one", "control.digest": "two" });
+  });
+
   it("plans all providers, configures optionally, then deploys the sandbox before the runtime", async () => {
     const calls: string[] = [];
     const outputs = await deployProviders([

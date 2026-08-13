@@ -1,26 +1,23 @@
 {
-  "name": "@openbot/computer-service",
+  "name": "@openbot/control-service-provider",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "exports": { ".": "./src/index.ts" },
   "scripts": {
-    "build": "tsgo --noEmit && tsdown",
-    "dev": "tsx watch src/index.ts",
+    "build": "tsgo --noEmit",
     "lint": "tsgo --noEmit",
-    "start": "tsx src/index.ts",
     "test": "vitest run",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
-    "@connectrpc/connect": "2.1.2",
-    "@connectrpc/connect-node": "2.1.2",
-    "@openbot/computer-service-proto": "workspace:*"
+    "@openbot/runtime-provider-core": "workspace:*",
+    "tsdown": "0.22.14",
+    "vercel": "58.9.4"
   },
   "devDependencies": {
     "@types/node": "24.3.0",
-    "tsx": "4.20.4",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
-    "tsdown": "0.22.14",
     "typescript": "5.9.2",
     "vitest": "3.2.4"
   }

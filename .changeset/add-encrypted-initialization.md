@@ -14,7 +14,8 @@
 "@openbot/desktop": minor
 "@openbot/inference-model-provider": minor
 "@openbot/inference-model-provider-core": minor
-"@openbot/runtime-provider": minor
+"@openbot/control-service-provider": minor
+"@openbot/agent-service-provider": minor
 "@openbot/runtime-provider-core": minor
 "@openbot/server": minor
 "@openbot/skills-provider": minor
@@ -26,3 +27,5 @@
 ---
 
 Add interactive encrypted configuration initialization and provider-defined onboarding questions.
+
+Build and deploy control and agent services as independent artifacts with native TypeScript checks, concurrent per-agent Vercel functions, and separate local services.

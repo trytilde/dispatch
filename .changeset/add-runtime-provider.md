@@ -1,5 +1,6 @@
 ---
-"@openbot/runtime-provider": minor
+"@openbot/control-service-provider": minor
+"@openbot/agent-service-provider": minor
 "@openbot/runtime-provider-core": minor
 "@openbot/cli": patch
 "@openbot/config": patch
@@ -10,4 +11,5 @@
 "@openbot/tools-provider-core": patch
 ---
 
-Add one-command provider lifecycle deployment with Vercel and local systemd or launchd runtimes.
+Add one-command provider lifecycle deployment with separate control and agent
+services on Vercel or local systemd and launchd runtimes.

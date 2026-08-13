@@ -1,12 +1,13 @@
-import { defineConfig } from "tsup";
+import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/app.ts"],
+  entry: ["src/app.ts", "src/service.ts", "src/vercel.ts"],
   format: ["esm"],
   platform: "node",
+  fixedExtension: false,
   target: "node24",
   outDir: "dist",
   clean: true,
-  splitting: false,
+  minify: false,
   sourcemap: false,
 });

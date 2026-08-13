@@ -44,7 +44,7 @@ Keep provider-specific behavior behind its domain core contract and keep composi
 - `plan()`, optional `configure()`, and `deploy()` consume accumulated outputs, environment variables, and secrets. Providers without `Deployable` are skipped by deployment coordination.
 - Keep static/bootstrap secrets separate from provider outputs. Never print secret values or write them into public artifacts.
 - Container images compile their packaged services in a multi-stage build; never copy a host-precompiled `dist` bundle into an image.
-- Computer providers expose the capability-protected computer-service transport to the later agent-service deployment. Agent-authored computer tools call that typed service, not Microsandbox or Vercel Sandbox directly; computer-service validates the agent ID and owns Linux-user execution.
+- Computer providers expose the capability-protected computer-service transport to the later agent-service deployment. Agent-authored computer tools call that typed service, not Microsandbox or Vercel Sandbox directly; computer-service validates the agent ID, selects `/workspace/<agent-id>` as the relative default, and scopes background jobs. Agents intentionally share the computer process identity and filesystem.
 
 ## Vercel providers
 

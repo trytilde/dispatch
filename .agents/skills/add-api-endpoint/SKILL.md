@@ -27,7 +27,7 @@ OpenBot uses ConnectRPC for authenticated control operations and Hono for protoc
 ## Authentication And Scope
 
 - Control Connect services live under `apps/control-service`; computer RPCs stay in `apps/computer-service`.
-- Model-facing computer RPCs carry `agent_id`. Validate it inside computer-service, derive the registered Linux user there, enter its private `/workspace` mount, and execute as that user. Never accept a caller-supplied username.
+- Model-facing computer RPCs carry `agent_id`. Validate it inside computer-service and use it to default relative operations to `/workspace/<agent-id>` and scope background jobs. Agents share the process identity and filesystem, so never present that ID or directory as an authorization boundary.
 - Agent computer tools use the generated Connect client and bearer capability. They must not call provider SDKs, `fetch`, or untyped computer endpoints directly.
 - `/api/chat` requires a valid setup session.
 - `/api/tilde/chatkit` and `/api/tilde/tools/sandbox` require Tilde webhook verification and raw request bodies.
@@ -44,7 +44,7 @@ Add pagination only when the backing provider supports a stable cursor contract.
 - [ ] Handler remains thin and Web-standard.
 - [ ] Authentication or signature verification preserved.
 - [ ] Provider work stays behind the contract defined in `src/core.ts` or `src/core/index.ts` inside its domain provider package.
-- [ ] Computer tool requests are scoped and executed by computer-service as the agent's mapped Linux user.
+- [ ] Computer tool requests are validated by computer-service and default to `/workspace/<agent-id>` without claiming OS isolation.
 - [ ] Proto regenerated when changed; generated files not hand-edited.
 - [ ] Local routing and the owning provider's rendered Vercel routing assets still agree.
 - [ ] Focused server/provider tests pass.

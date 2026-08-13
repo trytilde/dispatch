@@ -172,8 +172,34 @@ describe("OpenBot initialization", () => {
         code: "ENOENT",
       });
       expect(loaded.environment.SOPS_AGE_KEY).toBeUndefined();
+      await expect(access(join(repositoryRoot, "configuration/.gitignore"))).rejects.toMatchObject({
+        code: "ENOENT",
+      });
     },
   );
+
+  it("preserves a fork-owned configuration ignore file and stops before initialization", async () => {
+    const repositoryRoot = await temporaryRepository();
+    await writeFixture(repositoryRoot, "configuration/.gitignore", "private-cache/\n");
+
+    await expect(
+      initializeOpenBot({
+        repositoryRoot,
+        prompts: {
+          select: vi.fn(async () => ""),
+          input: vi.fn(async () => ""),
+        },
+        runner: { run: vi.fn(async () => ({ stdout: "", stderr: "" })) },
+      }),
+    ).rejects.toThrow("configuration/.gitignore is fork-owned");
+
+    expect(await readFile(join(repositoryRoot, "configuration/.gitignore"), "utf8")).toBe(
+      "private-cache/\n",
+    );
+    await expect(access(join(repositoryRoot, "configuration/.env"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
 
   it("stores the owner identity in 1Password and encrypts the sandbox identity", async () => {
     const repositoryRoot = await temporaryRepository();
@@ -242,6 +268,9 @@ describe("OpenBot initialization", () => {
     expect(encryption?.input).toContain("VERCEL_TOKEN: vercel-secret");
     expect(encryption?.input).toContain("OPENBOT_COMPUTER_SERVICE_API_KEY:");
     expect(encryption?.args.join(" ")).not.toContain("vercel-secret");
+    await expect(access(join(repositoryRoot, "configuration/.gitignore"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
   });
 
   it("loads runtime values while keeping the sandbox identity sandbox-scoped", async () => {
@@ -304,7 +333,7 @@ describe("OpenBot initialization", () => {
 async function temporaryRepository(): Promise<string> {
   const path = await mkdtemp(join(tmpdir(), "openbot-init-"));
   temporaryDirectories.push(path);
-  await writeFixture(path, "configuration/.keep", "");
+  await writeFixture(path, "configuration/.gitignore", "*\n!.gitignore\n");
   return path;
 }
 

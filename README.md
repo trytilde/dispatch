@@ -16,7 +16,7 @@ pnpm dev
 - API: `http://127.0.0.1:4100`
 - Health: `http://127.0.0.1:4100/healthz`
 
-A fresh fork intentionally contains only `configuration/.gitkeep`; run `pnpm openbot init` before development or deployment to materialize the fork-owned configuration and initial agent. No setup or pairing code is required.
+A fresh upstream checkout intentionally contains only `configuration/.gitignore`, which hides all configuration contents. Run `pnpm openbot init` after forking; successful initialization removes that exact upstream sentinel so the fork can commit its configuration and initial agent. Commit the deletion with the generated configuration. Ordinary upstream merges preserve the fork's committed deletion while upstream leaves the sentinel unchanged. No setup or pairing code is required.
 
 ## Deploy
 

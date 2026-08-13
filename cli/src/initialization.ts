@@ -28,6 +28,7 @@ import type {
 import { scaffoldAgent } from "./agent-scaffold.js";
 
 export const SANDBOX_SOPS_AGE_KEY = "SOPS_AGE_KEY";
+const upstreamConfigurationIgnore = "*\n!.gitignore\n";
 
 const configurationAssets = {
   instrumentation: fileURLToPath(
@@ -143,8 +144,10 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   const secretsPath = resolve(configurationDirectory, "secrets.enc.yaml");
   const identityPath = resolve(configurationDirectory, "sops.identity.json");
   const configurationPath = resolve(configurationDirectory, "index.ts");
+  const configurationIgnorePath = resolve(configurationDirectory, ".gitignore");
 
   await mkdir(configurationDirectory, { recursive: true, mode: 0o700 });
+  await assertUpstreamConfigurationIgnore(configurationIgnorePath);
   await createBlankEnvironment(environmentPath);
   if (await exists(secretsPath)) throw new Error("OpenBot configuration is already initialized");
   if ((await exists(sopsConfigPath)) || (await exists(identityPath)))
@@ -239,6 +242,15 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
     configurationAssets.instrumentation,
   );
   await scaffoldAgent(options.repositoryRoot, "Hello World", { existing: "preserve" });
+  await rm(configurationIgnorePath, { force: true });
+}
+
+async function assertUpstreamConfigurationIgnore(path: string): Promise<void> {
+  if (!(await exists(path))) return;
+  if ((await readFile(path, "utf8")) === upstreamConfigurationIgnore) return;
+  throw new Error(
+    "configuration/.gitignore is fork-owned; preserve or remove it before retrying init",
+  );
 }
 
 export async function loadDeploymentConfiguration(

@@ -39,6 +39,7 @@ export async function buildVercelControlService(
     CONTROL_SOURCE: JSON.stringify(
       resolve(context.repositoryRoot, "apps/control-service/src/app.ts"),
     ),
+    CONFIGURATION_SOURCE: JSON.stringify(resolve(context.repositoryRoot, "configuration/index.ts")),
   });
   await build({
     cwd: context.repositoryRoot,

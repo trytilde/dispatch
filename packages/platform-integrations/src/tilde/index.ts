@@ -40,8 +40,9 @@ const initialization: ProviderInitialization = {
     },
     {
       id: "tilde-base-url",
-      prompt: "Tilde API base URL (leave blank for https://api.trytilde.ai)",
+      prompt: "Tilde API base URL",
       description: "Optional alternate Tilde API origin.",
+      defaultValue: "https://api.trytilde.ai",
       input: "text",
       destination: { kind: "environment", key: "TILDE_BASE_URL" },
     },

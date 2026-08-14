@@ -202,7 +202,6 @@ describe("OpenBot initialization", () => {
       await expect(access(join(repositoryRoot, "configuration/sandbox"))).rejects.toMatchObject({
         code: "ENOENT",
       });
-      expect(loaded.environment.SOPS_AGE_KEY).toBeUndefined();
       expect(loaded.environment.COMPUTER_IMAGE_REPOSITORY).toBeUndefined();
       await expect(access(join(repositoryRoot, "configuration/.gitignore"))).rejects.toMatchObject({
         code: "ENOENT",
@@ -508,12 +507,13 @@ export default {
         ["tilde-api-key", undefined],
         ["tilde-org-id", "stored-org"],
         ["tilde-team-id", undefined],
-        ["tilde-base-url", undefined],
+        ["tilde-base-url", "https://api.trytilde.ai"],
       ]),
     );
     const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
     expect(environment).toContain('TILDE_ORG_ID="updated-org"');
     expect(environment).toContain('TILDE_TEAM_ID="entered-team"');
+    expect(environment).toContain('TILDE_BASE_URL="https://api.trytilde.ai"');
     expect(environment).toContain('UNRELATED="keep"');
     const reencrypted = parseYaml(encryptionInput ?? "") as typeof storedSecrets;
     expect(reencrypted).toMatchObject({
@@ -533,6 +533,11 @@ export default {
   it("loads runtime values while keeping the sandbox identity sandbox-scoped", async () => {
     const repositoryRoot = await temporaryRepository();
     await writeFixture(repositoryRoot, "configuration/.env", "AI_MODEL=openai/gpt-test\n");
+    await writeFixture(
+      repositoryRoot,
+      "configuration/.sops.yaml",
+      "creation_rules:\n  - kms:\n      - arn:aws:kms:us-east-1:123456789012:alias/test\n    encrypted_regex: ^value$\n",
+    );
     await writeFixture(repositoryRoot, "configuration/secrets.enc.yaml", "encrypted\n");
     await writeFixture(
       repositoryRoot,
@@ -558,11 +563,12 @@ export default {
         }
         expect(command).toBe("sops");
         expect(options?.environment).toMatchObject({
-          AWS_PROFILE: "sso-admin",
           AWS_ACCESS_KEY_ID: "fresh-access-key",
           AWS_SECRET_ACCESS_KEY: "fresh-secret-key",
           AWS_SESSION_TOKEN: "fresh-session-token",
         });
+        expect(options?.environment?.AWS_PROFILE).toBeUndefined();
+        expect(options?.environment?.AWS_DEFAULT_PROFILE).toBeUndefined();
         return {
           stdout: JSON.stringify({
             SECRETS_SOPS_AGE_KEY: {
@@ -674,11 +680,44 @@ export default {
 
   it("sets and unsets encrypted secrets without putting values in arguments", async () => {
     const repositoryRoot = await temporaryRepository();
+    await writeFixture(
+      repositoryRoot,
+      "configuration/.sops.yaml",
+      stringifyYaml({
+        creation_rules: [{ age: ["age1owner"], encrypted_regex: "^value$" }],
+      }),
+    );
     const calls: { args: readonly string[]; input?: string }[] = [];
     const runner: InitializationCommandRunner = {
       run: vi.fn(async (_command, args, options) => {
         calls.push({ args, input: options?.input });
-        return { stdout: args.includes("--help") ? "--value-stdin" : "", stderr: "" };
+        return {
+          stdout: args.includes("decrypt")
+            ? stringifyYaml({
+                EXISTING: { description: "Existing secret.", value: "existing-value" },
+              })
+            : "",
+          stderr: "",
+        };
+      }),
+      runWithInputFile: vi.fn(async (_command, args, options) => {
+        calls.push({ args, input: options.input });
+        const plaintext = parseYaml(options.input) as Record<
+          string,
+          { description: string; value: string }
+        >;
+        return {
+          stdout: stringifyYaml({
+            ...Object.fromEntries(
+              Object.entries(plaintext).map(([name, described]) => [
+                name,
+                { ...described, value: `ENC[${name}]` },
+              ]),
+            ),
+            sops: { mac: "encrypted" },
+          }),
+          stderr: "",
+        };
       }),
     };
 
@@ -692,15 +731,15 @@ export default {
       environment: { SOPS_AGE_KEY: "owner" },
     });
 
-    const set = calls.find(
-      (call) => call.args.includes("set") && call.args.includes("--value-stdin"),
-    );
-    expect(JSON.parse(set?.input ?? "")).toEqual({
-      description: "Vercel deployment credential.",
-      value: "private-value",
+    const encrypt = calls.find((call) => call.args.includes("encrypt"));
+    expect(parseYaml(encrypt?.input ?? "")).toMatchObject({
+      EXISTING: { description: "Existing secret.", value: "existing-value" },
+      VERCEL_TOKEN: {
+        description: "Vercel deployment credential.",
+        value: "private-value",
+      },
     });
-    expect(set?.args).toContain('["VERCEL_TOKEN"]');
-    expect(set?.args.join(" ")).not.toContain("private-value");
+    expect(calls.every((call) => !call.args.join(" ").includes("private-value"))).toBe(true);
     expect(calls.some((call) => call.args.includes("unset"))).toBe(true);
   });
 

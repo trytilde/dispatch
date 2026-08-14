@@ -192,7 +192,7 @@ export class TildeToolProvider implements ToolProvider {
       listAvailableToolGroups({
         client: this.#api,
         path: { team_id: this.#teamId },
-        query: { page_size: 100, deployment_alias: "latest", include_global: false },
+        query: { page_size: 100, deployment_alias: "latest", include_global: true },
         throwOnError: true,
       }),
       listTools({

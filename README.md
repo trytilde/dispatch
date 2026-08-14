@@ -1,6 +1,6 @@
 # OpenBot
 
-OpenBot is being rebuilt from the user experience downward. The current repository intentionally ships a minimal, healthy application shell before agent, provider, and computer behavior is wired back in.
+OpenBot is being rebuilt from the user experience downward. The current workspace connects its owner-facing chat to configured agents while provider and computer capabilities continue to expand behind narrow contracts.
 
 ## Run locally
 
@@ -80,9 +80,9 @@ The production build stages the web app in the control provider's `.vercel/outpu
 - `packages/runtime-provider` owns the optional provider deployment contract and runtime-last coordinator.
 - `packages/control-service-provider` owns local and Vercel control/web builds and deployment.
 - `packages/agent-service-provider` owns Eve-compatible agent-directory discovery, instrumentation startup, concurrent per-agent Vercel bundles, the local agent server, and deployment.
-- `apps/web` owns the UX shell and frontend routes.
-- `apps/control-service` owns the portable Hono application, built web UI fallback, `/healthz`, ConnectRPC federation under `/rpc`, and the local control-service entrypoint.
-- `packages/control-service-proto` is the future owner-facing API contract and is intentionally empty.
+- `apps/web` owns the workspace, agent selection, conversation composer, and frontend routes.
+- `apps/control-service` owns the portable Hono application, built web UI fallback, `/healthz`, owner-facing chat RPCs under `/rpc`, and the local control-service entrypoint.
+- `packages/control-service-proto` owns the owner-facing ConnectRPC contract.
 - `packages/computer-service-proto` owns the API-key-protected internal computer API.
 - No control database is retained while the reset application has no persisted control state.
 - Each domain provider package owns both its TypeScript contract in `src/core.ts` or `src/core/index.ts` and its concrete adapters; provider contract interfaces never live in adapter modules or the package-root entrypoint, and they are not RPC surfaces.

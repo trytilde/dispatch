@@ -49,7 +49,8 @@ describe("TildeToolProvider", () => {
       "fetch",
       vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
         const request = input instanceof Request ? input : new Request(input, init);
-        const path = new URL(request.url).pathname;
+        const url = new URL(request.url);
+        const path = url.pathname;
         if (request.method === "GET" && path.endsWith("/mcp-server/openbot-scout"))
           return Response.json({
             id: "openbot-scout",
@@ -80,15 +81,19 @@ describe("TildeToolProvider", () => {
           });
         }
         if (request.method === "GET" && path.endsWith("/mcp/available-tool-groups"))
-          return Response.json({
-            items: [
-              {
-                type_id: "tilde_control_plane",
-                tools: [{ type_id: "tilde_whoami" }],
-                credential_sources: [{ type_id: "no_auth" }],
-              },
-            ],
-          });
+          return Response.json(
+            url.searchParams.get("include_global") === "true"
+              ? {
+                  items: [
+                    {
+                      type_id: "tilde_control_plane",
+                      tools: [{ type_id: "tilde_whoami" }],
+                      credential_sources: [{ type_id: "no_auth" }],
+                    },
+                  ],
+                }
+              : { items: [] },
+          );
         if (request.method === "GET" && path.endsWith("/mcp/tools"))
           return Response.json({
             items: toolkitEnabled

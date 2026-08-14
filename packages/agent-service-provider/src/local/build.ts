@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { build } from "tsdown";
 import { materializeFileTemplate } from "@tryopenbot/utilities";
 import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
 import { bundleOptions } from "../build.js";
@@ -19,6 +18,7 @@ const serverTemplate = fileURLToPath(new URL("./assets/server.ts.hbs", import.me
 export async function buildLocalAgentService(
   context: DeploymentContext,
 ): Promise<DeploymentResult> {
+  const { build } = await import("tsdown");
   const agents = await discoverAgents(context.repositoryRoot);
   const generated = resolve(
     context.repositoryRoot,

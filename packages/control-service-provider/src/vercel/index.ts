@@ -119,10 +119,22 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
       environment: context.environment,
     });
     const url = vercelDeploymentUrl(`${result.stdout}\n${result.stderr}`);
-    const response = await this.#request(`${url}/healthz`, { signal: AbortSignal.timeout(30_000) });
-    if (!response.ok || ((await response.json()) as { ok?: unknown }).ok !== true)
-      throw new Error("Control service health smoke failed");
+    const healthUrl = `${url}/healthz`;
+    const response = await this.#request(healthUrl, { signal: AbortSignal.timeout(30_000) });
+    const body = await response.text();
+    if (!response.ok || !healthyResponse(body))
+      throw new Error(
+        `Control service health smoke failed: ${healthUrl} returned ${response.status}${body ? `: ${body.slice(0, 500)}` : ""}`,
+      );
     return { outputs: { "control-service.deployment-url": url, "runtime.deployment-url": url } };
+  }
+}
+
+function healthyResponse(body: string): boolean {
+  try {
+    return (JSON.parse(body) as { ok?: unknown }).ok === true;
+  } catch {
+    return false;
   }
 }
 

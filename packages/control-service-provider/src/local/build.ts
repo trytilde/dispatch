@@ -1,10 +1,13 @@
 import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { build } from "tsdown";
 import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
+import { materializeFileTemplate } from "@tryopenbot/utilities";
 import type { CommandRunner } from "../command.js";
 
 export const controlLocalArtifact = ".openbot-deploy/control-service/service.mjs";
+const entryTemplate = fileURLToPath(new URL("./assets/entry.ts.hbs", import.meta.url));
 
 export async function buildLocalControlService(
   context: DeploymentContext,
@@ -15,10 +18,20 @@ export async function buildLocalControlService(
     environment: context.environment,
   });
   const outfile = resolve(context.repositoryRoot, controlLocalArtifact);
+  const generatedEntry = resolve(
+    context.repositoryRoot,
+    ".openbot-deploy/generated/control-service-local.ts",
+  );
   await mkdir(dirname(outfile), { recursive: true });
+  await materializeFileTemplate(entryTemplate, generatedEntry, {
+    CONTROL_SOURCE: JSON.stringify(
+      resolve(context.repositoryRoot, "apps/control-service/src/app.ts"),
+    ),
+    CONFIGURATION_SOURCE: JSON.stringify(resolve(context.repositoryRoot, "configuration/index.ts")),
+  });
   await build({
     cwd: context.repositoryRoot,
-    entry: ["apps/control-service/src/service.ts"],
+    entry: [generatedEntry],
     format: ["esm"],
     platform: "node",
     target: "node24",

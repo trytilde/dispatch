@@ -56,6 +56,8 @@ export interface ProviderInitializationQuestion {
   id: string;
   prompt: string;
   description?: string;
+  /** Value offered when the repository has not persisted an answer yet. */
+  defaultValue?: string;
   input: "text" | "secret" | "select";
   required?: boolean;
   choices?: readonly { value: string; label: string; description?: string }[];

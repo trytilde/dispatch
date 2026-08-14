@@ -907,6 +907,64 @@ h1 {
   place-content: center;
   text-align: center;
 }
+
+.rail nav .agent {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-2);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  text-align: left;
+}
+.rail nav .agent.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
+.rail nav .agent span,
+.agent-status {
+  color: var(--ink-3);
+  font-size: 11px;
+}
+.message-list {
+  width: min(760px, 100%);
+  margin: auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.message {
+  max-width: 82%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.message.user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.message > span {
+  color: var(--ink-3);
+  font-size: 11px;
+}
+.message > p {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  box-shadow: var(--shadow-card);
+}
+.message.user > p {
+  background: var(--ink);
+  color: var(--surface);
+}
 .activity {
   height: 100%;
   overflow: auto;

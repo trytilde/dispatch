@@ -32,13 +32,18 @@ describe("control service providers", () => {
     const root = await temporaryRoot();
     await mkdir(join(root, "apps/web/dist"), { recursive: true });
     await mkdir(join(root, "apps/control-service/src"), { recursive: true });
+    await mkdir(join(root, "configuration"), { recursive: true });
     await writeFile(
       join(root, "apps/web/dist/index.html"),
       "<!doctype html><title>OpenBot</title>",
     );
     await writeFile(
       join(root, "apps/control-service/src/app.ts"),
-      "export default { fetch: () => Response.json({ service: 'openbot-control' }) };\n",
+      "export function createApp() { return { fetch: () => Response.json({ service: 'openbot-control' }) }; }\n",
+    );
+    await writeFile(
+      join(root, "configuration/index.ts"),
+      "export default { providers: { chat: {} } };\n",
     );
     const run = vi.fn<CommandRunner["run"]>(async () => ({ stdout: "", stderr: "" }));
     const result = await buildVercelControlService(

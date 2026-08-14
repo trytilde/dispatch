@@ -7,17 +7,8 @@ import { fileURLToPath } from "node:url";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
+import type { ChatProvider } from "@tryopenbot/chat-provider";
 import { registerControlServices } from "./control.js";
-
-const controlRouter = createConnectRouter();
-registerControlServices(controlRouter);
-
-const controlHandlers = new Map(
-  controlRouter.handlers.map((handler) => [
-    `/rpc${handler.requestPath}`,
-    createFetchHandler(handler),
-  ]),
-);
 const sourceWebRoot = fileURLToPath(new URL("../../web/dist", import.meta.url));
 const workingDirectoryWebRoot = resolve(process.cwd(), "apps/web/dist");
 const defaultWebRoot =
@@ -25,11 +16,20 @@ const defaultWebRoot =
 
 export interface AppOptions {
   webRoot?: string;
+  chatProvider?: ChatProvider;
 }
 
 export function createApp(options: AppOptions = {}): Hono {
   const app = new Hono();
   const webRoot = options.webRoot ?? defaultWebRoot;
+  const controlRouter = createConnectRouter();
+  if (options.chatProvider) registerControlServices(controlRouter, options.chatProvider);
+  const controlHandlers = new Map(
+    controlRouter.handlers.map((handler) => [
+      `/rpc${handler.requestPath}`,
+      createFetchHandler(handler),
+    ]),
+  );
 
   app.use("*", secureHeaders());
   app.get("/healthz", (context) => context.json({ ok: true, service: "openbot" }));

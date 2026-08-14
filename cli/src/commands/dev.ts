@@ -163,10 +163,18 @@ async function runDevelopmentServer(
   const tunnelOptions = developmentTunnelOptions(command, arguments_, environment);
   if (!tunnelOptions) return run(command, arguments_, serverEnvironment);
 
-  const tunnel = await runLocalRuntimeTunnelCommand({
-    ...tunnelOptions,
-    command: tunnelOptions.command,
-  });
+  const previousNodeOptions = process.env.NODE_OPTIONS;
+  process.env.NODE_OPTIONS = serverEnvironment.NODE_OPTIONS;
+  let tunnel;
+  try {
+    tunnel = await runLocalRuntimeTunnelCommand({
+      ...tunnelOptions,
+      command: tunnelOptions.command,
+    });
+  } finally {
+    if (previousNodeOptions === undefined) delete process.env.NODE_OPTIONS;
+    else process.env.NODE_OPTIONS = previousNodeOptions;
+  }
   process.once("exit", () => tunnel.stop());
   void tunnel.closed.then(() => {
     if (!tunnel.command.killed) tunnel.command.kill("SIGTERM");

@@ -87,9 +87,11 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
       ? [
           {
             id: "agent-workspaces",
+            implementation: computer,
+            providerType: "Computer Provider",
             provider: {
               deployable: {
-                plan: async () => ({
+                plan: async (_context: DeploymentContext) => ({
                   summary: "Seed populated agent directories on the shared computer",
                   steps: ["Copy seeds to /workspace/<agent-id>", "Skip directories already seeded"],
                 }),
@@ -107,16 +109,25 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
         ]
       : []),
     ...(deployAgents
-      ? [{ id: "agent-service", provider: { buildable: agentService, deployable: agentService } }]
+      ? [
+          {
+            id: "agent-service",
+            implementation: agentService,
+            providerType: "Agent Service Provider",
+            provider: { buildable: agentService, deployable: agentService },
+          },
+        ]
       : []),
     ...(options.service === "all" && computer
       ? [
           {
             id: "development-sandbox",
             role: "sandbox" as const,
+            implementation: computer,
+            providerType: "Computer Provider",
             provider: {
               deployable: {
-                plan: async () => ({
+                plan: async (_context: DeploymentContext) => ({
                   summary: "Seed or resume the trusted OpenBot development sandbox",
                   steps: [
                     "Preserve its mutable source tree",
@@ -136,6 +147,8 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
           {
             id: "control-service",
             role: "runtime" as const,
+            implementation: controlService,
+            providerType: "Control Service Provider",
             provider: { buildable: controlService, deployable: controlService },
           },
         ]
@@ -146,7 +159,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
     environment: deploymentConfiguration.environment,
   });
   const runOptions = {
-    target: "production",
+    devMode: false,
     dryRun: options.dryRun,
     repositoryRoot,
     environment: deploymentConfiguration.environment,
@@ -163,7 +176,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
       repositoryRoot,
       environment: deploymentConfiguration.environment,
       providers: configuration.providers,
-      target: "production",
+      devMode: false,
       report,
     });
   await deployProviders(participants, {

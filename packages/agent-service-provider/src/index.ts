@@ -9,7 +9,7 @@ export type AgentServiceProvider = Buildable &
   Deployable &
   InitializableProvider & {
     /** Stable base URL used when reconciling authored agent endpoints. */
-    baseUrl(context: Pick<DeploymentContext, "target" | "environment">): URL;
+    baseUrl(context: Pick<DeploymentContext, "devMode" | "environment">): URL;
   };
 export { createAgentServiceApp } from "./development.js";
 export {

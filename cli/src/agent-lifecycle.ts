@@ -6,8 +6,8 @@ import {
   type DeploymentEvent,
   type DeploymentPersistence,
   type DeploymentReporter,
-  type DeploymentTarget,
   type DeployableProvider,
+  runProviderLifecycleHook,
 } from "@tryopenbot/runtime-provider";
 import type { SkillProvider } from "@tryopenbot/skills-provider";
 import type { ToolProvider } from "@tryopenbot/tools-provider";
@@ -27,7 +27,7 @@ export interface ReconcileAgentResourcesOptions {
     skills: SkillProvider;
     tools: ToolProvider;
   };
-  target?: DeploymentTarget;
+  devMode: boolean;
   persistEnvironment?: (name: string, value: string, description: string) => Promise<void>;
   persistSecret?: (name: string, value: string, description: string) => Promise<void>;
   unsetEnvironment?: (name: string) => Promise<void>;
@@ -40,11 +40,20 @@ export async function reconcileAgentResources(
   options: ReconcileAgentResourcesOptions,
 ): Promise<void> {
   const sources = await discoverAgents(options.repositoryRoot);
-  const target = options.target ?? "development";
   const report = options.report ?? (() => undefined);
   const persistence = repositoryDeploymentPersistence(options);
-  const agentServiceOrigin = options.providers.agentService
-    .baseUrl({ target, environment: options.environment })
+  const agentServiceOrigin = (
+    await runProviderLifecycleHook(
+      options.providers.agentService,
+      "Agent Service Provider",
+      "base URL resolution",
+      () =>
+        options.providers.agentService.baseUrl({
+          devMode: options.devMode,
+          environment: options.environment,
+        }),
+    )
+  )
     .toString()
     .replace(/\/$/, "");
   report({ event: "agent.lifecycle.started", details: { total: sources.length } });
@@ -53,7 +62,7 @@ export async function reconcileAgentResources(
     const progress = { agentId: source.slug, index: index + 1, total: sources.length };
     report({ event: "agent.reconcile.started", details: progress });
     const context: DeploymentContext = {
-      target,
+      devMode: options.devMode,
       repositoryRoot: options.repositoryRoot,
       environment: options.environment,
       inputs: new DeploymentOutputs(),
@@ -79,18 +88,38 @@ async function runAgentProvider(
   provider: DeployableProvider,
   context: DeploymentContext,
 ): Promise<void> {
+  const providerType =
+    providerId === "skills"
+      ? "Skills Provider"
+      : providerId === "tools"
+        ? "Tools Provider"
+        : "Agent Provider";
   context.report({
     event: "agent.provider.started",
     details: { providerId, agentId: context.agentId },
   });
   if (provider.buildable) {
-    await provider.buildable.check(context);
-    context.inputs.merge(await provider.buildable.build(context));
+    await runProviderLifecycleHook(provider, providerType, "check", () =>
+      provider.buildable!.check(context),
+    );
+    context.inputs.merge(
+      await runProviderLifecycleHook(provider, providerType, "build", () =>
+        provider.buildable!.build(context),
+      ),
+    );
   }
   if (provider.deployable) {
     if (provider.deployable.configure)
-      context.inputs.merge(await provider.deployable.configure(context));
-    context.inputs.merge(await provider.deployable.deploy(context));
+      context.inputs.merge(
+        await runProviderLifecycleHook(provider, providerType, "configure", () =>
+          provider.deployable!.configure!(context),
+        ),
+      );
+    context.inputs.merge(
+      await runProviderLifecycleHook(provider, providerType, "deploy", () =>
+        provider.deployable!.deploy(context),
+      ),
+    );
   }
   context.report({
     event: "agent.provider.complete",

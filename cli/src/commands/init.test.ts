@@ -2,11 +2,19 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   createNonInteractivePrompts,
   initializationJsonSchema,
+  interactiveQuestionRenderOptions,
   runInitialization,
   validateNonInteractiveCoreAnswers,
 } from "./init.js";
 
 describe("non-interactive initialization prompts", () => {
+  it("renders each interactive question in a clean full-screen terminal", () => {
+    expect(interactiveQuestionRenderOptions).toEqual({
+      alternateScreen: true,
+      patchConsole: false,
+    });
+  });
+
   it("answers stable input and selection IDs", async () => {
     const prompts = createNonInteractivePrompts({
       "repository-name": "agent-openbot",

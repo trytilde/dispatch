@@ -32,6 +32,11 @@ const sourcePaths = [
   "packages/utilities/tsconfig.json",
 ] as const;
 
+/** Exact repository inputs whose changes invalidate the shared Computer image. */
+export function computerImageWatchPaths(repositoryRoot: string): string[] {
+  return [...sourcePaths.map((path) => resolve(repositoryRoot, path)), providerAssetDirectory];
+}
+
 export interface MaterializedComputerImageContext {
   contextDirectory: string;
   dockerfilePath: string;

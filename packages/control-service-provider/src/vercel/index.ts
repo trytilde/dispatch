@@ -7,7 +7,7 @@ import type {
   InitializableProvider,
   ProviderInitialization,
 } from "@tryopenbot/runtime-provider";
-import { persistEnvironment } from "@tryopenbot/runtime-provider";
+import { isDevelopmentLifecycle, persistEnvironment } from "@tryopenbot/runtime-provider";
 import { VercelPlatform, vercelPlatform } from "@tryopenbot/platform-integrations";
 import {
   ensureVercelProject,
@@ -61,17 +61,23 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
   check(context: DeploymentContext) {
     return checkControlService(context, this.#runner);
   }
-  build(context: DeploymentContext) {
+  async build(context: DeploymentContext) {
+    if (isDevelopmentLifecycle(context)) return;
     return buildVercelControlService(context, this.#runner);
   }
-  async plan(_context: DeploymentContext): Promise<DeploymentPlan> {
+  async plan(context: DeploymentContext): Promise<DeploymentPlan> {
+    if (isDevelopmentLifecycle(context))
+      return {
+        summary: "Use the watched local control service in development",
+        steps: ["Skip Vercel project configuration and deployment"],
+      };
     return {
       summary: "Deploy the independently built control service and web UI to Vercel",
       steps: [`Upload ${controlVercelArtifact} as a prebuilt deployment`, "Smoke-test /healthz"],
     };
   }
-  baseUrl(context: Pick<DeploymentContext, "target" | "environment">): URL {
-    if (context.target === "development") {
+  baseUrl(context: Pick<DeploymentContext, "devMode" | "environment">): URL {
+    if (context.devMode) {
       return new URL(
         context.environment.PUBLIC_ORIGIN ??
           `http://127.0.0.1:${context.environment.PORT ?? "4100"}`,
@@ -81,6 +87,7 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
     return new URL(`https://${project}.vercel.app`);
   }
   async configure(context: DeploymentContext): Promise<DeploymentResult> {
+    if (isDevelopmentLifecycle(context)) return {};
     const project = requiredVercelProject(context.environment, "VERCEL_CONTROL_PROJECT");
     await ensureVercelProject(this.#runner, context, project);
     const origin = this.baseUrl(context).toString().replace(/\/$/, "");
@@ -88,6 +95,7 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
     return { outputs: { "control-service.origin": origin, "runtime.origin": origin } };
   }
   async deploy(context: DeploymentContext): Promise<DeploymentResult> {
+    if (isDevelopmentLifecycle(context)) return {};
     const project = requiredVercelProject(context.environment, "VERCEL_CONTROL_PROJECT");
     const root = context.inputs.require("control-service.artifact");
     await materializeFileTemplate(vercelProjectTemplate, resolve(root, "vercel.json"));
@@ -105,7 +113,7 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
       project,
       ...vercelScopeArguments(context.environment),
     ];
-    if (context.target === "production") args.push("--prod");
+    args.push("--prod");
     const result = await this.#runner.run("pnpm", args, {
       cwd: context.repositoryRoot,
       environment: context.environment,

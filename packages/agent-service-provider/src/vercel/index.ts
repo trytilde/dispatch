@@ -17,7 +17,7 @@ import type {
   InitializableProvider,
   ProviderInitialization,
 } from "@tryopenbot/runtime-provider";
-import { persistEnvironment } from "@tryopenbot/runtime-provider";
+import { isDevelopmentLifecycle, persistEnvironment } from "@tryopenbot/runtime-provider";
 import { processRunner, type CommandRunner } from "@tryopenbot/control-service-provider";
 import { checkAgentService } from "../check.js";
 import { agentVercelArtifact, buildVercelAgentService, vercelProjectTemplate } from "./build.js";
@@ -57,10 +57,16 @@ export class VercelAgentServiceProvider implements Buildable, Deployable, Initia
   check(context: DeploymentContext) {
     return checkAgentService(context, this.#runner);
   }
-  build(context: DeploymentContext) {
+  async build(context: DeploymentContext) {
+    if (isDevelopmentLifecycle(context)) return;
     return buildVercelAgentService(context);
   }
   async plan(context: DeploymentContext): Promise<DeploymentPlan> {
+    if (isDevelopmentLifecycle(context))
+      return {
+        summary: "Use the watched local agent service in development",
+        steps: ["Skip Vercel project configuration and deployment"],
+      };
     return {
       summary: "Deploy independently bundled agent functions to Vercel",
       steps: [
@@ -69,8 +75,8 @@ export class VercelAgentServiceProvider implements Buildable, Deployable, Initia
       ],
     };
   }
-  baseUrl(context: Pick<DeploymentContext, "target" | "environment">): URL {
-    if (context.target === "development") {
+  baseUrl(context: Pick<DeploymentContext, "devMode" | "environment">): URL {
+    if (context.devMode) {
       return new URL(
         context.environment.PUBLIC_ORIGIN ??
           `http://127.0.0.1:${context.environment.PORT ?? "4100"}`,
@@ -80,6 +86,7 @@ export class VercelAgentServiceProvider implements Buildable, Deployable, Initia
     return new URL(`https://${project}.vercel.app`);
   }
   async configure(context: DeploymentContext): Promise<DeploymentResult> {
+    if (isDevelopmentLifecycle(context)) return {};
     const project = requiredVercelProject(context.environment, "VERCEL_AGENT_PROJECT");
     await ensureVercelProject(this.#runner, context, project);
     const origin = this.baseUrl(context).toString().replace(/\/$/, "");
@@ -87,6 +94,7 @@ export class VercelAgentServiceProvider implements Buildable, Deployable, Initia
     return { outputs: { "agent-service.origin": origin } };
   }
   async deploy(context: DeploymentContext): Promise<DeploymentResult> {
+    if (isDevelopmentLifecycle(context)) return {};
     const project = requiredVercelProject(context.environment, "VERCEL_AGENT_PROJECT");
     const root = context.inputs.require("agent-service.artifact");
     await materializeFileTemplate(vercelProjectTemplate, resolve(root, "vercel.json"));
@@ -104,7 +112,7 @@ export class VercelAgentServiceProvider implements Buildable, Deployable, Initia
       project,
       ...vercelScopeArguments(context.environment),
     ];
-    if (context.target === "production") args.push("--prod");
+    args.push("--prod");
     const result = await this.#runner.run("pnpm", args, {
       cwd: context.repositoryRoot,
       environment: context.environment,

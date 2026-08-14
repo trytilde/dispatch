@@ -91,7 +91,7 @@ async function agentContext(slug: string): Promise<DeploymentContext> {
   await mkdir(directory, { recursive: true });
   await writeFile(join(directory, "agent.ts"), "export default {}\n");
   return {
-    target: "development",
+    devMode: true,
     repositoryRoot: root,
     environment: { AGENT_SCOUT_NAME: "Scout" },
     inputs: new DeploymentOutputs(),

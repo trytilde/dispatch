@@ -49,6 +49,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
       const { Sandbox } = await import("microsandbox");
       const stored = await Sandbox.get(id);
       if (stored.status === "running") this.#instances.set(id, await stored.connect());
+      const config = stored.config();
       const discovered: ComputerHandle = {
         id,
         providerId: this.providerId,
@@ -59,6 +60,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
               ? "failed"
               : "sleeping",
         createdAt: stored.createdAt ?? new Date(),
+        ...(typeof config.image === "string" ? { image: config.image } : {}),
       };
       this.#handles.set(id, discovered);
       return discovered;
@@ -108,6 +110,10 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
       .get(id)
       ?.stop()
       .catch(() => undefined);
+    const { Sandbox } = await import("microsandbox");
+    const stored = await Sandbox.get(id);
+    if (stored.status === "running") await stored.stop();
+    await stored.remove();
     this.#instances.delete(id);
     this.#handles.delete(id);
     this.#specs.delete(id);

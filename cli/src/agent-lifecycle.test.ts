@@ -45,6 +45,7 @@ describe("agent resource lifecycle", () => {
     await reconcileAgentResources({
       repositoryRoot: "/repository",
       environment: {},
+      devMode: true,
       providers: {
         skills: provider("skills") as SkillProvider,
         tools: provider("tools") as ToolProvider,
@@ -81,5 +82,34 @@ describe("agent resource lifecycle", () => {
         details: { agentId: "hello-world", index: 1, total: 3 },
       }),
     ).toBe("[1/3] Deploying hello-world agent");
+  });
+
+  it("attributes an agent reconciliation failure to its provider implementation", async () => {
+    class VercelToolProvider {
+      readonly deployable = {
+        plan: async () => ({ summary: "tools" }),
+        deploy: async () => {
+          throw new Error("authentication error: Invalid API key");
+        },
+      };
+    }
+
+    await expect(
+      reconcileAgentResources({
+        repositoryRoot: "/repository",
+        environment: {},
+        devMode: true,
+        providers: {
+          skills: {} as SkillProvider,
+          tools: new VercelToolProvider() as ToolProvider,
+          agent: {} as AgentProvider,
+          agentService: {
+            baseUrl: () => new URL("http://127.0.0.1:4100"),
+          } as unknown as AgentServiceProvider,
+        },
+      }),
+    ).rejects.toThrow(
+      "authentication error: Invalid API key (occurred in the Vercel implementation of the Tools Provider)",
+    );
   });
 });

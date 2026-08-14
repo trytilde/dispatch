@@ -45,7 +45,6 @@ export async function installVercelEnvironment(
   context: DeploymentContext,
   project: string,
 ): Promise<void> {
-  const target = context.target === "production" ? "production" : "preview";
   const variables = new Map(
     Object.entries(context.environment).flatMap(([name, value]) =>
       value === undefined || isControlPlaneCredential(name)
@@ -62,7 +61,7 @@ export async function installVercelEnvironment(
         "env",
         "add",
         name,
-        target,
+        "production",
         "--force",
         "--yes",
         variable.sensitive ? "--sensitive" : "--no-sensitive",

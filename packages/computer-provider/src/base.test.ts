@@ -10,6 +10,7 @@ import type {
   ComputerHandle,
   ComputerInput,
   ComputerSpec,
+  ComputerProvider,
 } from "./core/index.js";
 import { DeploymentOutputs } from "@tryopenbot/runtime-provider";
 import { computerImageAssets } from "./base/assets.js";
@@ -135,7 +136,7 @@ describe("agent workspace deployment", () => {
         ],
       },
       {
-        target: "production",
+        devMode: false,
         repositoryRoot: process.cwd(),
         environment: { COMPUTER_SERVICE_API_KEY: "x".repeat(32) },
         inputs: new DeploymentOutputs(),
@@ -166,13 +167,53 @@ describe("agent workspace deployment", () => {
 });
 
 describe("computer image lifecycle", () => {
+  it("delegates Vercel Sandbox development lifecycles to the local provider", async () => {
+    const check = vi.fn(async () => undefined);
+    const build = vi.fn(async () => ({ outputs: { local: "image" } }));
+    const plan = vi.fn(async () => ({ summary: "local Microsandbox" }));
+    const deploy = vi.fn(async () => ({ outputs: { reference: "local/image" } }));
+    const deployAgentWorkspaces = vi.fn(async () => ({}));
+    const deployDevelopmentSandbox = vi.fn(async () => ({}));
+    const developmentProvider: ComputerProvider = {
+      buildable: { check, build },
+      deployable: { plan, deploy },
+      deployAgentWorkspaces,
+      deployDevelopmentSandbox,
+    };
+    const provider = new VercelSandboxComputerProvider({ developmentProvider });
+    const context = {
+      devMode: true,
+      repositoryRoot: "/repository",
+      environment: {},
+      inputs: new DeploymentOutputs(),
+      report: vi.fn(),
+    } as const;
+
+    await provider.buildable.check(context);
+    await provider.buildable.build(context);
+    await provider.deployable.plan(context);
+    await provider.deployable.deploy(context);
+    await provider.deployAgentWorkspaces({ computerId: "computer", workspaces: [] }, context);
+    await provider.deployDevelopmentSandbox({ computerId: "development" }, context);
+
+    expect(check).toHaveBeenCalledWith(context);
+    expect(build).toHaveBeenCalledWith(context);
+    expect(plan).toHaveBeenCalledWith(context);
+    expect(deploy).toHaveBeenCalledWith(context);
+    expect(deployAgentWorkspaces).toHaveBeenCalledWith(
+      { computerId: "computer", workspaces: [] },
+      context,
+    );
+    expect(deployDevelopmentSandbox).toHaveBeenCalledWith({ computerId: "development" }, context);
+  });
+
   it("does not ask for a Vercel repository and describes its managed publish target", async () => {
     const vercel = new VercelSandboxComputerProvider({});
     expect(vercel.initialization).toBeUndefined();
     expect(vercel.platforms.map(({ id }) => id)).toEqual(["vercel"]);
     await expect(
       vercel.deployable.plan({
-        target: "production",
+        devMode: false,
         repositoryRoot: "/repository",
         environment: {},
         inputs: new DeploymentOutputs(),
@@ -186,7 +227,7 @@ describe("computer image lifecycle", () => {
     expect(provider.initialization).toBeUndefined();
     await expect(
       provider.deployable.plan({
-        target: "production",
+        devMode: false,
         repositoryRoot: "/repository",
         environment: {},
         inputs: new DeploymentOutputs(),
@@ -219,7 +260,7 @@ describe("computer image lifecycle", () => {
       VERCEL_TOKEN: "vercel-secret",
     };
     const context = {
-      target: "production",
+      devMode: false,
       repositoryRoot: "/repository",
       environment,
       inputs,
@@ -252,7 +293,7 @@ describe("computer image lifecycle", () => {
   it("uses a local repository-derived image for Microsandbox", async () => {
     await expect(
       new MicrosandboxComputerProvider().deployable.plan({
-        target: "production",
+        devMode: false,
         repositoryRoot: process.cwd(),
         environment: {},
         inputs: new DeploymentOutputs(),
@@ -261,6 +302,35 @@ describe("computer image lifecycle", () => {
     ).resolves.toMatchObject({
       summary: expect.stringMatching(/locally built .*\/openbot-computer/),
     });
+  });
+
+  it("replaces a development Computer when the image reference changes", async () => {
+    const provider = new TestComputerProvider();
+    provider.get.mockResolvedValue({
+      id: "computer",
+      providerId: "test",
+      state: "running",
+      createdAt: new Date(0),
+      image: "registry.test/openbot-computer:old",
+    });
+    await provider.deployAgentWorkspaces(
+      { computerId: "computer", workspaces: [] },
+      {
+        devMode: true,
+        repositoryRoot: "/repository",
+        environment: {
+          COMPUTER_SERVICE_API_KEY: "x".repeat(32),
+          TEST_COMPUTER_IMAGE: "registry.test/openbot-computer:new",
+        },
+        inputs: new DeploymentOutputs(),
+        report: vi.fn(),
+      },
+    );
+    expect(provider.delete).toHaveBeenCalledWith("computer", expect.any(Object));
+    expect(provider.create).toHaveBeenCalledWith(
+      expect.objectContaining({ image: "registry.test/openbot-computer:new" }),
+      expect.any(Object),
+    );
   });
 
   it("uses Docker Buildx for the Vercel Sandbox image", () => {
@@ -362,7 +432,7 @@ describe("trusted development sandbox", () => {
         provider.deployDevelopmentSandbox(
           { computerId: "development" },
           {
-            target: "production",
+            devMode: false,
             repositoryRoot,
             environment: {
               MODEL: "gpt-test",
@@ -429,7 +499,7 @@ describe("agent computer-service deployment", () => {
     const result = await provider.deployAgentWorkspaces(
       { computerId: "computer", workspaces: [{ agentId: "hello-world", files: [] }] },
       {
-        target: "production",
+        devMode: false,
         repositoryRoot: process.cwd(),
         environment: process.env,
         inputs: new DeploymentOutputs(),

@@ -24,9 +24,9 @@ describe("agent service artifacts", () => {
     expect(provider.platforms.map(({ id }) => id)).toEqual(["vercel"]);
     expect(provider.initialization.questions.map(({ id }) => id)).toEqual(["vercel-agent-project"]);
     expect(
-      provider.baseUrl({ target: "production", environment: { VERCEL_AGENT_PROJECT: "agents" } }),
+      provider.baseUrl({ devMode: false, environment: { VERCEL_AGENT_PROJECT: "agents" } }),
     ).toEqual(new URL("https://agents.vercel.app"));
-    expect(provider.baseUrl({ target: "development", environment: { PORT: "4200" } })).toEqual(
+    expect(provider.baseUrl({ devMode: true, environment: { PORT: "4200" } })).toEqual(
       new URL("http://127.0.0.1:4200"),
     );
   });
@@ -164,7 +164,7 @@ describe("agent service artifacts", () => {
       request: vi.fn(async () => Response.json({ ok: true })) as typeof fetch,
     });
     await deployProviders([{ id: "agents", provider: { deployable: provider } }], {
-      target: "preview",
+      devMode: false,
       dryRun: false,
       repositoryRoot: root,
       environment: { VERCEL_AGENT_PROJECT: "openbot-agents" },
@@ -181,6 +181,7 @@ describe("agent service artifacts", () => {
         artifact,
         "--project",
         "openbot-agents",
+        "--prod",
       ]),
       expect.anything(),
     );
@@ -188,11 +189,33 @@ describe("agent service artifacts", () => {
       framework: null,
     });
   });
+
+  it("keeps Vercel remote operations out of development", async () => {
+    const run = vi.fn<CommandRunner["run"]>(async () => ({ stdout: "", stderr: "" }));
+    const request = vi.fn(async () => Response.json({ ok: true })) as typeof fetch;
+    const provider = new VercelAgentServiceProvider({ runner: { run }, request });
+    const development = {
+      devMode: true,
+      repositoryRoot: "/repository",
+      environment: {},
+      inputs: new DeploymentOutputs(),
+      report: vi.fn(),
+    } as const;
+
+    await expect(provider.build(development)).resolves.toBeUndefined();
+    await expect(provider.configure(development)).resolves.toEqual({});
+    await expect(provider.deploy(development)).resolves.toEqual({});
+    await expect(provider.plan(development)).resolves.toMatchObject({
+      summary: expect.stringContaining("development"),
+    });
+    expect(run).not.toHaveBeenCalled();
+    expect(request).not.toHaveBeenCalled();
+  });
 });
 
 function context(repositoryRoot: string): DeploymentContext {
   return {
-    target: "production",
+    devMode: false,
     repositoryRoot,
     environment: {},
     inputs: new DeploymentOutputs(),

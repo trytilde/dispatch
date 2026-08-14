@@ -49,8 +49,11 @@ export async function buildVercelControlService(
     outDir: functionDirectory,
     clean: false,
     minify: true,
-    sourcemap: false,
-    outputOptions: { entryFileNames: "index.mjs" },
+    sourcemap: true,
+    outputOptions: {
+      entryFileNames: "index.mjs",
+      sourcemapExcludeSources: true,
+    },
   });
   await Promise.all([
     cp(resolve(context.repositoryRoot, "apps/web/dist"), resolve(output, "static"), {

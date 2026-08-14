@@ -40,8 +40,10 @@ Provider `initialization` describes provider-only values. Put project names or p
 Question destinations decide storage:
 
 - `environment`: non-secret values in `configuration/.env`.
-- `secret`: runtime secrets in `configuration/secrets.enc.yaml`.
-- `deployment-secret`: deployment authority that must not reach runtime services.
+- `secret`: encrypted values in `configuration/secrets.enc.yaml`.
+
+Provider lifecycles receive these files through one mutable `context.environment` map. Final
+service and child-process installers still omit control-plane credentials.
 
 Keep initialization deterministic. It should collect configuration, validate access, render files, and install dependencies. Resource creation belongs to reconciliation or deployment.
 
@@ -57,15 +59,13 @@ flowchart TD
   C -- "No" --> E["Load configuration/templates/agent/**/*.hbs"]
   E --> F["Render source, tools, skills, and workspace seed"]
   F --> G["Load configuration and secrets"]
-  G --> H["Run agent provider Deployable"]
-  H --> I["Discover every authored agent"]
-  I --> J["Get or create Tilde ChatKit agent"]
-  J --> K["Reconcile enabled Vercel AI SDK endpoint and local tunnel"]
-  K --> L["Create or reuse agent MCP server"]
-  L --> M["Create or reuse agent skill registry"]
-  M --> N["Persist IDs in configuration/.env"]
-  N --> O["Persist new endpoint credentials with SOPS"]
-  O --> P["Return scaffolded agent; dev continues to service startup"]
+  G --> H["Discover authored agents"]
+  H --> I["For each agent: skills check, build, deploy"]
+  I --> J["Then tools check, build, deploy"]
+  J --> K["Then agent check, build, deploy"]
+  K --> L["Each provider reconciles its remote resources"]
+  L --> M["Each provider persists its own environment and secrets"]
+  M --> N["Return scaffolded agent; dev continues to service startup"]
 ```
 
 ### `scaffoldAgentTemplates`
@@ -87,7 +87,10 @@ or another remote platform.
 
 ### `reconcileAgentResources`
 
-Use this CLI coordinator only to schedule provider lifecycles and persist their declared outputs, plus the remaining MCP and skill-registry provisioning. Tilde agent get/create/update/status behavior belongs in `TildeAgentProvider.deployable`, never in the CLI. A retry must converge without duplicate agents, endpoints, MCP servers, or registries.
+Use this CLI coordinator only to discover agents, create a context containing `agentId` and the
+absolute `agentPath`, and invoke providers in the fixed `skills`, `tools`, `agent` order. Remote API
+sequences and configuration persistence belong to those provider lifecycles. A retry must converge
+without duplicate agents, endpoints, MCP servers, or registries.
 
 Generated agents read their own `AGENT_<ID>_*` values. Do not use one global MCP server or skill registry for every agent.
 
@@ -138,7 +141,7 @@ flowchart TD
   H --> I{"--dry-run?"}
   I -- "Yes" --> J["Stop without remote mutation"]
   I -- "No" --> K["Deployable.configure where implemented"]
-  K --> L["Merge origins, environment, and secrets"]
+  K --> L["Providers persist their own environment and secrets"]
   L --> M["Deploy non-runtime providers in registration order"]
   M --> N["Deploy trusted development sandbox"]
   N --> O["Deploy single runtime participant last"]
@@ -155,24 +158,16 @@ Put stable prerequisites here. Create or reuse project identities, reserve stabl
 
 ### `Deployable.deploy`
 
-Put remote mutation and release work here. Reconcile desired state: push or reuse images, install environment, upload prebuilt artifacts, seed durable workspaces once, reconcile production agent endpoints, start services, and run smoke checks. Return new outputs and secrets through `DeploymentResult`. Every call must be safe to repeat and converge without duplicates.
+Put remote mutation and release work here. Reconcile desired state: push or reuse images, install environment, upload prebuilt artifacts, seed durable workspaces once, reconcile production agent endpoints, start services, and run smoke checks. Persist environment or encrypted secrets directly with the helpers on `DeploymentContext`; return only named handoff outputs through `DeploymentResult`. Every call must be safe to repeat and converge without duplicates.
 
-Non-runtime providers run first. The trusted sandbox runs next. The single runtime participant runs last so it receives all accumulated environment and secrets.
+Non-runtime providers run first. The trusted sandbox runs next. The single runtime participant runs last. Every participant reads the same mutable environment map.
 
 ### Deployment events
 
-Use `context.report` for progress only. Report phase, participant ID, summaries, and safe counts. Do not use events to control ordering or pass values. Do not report secrets. Typed results and the coordinator own control flow.
+Use `context.report` for progress only. Report phase, participant ID, summaries, and safe counts. Do not use events to control ordering or pass values. Do not report secrets. Named outputs and the coordinator own control flow.
 
 ### `DeploymentResult`
 
-Return values through the narrowest channel:
-
-- `outputs`: internal values for later lifecycle hooks.
-- `environmentVariables`: non-secret runtime configuration.
-- `secrets`: runtime secrets.
-- `deploymentSecrets`: deployment-only credentials.
-- `sandboxSecrets`: trusted development-sandbox secrets.
-- `environmentVariableRemovals`: obsolete persisted non-secret values to unset.
-- `secretRemovals`: obsolete persisted secrets to remove with SOPS.
-
-Conflicting values must fail. Never use last-write-wins behavior.
+`DeploymentResult` contains only named `outputs` for later lifecycle hooks. Conflicting output values
+fail. Providers call `persistEnvironment`, `persistSecret`, `unsetEnvironment`, or `unsetSecret` to
+mutate repository configuration and the shared in-memory environment themselves.

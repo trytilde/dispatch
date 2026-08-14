@@ -7,6 +7,7 @@ import {
   agentTemplateDirectory,
   scaffoldAgent,
   scaffoldAgentTemplates,
+  scaffoldPrimaryAgent,
 } from "./agent-scaffold.js";
 
 const temporaryDirectories: string[] = [];
@@ -26,10 +27,18 @@ describe("agent scaffolding", () => {
   it("materializes the supported agent tree with fixed-id shared computer tools", async () => {
     const root = await temporaryRepository();
     await scaffoldAgentTemplates(root);
+    const primary = await scaffoldPrimaryAgent(root, "Hello World");
     const agent = await scaffoldAgent(root, "Research Assistant");
 
+    expect(primary).toMatchObject({ id: "hello-world", name: "Hello World" });
     expect(agent).toMatchObject({ id: "research-assistant", name: "Research Assistant" });
-    const directory = join(root, "configuration/agents/research-assistant");
+    const directory = join(root, "configuration/agent/subagents/research-assistant");
+    expect(await readFile(join(root, "configuration/agent/instrumentation.ts"), "utf8")).toContain(
+      "setup",
+    );
+    expect(
+      await readFile(join(root, "configuration/agent/sandbox/workspace/README.md"), "utf8"),
+    ).toContain("Hello World");
     const agentSource = await readFile(join(directory, "agent.ts"), "utf8");
     expect(agentSource).toContain("process.env.AGENT_RESEARCH_ASSISTANT_API_KEY!");
     expect(agentSource).not.toContain("requiredEnv");
@@ -37,10 +46,29 @@ describe("agent scaffolding", () => {
     expect(agentSource).not.toContain("@tryopenbot/agent-provider");
     expect(agentSource).not.toContain("@tryopenbot/tools-provider");
     expect(agentSource).toContain("AGENT_RESEARCH_ASSISTANT_MCP_SERVER_ID");
-    expect(agentSource).toContain("AGENT_RESEARCH_ASSISTANT_SKILL_REGISTRY_ID");
-    const identitySource = await readFile(join(directory, "lib/identity.ts"), "utf8");
-    expect(identitySource).toContain('agentId = "research-assistant"');
-    expect(identitySource).toContain('agentName = "Research Assistant"');
+    expect(agentSource).toContain("tools: localTools");
+    expect(agentSource).not.toContain("AGENT_RESEARCH_ASSISTANT_SKILL_REGISTRY_ID");
+    expect(agentSource).not.toContain("function addTools");
+    expect(agentSource).not.toContain("searchSkillRegistry");
+    expect(agentSource).not.toContain("TILDE_BASE_URL");
+    expect(agentSource).toContain(
+      'model: openai(process.env.OPENAI_MODEL ?? "openai/gpt-5.6-sol")',
+    );
+    expect(agentSource).toContain('providerOptions: { openai: { reasoningEffort: "medium" } }');
+    expect(agentSource).toContain("process.env.OPENAI_API_KEY = process.env.AI_GATEWAY_API_KEY");
+    expect(agentSource).not.toContain("createOpenAI");
+    expect(agentSource).not.toContain("openai.responses");
+    expect(agentSource).toContain("system: instructions");
+    expect(agentSource).not.toContain("Your name is");
+    expect(agentSource).not.toContain("lib/identity");
+    const instructionsSource = await readFile(join(directory, "instructions.ts"), "utf8");
+    expect(instructionsSource).toContain("process.env.AGENT_RESEARCH_ASSISTANT_NAME!");
+    expect(instructionsSource).toContain("Your name is ${agentName}.");
+    expect(instructionsSource).toContain("Use search_skills");
+    expect(instructionsSource).toContain("dynamic tool discovery");
+    await expect(access(join(directory, "lib/identity.ts"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
     expect(await readFile(join(directory, "tools/bash.ts"), "utf8")).toContain(
       'createBashTool({ agentId: "research-assistant" })',
     );
@@ -81,20 +109,27 @@ describe("agent scaffolding", () => {
     );
 
     await scaffoldAgentTemplates(root);
+    await scaffoldPrimaryAgent(root, "Hello World");
     await scaffoldAgent(root, "Custom Agent");
 
     expect(
-      await readFile(join(root, "configuration/agents/custom-agent/lib/custom.ts"), "utf8"),
+      await readFile(
+        join(root, "configuration/agent/subagents/custom-agent/lib/custom.ts"),
+        "utf8",
+      ),
     ).toBe('export const id = "custom-agent";\n');
     expect(
-      await readFile(join(root, "configuration/agents/custom-agent/instructions.ts"), "utf8"),
+      await readFile(
+        join(root, "configuration/agent/subagents/custom-agent/instructions.ts"),
+        "utf8",
+      ),
     ).toContain("Custom instructions for Custom Agent");
     expect(await readFile(customTemplate, "utf8")).toContain("AGENT_ID_JSON");
   });
 
   it("requires init to seed the fork-owned agent template", async () => {
     const root = await temporaryRepository();
-    await expect(scaffoldAgent(root, "Missing Template")).rejects.toThrow(
+    await expect(scaffoldPrimaryAgent(root, "Hello World")).rejects.toThrow(
       `${agentTemplateDirectory} is missing; run openbot init`,
     );
   });
@@ -104,12 +139,12 @@ describe("agent scaffolding", () => {
     const templateRoot = await scaffoldAgentTemplates(root);
     await rm(join(templateRoot, "tools/bash.ts.hbs"));
 
-    await expect(scaffoldAgent(root, "Incomplete Agent")).rejects.toThrow(
+    await expect(scaffoldPrimaryAgent(root, "Hello World")).rejects.toThrow(
       `${agentTemplateDirectory}/tools/bash.ts.hbs`,
     );
-    await expect(access(join(root, "configuration/agents/incomplete-agent"))).rejects.toMatchObject(
-      { code: "ENOENT" },
-    );
+    await expect(access(join(root, "configuration/agent"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
   });
 });
 

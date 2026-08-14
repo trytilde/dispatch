@@ -47,13 +47,12 @@ export async function installVercelEnvironment(
 ): Promise<void> {
   const target = context.target === "production" ? "production" : "preview";
   const variables = new Map(
-    Object.entries(context.inputs.environmentVariables()).map(([name, value]) => [
-      name,
-      { value, sensitive: false },
-    ]),
+    Object.entries(context.environment).flatMap(([name, value]) =>
+      value === undefined || isControlPlaneCredential(name)
+        ? []
+        : [[name, { value, sensitive: true }] as const],
+    ),
   );
-  for (const [name, value] of Object.entries(context.inputs.secrets()))
-    variables.set(name, { value, sensitive: true });
   for (const [name, variable] of variables)
     await runner.run(
       "pnpm",
@@ -73,6 +72,12 @@ export async function installVercelEnvironment(
       ],
       { cwd: context.repositoryRoot, environment: context.environment, input: variable.value },
     );
+}
+
+function isControlPlaneCredential(name: string): boolean {
+  return /^(?:VERCEL_TOKEN|SOPS_AGE_KEY(?:_FILE|_CMD)?|AWS_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY|SESSION_TOKEN|SECURITY_TOKEN|PROFILE))$/.test(
+    name,
+  );
 }
 
 export function vercelDeploymentUrl(output: string): string {

@@ -15,6 +15,7 @@ Anything else belongs in the code that actually uses it.
 | --- | --- |
 | `chat-provider` | Conversation data and mutations exposed by the control service: agents, sessions, messages, unread state, and interruption. |
 | `agent-provider` | Idempotently discover authored agents and reconcile their external endpoints through `Deployable`. It exposes no endpoint CRUD to the CLI and does not serve chat data. |
+| `inference-provider` | Initialize inference accounts and provision credentials such as a Vercel AI Gateway API key. It exposes no model factory to authored agents. |
 | `computer-provider` | Build and deploy the Computer image, provision Computers, install agent workspaces, and prepare the trusted development Computer. |
 | `skills-provider` | Provision and reconcile external skill registries needed by authored agents. |
 | `tools-provider` | Provision and reconcile external MCP servers needed by authored agents. |
@@ -25,17 +26,19 @@ Anything else belongs in the code that actually uses it.
 
 Provider contracts live in `src/core.ts` or `src/core/` in their owning package. Concrete adapters live beside the contract. A contract should contain only operations used by the boundaries above. Remove speculative methods instead of preserving a generic provider API.
 
-Every lifecycle method is idempotent. `check`, `build`, `plan`, `configure`, and `deploy` may be called repeatedly. Implementations must reconcile stable identities and update mutable fields without creating duplicates. CLI code schedules hooks and persists typed outputs; vendor-specific get/create/update/delete sequences stay inside the adapter.
+Every lifecycle method is idempotent. `check`, `build`, `plan`, `configure`, and `deploy` may be called repeatedly. Implementations must reconcile stable identities and update mutable fields without creating duplicates. CLI code only schedules hooks. Each provider owns its vendor-specific get/create/update/delete sequence and persists its own environment or encrypted secrets through `runtime-provider` helpers. `DeploymentResult` is reserved for named handoff outputs.
+
+Authored-agent reconciliation discovers agents once and supplies each lifecycle with the agent ID and absolute source path. For every agent it runs `skills`, then `tools`, then `agent`; each provider receives `check`, `build`, and `deploy` in that order when implemented.
 
 ## Authored agents do not use providers
 
-Code under `configuration/agents/<id>/` must not import provider packages or `configuration/index.ts`. Providers do not contribute model objects, prompts, AI SDK tools, arbitrary vendor methods, or generic plugin functions to an agent.
+Code under `configuration/agent/`, including `subagents/<id>/`, must not import provider packages or `configuration/index.ts`. Providers do not contribute model objects, prompts, AI SDK tools, arbitrary vendor methods, or generic plugin functions to an agent.
 
 Integrate the desired SDK directly in the authored agent. For example, an agent may use OpenAI, Anthropic, Tilde, Composio, or a custom API without first extending a provider interface. This keeps agent development unconstrained by OpenBot's control-plane abstractions.
 
 Shared utilities that are not providers may still be imported. Instrumentation lives in `@tryopenbot/configuration/instrumentation`. The standard typed Computer tools live in `@tryopenbot/computer-tools`; they call the Computer service rather than a Computer provider.
 
-When all future agents need the same integration, update `configuration/templates/agent/`. Template changes affect newly scaffolded agents only, so migrate existing directories under `configuration/agents/` explicitly when required.
+When all future agents need the same integration, update `configuration/templates/agent/`. Template changes affect newly scaffolded agents only, so migrate the primary and existing directories under `configuration/agent/subagents/` explicitly when required.
 
 ## Composition and platforms
 
@@ -44,6 +47,8 @@ The fork constructs concrete providers in `configuration/index.ts`. Do not add p
 Several providers may share one platform object. For example, Tilde-backed chat, agent provisioning, MCP provisioning, and skill-registry provisioning should receive the same `TildePlatform`. Shared authentication, request helpers, error inspection, or account lookup belongs under `packages/platform-integrations/src/tilde/`; domain mapping stays in the provider adapter.
 
 Initialization questions are collected once per shared platform. Provider-specific questions remain with the provider or lifecycle that owns the resulting resource.
+
+The default `VercelInferenceProvider` shares the installation's `VercelPlatform`. Init asks for the AI Gateway key name, creates the key only when `AI_GATEWAY_API_KEY` is absent, and persists that canonical secret through SOPS. Agent code maps that credential into the direct OpenAI-compatible AI SDK client; the provider never crosses into request-time model selection.
 
 ## Adding or changing a provider
 

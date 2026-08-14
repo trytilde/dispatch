@@ -1,14 +1,18 @@
 import { constants } from "node:fs";
-import { access, chmod, copyFile, mkdir, readdir, rm } from "node:fs/promises";
+import { access, chmod, copyFile, lstat, mkdir, readdir, rm } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { materializeFileTemplate } from "@tryopenbot/utilities";
+import {
+  primaryAgentDirectory,
+  primaryAgentId,
+  subagentDirectory,
+} from "@tryopenbot/agent-service-provider";
 
 const defaultAgentTemplates = [
   ["agent.ts", "./assets/agents/hello-world/agent.ts.hbs"],
   ["instructions.ts", "./assets/agents/hello-world/instructions.ts.hbs"],
   ["instrumentation.ts", "./assets/agents/hello-world/instrumentation.ts.hbs"],
-  ["lib/identity.ts", "./assets/agents/hello-world/lib/identity.ts.hbs"],
   ["tools/await_shell.ts", "./assets/agents/hello-world/tools/await_shell.ts.hbs"],
   ["tools/bash.ts", "./assets/agents/hello-world/tools/bash.ts.hbs"],
   ["tools/copy_from_computer.ts", "./assets/agents/hello-world/tools/copy_from_computer.ts.hbs"],
@@ -89,12 +93,39 @@ export async function scaffoldAgent(
   const name = rawName.trim();
   if (!name) throw new Error("Agent name is required");
   const id = agentIdFromName(name);
-  const directory = resolve(repositoryRoot, "configuration/agents", id);
+  if (id === primaryAgentId) throw new Error(`Agent ID ${id} is reserved for the primary agent`);
+  await assertSingularAgentLayout(repositoryRoot);
+  const directory = resolve(repositoryRoot, subagentDirectory, id);
   if (await exists(directory)) {
     if (options.existing === "preserve") return { id, name, directory };
     throw new Error(`Agent ${id} already exists`);
   }
+  return materializeAgent(repositoryRoot, directory, id, name, false);
+}
 
+/** Materialize the one primary authored agent. */
+export async function scaffoldPrimaryAgent(
+  repositoryRoot: string,
+  rawName: string,
+  options: { existing?: "error" | "preserve" } = {},
+): Promise<ScaffoldedAgent> {
+  const name = rawName.trim();
+  if (!name) throw new Error("Agent name is required");
+  const directory = resolve(repositoryRoot, primaryAgentDirectory);
+  if (await exists(directory)) {
+    if (options.existing === "preserve") return { id: primaryAgentId, name, directory };
+    throw new Error(`Primary agent ${primaryAgentId} already exists`);
+  }
+  return materializeAgent(repositoryRoot, directory, primaryAgentId, name, true);
+}
+
+async function materializeAgent(
+  repositoryRoot: string,
+  directory: string,
+  id: string,
+  name: string,
+  createSubagentDirectory: boolean,
+): Promise<ScaffoldedAgent> {
   const values = {
     AGENT_ID: id,
     AGENT_ID_JSON: JSON.stringify(id),
@@ -114,11 +145,28 @@ export async function scaffoldAgent(
         { flag: "wx", mode: 0o600 },
       );
     }
+    if (createSubagentDirectory)
+      await mkdir(resolve(directory, "subagents"), { recursive: true, mode: 0o700 });
   } catch (error) {
     await rm(directory, { recursive: true, force: true });
     throw error;
   }
   return { id, name, directory };
+}
+
+async function assertSingularAgentLayout(repositoryRoot: string): Promise<void> {
+  const primary = resolve(repositoryRoot, primaryAgentDirectory);
+  if (!(await exists(primary)))
+    throw new Error("configuration/agent is missing; run openbot init first");
+  await assertOrdinaryDirectory(primary, "Primary agent");
+  const nested = resolve(repositoryRoot, subagentDirectory);
+  if (await exists(nested)) await assertOrdinaryDirectory(nested, "Subagent collection");
+}
+
+async function assertOrdinaryDirectory(path: string, label: string): Promise<void> {
+  const metadata = await lstat(path);
+  if (metadata.isSymbolicLink() || !metadata.isDirectory())
+    throw new Error(`${label} must be an ordinary directory: ${path}`);
 }
 
 async function discoverAgentTemplates(directory: string): Promise<string[]> {

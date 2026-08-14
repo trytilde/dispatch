@@ -41,6 +41,7 @@
     "@tryopenbot/configuration": "workspace:*",
     "@tryopenbot/control-service-proto": "workspace:*",
     "@tryopenbot/control-service-provider": "workspace:*",
+    "@tryopenbot/inference-provider": "workspace:*",
     "@tryopenbot/platform-integrations": "workspace:*",
     "@tryopenbot/runtime-provider": "workspace:*",
     "@tryopenbot/skills-provider": "workspace:*",

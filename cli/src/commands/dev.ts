@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import type { OpenBotConfiguration } from "@tryopenbot/configuration";
-import { reconcileAgentResources } from "../agent-lifecycle.js";
+import { formatAgentLifecycleProgress, reconcileAgentResources } from "../agent-lifecycle.js";
 import { loadConfigurationModule } from "../configuration-loader.js";
 import { loadLocalEnvironment, publicDevelopmentEnvironment } from "../environment.js";
 import { repositoryRoot } from "../paths.js";
@@ -13,12 +13,15 @@ export async function runDevelopment(): Promise<never> {
   });
   const serverPort = env.PORT ?? "4100";
   const configuration = await loadDevelopmentConfiguration(env);
-  console.log("Reconciling Tilde resources for authored agents");
   await reconcileAgentResources({
     repositoryRoot,
     environment: env,
     providers: configuration.providers,
     target: "development",
+    report: (event) => {
+      const line = formatAgentLifecycleProgress(event);
+      if (line) console.log(line);
+    },
   });
   const publicEnvironment = publicDevelopmentEnvironment(env);
   await runChecked("pnpm", ["contracts:generate"], env);

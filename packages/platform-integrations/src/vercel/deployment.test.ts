@@ -43,14 +43,17 @@ describe("Vercel deployment helpers", () => {
     );
   });
 
-  it("installs public and secret runtime values with the right sensitivity", async () => {
+  it("installs the combined environment as sensitive values", async () => {
     const inputs = new DeploymentOutputs();
-    inputs.merge({ environmentVariables: { PUBLIC_ORIGIN: "https://openbot.test" } });
-    inputs.merge({ secrets: { API_KEY: "private" } });
     const context: DeploymentContext = {
       target: "production",
       repositoryRoot: "/repo",
-      environment: {},
+      environment: {
+        PUBLIC_ORIGIN: "https://openbot.test",
+        API_KEY: "private",
+        VERCEL_TOKEN: "deployment-only",
+        SOPS_AGE_KEY: "sandbox-only",
+      },
       inputs,
       report: () => undefined,
     };
@@ -68,7 +71,7 @@ describe("Vercel deployment helpers", () => {
         "production",
         "--force",
         "--yes",
-        "--no-sensitive",
+        "--sensitive",
         "--project",
         "openbot",
       ],

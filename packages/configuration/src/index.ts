@@ -4,6 +4,7 @@ import type { AgentServiceProvider } from "@tryopenbot/agent-service-provider";
 import type { ChatProvider } from "@tryopenbot/chat-provider";
 import type { ComputerProvider } from "@tryopenbot/computer-provider";
 import type { ControlServiceProvider } from "@tryopenbot/control-service-provider";
+import type { InferenceProvider } from "@tryopenbot/inference-provider";
 import type { SkillProvider } from "@tryopenbot/skills-provider";
 import type { ToolProvider } from "@tryopenbot/tools-provider";
 
@@ -18,6 +19,7 @@ export interface OpenBotProviders {
   chat: ChatProvider;
   agent: AgentProvider;
   computer: ComputerProvider;
+  inference?: InferenceProvider;
   skills: SkillProvider;
   tools: ToolProvider;
 }

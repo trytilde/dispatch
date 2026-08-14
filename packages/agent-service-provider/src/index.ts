@@ -12,7 +12,13 @@ export type AgentServiceProvider = Buildable &
     baseUrl(context: Pick<DeploymentContext, "target" | "environment">): URL;
   };
 export { createAgentServiceApp } from "./development.js";
-export { discoverAgents } from "./discovery.js";
+export {
+  authoredAgentPaths,
+  discoverAgents,
+  primaryAgentDirectory,
+  primaryAgentId,
+  subagentDirectory,
+} from "./discovery.js";
 export { discoverAgentWorkspaces } from "./workspaces.js";
 export { LocalAgentServiceProvider } from "./local/index.js";
 export { VercelAgentServiceProvider } from "./vercel/index.js";

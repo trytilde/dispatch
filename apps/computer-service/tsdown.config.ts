@@ -7,7 +7,7 @@ export default defineConfig({
   target: "node24",
   outDir: "dist",
   clean: true,
-  sourcemap: false,
+  sourcemap: true,
   deps: {
     alwaysBundle: [
       /@connectrpc\//,
@@ -16,5 +16,8 @@ export default defineConfig({
       /handlebars/,
     ],
   },
-  outputOptions: { banner: "#!/usr/bin/env node" },
+  outputOptions: {
+    banner: "#!/usr/bin/env node",
+    sourcemapExcludeSources: true,
+  },
 });

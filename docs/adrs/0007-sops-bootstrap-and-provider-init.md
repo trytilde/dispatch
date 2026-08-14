@@ -6,11 +6,11 @@
 - Two SOPS recipients, one group. Sandbox age or owner identity decrypts.
 - Owner prefers Vault or cloud KMS. 1Password and native keychain remain local fallbacks.
 - Sandbox private identity lives encrypted at `SECRETS_SOPS_AGE_KEY.value`.
-- First deploy uses owner authority. Trusted development sandbox receives `SOPS_AGE_KEY`.
+- First deploy uses owner authority. Trusted development sandbox receives a private age-key file.
 - Provider questions stay declarative. Ink and browser renderers own presentation.
 - Shared platform setup runs once; domain providers retain only role-specific questions.
-- Deployment credentials reach providers and sandbox. Never final runtime.
-- Sandbox-only secrets never reach final runtime environment.
+- The trusted development sandbox receives all fork environment and encrypted secrets.
+- Ordinary agent Computers still receive neither the SOPS identity nor deployment authority.
 
 ## Context
 
@@ -22,9 +22,9 @@ Provider setup also needs interactive input, but provider packages must not depe
 
 `openbot init` creates `configuration/.env` first, then generates an X25519 age identity dedicated to the trusted development sandbox. Age is smaller and easier to automate safely than a generated PGP identity. The owner selects a second independent recipient: HashiCorp Vault Transit, Azure Key Vault, Google Cloud KMS, AWS KMS, a generated age identity stored in 1Password, or a generated age identity stored in the operating system keychain.
 
-Both recipients occupy the same SOPS key group, so either can decrypt. Threshold key groups are not used. Every top-level secret is a `{ description, value }` mapping; `encrypted_regex: ^value$` keeps descriptions readable while encrypting values. The sandbox private identity is stored only inside `configuration/secrets.enc.yaml` at `SECRETS_SOPS_AGE_KEY.value`. On the first deployment, the owner recipient decrypts that file. The sandbox deployment participant consumes the value through the sandbox-only deployment secret channel and installs it as `SOPS_AGE_KEY`. Later deployments running inside that trusted sandbox can decrypt the same file directly.
+Both recipients occupy the same SOPS key group, so either can decrypt. Threshold key groups are not used. Every top-level secret is a `{ description, value }` mapping; `encrypted_regex: ^value$` keeps descriptions readable while encrypting values. The sandbox private identity is stored only inside `configuration/secrets.enc.yaml` at `SECRETS_SOPS_AGE_KEY.value`. On deployment, the owner recipient decrypts that value and the computer provider writes it to `/workspace/.openbot/development/sops-age-key.txt` with mode `0400` inside a mode-`0700` directory.
 
-The trusted development sandbox is a deployment controller and secret-bearing boundary. Ordinary OpenBot Computers created for agents never receive the SOPS identity. The reserved `VERCEL_TOKEN` entry is deployment-only: deployment participants and the trusted sandbox can use it, but the final runtime does not install it. Other entries are runtime application secrets except reserved `SECRETS_SOPS_AGE_KEY`. Init generates `COMPUTER_SERVICE_API_KEY` and preserves that name in the runtime environment. Control, agent, and computer services receive the same key through secret installation; provider deployment outputs never contain it.
+The trusted development sandbox is a deployment controller and secret-bearing boundary. Every deployment refreshes `configuration/.env`, `configuration/.sops.yaml`, and `configuration/secrets.enc.yaml` in its source tree. Its `.bashrc` and `.bash_profile` source an idempotent loader that sources dotenv values, points SOPS at the private age-key file, decrypts the top-level described secrets, and exports their values. There are no lifecycle secret groups or separate sandbox environment result fields. Ordinary OpenBot Computers created for agents never receive the SOPS identity or the fork configuration files.
 
 Providers may expose serializable initialization metadata: label, description, questions, validation, choices, and a destination mapping to either `.env` or encrypted secrets. Providers do not expose terminal components or browser components. The CLI renders that schema with Ink; a later browser flow can render the same schema.
 
@@ -43,7 +43,7 @@ flowchart LR
   A --> S["SOPS secrets.enc.yaml"]
   O --> S
   S -->|"first deploy via owner"| D["Trusted development sandbox"]
-  D -->|"injected SOPS_AGE_KEY"| S
+  D -->|"0400 age-key file"| S
   D --> P["Deploy providers"]
   P --> R["Deploy runtime last"]
   S -. "sandbox-only identity excluded" .-> R
@@ -55,10 +55,11 @@ flowchart LR
 - Compromise of the trusted sandbox exposes this installation's secrets and deployment authority; use a unique age identity per installation.
 - Changing recipients remains an owner maintenance operation using `sops updatekeys` and, after compromise, `sops rotate`.
 - 1Password secret references, AWS profiles, and native-keychain metadata are non-secret but user-specific; keep them in `~/.openbot/config.json`, never the fork.
-- The computer provider owns trusted sandbox creation, source placement, and root-only environment installation.
+- The computer provider owns trusted sandbox creation, configuration refresh, Bash-profile loading, and user-only age-key installation.
 
 ## Updates
 
+- 2026-08-14T15:14:30+02:00: Removed lifecycle secret grouping for the trusted development sandbox. Deployment now refreshes the fork `.env`, SOPS config, and encrypted secrets, writes the age identity as a `0400` user-owned file, and loads dotenv plus decrypted SOPS values from Bash profiles.
 - 2026-08-14T10:27:59+02:00: Moved user-specific SOPS owner lookup metadata from the fork into typed `~/.openbot/config.json` state, added interactive recovery, and made non-interactive commands fail instead of guessing missing identity configuration.
 - 2026-08-14T00:21:24+02:00: Replaced metadata-only initialization dependencies with concrete `Platform` implementations, moved common Tilde and Vercel operations out of domain providers, and made init re-runnable with stored prompt defaults, config reconciliation, existing SOPS ownership, and dependency installation preserved.
 - 2026-08-13T23:59:56+02:00: Added stable shared platform initialization dependencies so Tilde and Vercel setup is collected once across their domain providers while role-specific questions remain with the consuming provider.

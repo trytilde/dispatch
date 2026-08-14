@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { relative } from "node:path";
 import arg from "arg";
 import type { ReactElement } from "react";
 import { render } from "ink";
@@ -52,15 +53,14 @@ export async function runCommand(command: string, args: readonly string[]): Prom
   if (command === "new-agent") {
     const result = await runNewAgent(args);
     const { agent } = result;
+    const agentPath = relative(repositoryRoot, agent.directory).replaceAll("\\", "/");
     if (result.json) {
       process.stdout.write(
-        `${JSON.stringify({ ok: true, command: "new-agent", agent: { id: agent.id, name: agent.name }, path: `configuration/agents/${agent.id}` })}\n`,
+        `${JSON.stringify({ ok: true, command: "new-agent", agent: { id: agent.id, name: agent.name }, path: agentPath })}\n`,
       );
       return;
     }
-    return show(
-      <Success title={`Agent ${agent.name} created at configuration/agents/${agent.id}`} />,
-    );
+    return show(<Success title={`Agent ${agent.name} created at ${agentPath}`} />);
   }
   if (command === "dev") {
     rejectArguments(command, args);

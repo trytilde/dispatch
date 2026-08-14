@@ -10,7 +10,7 @@ export function tildeFetch(signal: AbortSignal): typeof fetch {
 }
 
 function resolveRequestSignal(
-  input: RequestInfo | URL,
+  input: Request | string | URL,
   init: RequestInit | undefined,
 ): AbortSignal | null | undefined {
   if (init?.signal) return init.signal;

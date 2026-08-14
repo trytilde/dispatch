@@ -1,4 +1,9 @@
 import type { Platform, ProviderInitialization } from "@tryopenbot/runtime-provider";
+import { createVercelAiGatewayApiKey, type VercelAiGatewayApiKey } from "./ai-gateway.js";
+
+export interface VercelPlatformConfig {
+  request?: typeof fetch;
+}
 
 const initialization: ProviderInitialization = {
   id: "vercel",
@@ -12,7 +17,7 @@ const initialization: ProviderInitialization = {
         "Vercel personal or team access token used to create projects, configure deployment variables, publish services, and access Vercel Container Registry.",
       input: "secret",
       required: true,
-      destination: { kind: "deployment-secret", key: "VERCEL_TOKEN" },
+      destination: { kind: "secret", key: "VERCEL_TOKEN" },
     },
     {
       id: "vercel-team-id",
@@ -28,6 +33,20 @@ const initialization: ProviderInitialization = {
 export class VercelPlatform implements Platform {
   readonly id = "vercel";
   readonly initialization = initialization;
+
+  constructor(private readonly config: VercelPlatformConfig = {}) {}
+
+  createAiGatewayApiKey(options: {
+    token?: string;
+    teamId?: string;
+    name: string;
+    request?: typeof fetch;
+  }): Promise<VercelAiGatewayApiKey> {
+    return createVercelAiGatewayApiKey({
+      ...options,
+      request: options.request ?? this.config.request,
+    });
+  }
 }
 
 export const vercelPlatform = new VercelPlatform();

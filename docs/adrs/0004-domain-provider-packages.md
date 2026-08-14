@@ -24,9 +24,9 @@ A provider operation is valid only when it is consumed by one of these boundarie
 
 Provider contracts live in `src/core.ts` or `src/core/` in the owning domain package. Adapters live beside them. Contracts contain only operations used by those boundaries; speculative and convenience methods are removed.
 
-`chat-provider` owns conversation-facing agent, session, and message operations intended for the control service. `agent-provider` exposes only an idempotent deployment lifecycle; its adapter owns external endpoint lookup, creation, repair, status reconciliation, and removal without leaking vendor CRUD into the CLI. Skills and tools providers provision registries and MCP servers; they do not supply model-facing tools or skill contents at request time. The inference-model provider is removed.
+`chat-provider` owns conversation-facing agent, session, and message operations intended for the control service. `agent-provider` exposes only an idempotent deployment lifecycle; its adapter owns external endpoint lookup, creation, repair, status reconciliation, and removal without leaking vendor CRUD into the CLI. Skills and tools providers provision registries and MCP servers; they do not supply model-facing tools or skill contents at request time. The old model-facing inference-model provider is removed. A narrow `inference-provider` may own initialization and external credential provisioning, but it exposes no model factory and authored agents still import AI SDK providers directly.
 
-Code under `configuration/agents/` must not import provider packages or `configuration/index.ts`. Agents instantiate model clients, MCP clients, skill clients, Composio, and other SDKs directly. Defaults for future agents live in `configuration/templates/agent/`; existing agents change only through explicit edits.
+Code under `configuration/agent/`, including its `subagents/`, must not import provider packages or `configuration/index.ts`. Agents instantiate model clients, MCP clients, skill clients, Composio, and other SDKs directly. Defaults for future agents live in `configuration/templates/agent/`; existing agents change only through explicit edits.
 
 The standard typed Computer AI tools are a reusable runtime utility in `@tryopenbot/computer-tools`, separate from `computer-provider`. They call the capability-protected Computer service. `computer-provider` retains only provisioning and lifecycle methods in its public contract, while concrete adapters may use internal Computer operations to implement those lifecycles.
 
@@ -53,6 +53,7 @@ flowchart LR
 
 ## Updates
 
+- 2026-08-14T15:36:00+02:00: Added a provisioning-only inference-provider boundary for Vercel AI Gateway credentials while preserving direct AI SDK imports in authored agents.
 - 2026-08-13T11:12:53+02:00: Removed universal provider packages plus default descriptor, health, verification, and selector-factory requirements in favor of explicit domain interfaces and composition.
 - 2026-08-13T12:09:51+02:00: Removed the unused legacy `contracts` package after control and computer callers moved to their domain service protos.
 - 2026-08-13T12:53:05+02:00: Folded every `*-provider-core` package into its owning provider package while preserving a visible core contract boundary.

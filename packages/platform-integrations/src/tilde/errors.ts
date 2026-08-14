@@ -14,11 +14,36 @@ export function tildeErrorStatus(error: unknown): number | undefined {
 
 /** Normalize the different error shapes returned by Tilde clients. */
 export function tildeErrorMessage(error: unknown, fallback = "Tilde request failed"): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  if (error && typeof error === "object") {
-    if ("message" in error && typeof error.message === "string") return error.message;
-    if ("msg" in error && typeof error.msg === "string") return error.msg;
+  return knownErrorMessage(error) ?? fallback;
+}
+
+/** Add safe HTTP context without dumping arbitrary response bodies or credentials. */
+export function tildeHttpErrorMessage(
+  error: unknown,
+  response: Response | undefined,
+  fallback = "Tilde request failed",
+): string {
+  const message = tildeErrorMessage(error, fallback);
+  const status = response?.status ?? tildeErrorStatus(error);
+  if (!status) return message;
+  const statusText = response?.statusText.trim();
+  return `${message} (HTTP ${status}${statusText ? ` ${statusText}` : ""})`;
+}
+
+function knownErrorMessage(value: unknown): string | undefined {
+  if (value instanceof Error) return value.message || undefined;
+  if (typeof value === "string") return value || undefined;
+  if (Array.isArray(value)) {
+    const messages = value.flatMap((item) => knownErrorMessage(item) ?? []);
+    return messages.length ? messages.join("; ") : undefined;
   }
-  return fallback;
+  if (!value || typeof value !== "object") return undefined;
+  for (const key of ["message", "msg", "detail", "error"] as const) {
+    if (!(key in value)) continue;
+    const nested: unknown = (value as Record<string, unknown>)[key];
+    if (nested === value) continue;
+    const message = knownErrorMessage(nested);
+    if (message) return message;
+  }
+  return undefined;
 }

@@ -7,7 +7,7 @@ Build and deployment providers for independently compiled agent entrypoints. It 
 ### Functions
 
 - `createAgentServiceApp(repositoryRoot, options?)` creates the development/local Hono app and mounts discovered `agent.ts` endpoints.
-- `discoverAgents(repositoryRoot)` finds and validates `configuration/agents/<id>/agent.ts` entrypoints.
+- `discoverAgents(repositoryRoot)` validates the primary `configuration/agent/agent.ts` and full `configuration/agent/subagents/<id>/agent.ts` entrypoints.
 - `discoverAgentWorkspaces(repositoryRoot)` reads each agent's `sandbox/workspace/**` seed files for computer deployment.
 
 ### Classes

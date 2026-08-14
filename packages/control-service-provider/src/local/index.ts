@@ -8,6 +8,7 @@ import type {
   InitializableProvider,
   ProviderInitialization,
 } from "@tryopenbot/runtime-provider";
+import { persistEnvironment } from "@tryopenbot/runtime-provider";
 import { checkControlService } from "../check.js";
 import { processRunner, type CommandRunner } from "../command.js";
 import { installLocalService, waitForHealth } from "../local-service.js";
@@ -61,10 +62,9 @@ export class LocalControlServiceProvider implements Buildable, Deployable, Initi
   async configure(context: DeploymentContext): Promise<DeploymentResult> {
     const origin = this.baseUrl(context).toString().replace(/\/$/, "");
     const port = new URL(origin).port;
-    return {
-      outputs: { "control-service.origin": origin, "runtime.origin": origin },
-      environmentVariables: { PUBLIC_ORIGIN: origin, PORT: port },
-    };
+    await persistEnvironment(context, "PUBLIC_ORIGIN", origin, "OpenBot public origin.");
+    await persistEnvironment(context, "PORT", port, "OpenBot control service port.");
+    return { outputs: { "control-service.origin": origin, "runtime.origin": origin } };
   }
   async deploy(context: DeploymentContext): Promise<DeploymentResult> {
     const artifact = context.inputs.require("control-service.artifact");

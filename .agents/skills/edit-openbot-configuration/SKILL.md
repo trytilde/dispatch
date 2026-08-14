@@ -32,11 +32,11 @@ Each file below `configuration/templates/agent/` must end in `.hbs`. `openbot ne
 - `AGENT_NAME_JSON`
 - `AGENT_ENV_PREFIX`
 
-Template changes affect only agents created later. Update existing directories under `configuration/agents/` explicitly when compatibility requires it. Never silently regenerate or overwrite them.
+Template changes affect only agents created later. Update the primary `configuration/agent/` and existing `configuration/agent/subagents/<id>/` directories explicitly when compatibility requires it. Never silently regenerate or overwrite them.
 
 ## Preserve fixed paths
 
-Keep agents under `configuration/agents/<id>/`, skills under each agent's `skills/`, and workspace seeds under each agent's `sandbox/workspace/`. Do not add global `configuration/skills/` or `configuration/sandbox/` directories. Do not make these paths configurable.
+Keep the full primary agent under `configuration/agent/` and full additional agents under `configuration/agent/subagents/<id>/`. Every one supports its own instrumentation, skills, tools, and `sandbox/workspace/`. Do not nest another `subagents/` directory, add global `configuration/skills/` or `configuration/sandbox/`, or make these paths configurable.
 
 ## Verify
 

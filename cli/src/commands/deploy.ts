@@ -9,14 +9,8 @@ import {
   type DeploymentEvent,
   type DeploymentParticipant,
 } from "@tryopenbot/runtime-provider";
-import { persistLifecycleOutputs } from "../agent-lifecycle.js";
-import {
-  loadDeploymentConfiguration,
-  setEncryptedSecret,
-  setEnvironmentValue,
-  unsetEncryptedSecret,
-  unsetEnvironmentValue,
-} from "../initialization.js";
+import { reconcileAgentResources, repositoryDeploymentPersistence } from "../agent-lifecycle.js";
+import { loadDeploymentConfiguration } from "../initialization.js";
 import { loadConfigurationModule } from "../configuration-loader.js";
 import { repositoryRoot } from "../paths.js";
 import { inkPrompts } from "./init.js";
@@ -112,7 +106,6 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
           },
         ]
       : []),
-    ...(deployAgents ? [{ id: "agent", provider: configuration.providers.agent }] : []),
     ...(deployAgents
       ? [{ id: "agent-service", provider: { buildable: agentService, deployable: agentService } }]
       : []),
@@ -148,26 +141,16 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
         ]
       : []),
   ];
-  const initialInputs = {
-    ...deploymentConfiguration.inputs,
-    outputs: {
-      ...deploymentConfiguration.inputs.outputs,
-      ...(deployAgents
-        ? {
-            "agent-service.origin": agentService
-              .baseUrl({ target: "production", environment: deploymentConfiguration.environment })
-              .toString()
-              .replace(/\/$/, ""),
-          }
-        : {}),
-    },
-  };
+  const persistence = repositoryDeploymentPersistence({
+    repositoryRoot,
+    environment: deploymentConfiguration.environment,
+  });
   const runOptions = {
     target: "production",
     dryRun: options.dryRun,
     repositoryRoot,
     environment: deploymentConfiguration.environment,
-    initialInputs,
+    persistence,
     report,
   } as const;
   const built = await buildProviders(participants, runOptions);
@@ -175,23 +158,17 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
     report({ event: "build.complete", details: { deploySkipped: true } });
     return;
   }
-  const deployed = await deployProviders(participants, {
+  if (deployAgents && !options.dryRun)
+    await reconcileAgentResources({
+      repositoryRoot,
+      environment: deploymentConfiguration.environment,
+      providers: configuration.providers,
+      target: "production",
+      report,
+    });
+  await deployProviders(participants, {
     ...runOptions,
     initialInputs: built.result(),
-  });
-  await persistLifecycleOutputs(deployed.result(), deploymentConfiguration.environment, {
-    persistEnvironment: (name, value, description) =>
-      setEnvironmentValue(repositoryRoot, name, value, description),
-    persistSecret: (name, value, description) =>
-      setEncryptedSecret(repositoryRoot, name, value, {
-        environment: deploymentConfiguration.environment,
-        description,
-      }),
-    unsetEnvironment: (name) => unsetEnvironmentValue(repositoryRoot, name),
-    unsetSecret: (name) =>
-      unsetEncryptedSecret(repositoryRoot, name, {
-        environment: deploymentConfiguration.environment,
-      }),
   });
 }
 

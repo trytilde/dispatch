@@ -12,4 +12,10 @@ Reusable Vercel AI SDK Computer tools live separately in `@tryopenbot/computer-t
 
 Builds create the Computer service image from provider-owned Handlebars assets. Vercel provisioning creates and publishes to the managed image repository; Microsandbox keeps a local content-addressed image. Existing Computers retain their original image and persistent disk.
 
-All agents share one Computer filesystem and process identity. Populated `configuration/agents/<id>/sandbox/workspace/` trees seed `/workspace/<id>` once. The path is a default working directory, not a security boundary.
+The trusted development Computer is intentionally secret-bearing. Every deployment refreshes the
+fork's `.env`, `.sops.yaml`, and encrypted secrets in `/workspace/openbot/configuration`, writes its
+age identity under `/workspace/.openbot/development` with mode `0400`, and installs a Bash-profile
+loader that exports dotenv and decrypted SOPS values for that Linux user. Ordinary agent Computers
+do not receive these files or the identity.
+
+All agents share one Computer filesystem and process identity. Populated workspace trees from the primary `configuration/agent/` or one of its `subagents/<id>/` seed `/workspace/<id>` once. The path is a default working directory, not a security boundary.

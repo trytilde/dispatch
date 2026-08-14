@@ -27,10 +27,13 @@ import type {
   DeploymentResult,
   ProviderInitialization,
 } from "@tryopenbot/runtime-provider";
-import { sandboxDeploymentEnvironment } from "@tryopenbot/runtime-provider";
+import { persistEnvironment } from "@tryopenbot/runtime-provider";
 import { renderFileTemplatePath } from "@tryopenbot/utilities";
 import { computerImageAssets, materializeComputerImageContext } from "./assets.js";
-import { developmentSandboxSourceFiles, shellEnvironmentExports } from "./development.js";
+import {
+  developmentSandboxConfigurationFiles,
+  developmentSandboxSourceFiles,
+} from "./development.js";
 import { computerServiceApiKey } from "../capability.js";
 
 const execute = promisify(execFile);
@@ -147,10 +150,13 @@ export abstract class BaseComputerProvider implements ComputerProvider {
         const image = this.#imageLifecycle.publish
           ? await this.publishImage(built, spec, deploymentCallContext("deploy"))
           : { ...built, reference: built.localReference, publishedAt: new Date() };
-        return {
-          outputs: { [this.#outputName("REFERENCE")]: image.reference },
-          environmentVariables: { [this.deployedImageEnvironmentVariable]: image.reference },
-        };
+        await persistEnvironment(
+          context,
+          this.deployedImageEnvironmentVariable,
+          image.reference,
+          `Deployed ${this.providerId} computer image.`,
+        );
+        return { outputs: { [this.#outputName("REFERENCE")]: image.reference } };
       },
     };
   }
@@ -181,18 +187,13 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     context: DeploymentContext,
   ): Promise<DeploymentResult> {
     const call: ComputerCallContext = { requestId: "computer:deploy-agent-workspaces" };
-    const serviceApiKey = computerServiceApiKey(
-      context.inputs.secrets().COMPUTER_SERVICE_API_KEY ??
-        context.environment.COMPUTER_SERVICE_API_KEY,
-    );
+    const serviceApiKey = computerServiceApiKey(context.environment.COMPUTER_SERVICE_API_KEY);
     let computer;
     try {
       computer = await this.get(request.computerId, call);
     } catch (error) {
       if (!(error instanceof ComputerProviderError) || error.code !== "not_found") throw error;
-      const image =
-        context.inputs.environmentVariables()[this.deployedImageEnvironmentVariable] ??
-        context.environment[this.deployedImageEnvironmentVariable];
+      const image = context.environment[this.deployedImageEnvironmentVariable];
       computer = await this.create(
         {
           id: request.computerId,
@@ -205,13 +206,14 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     if (computer.state === "sleeping") await this.wake(computer.id, call);
     for (const workspace of request.workspaces)
       await this.#registerAgentWorkspace(computer.id, workspace, call);
-    return {
-      outputs: { "computer.id": computer.id },
-      environmentVariables: {
-        COMPUTER_ID: computer.id,
-        COMPUTER_SERVICE_URL: await this.computerServiceUrl(computer.id),
-      },
-    };
+    await persistEnvironment(context, "COMPUTER_ID", computer.id, "OpenBot computer ID.");
+    await persistEnvironment(
+      context,
+      "COMPUTER_SERVICE_URL",
+      await this.computerServiceUrl(computer.id),
+      "OpenBot computer service URL.",
+    );
+    return { outputs: { "computer.id": computer.id } };
   }
 
   async deployDevelopmentSandbox(
@@ -219,9 +221,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     context: DeploymentContext,
   ) {
     const call: ComputerCallContext = { requestId: "computer:deploy-development-sandbox" };
-    const image =
-      context.inputs.environmentVariables()[this.deployedImageEnvironmentVariable] ??
-      context.environment[this.deployedImageEnvironmentVariable];
+    const image = context.environment[this.deployedImageEnvironmentVariable];
     let computer;
     try {
       computer = await this.get(request.computerId, call);
@@ -240,6 +240,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
 
     const stateRoot = "/workspace/.openbot/development";
     const sourceRoot = "/workspace/openbot";
+    const ageKeyFile = `${stateRoot}/sops-age-key.txt`;
     const sourceMarker = `${stateRoot}/source-initialized`;
     let result = await this.exec(
       computer.id,
@@ -250,6 +251,12 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       throw new ComputerProviderError(
         "provider_unavailable",
         `Could not prepare the development sandbox: ${result.stderr}`,
+      );
+    result = await this.exec(computer.id, { command: "chmod", args: ["0700", stateRoot] }, call);
+    if (result.exitCode !== 0)
+      throw new ComputerProviderError(
+        "provider_unavailable",
+        `Could not protect the development sandbox state: ${result.stderr}`,
       );
 
     result = await this.exec(computer.id, { command: "test", args: ["-f", sourceMarker] }, call);
@@ -267,30 +274,43 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       );
     }
 
-    const environment = sandboxDeploymentEnvironment(context.inputs);
-    if (!environment.SOPS_AGE_KEY)
-      throw new ComputerProviderError(
-        "invalid_configuration",
-        "The trusted development sandbox requires the sandbox SOPS age identity",
-      );
-    const environmentFile = `${stateRoot}/environment.sh`;
-    const renderedEnvironment = await renderFileTemplatePath(
-      computerImageAssets.developmentEnvironment,
-      {
-        ENVIRONMENT_EXPORTS: shellEnvironmentExports(environment),
-      },
-    );
-    await this.writeFile(
+    await this.#writeComputerFiles(
       computer.id,
-      environmentFile,
-      new TextEncoder().encode(renderedEnvironment),
+      await developmentSandboxConfigurationFiles(context.repositoryRoot),
       call,
     );
     result = await this.exec(
       computer.id,
-      { command: "chmod", args: ["0600", environmentFile] },
+      {
+        command: "chmod",
+        args: [
+          "0600",
+          `${sourceRoot}/configuration/.env`,
+          `${sourceRoot}/configuration/.sops.yaml`,
+          `${sourceRoot}/configuration/secrets.enc.yaml`,
+        ],
+      },
       call,
     );
+    if (result.exitCode !== 0)
+      throw new ComputerProviderError(
+        "provider_unavailable",
+        `Could not protect the development sandbox configuration: ${result.stderr}`,
+      );
+
+    const ageIdentity = context.environment.SOPS_AGE_KEY;
+    if (!ageIdentity)
+      throw new ComputerProviderError(
+        "invalid_configuration",
+        "The trusted development sandbox requires the sandbox SOPS age identity",
+      );
+    await this.writeFile(
+      computer.id,
+      ageKeyFile,
+      new TextEncoder().encode(`${ageIdentity.trim()}\n`),
+      call,
+    );
+    result = await this.exec(computer.id, { command: "chmod", args: ["0400", ageKeyFile] }, call);
     if (result.exitCode !== 0)
       throw new ComputerProviderError(
         "provider_unavailable",
@@ -301,7 +321,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       computer.id,
       {
         command: "/usr/local/bin/setup-openbot-development",
-        args: [environmentFile, sourceRoot],
+        args: [sourceRoot, ageKeyFile],
         timeoutMs: 1_200_000,
       },
       call,
@@ -311,10 +331,13 @@ export abstract class BaseComputerProvider implements ComputerProvider {
         "provider_unavailable",
         `Could not initialize the development sandbox: ${result.stderr}`,
       );
-    return {
-      outputs: { "development-sandbox.computer-id": computer.id },
-      environmentVariables: { DEVELOPMENT_SANDBOX_ID: computer.id },
-    };
+    await persistEnvironment(
+      context,
+      "DEVELOPMENT_SANDBOX_ID",
+      computer.id,
+      "Trusted development sandbox ID.",
+    );
+    return { outputs: { "development-sandbox.computer-id": computer.id } };
   }
 
   async #registerAgentWorkspace(

@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { readFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
 import type {
   ComputerCallContext,
   ComputerExecRequest,
@@ -9,7 +13,6 @@ import type {
 } from "./core/index.js";
 import { DeploymentOutputs } from "@tryopenbot/runtime-provider";
 import { computerImageAssets } from "./base/assets.js";
-import { shellEnvironmentExports } from "./base/development.js";
 import {
   BaseComputerProvider,
   computerWorkspacePath,
@@ -18,6 +21,8 @@ import {
 } from "./base/index.js";
 import { MicrosandboxComputerProvider } from "./microsandbox/index.js";
 import { VercelSandboxComputerProvider } from "./vercel/index.js";
+
+const execute = promisify(execFile);
 
 class TestVercelSandboxComputerProvider extends VercelSandboxComputerProvider {
   readonly login = vi.fn(async (_args: readonly string[], _input: string) => undefined);
@@ -106,12 +111,6 @@ describe("computerWorkspacePath", () => {
       },
       timeoutMs: undefined,
     });
-  });
-
-  it("quotes trusted sandbox environment values without exposing shell syntax", () => {
-    expect(shellEnvironmentExports({ TOKEN: "one'two", SIMPLE: "value" })).toBe(
-      "export SIMPLE='value'\nexport TOKEN='one'\"'\"'two'",
-    );
   });
 });
 
@@ -205,7 +204,6 @@ describe("computer image lifecycle", () => {
     const provider = new TestVercelSandboxComputerProvider({ request });
     const inputs = new DeploymentOutputs();
     inputs.merge({
-      deploymentSecrets: { VERCEL_TOKEN: "vercel-secret" },
       outputs: {
         VERCEL_SANDBOX_IMAGE_CONTEXT: "/tmp/context",
         VERCEL_SANDBOX_IMAGE_DOCKERFILE: "/tmp/context/Containerfile",
@@ -215,23 +213,27 @@ describe("computer image lifecycle", () => {
       },
     });
 
-    await expect(
-      provider.deployable.deploy({
-        target: "production",
-        repositoryRoot: "/repository",
-        environment: {
-          VERCEL_TEAM_ID: "team_123",
-          VERCEL_AGENT_PROJECT: "openbot-agents",
-        },
-        inputs,
-        report: vi.fn(),
-      }),
-    ).resolves.toMatchObject({
-      environmentVariables: {
-        VERCEL_COMPUTER_IMAGE:
+    const environment: NodeJS.ProcessEnv = {
+      VERCEL_TEAM_ID: "team_123",
+      VERCEL_AGENT_PROJECT: "openbot-agents",
+      VERCEL_TOKEN: "vercel-secret",
+    };
+    const context = {
+      target: "production",
+      repositoryRoot: "/repository",
+      environment,
+      inputs,
+      report: vi.fn(),
+    } as const;
+    await expect(provider.deployable.deploy(context)).resolves.toMatchObject({
+      outputs: {
+        VERCEL_SANDBOX_IMAGE_REFERENCE:
           "vcr.vercel.com/tryopenbot/openbot-agents/openbot-computer:openbot-computer-aaaaaaaaaaaa",
       },
     });
+    expect(environment.VERCEL_COMPUTER_IMAGE).toBe(
+      "vcr.vercel.com/tryopenbot/openbot-agents/openbot-computer:openbot-computer-aaaaaaaaaaaa",
+    );
     expect(provider.login).toHaveBeenCalledWith(
       ["login", "vcr.vercel.com", "--username", "team_123", "--password-stdin"],
       "vercel-secret",
@@ -303,45 +305,120 @@ describe("computer image lifecycle", () => {
 });
 
 describe("trusted development sandbox", () => {
-  it("installs the sandbox-only SOPS identity without adding it to a computer spec", async () => {
+  it("loads dotenv and decrypted SOPS values through the Bash profile", async () => {
+    const root = await mkdtemp(join(tmpdir(), "openbot-development-profile-"));
+    const sourceRoot = join(root, "openbot");
+    const configurationRoot = join(sourceRoot, "configuration");
+    const binaryRoot = join(root, "bin");
+    const ageKeyFile = join(root, "age-key.txt");
+    await mkdir(configurationRoot, { recursive: true });
+    await mkdir(binaryRoot);
+    await Promise.all([
+      writeFile(join(configurationRoot, ".env"), 'PLAIN_VALUE="from-dotenv"\n'),
+      writeFile(join(configurationRoot, "secrets.enc.yaml"), "sops: {}\n"),
+      writeFile(ageKeyFile, "AGE-SECRET-KEY-1TEST\n", { mode: 0o400 }),
+      writeFile(
+        join(binaryRoot, "sops"),
+        '#!/usr/bin/env bash\nprintf \'%s\\n\' \'{"SECRET_VALUE":{"value":"from-sops"},"SECRETS_SOPS_AGE_KEY":{"value":"hidden"}}\'\n',
+        { mode: 0o755 },
+      ),
+    ]);
+
+    try {
+      const result = await execute(
+        "bash",
+        [
+          "-c",
+          `source ${JSON.stringify(computerImageAssets.developmentProfile)}; printf '%s|%s|%s' "$PLAIN_VALUE" "$SECRET_VALUE" "\${SOPS_AGE_KEY_FILE:-}"`,
+        ],
+        {
+          env: {
+            ...process.env,
+            PATH: `${binaryRoot}:${process.env.PATH ?? ""}`,
+            OPENBOT_SOURCE_ROOT: sourceRoot,
+            OPENBOT_AGE_KEY_FILE: ageKeyFile,
+          },
+        },
+      );
+      expect(result.stdout).toBe(`from-dotenv|from-sops|${ageKeyFile}`);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("installs repository configuration and a user-readable-only SOPS identity", async () => {
+    const repositoryRoot = await mkdtemp(join(tmpdir(), "openbot-development-sandbox-"));
+    await mkdir(join(repositoryRoot, "configuration"));
+    await Promise.all([
+      writeFile(join(repositoryRoot, "configuration/.env"), 'MODEL="gpt-test"\n'),
+      writeFile(join(repositoryRoot, "configuration/.sops.yaml"), "creation_rules: []\n"),
+      writeFile(join(repositoryRoot, "configuration/secrets.enc.yaml"), "sops: {}\n"),
+    ]);
     const provider = new TestComputerProvider();
     const inputs = new DeploymentOutputs();
-    inputs.merge({
-      environmentVariables: { MODEL: "gpt-test" },
-      deploymentSecrets: { VERCEL_TOKEN: "deployment-token" },
-      sandboxSecrets: { SOPS_AGE_KEY: "AGE-SECRET-KEY-1TEST" },
-    });
 
-    await expect(
-      provider.deployDevelopmentSandbox(
-        { computerId: "development" },
-        {
-          target: "production",
-          repositoryRoot: process.cwd(),
-          environment: {},
-          inputs,
-          report: vi.fn(),
-        },
-      ),
-    ).resolves.toMatchObject({
-      outputs: { "development-sandbox.computer-id": "computer" },
-      environmentVariables: { DEVELOPMENT_SANDBOX_ID: "computer" },
-    });
+    try {
+      await expect(
+        provider.deployDevelopmentSandbox(
+          { computerId: "development" },
+          {
+            target: "production",
+            repositoryRoot,
+            environment: {
+              MODEL: "gpt-test",
+              VERCEL_TOKEN: "deployment-token",
+              SOPS_AGE_KEY: "AGE-SECRET-KEY-1TEST",
+            },
+            inputs,
+            report: vi.fn(),
+          },
+        ),
+      ).resolves.toMatchObject({
+        outputs: { "development-sandbox.computer-id": "computer" },
+      });
+    } finally {
+      await rm(repositoryRoot, { recursive: true, force: true });
+    }
 
     expect(provider.create).not.toHaveBeenCalled();
     expect(provider.writeFile).toHaveBeenCalledWith(
       "computer",
-      "/workspace/.openbot/development/environment.sh",
+      "/workspace/openbot/configuration/.env",
       expect.any(Uint8Array),
+      expect.anything(),
+    );
+    expect(provider.writeFile).toHaveBeenCalledWith(
+      "computer",
+      "/workspace/openbot/configuration/secrets.enc.yaml",
+      expect.any(Uint8Array),
+      expect.anything(),
+    );
+    expect(provider.writeFile).toHaveBeenCalledWith(
+      "computer",
+      "/workspace/.openbot/development/sops-age-key.txt",
+      expect.any(Uint8Array),
+      expect.anything(),
+    );
+    expect(provider.exec).toHaveBeenCalledWith(
+      "computer",
+      {
+        command: "chmod",
+        args: ["0400", "/workspace/.openbot/development/sops-age-key.txt"],
+      },
       expect.anything(),
     );
     expect(provider.exec).toHaveBeenCalledWith(
       "computer",
       expect.objectContaining({
         command: "/usr/local/bin/setup-openbot-development",
+        args: ["/workspace/openbot", "/workspace/.openbot/development/sops-age-key.txt"],
       }),
       expect.anything(),
     );
+    const profile = await readFile(computerImageAssets.developmentProfile, "utf8");
+    expect(profile).toContain('source "$openbot_source_root/configuration/.env"');
+    expect(profile).toContain("SOPS_AGE_KEY_FILE");
+    expect(profile).toContain("sops decrypt --output-type json");
   });
 });
 
@@ -363,11 +440,6 @@ describe("agent computer-service deployment", () => {
 
     expect(result).toMatchObject({
       outputs: { "computer.id": "computer" },
-      environmentVariables: {
-        COMPUTER_ID: "computer",
-        COMPUTER_SERVICE_URL: "https://computer.test/rpc",
-      },
     });
-    expect(result.secrets).toBeUndefined();
   });
 });

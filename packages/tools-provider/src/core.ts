@@ -40,12 +40,7 @@ export interface EnsureToolServerRequest {
 }
 
 /** Startup provisioning boundary for external tool servers. */
-export interface ToolProvider extends DeployableProvider {
-  ensureServer(
-    request: EnsureToolServerRequest,
-    context: ToolsProviderCallContext,
-  ): Promise<ToolServer>;
-}
+export interface ToolProvider extends DeployableProvider {}
 
 export function providerSignal(
   context: ToolsProviderCallContext,

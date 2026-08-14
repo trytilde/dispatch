@@ -144,7 +144,7 @@ Use this sequence:
 1. Finish initial validation and commit the implementation, tests, ADRs, READMEs, and ordinary documentation.
 2. Push the branch and open the draft PR before generating the update record.
 3. Read the stable PR number from GitHub; never guess or use a local sequence.
-4. Analyze the full PR diff, commit history, review discussion, and all threads in the coding agent's database on the current machine. Inspect every locally available thread, not only the current chat or task, then retain only evidence relevant to this PR.
+4. Analyze the full PR diff, commit history, review discussion, and all threads in the coding agent's database on the current machine. Inspect every locally available thread, not only the current chat or task. Retain implementation evidence relevant to this PR in the update record. Preserve actionable but out-of-scope OpenBot feature planning in the PR body or a PR comment using the exact `<FOLLOW UP>` block syntax from `CONTEXT.md`; link an existing issue when one exists, group only work with the same owner and trigger, and include concrete acceptance proof. Do not copy unrelated planning into the repository update record.
 5. Create `docs/updates/<pr-number>.md`, commit it, and push it to the same draft PR.
 6. After every later code, test, documentation, rebase, conflict-resolution, or accepted-review change, regenerate the same record from all evidence and push its update before declaring the PR current.
 

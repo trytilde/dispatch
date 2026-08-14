@@ -80,7 +80,7 @@
 
 ## Known limitations and follow-ups
 
-<!-- Remaining limitations, deferred work, or `none`. -->
+<!-- Remaining limitations, deferred work, or `none`. Use the exact <FOLLOW UP> block syntax from CONTEXT.md for actionable out-of-scope feature planning found during the local coding-agent thread audit. Link existing issues and state owner, trigger, work, and acceptance proof. -->
 
 ## Final diff review
 

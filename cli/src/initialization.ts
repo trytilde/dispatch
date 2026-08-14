@@ -133,14 +133,6 @@ interface DescribedValue {
   value: string;
 }
 
-interface LegacyStoredIdentityMetadata {
-  version: 1;
-  ownerIdentity?:
-    | { kind: "onepassword"; reference: string }
-    | { kind: "native-keychain"; platform: "darwin" | "linux" }
-    | { kind: "aws-profile"; profile: string };
-}
-
 interface OwnerIdentity {
   creationRule: SopsCreationRule;
   metadata: SopsOwnerIdentityConfiguration;
@@ -252,7 +244,6 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   await storeUserOwnerIdentity(owner.metadata, options.environment ?? process.env, {
     path: options.userConfigurationPath,
   });
-  await rm(resolve(configurationDirectory, "sops.identity.json"), { force: true });
 
   const selectedProviders = await initializationProviders(configurationPath, options.prompts);
   const initializations = collectProviderInitializations(selectedProviders);
@@ -864,20 +855,7 @@ async function loadStoredOwnerMetadata(
 ): Promise<SopsOwnerIdentityConfiguration> {
   const path = resolveUserConfigurationPath(environment, userConfigurationPath);
   const configuration = await readUserConfiguration(path);
-  const legacyPath = resolve(repositoryRoot, "configuration/sops.identity.json");
-  if (configuration?.sops?.ownerIdentity) {
-    await rm(legacyPath, { force: true });
-    return configuration.sops.ownerIdentity;
-  }
-
-  if (await exists(legacyPath)) {
-    const legacy = JSON.parse(await readFile(legacyPath, "utf8")) as LegacyStoredIdentityMetadata;
-    if (legacy.ownerIdentity) {
-      await storeUserOwnerIdentity(legacy.ownerIdentity, environment, { path });
-      await rm(legacyPath, { force: true });
-      return legacy.ownerIdentity;
-    }
-  }
+  if (configuration?.sops?.ownerIdentity) return configuration.sops.ownerIdentity;
 
   const creationRule = await readSopsCreationRule(repositoryRoot);
   let ownerIdentity: SopsOwnerIdentityConfiguration;
@@ -929,7 +907,6 @@ async function loadStoredOwnerMetadata(
   }
 
   await storeUserOwnerIdentity(ownerIdentity, environment, { path });
-  await rm(legacyPath, { force: true });
   return ownerIdentity;
 }
 

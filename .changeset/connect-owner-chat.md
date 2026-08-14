@@ -3,6 +3,8 @@
 "@tryopenbot/control-service-proto": minor
 "@tryopenbot/control-service": minor
 "@tryopenbot/control-service-provider": minor
+"@tryopenbot/agent-service-provider": patch
+"@tryopenbot/utilities": patch
 "@tryopenbot/web": minor
 "@tryopenbot/runtime-provider": patch
 "@tryopenbot/platform-integrations": patch

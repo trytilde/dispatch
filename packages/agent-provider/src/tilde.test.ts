@@ -26,6 +26,7 @@ describe("TildeAgentProvider", () => {
   it("idempotently reconciles one agent and persists its credentials", async () => {
     const context = await agentContext("scout");
     let created = false;
+    let channelCreated = false;
     const requests: Request[] = [];
     vi.stubGlobal(
       "fetch",
@@ -51,6 +52,32 @@ describe("TildeAgentProvider", () => {
             webhook_signing_key: "signing-key",
           });
         }
+        if (request.method === "GET" && path.endsWith("/channels")) {
+          return Response.json({
+            items: channelCreated
+              ? [
+                  {
+                    id: "openbot-mission-control",
+                    provider_id: "chatkit.vercel-ui",
+                    status: "enabled",
+                  },
+                ]
+              : [],
+          });
+        }
+        if (request.method === "POST" && path.endsWith("/channels/vercel-ui")) {
+          channelCreated = true;
+          expect(await request.json()).toMatchObject({
+            id: "openbot-mission-control",
+            display_name: "OpenBot Mission Control",
+            default_agent_inbox_id: "scout",
+          });
+          return Response.json({
+            id: "openbot-mission-control",
+            provider_id: "chatkit.vercel-ui",
+            status: "enabled",
+          });
+        }
         if (request.method === "PATCH") return Response.json(agent());
         throw new Error(`Unexpected request: ${request.method} ${path}`);
       }),
@@ -66,7 +93,7 @@ describe("TildeAgentProvider", () => {
       AGENT_SCOUT_API_KEY: "agent-api-key",
       AGENT_SCOUT_WEBHOOK_SIGNING_KEY: "signing-key",
     });
-    expect(requests.filter((request) => request.method === "POST")).toHaveLength(1);
+    expect(requests.filter((request) => request.method === "POST")).toHaveLength(2);
     expect(requests.filter((request) => request.method === "PATCH")).toHaveLength(0);
   });
 

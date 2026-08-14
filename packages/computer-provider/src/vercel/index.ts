@@ -382,14 +382,20 @@ async function startComputer(
   spec: ComputerSpec,
   context: ComputerCallContext,
 ): Promise<void> {
-  await sandbox.runCommand({
-    cmd: "bash",
-    args: ["/usr/local/bin/start-openbot-computer"],
-    detached: true,
-    sudo: true,
-    env: computerEnvironment(id, spec),
-    signal: context.signal,
-  });
+  try {
+    await sandbox.runCommand({
+      cmd: "bash",
+      args: ["/usr/local/bin/start-openbot-computer"],
+      detached: true,
+      env: computerEnvironment(id, spec),
+      signal: context.signal,
+    });
+  } catch (error) {
+    throw new ComputerProviderError(
+      "provider_unavailable",
+      `Could not start /usr/local/bin/start-openbot-computer in Vercel Sandbox: ${error instanceof Error ? error.message : "unknown error"}`,
+    );
+  }
 }
 
 function inputArguments(input: ComputerInput): string[] {

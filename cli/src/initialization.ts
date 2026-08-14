@@ -527,14 +527,19 @@ export async function loadDeploymentConfiguration(
     prompts?: InitializationPrompts;
     userConfigurationPath?: string;
   } = {},
-): Promise<{ environment: NodeJS.ProcessEnv }> {
+): Promise<{ environment: NodeJS.ProcessEnv; configuration: NodeJS.ProcessEnv }> {
   const runner = options.runner ?? processCommandRunner;
   const configurationDirectory = resolve(repositoryRoot, "configuration");
   const environmentPath = resolve(configurationDirectory, ".env");
   const secretsPath = resolve(configurationDirectory, "secrets.enc.yaml");
   const staticEnvironment = await readEnvironmentFile(environmentPath);
-  if (!(await exists(secretsPath)))
-    return { environment: { ...(options.environment ?? process.env), ...staticEnvironment } };
+  if (!(await exists(secretsPath))) {
+    const configuration = { ...staticEnvironment };
+    return {
+      environment: { ...(options.environment ?? process.env), ...configuration },
+      configuration,
+    };
+  }
 
   const commandEnvironment = await sopsCommandEnvironment(repositoryRoot, runner, {
     environment: options.environment ?? process.env,
@@ -552,13 +557,16 @@ export async function loadDeploymentConfiguration(
   );
   const document = parseYaml(decrypted.stdout) as unknown;
   const parsed = parseSecretsDocument(document);
-  const deploymentEnvironment = {
-    ...(options.environment ?? process.env),
+  const configuration = {
     ...staticEnvironment,
     ...parsed.secrets,
+  };
+  const deploymentEnvironment = {
+    ...(options.environment ?? process.env),
+    ...configuration,
     [SANDBOX_SOPS_AGE_KEY]: parsed.sandboxAgeIdentity,
   };
-  return { environment: deploymentEnvironment };
+  return { environment: deploymentEnvironment, configuration };
 }
 
 export async function setEncryptedSecret(

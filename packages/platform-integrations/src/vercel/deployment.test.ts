@@ -49,6 +49,13 @@ describe("Vercel deployment helpers", () => {
       devMode: false,
       repositoryRoot: "/repo",
       environment: {
+        HOME: "/root",
+        PUBLIC_ORIGIN: "https://openbot.test",
+        API_KEY: "private",
+        VERCEL_TOKEN: "deployment-only",
+        SOPS_AGE_KEY: "sandbox-only",
+      },
+      configuration: {
         PUBLIC_ORIGIN: "https://openbot.test",
         API_KEY: "private",
         VERCEL_TOKEN: "deployment-only",

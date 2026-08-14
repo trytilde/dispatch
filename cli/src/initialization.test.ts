@@ -600,6 +600,13 @@ export default {
     });
     expect(loaded.environment.COMPUTER_SERVICE_API_KEY).toBe("computer-private");
     expect(loaded.environment[SANDBOX_SOPS_AGE_KEY]).toBe("AGE-SECRET-KEY-1TEST");
+    expect(loaded.configuration).toEqual({
+      AI_MODEL: "openai/gpt-test",
+      API_TOKEN: "private",
+      VERCEL_TOKEN: "deploy-private",
+      COMPUTER_SERVICE_API_KEY: "computer-private",
+    });
+    expect(loaded.configuration[SANDBOX_SOPS_AGE_KEY]).toBeUndefined();
     expect(JSON.parse(await readFile(testUserConfigurationPath(repositoryRoot), "utf8"))).toEqual({
       version: 1,
       sops: { ownerIdentity: { kind: "aws-profile", profile: "sso-admin" } },

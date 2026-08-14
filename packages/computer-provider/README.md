@@ -23,3 +23,13 @@ loader that exports dotenv and decrypted SOPS values for that Linux user. Ordina
 do not receive these files or the identity.
 
 All agents share one Computer filesystem and process identity. Populated workspace trees from the primary `configuration/agent/` or one of its `subagents/<id>/` seed `/workspace/<id>` once. The path is a default working directory, not a security boundary.
+
+## Public API
+
+- `ComputerProvider`: deploys agent workspaces and the trusted development Computer through the shared lifecycle.
+- `BaseComputerProvider`, `MicrosandboxComputerProvider`, and `VercelSandboxComputerProvider`: concrete lifecycle implementations and their image configuration types.
+- `ComputerProviderError`, call context, Computer specifications, handles, image records, and deployment request types: contracts used by lifecycle implementations.
+- `computerServiceApiKey()` and `scopedCapability()`: validate and scope access to the Computer service.
+- `computerImageAssets`, `computerImageWatchPaths()`, and `materializeComputerImageContext()`: expose provider-owned image inputs and render a build context.
+- `developmentSandboxSourceFiles()` and `developmentSandboxConfigurationFiles()`: materialize trusted development Computer files.
+- `randomCapability()`, `deterministicComputerId()`, `imageSourceDigest()`, `computerWorkspacePath()`, `scopeComputerExecRequest()`, `logicalComputerPath()`, and `agentWorkspaceRoot()`: deterministic lifecycle and path helpers.

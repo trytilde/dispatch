@@ -67,6 +67,7 @@ describe("TildeAgentProvider", () => {
       AGENT_SCOUT_WEBHOOK_SIGNING_KEY: "signing-key",
     });
     expect(requests.filter((request) => request.method === "POST")).toHaveLength(1);
+    expect(requests.filter((request) => request.method === "PATCH")).toHaveLength(0);
   });
 
   it("reports the Tilde operation, agent, API detail, and HTTP status", async () => {
@@ -106,7 +107,13 @@ function agent() {
   return {
     id: "scout",
     provider_id: "chatkit.http-vercel-ai-sdk",
-    configuration: {},
+    display_name: "Scout",
+    configuration: {
+      endpoint_url: "/api/agents/scout",
+      local_running_endpoint: true,
+      streaming: true,
+      timeout_ms: 300_000,
+    },
     status: "enabled",
   };
 }

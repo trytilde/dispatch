@@ -70,6 +70,16 @@ export async function reconcileAgentResources(
       agentId: source.slug,
       agentPath: source.directory,
       agentServiceOrigin,
+      platformIds: [
+        ...new Set(
+          [
+            options.providers.agentService,
+            options.providers.agent,
+            options.providers.skills,
+            options.providers.tools,
+          ].flatMap((provider) => provider.platforms?.map((platform) => platform.id) ?? []),
+        ),
+      ],
       report,
     };
     for (const [providerId, provider] of [

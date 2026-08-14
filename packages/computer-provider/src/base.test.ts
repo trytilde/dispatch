@@ -366,8 +366,11 @@ describe("computer image lifecycle", () => {
   it("builds the computer service inside the shared multi-stage image", async () => {
     const containerfile = await readFile(computerImageAssets.containerfile, "utf8");
     expect(containerfile).toContain("AS computer-service-builder");
-    expect(containerfile).toContain("pnpm --filter @tryopenbot/computer-service build");
+    expect(containerfile).toContain("pnpm --filter @tryopenbot/computer-service exec tsdown");
     expect(containerfile).toContain("COPY --from=computer-service-builder");
+    expect(containerfile).not.toContain("COPY package.json");
+    expect(containerfile).toContain("pnpm --filter @tryopenbot/utilities exec tsdown");
+    expect(containerfile).toContain("pnpm --filter @tryopenbot/computer-service-proto exec tsdown");
     expect(containerfile).not.toMatch(/^COPY apps\/computer-service\/dist/m);
     expect(containerfile).not.toContain("openbot-agent-exec");
     expect(await readFile(computerImageAssets.bootstrap, "utf8")).toContain("SOPS_VERSION=3.13.3");

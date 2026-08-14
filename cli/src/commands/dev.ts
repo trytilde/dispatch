@@ -9,6 +9,7 @@ import {
 import { loadLocalEnvironment, publicDevelopmentEnvironment } from "../environment.js";
 import { repositoryRoot } from "../paths.js";
 import { run, runChecked, supervise } from "../processes.js";
+import { createStreamingProgress } from "../ui.js";
 import { inkPrompts } from "./init.js";
 
 export async function runDevelopment(): Promise<never> {
@@ -17,12 +18,28 @@ export async function runDevelopment(): Promise<never> {
   });
   const serverPort = env.PORT ?? "4100";
   const configuration = await loadDevelopmentConfiguration(env);
-  console.log("Preparing OpenBot development infrastructure");
-  await reconcileDevelopmentInfrastructure({
-    repositoryRoot,
-    environment: env,
-    providers: configuration.providers,
-  });
+  const infrastructureProgress = createStreamingProgress(
+    "Preparing OpenBot development infrastructure",
+  );
+  try {
+    await reconcileDevelopmentInfrastructure({
+      repositoryRoot,
+      environment: env,
+      providers: configuration.providers,
+      report: ({ event, details }) => {
+        if (event === "provider.command.output" && typeof details?.output === "string") {
+          infrastructureProgress.write(details.output);
+          return;
+        }
+        const label = developmentProgressLabel(event, details?.providerId);
+        if (label) infrastructureProgress.setLabel(label);
+      },
+    });
+    infrastructureProgress.succeed("OpenBot development infrastructure ready");
+  } catch (error) {
+    infrastructureProgress.fail("OpenBot development infrastructure failed");
+    throw error;
+  }
   await reconcileAgentResources({
     repositoryRoot,
     environment: env,
@@ -103,4 +120,14 @@ export function developmentServerEnvironment(environment: NodeJS.ProcessEnv): No
     ...environment,
     NODE_OPTIONS: [nodeOptions, "--conditions=development"].filter(Boolean).join(" "),
   };
+}
+
+function developmentProgressLabel(event: string, providerId: unknown): string | undefined {
+  const provider = typeof providerId === "string" ? providerId : "provider";
+  if (event === "build.provider.check.started") return `Checking ${provider}`;
+  if (event === "build.provider.build.started") return `Building ${provider}`;
+  if (event === "deployment.provider.plan.started") return `Planning ${provider}`;
+  if (event === "deployment.provider.configure.started") return `Configuring ${provider}`;
+  if (event === "deployment.provider.deploy.started") return `Starting ${provider}`;
+  return undefined;
 }

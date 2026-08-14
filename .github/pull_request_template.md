@@ -26,7 +26,7 @@
 ## Contracts, state, deployment, and security
 
 - [ ] Public HTTP and ConnectRPC compatibility was reviewed.
-- [ ] `tilde.state.yaml` identity and variable impact was reviewed.
+- [ ] Tilde API resource identity, reconciliation, and persisted variable impact were reviewed.
 - [ ] Vercel routes, environment names, deploy checkpoints, and provider lifecycles were reviewed.
 - [ ] Changed state is classified as portable configuration, secret, control state, or ephemeral runtime state.
 - [ ] No secrets, generated deployment state, browser data, or fork-specific configuration are included.

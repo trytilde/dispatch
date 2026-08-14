@@ -16,10 +16,13 @@ export const computerImageAssets = {
 } as const;
 
 const sourcePaths = [
-  "package.json",
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
   "tsconfig.base.json",
+  "tsconfig.browser.json",
+  "tsconfig.node.json",
+  "tsdown.browser.config.ts",
+  "tsdown.node.config.ts",
   "apps/computer-service/package.json",
   "apps/computer-service/src",
   "apps/computer-service/tsconfig.json",

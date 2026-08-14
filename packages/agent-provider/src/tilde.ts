@@ -25,6 +25,12 @@ type JsonRecord = Record<string, unknown>;
 interface AgentResource {
   id: string;
   providerId: string;
+  displayName?: string;
+  endpointUrl?: string;
+  localRunningEndpoint: boolean;
+  streaming: boolean;
+  timeoutMs?: number;
+  status?: string;
 }
 
 /** Idempotently reconciles every authored agent with Tilde ChatKit. */
@@ -122,7 +128,13 @@ export class TildeAgentProvider implements AgentProvider {
         apiKey: response.api_key,
         webhookSigningKey: response.webhook_signing_key,
       };
-    } else {
+    } else if (
+      agent.displayName !== displayName ||
+      agent.endpointUrl !== endpointValue(endpointUrl, localRunningEndpoint) ||
+      agent.localRunningEndpoint !== localRunningEndpoint ||
+      !agent.streaming ||
+      agent.timeoutMs !== 300_000
+    ) {
       agent = agentResource(
         (await this.#generated(`update agent "${slug}"`, (signal) =>
           chatkitUpdateAgent({
@@ -141,16 +153,18 @@ export class TildeAgentProvider implements AgentProvider {
       );
     }
 
-    agent = agentResource(
-      (await this.#generated(`enable agent "${slug}"`, (signal) =>
-        chatkitSetAgentStatus({
-          client: this.#api,
-          path: { team_id: this.#teamId, agent_id: agent!.id },
-          body: { status: InboxStatus.ENABLED },
-          signal,
-        }),
-      )) as JsonRecord,
-    );
+    if (agent.status !== InboxStatus.ENABLED) {
+      agent = agentResource(
+        (await this.#generated(`enable agent "${slug}"`, (signal) =>
+          chatkitSetAgentStatus({
+            client: this.#api,
+            path: { team_id: this.#teamId, agent_id: agent!.id },
+            body: { status: InboxStatus.ENABLED },
+            signal,
+          }),
+        )) as JsonRecord,
+      );
+    }
     await persistEnvironment(
       context,
       `${prefix}_AGENT_ID`,
@@ -280,10 +294,23 @@ function endpointValue(endpointUrl: URL, localRunningEndpoint: boolean): string 
 }
 
 function agentResource(value: JsonRecord): AgentResource {
+  const configuration = jsonRecord(value.configuration);
   return {
     id: requiredString(value.id, "agent identifier"),
     providerId: optionalString(value.provider_id) ?? "chatkit.http-vercel-ai-sdk",
+    displayName: optionalString(value.display_name),
+    endpointUrl: optionalString(configuration?.endpoint_url),
+    localRunningEndpoint: configuration?.local_running_endpoint === true,
+    streaming: configuration?.streaming === true,
+    timeoutMs: typeof configuration?.timeout_ms === "number" ? configuration.timeout_ms : undefined,
+    status: optionalString(value.status),
   };
+}
+
+function jsonRecord(value: unknown): JsonRecord | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as JsonRecord)
+    : undefined;
 }
 
 function requiredString(value: unknown, label: string): string {

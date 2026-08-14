@@ -12,7 +12,7 @@ Use when the user asks to open, publish, prepare, or update a PR for the current
 1. Inspect branch, remotes, worktree, stashes, and existing PRs.
 2. Review the full diff against the actual default branch. Preserve unrelated user changes.
 3. Run `pre-commit-checks` and fix in-scope failures.
-4. Review protobuf, `tilde.state.yaml`, environment, deployment, package README, public documentation, and Changesets impact.
+4. Review protobuf, Tilde API reconciliation, environment, deployment, package README, public documentation, and Changesets impact.
 5. Run the architecture and ADR gate. Resolve any user decision before publishing.
 6. Use a Conventional Commits title and intentional file selection; commit the validated implementation.
 7. Push the branch and open or update the draft PR so its stable PR number is known.
@@ -57,11 +57,11 @@ Record exact commands and failures. Do not claim checks that did not run.
 Review whether the diff changes:
 
 - protobuf compatibility or public HTTP routes
-- `tilde.state.yaml` resource identity or variables
+- Tilde resource identity, reconciliation, or persisted variables
 - Vercel routing, environment names, or deploy checkpoints
 - provider contracts or one-time credential handling
 
-Classify each changed field as portable configuration, secret material, control state, or ephemeral runtime state. Secrets must never enter protobuf state, `tilde.state.yaml`, logs, or PR text. Ask the user only when a real product or migration choice remains unresolved.
+Classify each changed field as repository configuration, secret material, control state, or ephemeral runtime state. Secrets must never enter protobuf state, logs, or PR text. Ask the user only when a real product or migration choice remains unresolved.
 
 ## Configuration Ownership Gate
 
@@ -110,7 +110,7 @@ Use the checked-in `.github/pull_request_template.md` when present and complete 
 - outcome and reason
 - key implementation choices
 - checks actually run
-- migration, contract, Tilde state, deployment, and security impact
+- migration, contract, Tilde reconciliation, deployment, and security impact
 - ADR review result and links to any new or governing ADRs
 - screenshots for user-visible changes when captured
 - known limitations or follow-ups

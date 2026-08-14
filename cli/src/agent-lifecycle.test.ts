@@ -28,6 +28,7 @@ describe("agent resource lifecycle", () => {
           expect(context.agentPath).toBe(
             "/repository/configuration/agent/subagents/research-assistant",
           );
+          expect(context.platformIds).toEqual(["vercel"]);
           calls.push(`${id}.check`);
         },
         build: async () => {
@@ -52,6 +53,7 @@ describe("agent resource lifecycle", () => {
         agent: provider("agent") as AgentProvider,
         agentService: {
           baseUrl: vi.fn(() => new URL("http://127.0.0.1:4100")),
+          platforms: [{ id: "vercel" }],
         } as unknown as AgentServiceProvider,
       },
     });

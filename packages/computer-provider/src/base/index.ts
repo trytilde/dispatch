@@ -99,10 +99,10 @@ export abstract class BaseComputerProvider implements ComputerProvider {
         await this.imageRepository(context, "build");
         await runDocker(
           ["version", "--format", "{{.Server.Version}}"],
-          deploymentCallContext("check"),
+          deploymentCallContext("check", context),
         );
         if (this.#imageLifecycle.buildxPlatform)
-          await runDocker(["buildx", "version"], deploymentCallContext("check"));
+          await runDocker(["buildx", "version"], deploymentCallContext("check", context));
       },
       build: async (context) => {
         const delegate = this.lifecycleDelegate(context);
@@ -112,7 +112,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
           this.providerId,
         );
         const spec = await this.#imageSpec(context, materialized, "build");
-        const image = await this.buildImage(spec, deploymentCallContext("build"));
+        const image = await this.buildImage(spec, deploymentCallContext("build", context));
         return {
           outputs: {
             [this.#outputName("CONTEXT")]: materialized.contextDirectory,
@@ -163,9 +163,13 @@ export abstract class BaseComputerProvider implements ComputerProvider {
           sourceDigest: spec.sourceDigest,
         };
         if (this.#imageLifecycle.publish)
-          await this.authenticateImageRepository(context, spec, deploymentCallContext("deploy"));
+          await this.authenticateImageRepository(
+            context,
+            spec,
+            deploymentCallContext("deploy", context),
+          );
         const image = this.#imageLifecycle.publish
-          ? await this.publishImage(built, spec, deploymentCallContext("deploy"))
+          ? await this.publishImage(built, spec, deploymentCallContext("deploy", context))
           : { ...built, reference: built.localReference, publishedAt: new Date() };
         await persistEnvironment(
           context,
@@ -663,19 +667,7 @@ function workspaceRelativePath(path: string): string {
 }
 
 async function runDocker(args: string[], context: ComputerCallContext): Promise<void> {
-  try {
-    await execute("docker", args, {
-      signal: context.signal,
-      timeout: deadlineTimeout(context),
-      maxBuffer: 16 * 1024 * 1024,
-    });
-  } catch (error) {
-    const failure = error as Error & { stderr?: string };
-    throw new ComputerProviderError(
-      "provider_unavailable",
-      `Computer image command failed: ${failure.stderr?.trim() || failure.message}`,
-    );
-  }
+  await runDockerProcess(args, undefined, context);
 }
 
 async function runDockerWithInput(
@@ -683,37 +675,92 @@ async function runDockerWithInput(
   input: string,
   context: ComputerCallContext,
 ): Promise<void> {
+  await runDockerProcess(args, input, context);
+}
+
+async function runDockerProcess(
+  args: readonly string[],
+  input: string | undefined,
+  context: ComputerCallContext,
+): Promise<void> {
   await new Promise<void>((resolvePromise, reject) => {
+    const timeout = deadlineTimeout(context);
     const child = spawn("docker", [...args], { stdio: ["pipe", "pipe", "pipe"] });
     let stderr = "";
-    child.stderr.setEncoding("utf8");
-    child.stderr.on("data", (chunk: string) => {
-      stderr += chunk;
-    });
+    let settled = false;
+    let timedOut = false;
     const abort = () => child.kill("SIGTERM");
-    context.signal?.addEventListener("abort", abort, { once: true });
-    child.once("error", reject);
-    child.once("close", (code) => {
+    const timer =
+      timeout === undefined
+        ? undefined
+        : setTimeout(() => {
+            timedOut = true;
+            abort();
+          }, timeout);
+    const settle = (result: () => void) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
       context.signal?.removeEventListener("abort", abort);
-      if (context.signal?.aborted) {
-        reject(context.signal.reason ?? new Error("Docker command was aborted"));
-        return;
-      }
-      if (code === 0) resolvePromise();
-      else
+      result();
+    };
+    const report = (stream: "stdout" | "stderr", chunk: Buffer | string) => {
+      const output = chunk.toString();
+      if (stream === "stderr") stderr = `${stderr}${output}`.slice(-16 * 1024 * 1024);
+      context.report?.({
+        event: "provider.command.output",
+        details: { providerId: "computer", command: "docker", stream, output },
+      });
+    };
+    child.stdout.on("data", (chunk: Buffer) => report("stdout", chunk));
+    child.stderr.on("data", (chunk: Buffer) => report("stderr", chunk));
+    context.signal?.addEventListener("abort", abort, { once: true });
+    child.once("error", (error) =>
+      settle(() =>
         reject(
           new ComputerProviderError(
             "provider_unavailable",
-            `docker ${args.join(" ")} failed${stderr.trim() ? `: ${stderr.trim()}` : ""}`,
+            `Computer image command failed: ${error.message}`,
+          ),
+        ),
+      ),
+    );
+    child.once("close", (code) => {
+      if (context.signal?.aborted) {
+        settle(() => reject(context.signal?.reason ?? new Error("Docker command was aborted")));
+        return;
+      }
+      if (timedOut) {
+        settle(() =>
+          reject(
+            new ComputerProviderError(
+              "deadline_exceeded",
+              `docker ${args.join(" ")} failed after reaching its deadline${stderr.trim() ? `: ${stderr.trim()}` : ""}`,
+            ),
+          ),
+        );
+        return;
+      }
+      if (code === 0) settle(resolvePromise);
+      else
+        settle(() =>
+          reject(
+            new ComputerProviderError(
+              "provider_unavailable",
+              `docker ${args.join(" ")} failed${stderr.trim() ? `: ${stderr.trim()}` : ""}`,
+            ),
           ),
         );
     });
-    child.stdin.end(input);
+    child.stdin.end(input ?? undefined);
   });
 }
 
-function deploymentCallContext(phase: string): ComputerCallContext {
-  return { requestId: `computer-image:${phase}` };
+function deploymentCallContext(
+  phase: string,
+  context: Pick<DeploymentContext, "report">,
+): ComputerCallContext {
+  return { requestId: `computer-image:${phase}`, report: context.report };
 }
 
 function deadlineTimeout(context: ComputerCallContext): number | undefined {

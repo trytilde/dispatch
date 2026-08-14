@@ -332,6 +332,9 @@ importers:
       '@trytilde/api-client':
         specifier: github:trytilde/harness-sdk#c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d&path:packages/api-client
         version: https://codeload.github.com/trytilde/harness-sdk/tar.gz/c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d#path:packages/api-client(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.20.4)(yaml@2.9.0)
+      '@trytilde/cli':
+        specifier: 0.1.0
+        version: 0.1.0(@types/react@19.2.18)(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.20.4)
       arg:
         specifier: 5.0.2
         version: 5.0.2

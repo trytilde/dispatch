@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import type { OpenBotConfiguration } from "@tryopenbot/configuration";
+import { runLocalRuntimeTunnelCommand } from "@trytilde/cli";
 import { formatAgentLifecycleProgress, reconcileAgentResources } from "../agent-lifecycle.js";
 import { loadConfigurationModule } from "../configuration-loader.js";
 import {
@@ -70,7 +71,7 @@ export async function runDevelopment(): Promise<never> {
   console.log(`OpenBot control and agent HMR server: http://127.0.0.1:${serverPort}`);
 
   const [serverCommand, serverArguments] = developmentServerCommand();
-  const server = run(serverCommand, serverArguments, developmentServerEnvironment(env));
+  const server = await runDevelopmentServer(serverCommand, serverArguments, env);
   const web = run(
     "pnpm",
     ["--filter", "@tryopenbot/web", "dev", "--port", webPort],
@@ -120,6 +121,58 @@ export function developmentServerEnvironment(environment: NodeJS.ProcessEnv): No
     ...environment,
     NODE_OPTIONS: [nodeOptions, "--conditions=development"].filter(Boolean).join(" "),
   };
+}
+
+export function developmentTunnelOptions(
+  command: string,
+  arguments_: readonly string[],
+  environment: NodeJS.ProcessEnv,
+):
+  | {
+      baseUrl: string;
+      apiKey: string;
+      orgId: string;
+      teamId: string;
+      command: string[];
+      port: number;
+    }
+  | undefined {
+  const apiKey = environment.TILDE_API_KEY?.trim();
+  const orgId = environment.TILDE_ORG_ID?.trim();
+  const teamId = environment.TILDE_TEAM_ID?.trim();
+  if (!apiKey || !orgId || !teamId) return undefined;
+  const port = Number(environment.PORT ?? "4100");
+  if (!Number.isSafeInteger(port) || port < 1 || port > 65_535)
+    throw new Error(`Invalid OpenBot development server port: ${environment.PORT}`);
+  return {
+    baseUrl: environment.TILDE_BASE_URL?.trim() || "https://api.trytilde.ai",
+    apiKey,
+    orgId,
+    teamId,
+    command: [command, ...arguments_],
+    port,
+  };
+}
+
+async function runDevelopmentServer(
+  command: string,
+  arguments_: readonly string[],
+  environment: NodeJS.ProcessEnv,
+) {
+  const serverEnvironment = developmentServerEnvironment(environment);
+  const tunnelOptions = developmentTunnelOptions(command, arguments_, environment);
+  if (!tunnelOptions) return run(command, arguments_, serverEnvironment);
+
+  const tunnel = await runLocalRuntimeTunnelCommand({
+    ...tunnelOptions,
+    command: tunnelOptions.command,
+  });
+  process.once("exit", () => tunnel.stop());
+  void tunnel.closed.then(() => {
+    if (!tunnel.command.killed) tunnel.command.kill("SIGTERM");
+  });
+  console.log("Tilde local-runtime tunnel: connected");
+  return tunnel.command;
 }
 
 function developmentProgressLabel(event: string, providerId: unknown): string | undefined {

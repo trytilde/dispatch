@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { resolveVercelRegistryIdentity, VercelPlatformError } from "./registry.js";
+import {
+  resolveVercelProjectCredentials,
+  resolveVercelRegistryIdentity,
+  VercelPlatformError,
+} from "./registry.js";
 
 describe("Vercel registry helpers", () => {
   it("resolves a team registry namespace", async () => {
@@ -26,5 +30,22 @@ describe("Vercel registry helpers", () => {
       code: "invalid_configuration",
       message: "VERCEL_TOKEN is required to resolve the Vercel Container Registry",
     } satisfies Partial<VercelPlatformError>);
+  });
+
+  it("resolves explicit SDK credentials from the configured agent project", async () => {
+    const request = vi.fn(async () => Response.json({ id: "project-id", accountId: "team-id" }));
+
+    await expect(
+      resolveVercelProjectCredentials({
+        token: "secret",
+        project: "agents",
+        teamId: "team-id",
+        request,
+      }),
+    ).resolves.toEqual({ token: "secret", projectId: "project-id", teamId: "team-id" });
+    expect(request).toHaveBeenCalledWith(
+      new URL("https://api.vercel.com/v9/projects/agents?teamId=team-id"),
+      { headers: { Authorization: "Bearer secret" } },
+    );
   });
 });

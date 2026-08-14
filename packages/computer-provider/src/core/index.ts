@@ -10,6 +10,8 @@ export type ComputerState = "creating" | "running" | "sleeping" | "failed";
 
 export interface ComputerCallContext {
   requestId: string;
+  /** Provider credentials available to lifecycle calls; ordinary runtime calls use process.env. */
+  environment?: NodeJS.ProcessEnv;
   agentId?: string;
   signal?: AbortSignal;
   deadline?: Date;

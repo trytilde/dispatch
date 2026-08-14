@@ -99,7 +99,7 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
     const project = requiredVercelProject(context.environment, "VERCEL_CONTROL_PROJECT");
     const root = context.inputs.require("control-service.artifact");
     await materializeFileTemplate(vercelProjectTemplate, resolve(root, "vercel.json"));
-    await installVercelEnvironment(this.#runner, context, project);
+    await installVercelEnvironment(context, project, this.#request);
     const args = [
       "exec",
       "vercel",

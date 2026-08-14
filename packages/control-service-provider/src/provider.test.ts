@@ -132,7 +132,10 @@ describe("control service providers", () => {
         devMode: false,
         dryRun: false,
         repositoryRoot: root,
-        environment: { VERCEL_CONTROL_PROJECT: "openbot-control" },
+        environment: {
+          VERCEL_CONTROL_PROJECT: "openbot-control",
+          VERCEL_TOKEN: "deployment-token",
+        },
         initialInputs: { outputs: { "control-service.artifact": artifact } },
       },
     );

@@ -98,7 +98,7 @@ export class VercelAgentServiceProvider implements Buildable, Deployable, Initia
     const project = requiredVercelProject(context.environment, "VERCEL_AGENT_PROJECT");
     const root = context.inputs.require("agent-service.artifact");
     await materializeFileTemplate(vercelProjectTemplate, resolve(root, "vercel.json"));
-    await installVercelEnvironment(this.#runner, context, project);
+    await installVercelEnvironment(context, project, this.#request);
     const args = [
       "exec",
       "vercel",

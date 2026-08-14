@@ -14,7 +14,7 @@ const tilde = new TildePlatform({
   orgId: process.env.TILDE_ORG_ID!,
   teamId: process.env.TILDE_TEAM_ID!,
 });
-const vercel = new VercelPlatform({ token: process.env.VERCEL_TOKEN! });
+const vercel = new VercelPlatform();
 
 export default Configuration({
   providers: {

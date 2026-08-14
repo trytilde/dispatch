@@ -43,7 +43,7 @@ describe("TildeAgentProvider", () => {
           expect(await request.json()).toMatchObject({
             id: "scout",
             display_name: "Scout",
-            endpoint_url: "/api/agents/scout",
+            endpoint_url: "http://127.0.0.1:4100/api/agents/scout",
             local_running_endpoint: true,
           });
           return Response.json({
@@ -136,7 +136,7 @@ function agent() {
     provider_id: "chatkit.http-vercel-ai-sdk",
     display_name: "Scout",
     configuration: {
-      endpoint_url: "/api/agents/scout",
+      endpoint_url: "http://127.0.0.1:4100/api/agents/scout",
       local_running_endpoint: true,
       streaming: true,
       timeout_ms: 300_000,

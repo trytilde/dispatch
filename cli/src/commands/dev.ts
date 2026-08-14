@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import type { ChildProcess } from "node:child_process";
 import type { OpenBotConfiguration } from "@tryopenbot/configuration";
 import { runLocalRuntimeTunnelCommand } from "@trytilde/cli";
 import { formatAgentLifecycleProgress, reconcileAgentResources } from "../agent-lifecycle.js";
@@ -41,16 +42,6 @@ export async function runDevelopment(): Promise<never> {
     infrastructureProgress.fail("OpenBot development infrastructure failed");
     throw error;
   }
-  await reconcileAgentResources({
-    repositoryRoot,
-    environment: env,
-    providers: configuration.providers,
-    devMode: true,
-    report: (event) => {
-      const line = formatAgentLifecycleProgress(event);
-      if (line) console.log(line);
-    },
-  });
   const computerWatcher = await watchDevelopmentComputer({
     repositoryRoot,
     environment: env,
@@ -72,12 +63,28 @@ export async function runDevelopment(): Promise<never> {
 
   const [serverCommand, serverArguments] = developmentServerCommand();
   const server = await runDevelopmentServer(serverCommand, serverArguments, env);
+  try {
+    await reconcileAgentResources({
+      repositoryRoot,
+      environment: env,
+      providers: configuration.providers,
+      devMode: true,
+      agentServiceOrigin: server.agentServiceOrigin,
+      report: (event) => {
+        const line = formatAgentLifecycleProgress(event);
+        if (line) console.log(line);
+      },
+    });
+  } catch (error) {
+    server.stop();
+    throw error;
+  }
   const web = run(
     "pnpm",
     ["--filter", "@tryopenbot/web", "dev", "--port", webPort],
     publicEnvironment,
   );
-  const children = [server, web];
+  const children = [server.child, web];
 
   const canLaunchDesktop =
     env.NO_DESKTOP !== "1" &&
@@ -158,10 +165,17 @@ async function runDevelopmentServer(
   command: string,
   arguments_: readonly string[],
   environment: NodeJS.ProcessEnv,
-) {
+): Promise<DevelopmentServer> {
   const serverEnvironment = developmentServerEnvironment(environment);
   const tunnelOptions = developmentTunnelOptions(command, arguments_, environment);
-  if (!tunnelOptions) return run(command, arguments_, serverEnvironment);
+  if (!tunnelOptions) {
+    const child = run(command, arguments_, serverEnvironment);
+    return {
+      child,
+      agentServiceOrigin: `http://127.0.0.1:${environment.PORT ?? "4100"}`,
+      stop: () => child.kill("SIGTERM"),
+    };
+  }
 
   const previousNodeOptions = process.env.NODE_OPTIONS;
   process.env.NODE_OPTIONS = serverEnvironment.NODE_OPTIONS;
@@ -180,7 +194,20 @@ async function runDevelopmentServer(
     if (!tunnel.command.killed) tunnel.command.kill("SIGTERM");
   });
   console.log("Tilde local-runtime tunnel: connected");
-  return tunnel.command;
+  return {
+    child: tunnel.command,
+    agentServiceOrigin: tunnel.connector.tunnel_origin,
+    stop: () => {
+      tunnel.command.kill("SIGTERM");
+      tunnel.stop();
+    },
+  };
+}
+
+interface DevelopmentServer {
+  child: ChildProcess;
+  agentServiceOrigin: string;
+  stop(): void;
 }
 
 function developmentProgressLabel(event: string, providerId: unknown): string | undefined {

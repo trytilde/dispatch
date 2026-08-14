@@ -15,7 +15,7 @@ import {
   type ToolSet,
 } from "ai";
 import { z } from "zod";
-import { agentName } from "./lib/identity.js";
+import { agentId, agentName } from "./lib/identity.js";
 import instructions from "./instructions.js";
 import awaitShell from "./tools/await_shell.js";
 import bash from "./tools/bash.js";
@@ -31,9 +31,9 @@ const agentApiKey = process.env.AGENT_{{AGENT_ENV_PREFIX}}_API_KEY!;
 const configuredAgentId = process.env.AGENT_{{AGENT_ENV_PREFIX}}_AGENT_ID!;
 const mcpServerId = process.env.AGENT_{{AGENT_ENV_PREFIX}}_MCP_SERVER_ID!;
 const skillRegistryId = process.env.AGENT_{{AGENT_ENV_PREFIX}}_SKILL_REGISTRY_ID!;
-if (configuredAgentId !== agentName)
+if (configuredAgentId !== agentId)
   throw new Error(
-    `AGENT_{{AGENT_ENV_PREFIX}}_AGENT_ID must match the authored agent ID ${agentName}`,
+    `AGENT_{{AGENT_ENV_PREFIX}}_AGENT_ID must match the authored agent ID ${agentId}`,
   );
 
 const client = createClient({

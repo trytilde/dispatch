@@ -1,7 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { build } from "tsdown";
 import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
 import { materializeFileTemplate, workspaceSourceInputOptions } from "@tryopenbot/utilities";
 import type { CommandRunner } from "../command.js";
@@ -13,6 +12,7 @@ export async function buildLocalControlService(
   context: DeploymentContext,
   runner: CommandRunner,
 ): Promise<DeploymentResult> {
+  const { build } = await import("tsdown");
   await runner.run("pnpm", ["--filter", "@tryopenbot/web", "build"], {
     cwd: context.repositoryRoot,
     environment: context.environment,

@@ -43,7 +43,7 @@ describe("control service providers", () => {
     );
     await writeFile(
       join(root, "configuration/index.ts"),
-      "export default { providers: { chat: {} } };\n",
+      `import { VercelControlServiceProvider } from ${JSON.stringify(join(process.cwd(), "src/index.ts"))};\nexport default { providers: { chat: {}, controlService: new VercelControlServiceProvider() } };\n`,
     );
     const run = vi.fn<CommandRunner["run"]>(async () => ({ stdout: "", stderr: "" }));
     const result = await buildVercelControlService(
@@ -61,9 +61,12 @@ describe("control service providers", () => {
     expect(
       JSON.parse(await readFile(join(artifact!, ".vercel/output/config.json"), "utf8")),
     ).toMatchObject({ version: 3 });
-    expect(
-      await readFile(join(artifact!, ".vercel/output/functions/control.func/index.mjs"), "utf8"),
-    ).toContain("openbot-control");
+    const functionSource = await readFile(
+      join(artifact!, ".vercel/output/functions/control.func/index.mjs"),
+      "utf8",
+    );
+    expect(functionSource).toContain("openbot-control");
+    expect(functionSource).not.toContain("Cannot find native binding");
     expect(await readFile(join(artifact!, ".vercel/output/static/index.html"), "utf8")).toContain(
       "OpenBot",
     );

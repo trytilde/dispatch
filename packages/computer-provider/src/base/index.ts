@@ -219,7 +219,10 @@ export abstract class BaseComputerProvider implements ComputerProvider {
   ): Promise<DeploymentResult> {
     const delegate = this.lifecycleDelegate(context);
     if (delegate) return delegate.deployAgentWorkspaces(request, context);
-    const call: ComputerCallContext = { requestId: "computer:deploy-agent-workspaces" };
+    const call: ComputerCallContext = {
+      requestId: "computer:deploy-agent-workspaces",
+      environment: context.environment,
+    };
     const serviceApiKey = computerServiceApiKey(context.environment.COMPUTER_SERVICE_API_KEY);
     const image = context.environment[this.deployedImageEnvironmentVariable];
     const spec: ComputerSpec = {
@@ -257,7 +260,10 @@ export abstract class BaseComputerProvider implements ComputerProvider {
   ) {
     const delegate = this.lifecycleDelegate(context);
     if (delegate) return delegate.deployDevelopmentSandbox(request, context);
-    const call: ComputerCallContext = { requestId: "computer:deploy-development-sandbox" };
+    const call: ComputerCallContext = {
+      requestId: "computer:deploy-development-sandbox",
+      environment: context.environment,
+    };
     const image = context.environment[this.deployedImageEnvironmentVariable];
     let computer;
     try {

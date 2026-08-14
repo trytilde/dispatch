@@ -1,8 +1,10 @@
 import type { Sandbox as VercelSandbox } from "@vercel/sandbox";
 import { VercelPlatform, vercelPlatform } from "@tryopenbot/platform-integrations";
 import {
+  resolveVercelProjectCredentials,
   resolveVercelRegistryIdentity,
   VercelPlatformError,
+  type VercelProjectCredentials,
   type VercelRegistryIdentity,
 } from "@tryopenbot/platform-integrations/vercel/registry";
 import {
@@ -46,6 +48,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
   readonly #request: typeof fetch;
   readonly #developmentProvider: ComputerProvider;
   #registryIdentity: Promise<VercelRegistryIdentity> | undefined;
+  #sandboxCredentials: Promise<VercelProjectCredentials> | undefined;
 
   constructor(options: VercelSandboxComputerProviderOptions = {}) {
     const { platform, request, developmentProvider, ...imageDeployment } = options;
@@ -108,6 +111,20 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
     }));
   }
 
+  #vercelSandboxCredentials(context?: ComputerCallContext): Promise<VercelProjectCredentials> {
+    const environment = context?.environment ?? process.env;
+    return (this.#sandboxCredentials ??= resolveVercelProjectCredentials({
+      token: environment.VERCEL_TOKEN,
+      project: environment.VERCEL_AGENT_PROJECT,
+      teamId: environment.VERCEL_TEAM_ID,
+      request: this.#request,
+    }).catch((error: unknown) => {
+      if (error instanceof VercelPlatformError)
+        throw new ComputerProviderError(error.code, error.message);
+      throw error;
+    }));
+  }
+
   async create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle> {
     const id = deterministicComputerId("openbot", spec.id);
     if (this.#handles.has(id))
@@ -120,6 +137,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
         "Deploy the Vercel computer provider or set VERCEL_COMPUTER_IMAGE before creating a computer",
       );
     const sandbox = await Sandbox.create({
+      ...(await this.#vercelSandboxCredentials(context)),
       name: id,
       image,
       ports: [6080, 4101],
@@ -150,10 +168,10 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
     return handle;
   }
 
-  async get(id: string, _context: ComputerCallContext): Promise<ComputerHandle> {
+  async get(id: string, context: ComputerCallContext): Promise<ComputerHandle> {
     const handle = this.#handles.get(id);
     if (handle) return handle;
-    const sandbox = await this.#attach(id);
+    const sandbox = await this.#attach(id, context);
     const state =
       sandbox.status === "running" || sandbox.status === "pending"
         ? "running"
@@ -174,7 +192,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
   async wake(id: string, context: ComputerCallContext): Promise<ComputerHandle> {
     const current = await this.get(id, context);
     if (current.state === "running") return current;
-    const sandbox = await this.#attach(id);
+    const sandbox = await this.#attach(id, context);
     const spec = this.#specs.get(id) ?? {};
     await runSpecLifecycle(sandbox, spec, "wake", context);
     await startComputer(sandbox, id, spec, context);
@@ -185,7 +203,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
 
   async sleep(id: string, context: ComputerCallContext): Promise<ComputerHandle> {
     const current = await this.get(id, context);
-    const sandbox = await this.#attach(id);
+    const sandbox = await this.#attach(id, context);
     await sandbox.stop();
     this.#instances.delete(id);
     const sleeping = { ...current, state: "sleeping" as const };
@@ -195,7 +213,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
 
   async delete(id: string, context: ComputerCallContext): Promise<void> {
     await this.get(id, context);
-    const sandbox = await this.#attach(id);
+    const sandbox = await this.#attach(id, context);
     await sandbox.delete();
     this.#instances.delete(id);
     this.#handles.delete(id);
@@ -205,7 +223,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
   async exec(id: string, request: ComputerExecRequest, context: ComputerCallContext) {
     const scoped = scopeComputerExecRequest(request, context.agentId);
     const output = await (
-      await this.#attach(id)
+      await this.#attach(id, context)
     ).runCommand({
       cmd: scoped.command,
       args: [...(scoped.args ?? [])],
@@ -223,7 +241,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
 
   async readFile(id: string, path: string, _context: ComputerCallContext): Promise<Uint8Array> {
     const content = await (
-      await this.#attach(id)
+      await this.#attach(id, _context)
     ).readFileToBuffer({ path: computerWorkspacePath(path, _context.agentId) });
     if (!content)
       throw new ComputerProviderError("not_found", `Computer file ${path} was not found`);
@@ -237,7 +255,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
     _context: ComputerCallContext,
   ): Promise<void> {
     await (
-      await this.#attach(id)
+      await this.#attach(id, _context)
     ).writeFiles([
       { path: computerWorkspacePath(path, _context.agentId), content: Buffer.from(content) },
     ]);
@@ -258,7 +276,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
         `Screenshot failed: ${result.stderr}`,
       );
     const content = await (
-      await this.#attach(id)
+      await this.#attach(id, context)
     ).readFileToBuffer({ path: "/tmp/openbot-screenshot.png" });
     if (!content)
       throw new ComputerProviderError("provider_unavailable", "Screenshot output was not created");
@@ -279,7 +297,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
   }
 
   async vnc(id: string, context: ComputerCallContext) {
-    const sandbox = await this.#attach(id);
+    const sandbox = await this.#attach(id, context);
     await this.get(id, context);
     const url = new URL("/vnc.html", sandbox.domain(6080));
     url.searchParams.set("autoconnect", "1");
@@ -293,12 +311,15 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
     return new URL("/rpc", sandbox.domain(4101)).toString().replace(/\/$/, "");
   }
 
-  async #attach(id: string): Promise<VercelSandbox> {
+  async #attach(id: string, context?: ComputerCallContext): Promise<VercelSandbox> {
     const current = this.#instances.get(id);
     if (current) return current;
     try {
       const { Sandbox } = await import("@vercel/sandbox");
-      const sandbox = await Sandbox.get({ name: id });
+      const sandbox = await Sandbox.get({
+        ...(await this.#vercelSandboxCredentials(context)),
+        name: id,
+      });
       this.#instances.set(id, sandbox);
       return sandbox;
     } catch (error) {

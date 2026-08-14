@@ -61,4 +61,18 @@ describe("TildeChatProvider", () => {
     expect("registerAgent" in provider).toBe(false);
     expect("updateAgent" in provider).toBe(false);
   });
+
+  it("preserves safe HTTP context from generated-client failures", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({}, { status: 422, statusText: "Unprocessable Entity" })),
+    );
+
+    await expect(
+      new TildeChatProvider(config).createSession("agent-one", undefined, context),
+    ).rejects.toMatchObject({
+      code: "invalid_request",
+      message: "Tilde API request failed (HTTP 422 Unprocessable Entity)",
+    });
+  });
 });

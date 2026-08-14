@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "tsdown";
 import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
-import { materializeFileTemplate } from "@tryopenbot/utilities";
+import { materializeFileTemplate, workspaceSourceInputOptions } from "@tryopenbot/utilities";
 import type { CommandRunner } from "../command.js";
 
 export const controlLocalArtifact = ".openbot-deploy/control-service/service.mjs";
@@ -39,6 +39,7 @@ export async function buildLocalControlService(
     clean: true,
     minify: false,
     sourcemap: true,
+    inputOptions: workspaceSourceInputOptions(),
     outputOptions: {
       entryFileNames: "service.mjs",
       sourcemapExcludeSources: true,

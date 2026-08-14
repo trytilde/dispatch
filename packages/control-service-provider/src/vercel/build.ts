@@ -2,7 +2,7 @@ import { cp, mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { build } from "tsdown";
-import { materializeFileTemplate } from "@tryopenbot/utilities";
+import { materializeFileTemplate, workspaceSourceInputOptions } from "@tryopenbot/utilities";
 import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
 import type { CommandRunner } from "../command.js";
 
@@ -51,6 +51,7 @@ export async function buildVercelControlService(
     clean: false,
     minify: true,
     sourcemap: true,
+    inputOptions: workspaceSourceInputOptions(),
     outputOptions: {
       entryFileNames: "index.mjs",
       sourcemapExcludeSources: true,

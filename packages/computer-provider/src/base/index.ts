@@ -168,9 +168,14 @@ export abstract class BaseComputerProvider implements ComputerProvider {
             spec,
             deploymentCallContext("deploy", context),
           );
-        const image = this.#imageLifecycle.publish
+        const selectedImage = this.#imageLifecycle.publish
           ? await this.publishImage(built, spec, deploymentCallContext("deploy", context))
           : { ...built, reference: built.localReference, publishedAt: new Date() };
+        const image = await this.prepareDeployedImage(
+          selectedImage,
+          spec,
+          deploymentCallContext("deploy", context),
+        );
         await persistEnvironment(
           context,
           this.deployedImageEnvironmentVariable,
@@ -537,6 +542,18 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     context: ComputerCallContext,
   ): Promise<void> {
     return runDockerWithInput(args, input, context);
+  }
+
+  protected runDocker(args: readonly string[], context: ComputerCallContext): Promise<void> {
+    return runDocker([...args], context);
+  }
+
+  protected async prepareDeployedImage(
+    image: PublishedComputerImage,
+    _spec: ComputerImageSpec,
+    _context: ComputerCallContext,
+  ): Promise<PublishedComputerImage> {
+    return image;
   }
 
   async #imageSpec(

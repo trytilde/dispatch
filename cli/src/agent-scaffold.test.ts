@@ -1,6 +1,9 @@
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { VercelAgentServiceProvider } from "@tryopenbot/agent-service-provider";
+import { DeploymentOutputs } from "@tryopenbot/runtime-provider";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import {
   agentIdFromName,
@@ -130,6 +133,35 @@ describe("agent scaffolding", () => {
     await expect(scaffoldPrimaryAgent(root, "Hello World")).rejects.toThrow(
       `${agentTemplateDirectory} is missing; run openbot init`,
     );
+  });
+
+  it("materializes a primary agent accepted by the real agent-service typecheck", async () => {
+    const workspaceRoot = fileURLToPath(new URL("../../", import.meta.url));
+    const root = await mkdtemp(join(workspaceRoot, ".openbot-agent-typecheck-"));
+    temporaryDirectories.push(root);
+    await Promise.all(
+      ["tsconfig.base.json", "tsconfig.node.json"].map((name) =>
+        copyFile(join(workspaceRoot, name), join(root, name)),
+      ),
+    );
+    await scaffoldAgentTemplates(root);
+    await scaffoldPrimaryAgent(root, "Hello World");
+    await mkdir(join(root, "configuration"), { recursive: true });
+    await writeFile(
+      join(root, "configuration/instrumentation.ts"),
+      "export default { setup() {} };\n",
+      "utf8",
+    );
+
+    await expect(
+      new VercelAgentServiceProvider().check({
+        devMode: true,
+        repositoryRoot: root,
+        environment: process.env,
+        inputs: new DeploymentOutputs(),
+        report: () => undefined,
+      }),
+    ).resolves.toBeUndefined();
   });
 
   it("rejects an incomplete fork-owned agent template", async () => {

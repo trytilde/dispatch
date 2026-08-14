@@ -45,12 +45,22 @@ const localTools = {
 let mcpTools: Promise<ToolSet> | undefined;
 
 async function managedMcpTools(): Promise<ToolSet> {
-  mcpTools ??= createMCPClient({
+  return (mcpTools ??= createMCPClient({
     client,
     serverId: mcpServerId,
     tools: localTools,
-  }).then(({ mcp }) => mcp.tools());
-  return mcpTools;
+  }).then(async ({ mcp }) => {
+    // The Tilde wrapper preserves AI SDK tools but exposes a transport-neutral registry type.
+    const tools: Record<string, unknown> = await mcp.tools();
+    assertToolSet(tools);
+    return tools;
+  }));
+}
+
+function assertToolSet(tools: Record<string, unknown>): asserts tools is ToolSet {
+  for (const [name, definition] of Object.entries(tools))
+    if (typeof definition !== "object" || definition === null || !("inputSchema" in definition))
+      throw new TypeError(`MCP tool ${name} is not a Vercel AI SDK tool`);
 }
 
 export default chatKitEndpoint({

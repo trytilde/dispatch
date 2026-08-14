@@ -1,11 +1,15 @@
 import { createServer } from "node:net";
+import { rm } from "node:fs/promises";
+import { resolve } from "node:path";
 import {
   ComputerProviderError,
   type ComputerCallContext,
   type ComputerExecRequest,
   type ComputerHandle,
   type ComputerInput,
+  type ComputerImageSpec,
   type ComputerSpec,
+  type PublishedComputerImage,
 } from "../core/index.js";
 import {
   BaseComputerProvider,
@@ -32,6 +36,29 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
 
   constructor(imageDeployment: ComputerImageDeploymentConfig = {}) {
     super(imageDeployment, { publish: false });
+  }
+
+  protected override async prepareDeployedImage(
+    image: PublishedComputerImage,
+    spec: ComputerImageSpec,
+    context: ComputerCallContext,
+  ): Promise<PublishedComputerImage> {
+    const archive = resolve(
+      spec.contextDirectory,
+      `.openbot-microsandbox-${image.sourceDigest.slice("sha256:".length, "sha256:".length + 12)}.tar`,
+    );
+    try {
+      await this.runDocker(["save", "--output", archive, image.localReference], context);
+      await this.loadImageArchive(archive, image.reference);
+      return image;
+    } finally {
+      await rm(archive, { force: true });
+    }
+  }
+
+  protected async loadImageArchive(path: string, reference: string): Promise<void> {
+    const { Image } = await import("microsandbox");
+    await Image.load(path, { tag: reference });
   }
 
   async create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle> {
@@ -223,6 +250,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
 
     const sandbox = await Sandbox.builder(id)
       .image(image)
+      .pullPolicy("never")
       .cpus(2)
       .memory(4096)
       .rootDisk(12_288)

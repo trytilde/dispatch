@@ -45,6 +45,17 @@ class TestVercelSandboxComputerProvider extends VercelSandboxComputerProvider {
   );
 }
 
+class TestMicrosandboxComputerProvider extends MicrosandboxComputerProvider {
+  readonly docker = vi.fn(async (_args: readonly string[]) => undefined);
+  readonly load = vi.fn(async (_path: string, _reference: string) => undefined);
+  protected override runDocker(args: readonly string[]) {
+    return this.docker(args);
+  }
+  protected override loadImageArchive(path: string, reference: string) {
+    return this.load(path, reference);
+  }
+}
+
 class TestComputerProvider extends BaseComputerProvider {
   protected readonly providerId = "test";
   protected readonly deployedImageEnvironmentVariable = "TEST_COMPUTER_IMAGE";
@@ -302,6 +313,48 @@ describe("computer image lifecycle", () => {
     ).resolves.toMatchObject({
       summary: expect.stringMatching(/locally built .*\/openbot-computer/),
     });
+  });
+
+  it("loads the locally built image into Microsandbox instead of pulling Docker Hub", async () => {
+    const provider = new TestMicrosandboxComputerProvider({
+      repository: "trytilde/our-openbot-computer",
+    });
+    const inputs = new DeploymentOutputs();
+    const sourceDigest = `sha256:${"a".repeat(64)}`;
+    const reference = "trytilde/our-openbot-computer:openbot-computer-aaaaaaaaaaaa";
+    inputs.merge({
+      outputs: {
+        MICROSANDBOX_IMAGE_CONTEXT: "/tmp/openbot-microsandbox-context",
+        MICROSANDBOX_IMAGE_DOCKERFILE: "/tmp/openbot-microsandbox-context/Containerfile",
+        MICROSANDBOX_IMAGE_LOCAL_REFERENCE: reference,
+        MICROSANDBOX_IMAGE_SOURCE_DIGEST: sourceDigest,
+      },
+    });
+    const environment: NodeJS.ProcessEnv = {};
+
+    await expect(
+      provider.deployable.deploy({
+        devMode: true,
+        repositoryRoot: "/repository",
+        environment,
+        inputs,
+        report: vi.fn(),
+      }),
+    ).resolves.toMatchObject({
+      outputs: { MICROSANDBOX_IMAGE_REFERENCE: reference },
+    });
+
+    expect(provider.docker).toHaveBeenCalledWith([
+      "save",
+      "--output",
+      "/tmp/openbot-microsandbox-context/.openbot-microsandbox-aaaaaaaaaaaa.tar",
+      reference,
+    ]);
+    expect(provider.load).toHaveBeenCalledWith(
+      "/tmp/openbot-microsandbox-context/.openbot-microsandbox-aaaaaaaaaaaa.tar",
+      reference,
+    );
+    expect(environment.MICROSANDBOX_COMPUTER_IMAGE).toBe(reference);
   });
 
   it("replaces a development Computer when the image reference changes", async () => {

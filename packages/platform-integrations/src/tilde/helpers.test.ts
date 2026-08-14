@@ -1,10 +1,19 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { tildeErrorMessage, tildeErrorStatus } from "./errors.js";
 import { tildeFetch } from "./fetch.js";
+import { omitUndefinedProperties, undefinedWhenFalsy } from "./request.js";
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Tilde platform helpers", () => {
+  it("omits undefined request properties without converting them to null", () => {
+    expect(
+      omitUndefinedProperties({ present: "value", missing: undefined, disabled: false }),
+    ).toEqual({ present: "value", disabled: false });
+    expect(undefinedWhenFalsy("")).toBeUndefined();
+    expect(undefinedWhenFalsy("query")).toBe("query");
+  });
+
   it("normalizes generated-client and SDK errors", () => {
     expect(tildeErrorStatus({ status: 429 })).toBe(429);
     expect(tildeErrorStatus({ response: new Response(null, { status: 503 }) })).toBe(503);

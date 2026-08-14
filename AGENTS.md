@@ -42,10 +42,12 @@ pnpm --filter openbot test
 - `apps/desktop`: Electron main/preload shell and packaged local server.
 - `apps/computer-service`: API-key-protected ConnectRPC service inside computers.
 - `packages/control-service-proto`: browser/Electron control protobuf and generated Connect types.
-- `packages/agent-provider`: internal agent, session, and message interfaces plus the Tilde implementation.
+- `packages/chat-provider`: control-facing agent, session, and message operations plus the Tilde implementation.
+- `packages/agent-provider`: external agent-endpoint provisioning and reconciliation lifecycles.
+- `packages/computer-tools`: typed Vercel AI SDK tools that call computer-service; this is a runtime utility, not a provider.
 - `packages/configuration`: typed contract for the fork-owned composition root.
 - `packages/utilities`: shared utilities, including strict Handlebars rendering for generated source, configuration, service, and deployment files.
-- `configuration`: fork-owned Eve-compatible agent directories, provider composition, and provider plugins.
+- `configuration`: fork-owned Eve-compatible agent directories, future-agent templates, provider composition, and provider plugins.
 - `packages/runtime-provider`: shared build and phased deployment contracts and coordinator.
 - `packages/control-service-provider`, `packages/agent-service-provider`: independent local and Vercel service artifacts and deployment.
 - `packages/ui`: shared React UI and vendored Beautiful UI components.
@@ -66,6 +68,9 @@ pnpm --filter openbot test
 
 ### Providers
 
+- Providers exist only for control-service data operations, initialization and external provisioning, or check/build/deploy lifecycles. Remove interface methods without one of those consumers; do not preserve speculative generic APIs.
+- Code under `configuration/agents/` must not import provider packages or provider composition. Integrate model, tool, prompt, and vendor SDK behavior directly in the authored agent; Composio and other direct integrations do not require a provider abstraction.
+- Providers must not expose model factories, prompt injection, AI SDK tool registration, or arbitrary vendor-specific convenience functions for authored agents. Put non-provider runtime utilities in a purpose-specific package such as `computer-tools`.
 - Define provider contracts in `core.ts` or `core/` inside the owning provider package and keep implementations beside them. Do not expose internal provider interfaces over RPC by default.
 - Use the `implement-provider` skill whenever adding or editing a provider implementation.
 - Keep small implementations in `<provider>.ts`. When one owns multiple responsibilities or runtime files, use `<provider>/index.ts`, cohesive subfiles, and `assets/`.
@@ -74,7 +79,9 @@ pnpm --filter openbot test
 - Convert provider-specific failures to `ProviderError` at the adapter boundary.
 - Keep provider selection in composition code, not UI branches.
 - Construct concrete providers explicitly under `Configuration({ providers: { ... } })` in `configuration/index.ts`; provider packages must not export string-to-provider selector factories or descriptors.
+- When provider composition changes, inspect `configuration/templates/agent/` and keep future agent wiring aligned; migrate existing agents explicitly when needed.
 - Add focused contract tests for each adapter change.
+- Treat every lifecycle hook as idempotent. Repeated `check`, `build`, `plan`, `configure`, and `deploy` calls must converge without duplicate resources. Keep vendor reconciliation sequences inside provider implementations; the CLI only schedules hooks and persists typed outputs.
 
 ### Web and desktop
 
@@ -90,8 +97,9 @@ pnpm --filter openbot test
 - Keep `tilde.state.yaml` portable and variable-driven.
 - Do not guess Tilde identifiers or expose one-time API/webhook keys.
 - The agent loop uses Vercel AI SDK. Verify current SDK signatures before changing them.
+- Agent model, MCP, skill, and other external integrations are ordinary authored code. Keep the matching defaults in `configuration/templates/agent/`; migrate existing agents explicitly.
 - Agent source lives at `configuration/agents/<id>/`. Follow ADR-0011 for its supported Eve-compatible subset, ChatKit entrypoint, instrumentation ordering, and one-time `/workspace/<id>` seeds on the shared computer.
-- Keep `sandbox/workspace/` as the sole Eve-compatibility naming exception. Use Computer in runtime APIs and require each agent's `tools/computer-*.ts` tools to call the typed computer-service API with that agent's fixed ID.
+- Keep `sandbox/workspace/` as the sole Eve-compatibility naming exception. Use Computer in runtime APIs and require each agent's standard Computer tools to import `@tryopenbot/computer-tools`, which calls the typed computer-service API with that agent's fixed ID.
 
 ### Sandboxes
 
@@ -103,7 +111,7 @@ pnpm --filter openbot test
 
 ### Fork files
 
-- Repository resources use fixed paths, not `OpenBotConfiguration` options: agents in `configuration/agents/<id>/`, agent skills in `configuration/agents/<id>/skills/`, agent workspace seeds in `configuration/agents/<id>/sandbox/workspace/`, and custom providers in `configuration/providers/`. Global `configuration/skills/` and `configuration/sandbox/` directories are unsupported.
+- Repository resources use fixed paths, not `OpenBotConfiguration` options: agents in `configuration/agents/<id>/`, future-agent templates in `configuration/templates/agent/**/*.hbs`, agent skills in `configuration/agents/<id>/skills/`, agent workspace seeds in `configuration/agents/<id>/sandbox/workspace/`, and custom providers in `configuration/providers/`. Global `configuration/skills/` and `configuration/sandbox/` directories are unsupported.
 
 ## Local development
 
@@ -152,5 +160,6 @@ For browser-visible changes, verify the real route, console, network, and visibl
 - `e2e-debug-and-qa`: running browser evidence.
 - `diagnose`: evidence-led debugging.
 - `implement-provider`: provider implementation structure, assets, lifecycles, and tests.
+- `edit-openbot-configuration`: fork-owned composition, custom providers, and future-agent templates.
 - `vercel`, `tilde`: platform-specific work.
 - `safe-refactor`, `surgical-patch`, `migration`, `lean-build`, `verify-and-stop`: scope-specific engineering workflows.

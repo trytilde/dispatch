@@ -57,9 +57,18 @@ export class LocalAgentServiceProvider implements Buildable, Deployable, Initial
       steps: ["Install a separate user service", "Smoke-test /healthz"],
     };
   }
+  baseUrl(context: Pick<DeploymentContext, "target" | "environment">): URL {
+    if (context.target === "development") {
+      return new URL(
+        context.environment.PUBLIC_ORIGIN ??
+          `http://127.0.0.1:${context.environment.PORT ?? "4100"}`,
+      );
+    }
+    return new URL(`http://127.0.0.1:${context.environment.AGENT_PORT ?? "4101"}`);
+  }
   async configure(context: DeploymentContext): Promise<DeploymentResult> {
-    const port = context.environment.AGENT_PORT ?? "4101";
-    const origin = `http://127.0.0.1:${port}`;
+    const origin = this.baseUrl(context).toString().replace(/\/$/, "");
+    const port = new URL(origin).port;
     return {
       outputs: { "agent-service.origin": origin },
       environmentVariables: { AGENT_SERVICE_ORIGIN: origin, AGENT_PORT: port },

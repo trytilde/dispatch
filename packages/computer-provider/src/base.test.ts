@@ -81,40 +81,6 @@ class TestComputerProvider extends BaseComputerProvider {
   vnc = vi.fn(async () => ({ url: new URL("https://computer.test/vnc"), expiresAt: new Date(1) }));
 }
 
-describe("computer tool registration", () => {
-  it("returns AI SDK tools with Tilde custom-provider manifests", () => {
-    const provider = new TestComputerProvider();
-    const tools = provider.registerTools({ computerId: "computer", agentId: "hello-world" });
-    expect(tools.map((candidate) => candidate.typeId)).toEqual([
-      "bash",
-      "await_shell",
-      "copy_from_computer",
-      "copy_to_computer",
-      "read_file",
-      "write_file",
-      "glob",
-      "grep",
-      "screenshot",
-    ]);
-    for (const candidate of tools) {
-      expect(candidate.tilde).toMatchObject({
-        type_id: candidate.typeId,
-        description: expect.any(String),
-        input_schema: expect.any(Object),
-      });
-      expect(candidate).toHaveProperty("inputSchema");
-    }
-  });
-
-  it("injects a bounded computer prompt part", () => {
-    const provider = new TestComputerProvider();
-    expect(provider.injectPromptPart({}, { requestId: "test" })).toMatchObject({
-      id: "computer:test",
-      cache: "session",
-    });
-  });
-});
-
 describe("computerWorkspacePath", () => {
   it("defaults relative paths to an agent directory while preserving absolute paths", () => {
     expect(computerWorkspacePath("notes/today.md")).toBe("/workspace/notes/today.md");

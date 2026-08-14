@@ -23,6 +23,12 @@ describe("agent service artifacts", () => {
     const provider = new VercelAgentServiceProvider();
     expect(provider.platforms.map(({ id }) => id)).toEqual(["vercel"]);
     expect(provider.initialization.questions.map(({ id }) => id)).toEqual(["vercel-agent-project"]);
+    expect(
+      provider.baseUrl({ target: "production", environment: { VERCEL_AGENT_PROJECT: "agents" } }),
+    ).toEqual(new URL("https://agents.vercel.app"));
+    expect(provider.baseUrl({ target: "development", environment: { PORT: "4200" } })).toEqual(
+      new URL("http://127.0.0.1:4200"),
+    );
   });
 
   it("rejects agents missing a required computer tool", async () => {

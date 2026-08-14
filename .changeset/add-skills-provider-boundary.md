@@ -3,7 +3,6 @@
 "@tryopenbot/configuration": minor
 "@tryopenbot/control-service-proto": minor
 "@tryopenbot/desktop": minor
-"@tryopenbot/inference-model-provider": minor
 "@tryopenbot/control-service": minor
 "@tryopenbot/skills-provider": minor
 "@tryopenbot/ui": minor

@@ -30,13 +30,16 @@ export async function runSecrets(argv: readonly string[]): Promise<SecretsRunRes
       : await inkPrompts.input(`Value for ${name}`, { secret: true, required: true });
     await setEncryptedSecret(repositoryRoot, name, value, {
       description,
+      prompts: process.stdin.isTTY && process.stdout.isTTY ? inkPrompts : undefined,
     });
     return { json: parsed["--json"] ?? false, operation, name };
   }
   if (operation === "unset") {
     if (parsed["--stdin"] || parsed["--description"])
       throw new Error("--stdin and --description are only valid with secrets set");
-    await unsetEncryptedSecret(repositoryRoot, name);
+    await unsetEncryptedSecret(repositoryRoot, name, {
+      prompts: process.stdin.isTTY && process.stdout.isTTY ? inkPrompts : undefined,
+    });
     return { json: parsed["--json"] ?? false, operation, name };
   }
   throw new Error(`Unknown secrets operation: ${operation}`);

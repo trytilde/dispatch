@@ -10,7 +10,11 @@ import {
   LocalAgentServiceProvider,
   VercelAgentServiceProvider,
 } from "@tryopenbot/agent-service-provider";
-import type { OpenBotConfiguration } from "@tryopenbot/configuration";
+import type {
+  OpenBotConfiguration,
+  SopsOwnerIdentityConfiguration,
+  UserConfiguration,
+} from "@tryopenbot/configuration";
 import {
   MicrosandboxComputerProvider,
   VercelSandboxComputerProvider,
@@ -19,17 +23,17 @@ import {
   collectProviderInitializations,
   type DeploymentResult,
   type InitializableProvider,
+  type ProviderInitialization,
   type ProviderInitializationQuestion,
 } from "@tryopenbot/runtime-provider";
 import { tildePlatform } from "@tryopenbot/platform-integrations";
-import { openAIApiKeyProviderInitialization } from "@tryopenbot/inference-model-provider";
 import { tildeToolProviderInitialization } from "@tryopenbot/tools-provider";
 import {
   LocalControlServiceProvider,
   VercelControlServiceProvider,
 } from "@tryopenbot/control-service-provider";
 import { materializeFileTemplate, renderFileTemplatePath } from "@tryopenbot/utilities";
-import { scaffoldAgent } from "./agent-scaffold.js";
+import { scaffoldAgent, scaffoldAgentTemplates } from "./agent-scaffold.js";
 import { loadConfigurationModule } from "./configuration-loader.js";
 
 export const SANDBOX_SOPS_AGE_KEY = "SOPS_AGE_KEY";
@@ -38,19 +42,27 @@ const COMPUTER_SERVICE_ENVIRONMENT = "COMPUTER_SERVICE_API_KEY";
 const SECRETS_SOPS_AGE_SECRET = "SECRETS_SOPS_AGE_KEY";
 const DEPLOYMENT_SECRET_NAMES = new Set(["VERCEL_TOKEN"]);
 const upstreamConfigurationIgnore = "*\n!.gitignore\n";
+const openAIAgentInitialization: ProviderInitialization = {
+  id: "openai-agent-runtime",
+  label: "OpenAI agent runtime",
+  questions: [
+    {
+      id: "openai-api-key",
+      prompt: "OpenAI API key",
+      description: "API key used directly by the default authored agent template.",
+      input: "secret",
+      required: true,
+      destination: { kind: "secret", key: "OPENAI_API_KEY" },
+    },
+  ],
+};
 
 const configurationAssets = {
   instrumentation: fileURLToPath(
     new URL("./assets/agents/instrumentation.ts.hbs", import.meta.url),
   ),
   local: fileURLToPath(new URL("./assets/configuration/local.ts.hbs", import.meta.url)),
-  localRuntime: fileURLToPath(
-    new URL("./assets/configuration/local-runtime-providers.ts.hbs", import.meta.url),
-  ),
   vercel: fileURLToPath(new URL("./assets/configuration/vercel.ts.hbs", import.meta.url)),
-  vercelRuntime: fileURLToPath(
-    new URL("./assets/configuration/vercel-runtime-providers.ts.hbs", import.meta.url),
-  ),
 } as const;
 const fileTemplates = {
   document: fileURLToPath(new URL("./assets/files/document.hbs", import.meta.url)),
@@ -104,6 +116,9 @@ export interface InitializationOptions {
   prompts: InitializationPrompts;
   runner?: InitializationCommandRunner;
   platform?: NodeJS.Platform;
+  environment?: NodeJS.ProcessEnv;
+  interactive?: boolean;
+  userConfigurationPath?: string;
 }
 
 interface AgeIdentity {
@@ -118,7 +133,7 @@ interface DescribedValue {
   value: string;
 }
 
-interface StoredIdentityMetadata {
+interface LegacyStoredIdentityMetadata {
   version: 1;
   ownerIdentity?:
     | { kind: "onepassword"; reference: string }
@@ -128,7 +143,7 @@ interface StoredIdentityMetadata {
 
 interface OwnerIdentity {
   creationRule: SopsCreationRule;
-  metadata?: StoredIdentityMetadata["ownerIdentity"];
+  metadata: SopsOwnerIdentityConfiguration;
 }
 
 interface ExistingInitializationState {
@@ -192,12 +207,11 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   const environmentPath = resolve(configurationDirectory, ".env");
   const sopsConfigPath = resolve(configurationDirectory, ".sops.yaml");
   const secretsPath = resolve(configurationDirectory, "secrets.enc.yaml");
-  const identityPath = resolve(configurationDirectory, "sops.identity.json");
   const configurationPath = resolve(configurationDirectory, "index.ts");
   const configurationIgnorePath = resolve(configurationDirectory, ".gitignore");
 
   const existingMarkers = await Promise.all(
-    [secretsPath, sopsConfigPath, identityPath].map((path) => exists(path)),
+    [secretsPath, sopsConfigPath].map((path) => exists(path)),
   );
   if (existingMarkers.some(Boolean)) {
     if (!existingMarkers.every(Boolean))
@@ -227,7 +241,7 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
     runner,
     owner.metadata,
     options.repositoryRoot,
-    process.env,
+    options.environment ?? process.env,
   );
   await assertSopsEncryptionWorks(
     runner,
@@ -235,6 +249,10 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
     options.repositoryRoot,
     ownerEncryptionEnvironment,
   );
+  await storeUserOwnerIdentity(owner.metadata, options.environment ?? process.env, {
+    path: options.userConfigurationPath,
+  });
+  await rm(resolve(configurationDirectory, "sops.identity.json"), { force: true });
 
   const selectedProviders = await initializationProviders(configurationPath, options.prompts);
   const initializations = collectProviderInitializations(selectedProviders);
@@ -303,22 +321,12 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
     0o600,
   );
   await writeFileAtomically(secretsPath, await renderDocument(encrypted.stdout), 0o600);
-  await writeFileAtomically(
-    identityPath,
-    await renderDocument(
-      JSON.stringify(
-        { version: 1, ownerIdentity: owner.metadata } satisfies StoredIdentityMetadata,
-        null,
-        2,
-      ),
-    ),
-    0o600,
-  );
   await updateEnvironmentFile(environmentPath, environmentValues);
   await createConfiguration(
     resolve(configurationDirectory, "instrumentation.ts"),
     configurationAssets.instrumentation,
   );
+  await scaffoldAgentTemplates(options.repositoryRoot);
   await scaffoldAgent(options.repositoryRoot, "Hello World", { existing: "preserve" });
   await rm(configurationIgnorePath, { force: true });
   await runner.run("vp", ["install"], { cwd: options.repositoryRoot });
@@ -332,9 +340,7 @@ export async function isInitializedOpenBotRepository(repositoryRoot: string): Pr
   }
   const configurationDirectory = resolve(repositoryRoot, "configuration");
   const markers = await Promise.all(
-    [".sops.yaml", "secrets.enc.yaml", "sops.identity.json"].map((name) =>
-      exists(resolve(configurationDirectory, name)),
-    ),
+    [".sops.yaml", "secrets.enc.yaml"].map((name) => exists(resolve(configurationDirectory, name))),
   );
   return markers.every(Boolean);
 }
@@ -398,6 +404,7 @@ async function reconfigureOpenBot(
   );
   await reconcileEnvironmentFile(paths.environmentPath, environmentValues, removedEnvironmentNames);
   await writeFileAtomically(paths.secretsPath, await renderDocument(encrypted), 0o600);
+  await scaffoldAgentTemplates(options.repositoryRoot);
   await runner.run("vp", ["install"], { cwd: options.repositoryRoot });
 }
 
@@ -407,12 +414,12 @@ async function loadExistingInitializationState(
   paths: { environmentPath: string; secretsPath: string; sopsConfigPath: string },
 ): Promise<ExistingInitializationState> {
   const environmentValues = await readEnvironmentFile(paths.environmentPath);
-  const encryptionEnvironment = await sopsCommandEnvironment(
-    options.repositoryRoot,
-    runner,
-    process.env,
-    options.platform ?? process.platform,
-  );
+  const encryptionEnvironment = await sopsCommandEnvironment(options.repositoryRoot, runner, {
+    environment: options.environment ?? process.env,
+    platform: options.platform ?? process.platform,
+    prompts: options.interactive === false ? undefined : options.prompts,
+    userConfigurationPath: options.userConfigurationPath,
+  });
   const decrypted = await runner.run(
     "sops",
     ["decrypt", "--input-type", "yaml", "--output-type", "yaml", paths.secretsPath],
@@ -438,7 +445,11 @@ async function loadExistingInitializationState(
     encryptionEnvironment,
     environmentValues,
     secretValues,
-    providerEnvironment: { ...process.env, ...environmentValues, ...resolvedSecrets },
+    providerEnvironment: {
+      ...(options.environment ?? process.env),
+      ...environmentValues,
+      ...resolvedSecrets,
+    },
   };
 }
 
@@ -510,6 +521,8 @@ export async function loadDeploymentConfiguration(
     runner?: InitializationCommandRunner;
     environment?: NodeJS.ProcessEnv;
     platform?: NodeJS.Platform;
+    prompts?: InitializationPrompts;
+    userConfigurationPath?: string;
   } = {},
 ): Promise<{ environment: NodeJS.ProcessEnv; inputs: DeploymentResult }> {
   const runner = options.runner ?? processCommandRunner;
@@ -523,12 +536,12 @@ export async function loadDeploymentConfiguration(
       inputs: { environmentVariables: staticEnvironment },
     };
 
-  const commandEnvironment = await sopsCommandEnvironment(
-    repositoryRoot,
-    runner,
-    options.environment ?? process.env,
-    options.platform ?? process.platform,
-  );
+  const commandEnvironment = await sopsCommandEnvironment(repositoryRoot, runner, {
+    environment: options.environment ?? process.env,
+    platform: options.platform ?? process.platform,
+    prompts: options.prompts,
+    userConfigurationPath: options.userConfigurationPath,
+  });
   const decrypted = await runner.run(
     "sops",
     ["decrypt", "--input-type", "yaml", "--output-type", "yaml", secretsPath],
@@ -567,6 +580,8 @@ export async function setEncryptedSecret(
     runner?: InitializationCommandRunner;
     environment?: NodeJS.ProcessEnv;
     platform?: NodeJS.Platform;
+    prompts?: InitializationPrompts;
+    userConfigurationPath?: string;
     description: string;
   },
 ): Promise<void> {
@@ -574,21 +589,21 @@ export async function setEncryptedSecret(
   if (!value) throw new Error("Secret value must not be empty");
   const description = requireDescription(options.description);
   const runner = options.runner ?? processCommandRunner;
+  const environment = await sopsCommandEnvironment(repositoryRoot, runner, {
+    environment: options.environment ?? process.env,
+    platform: options.platform ?? process.platform,
+    prompts: options.prompts,
+    userConfigurationPath: options.userConfigurationPath,
+  });
   const help = await runner.run("sops", ["set", "--help"], {
     cwd: repositoryRoot,
-    environment: options.environment ?? process.env,
+    environment,
   });
   if (!help.stdout.includes("--value-stdin") && !help.stderr.includes("--value-stdin")) {
     throw new Error(
       "The installed SOPS does not support secure stdin values; install a current SOPS release",
     );
   }
-  const environment = await sopsCommandEnvironment(
-    repositoryRoot,
-    runner,
-    options.environment ?? process.env,
-    options.platform ?? process.platform,
-  );
   await runner.run(
     "sops",
     [
@@ -636,16 +651,18 @@ export async function unsetEncryptedSecret(
     runner?: InitializationCommandRunner;
     environment?: NodeJS.ProcessEnv;
     platform?: NodeJS.Platform;
+    prompts?: InitializationPrompts;
+    userConfigurationPath?: string;
   } = {},
 ): Promise<void> {
   validateSecretName(name);
   const runner = options.runner ?? processCommandRunner;
-  const environment = await sopsCommandEnvironment(
-    repositoryRoot,
-    runner,
-    options.environment ?? process.env,
-    options.platform ?? process.platform,
-  );
+  const environment = await sopsCommandEnvironment(repositoryRoot, runner, {
+    environment: options.environment ?? process.env,
+    platform: options.platform ?? process.platform,
+    prompts: options.prompts,
+    userConfigurationPath: options.userConfigurationPath,
+  });
   await runner.run(
     "sops",
     [
@@ -686,7 +703,7 @@ async function configureOwnerIdentity(
       );
       return {
         creationRule: { kms: [arn] },
-        ...(profile ? { metadata: { kind: "aws-profile" as const, profile } } : {}),
+        metadata: { kind: "aws-profile", ...(profile ? { profile } : {}) },
       };
     }
     case "gcp-kms":
@@ -699,6 +716,7 @@ async function configureOwnerIdentity(
             }),
           ],
         },
+        metadata: { kind: "gcp-kms" },
       };
     case "azure-key-vault":
       return {
@@ -710,6 +728,7 @@ async function configureOwnerIdentity(
             }),
           ],
         },
+        metadata: { kind: "azure-key-vault" },
       };
     case "vault-transit":
       return {
@@ -721,6 +740,7 @@ async function configureOwnerIdentity(
             }),
           ],
         },
+        metadata: { kind: "vault-transit" },
       };
     case "onepassword": {
       const vault = await options.prompts.input("1Password vault", {
@@ -837,20 +857,174 @@ async function storeInNativeKeychain(
 
 async function loadStoredOwnerMetadata(
   repositoryRoot: string,
-): Promise<StoredIdentityMetadata["ownerIdentity"]> {
-  const path = resolve(repositoryRoot, "configuration/sops.identity.json");
+  environment: NodeJS.ProcessEnv,
+  prompts: InitializationPrompts | undefined,
+  platform: NodeJS.Platform,
+  userConfigurationPath?: string,
+): Promise<SopsOwnerIdentityConfiguration> {
+  const path = resolveUserConfigurationPath(environment, userConfigurationPath);
+  const configuration = await readUserConfiguration(path);
+  const legacyPath = resolve(repositoryRoot, "configuration/sops.identity.json");
+  if (configuration?.sops?.ownerIdentity) {
+    await rm(legacyPath, { force: true });
+    return configuration.sops.ownerIdentity;
+  }
+
+  if (await exists(legacyPath)) {
+    const legacy = JSON.parse(await readFile(legacyPath, "utf8")) as LegacyStoredIdentityMetadata;
+    if (legacy.ownerIdentity) {
+      await storeUserOwnerIdentity(legacy.ownerIdentity, environment, { path });
+      await rm(legacyPath, { force: true });
+      return legacy.ownerIdentity;
+    }
+  }
+
+  const creationRule = await readSopsCreationRule(repositoryRoot);
+  let ownerIdentity: SopsOwnerIdentityConfiguration;
+  if (creationRule.kms) {
+    if (!prompts) throw missingUserSopsConfigurationError(path);
+    const profile = await prompts.input(
+      "AWS profile for SOPS (leave blank to use the default credential chain)",
+      { id: "aws-profile" },
+    );
+    ownerIdentity = { kind: "aws-profile", ...(profile ? { profile } : {}) };
+  } else if (creationRule.gcp_kms) {
+    ownerIdentity = { kind: "gcp-kms" };
+  } else if (creationRule.azure_keyvault) {
+    ownerIdentity = { kind: "azure-key-vault" };
+  } else if (creationRule.hc_vault_transit_uri) {
+    ownerIdentity = { kind: "vault-transit" };
+  } else if (creationRule.age) {
+    if (!prompts) throw missingUserSopsConfigurationError(path);
+    const kind = await prompts.select(
+      "Where is this repository's existing SOPS owner age identity stored?",
+      [
+        {
+          value: "onepassword",
+          label: "1Password",
+          description: "Load the existing identity from a 1Password secret reference.",
+        },
+        {
+          value: "native-age",
+          label: "Native keychain",
+          description: "Load the existing identity from this computer's keychain.",
+        },
+      ],
+      { id: "existing-owner-identity" },
+    );
+    if (kind === "onepassword") {
+      const reference = await prompts.input("1Password secret reference", {
+        id: "onepassword-reference",
+        description: "For example: op://Engineering/OpenBot owner identity/password",
+        required: true,
+      });
+      ownerIdentity = { kind: "onepassword", reference };
+    } else {
+      if (platform !== "darwin" && platform !== "linux")
+        throw new Error(`Native keychain age identities are not supported on ${platform}`);
+      ownerIdentity = { kind: "native-keychain", platform };
+    }
+  } else {
+    throw new Error("configuration/.sops.yaml does not contain a supported owner identity");
+  }
+
+  await storeUserOwnerIdentity(ownerIdentity, environment, { path });
+  await rm(legacyPath, { force: true });
+  return ownerIdentity;
+}
+
+async function readSopsCreationRule(repositoryRoot: string): Promise<SopsCreationRule> {
+  const path = resolve(repositoryRoot, "configuration/.sops.yaml");
+  const document = parseYaml(await readFile(path, "utf8")) as
+    | { creation_rules?: unknown }
+    | undefined;
+  const rule = Array.isArray(document?.creation_rules) ? document.creation_rules[0] : undefined;
+  if (!rule || typeof rule !== "object" || Array.isArray(rule))
+    throw new Error("configuration/.sops.yaml does not contain an OpenBot creation rule");
+  return rule as SopsCreationRule;
+}
+
+function resolveUserConfigurationPath(
+  environment: NodeJS.ProcessEnv,
+  explicitPath?: string,
+): string {
+  if (explicitPath) return resolve(explicitPath);
+  const home = environment.HOME?.trim() || environment.USERPROFILE?.trim();
+  if (!home) throw new Error("Cannot locate ~/.openbot/config.json because HOME is not configured");
+  return resolve(home, ".openbot/config.json");
+}
+
+async function readUserConfiguration(path: string): Promise<UserConfiguration | undefined> {
   if (!(await exists(path))) return undefined;
-  const metadata = JSON.parse(await readFile(path, "utf8")) as StoredIdentityMetadata;
-  return metadata.ownerIdentity;
+  let value: unknown;
+  try {
+    value = JSON.parse(await readFile(path, "utf8"));
+  } catch (error) {
+    throw new Error(`OpenBot user configuration is invalid JSON: ${path}`, { cause: error });
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error(`OpenBot user configuration must be a JSON object: ${path}`);
+  const configuration = value as Partial<UserConfiguration>;
+  if (
+    configuration.version !== 1 ||
+    (configuration.sops !== undefined &&
+      (typeof configuration.sops !== "object" || Array.isArray(configuration.sops)))
+  )
+    throw new Error(`OpenBot user configuration has an unsupported schema: ${path}`);
+  if (
+    configuration.sops?.ownerIdentity !== undefined &&
+    !isSopsOwnerIdentityConfiguration(configuration.sops.ownerIdentity)
+  )
+    throw new Error(`OpenBot user SOPS configuration is invalid: ${path}`);
+  return configuration as UserConfiguration;
+}
+
+function isSopsOwnerIdentityConfiguration(value: unknown): value is SopsOwnerIdentityConfiguration {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const identity = value as Record<string, unknown>;
+  switch (identity.kind) {
+    case "onepassword":
+      return typeof identity.reference === "string" && Boolean(identity.reference.trim());
+    case "native-keychain":
+      return identity.platform === "darwin" || identity.platform === "linux";
+    case "aws-profile":
+      return identity.profile === undefined || typeof identity.profile === "string";
+    case "gcp-kms":
+    case "azure-key-vault":
+    case "vault-transit":
+      return true;
+    default:
+      return false;
+  }
+}
+
+async function storeUserOwnerIdentity(
+  ownerIdentity: SopsOwnerIdentityConfiguration,
+  environment: NodeJS.ProcessEnv,
+  options: { path?: string } = {},
+): Promise<void> {
+  const path = resolveUserConfigurationPath(environment, options.path);
+  const existing = (await readUserConfiguration(path)) ?? { version: 1, sops: {} };
+  const configuration: UserConfiguration = {
+    ...existing,
+    version: 1,
+    sops: { ...existing.sops, ownerIdentity },
+  };
+  await writeFileAtomically(path, `${JSON.stringify(configuration, null, 2)}\n`, 0o600);
+}
+
+function missingUserSopsConfigurationError(path: string): Error {
+  return new Error(
+    `SOPS owner configuration is missing from ${path}. Run openbot init in an interactive terminal to configure the existing owner identity; non-interactive commands cannot choose it safely.`,
+  );
 }
 
 async function loadStoredOwnerIdentity(
   repositoryRoot: string,
   runner: InitializationCommandRunner,
   platform: NodeJS.Platform,
-  metadata: Exclude<StoredIdentityMetadata["ownerIdentity"], { kind: "aws-profile" }> | undefined,
+  metadata: SopsOwnerIdentityConfiguration,
 ): Promise<string | undefined> {
-  if (!metadata) return undefined;
   if (metadata.kind === "onepassword") {
     return (
       await runner.run("op", ["read", "--no-newline", metadata.reference], {
@@ -858,6 +1032,7 @@ async function loadStoredOwnerIdentity(
       })
     ).stdout.trim();
   }
+  if (metadata.kind !== "native-keychain") return undefined;
   if (metadata.platform !== platform)
     throw new Error(
       `The configured SOPS identity belongs to ${metadata.platform}, not ${platform}`,
@@ -883,20 +1058,36 @@ async function loadStoredOwnerIdentity(
 async function sopsCommandEnvironment(
   repositoryRoot: string,
   runner: InitializationCommandRunner,
-  environment: NodeJS.ProcessEnv,
-  platform: NodeJS.Platform,
+  options: {
+    environment: NodeJS.ProcessEnv;
+    platform: NodeJS.Platform;
+    prompts?: InitializationPrompts;
+    userConfigurationPath?: string;
+  },
 ): Promise<NodeJS.ProcessEnv> {
-  const metadata = await loadStoredOwnerMetadata(repositoryRoot);
+  if (
+    options.environment.SOPS_AGE_KEY ||
+    options.environment.SOPS_AGE_KEY_FILE ||
+    options.environment.SOPS_AGE_KEY_CMD
+  )
+    return { ...options.environment };
+  const metadata = await loadStoredOwnerMetadata(
+    repositoryRoot,
+    options.environment,
+    options.prompts,
+    options.platform,
+    options.userConfigurationPath,
+  );
   const commandEnvironment =
-    metadata?.kind === "aws-profile"
-      ? await awsProfileEnvironment(runner, metadata.profile, repositoryRoot, environment)
-      : { ...environment };
+    metadata.kind === "aws-profile" && metadata.profile
+      ? await awsProfileEnvironment(runner, metadata.profile, repositoryRoot, options.environment)
+      : { ...options.environment };
   if (!commandEnvironment.SOPS_AGE_KEY) {
     const ownerIdentity = await loadStoredOwnerIdentity(
       repositoryRoot,
       runner,
-      platform,
-      metadata?.kind === "aws-profile" ? undefined : metadata,
+      options.platform,
+      metadata,
     );
     if (ownerIdentity) commandEnvironment.SOPS_AGE_KEY = ownerIdentity;
   }
@@ -978,11 +1169,11 @@ function sopsEncryptionArguments(rule: SopsCreationRule): string[] {
 
 async function sopsEncryptionEnvironment(
   runner: InitializationCommandRunner,
-  metadata: StoredIdentityMetadata["ownerIdentity"],
+  metadata: SopsOwnerIdentityConfiguration,
   cwd: string,
   environment: NodeJS.ProcessEnv,
 ): Promise<NodeJS.ProcessEnv> {
-  if (metadata?.kind !== "aws-profile") return environment;
+  if (metadata.kind !== "aws-profile" || !metadata.profile) return environment;
   return awsProfileEnvironment(runner, metadata.profile, cwd, environment);
 }
 
@@ -1121,18 +1312,10 @@ async function initializationProviders(
   });
   if (runtime === "local") {
     await createConfiguration(path, configurationAssets.local);
-    await createConfiguration(
-      resolve(dirname(path), "runtime-providers.ts"),
-      configurationAssets.localRuntime,
-    );
     return builtInRuntimeInitializationProviders(runtime);
   }
   if (runtime === "vercel") {
     await createConfiguration(path, configurationAssets.vercel);
-    await createConfiguration(
-      resolve(dirname(path), "runtime-providers.ts"),
-      configurationAssets.vercelRuntime,
-    );
     return builtInRuntimeInitializationProviders(runtime);
   }
   throw new Error(`Unsupported runtime provider: ${runtime}`);
@@ -1184,7 +1367,7 @@ function applicationInitializationProviders(
       platforms: [tildePlatform],
       initialization: tildeToolProviderInitialization,
     },
-    { initialization: openAIApiKeyProviderInitialization },
+    { initialization: openAIAgentInitialization },
   ];
 }
 
@@ -1209,9 +1392,9 @@ function configuredProviders(configuration: OpenBotConfiguration): Initializable
   const providers: Array<InitializableProvider | undefined> = [
     configuration.providers.controlService,
     configuration.providers.agentService,
+    configuration.providers.chat,
     configuration.providers.agent,
     configuration.providers.computer,
-    configuration.providers.inferenceModel,
     configuration.providers.skills,
     configuration.providers.tools,
   ];
@@ -1221,7 +1404,10 @@ function configuredProviders(configuration: OpenBotConfiguration): Initializable
 function configuredInitializationProviders(
   configuration: OpenBotConfiguration,
 ): InitializableProvider[] {
-  return configuredProviders(configuration).map(compatibleInitializationProvider);
+  return [
+    ...configuredProviders(configuration).map(compatibleInitializationProvider),
+    { initialization: openAIAgentInitialization },
+  ];
 }
 
 function compatibleInitializationProvider(provider: InitializableProvider): InitializableProvider {
@@ -1235,6 +1421,7 @@ function compatibleInitializationProvider(provider: InitializableProvider): Init
     case "VercelSandboxComputerProvider":
       return new VercelSandboxComputerProvider();
     case "TildeAgentProvider":
+    case "TildeChatProvider":
     case "TildeSkillProvider":
       return { platforms: [tildePlatform] };
     case "TildeToolProvider":
@@ -1242,8 +1429,6 @@ function compatibleInitializationProvider(provider: InitializableProvider): Init
         platforms: [tildePlatform],
         initialization: tildeToolProviderInitialization,
       };
-    case "OpenAIApiKeyInferenceModelProvider":
-      return { initialization: openAIApiKeyProviderInitialization };
     default:
       return provider;
   }

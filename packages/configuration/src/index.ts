@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import type { AgentProvider } from "@tryopenbot/agent-provider";
+import type { AgentServiceProvider } from "@tryopenbot/agent-service-provider";
+import type { ChatProvider } from "@tryopenbot/chat-provider";
 import type { ComputerProvider } from "@tryopenbot/computer-provider";
-import type { InferenceModelProvider } from "@tryopenbot/inference-model-provider";
-import type { Buildable, Deployable, InitializableProvider } from "@tryopenbot/runtime-provider";
+import type { ControlServiceProvider } from "@tryopenbot/control-service-provider";
 import type { SkillProvider } from "@tryopenbot/skills-provider";
 import type { ToolProvider } from "@tryopenbot/tools-provider";
 
@@ -11,25 +12,34 @@ export interface ProviderPluginManifest {
   readonly registrations: readonly unknown[];
 }
 
-export type ServiceProvider = Buildable & Deployable & InitializableProvider;
-
 export interface OpenBotProviders {
-  controlService: ServiceProvider;
-  agentService: ServiceProvider;
+  controlService: ControlServiceProvider;
+  agentService: AgentServiceProvider;
+  chat: ChatProvider;
   agent: AgentProvider;
   computer: ComputerProvider;
-  inferenceModel: InferenceModelProvider;
   skills: SkillProvider;
   tools: ToolProvider;
 }
 
-export type AgentRuntimeProviders = Pick<
-  OpenBotProviders,
-  "agent" | "computer" | "inferenceModel" | "skills" | "tools"
->;
-
 export interface OpenBotConfiguration {
   providers: OpenBotProviders;
+}
+
+export type SopsOwnerIdentityConfiguration =
+  | { kind: "onepassword"; reference: string }
+  | { kind: "native-keychain"; platform: "darwin" | "linux" }
+  | { kind: "aws-profile"; profile?: string }
+  | { kind: "gcp-kms" }
+  | { kind: "azure-key-vault" }
+  | { kind: "vault-transit" };
+
+/** User-local OpenBot settings. Stored at ~/.openbot/config.json, never in a fork. */
+export interface UserConfiguration {
+  version: 1;
+  sops?: {
+    ownerIdentity?: SopsOwnerIdentityConfiguration;
+  };
 }
 
 export interface RepositoryManifest {
@@ -41,10 +51,6 @@ export interface RepositoryManifest {
 
 export function Configuration(configuration: OpenBotConfiguration): OpenBotConfiguration {
   return configuration;
-}
-
-export function RuntimeProviders(providers: AgentRuntimeProviders): AgentRuntimeProviders {
-  return providers;
 }
 
 export function repositoryDigest(files: Readonly<Record<string, string>>): string {

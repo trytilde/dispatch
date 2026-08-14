@@ -14,6 +14,7 @@ Read `docs/adrs/0011-eve-compatible-agent-layout.md`, `docs/agents.md`, the targ
 ```text
 configuration/
 ├── instrumentation.ts
+├── templates/agent/**/*.hbs
 └── agents/<id>/
     ├── agent.ts
     ├── instructions.ts
@@ -25,14 +26,16 @@ configuration/
 ```
 
 - Derive the agent ID from its directory name. Use lowercase kebab-case matching `^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$`.
-- To create an agent interactively, run `pnpm openbot new-agent` and enter its display name. From an agent or other non-interactive shell, run `pnpm openbot new-agent "<display name>"`. Let the CLI derive the ID and materialize the complete tree; customize the generated files afterward. Do not hand-copy another agent directory.
+- To create an agent interactively, run `pnpm openbot new-agent` and enter its display name. From an agent or other non-interactive shell, run `pnpm openbot new-agent "<display name>"`. The CLI loads `configuration/templates/agent/**/*.hbs`, derives the ID, strips each `.hbs` suffix, materializes the complete tree, then invokes idempotent development provisioning for every authored agent. Customize the generated files afterward. Do not hand-copy another agent directory or duplicate remote provisioning in the command.
+- Treat `configuration/templates/agent/` as fork-owned defaults for future agents. Change it when all newly created agents need different SDK imports, environment variables, tools, skills, instructions, or workspace seeds. Template edits never rewrite existing agents.
+- Never import provider packages or `configuration/index.ts` from authored agents. Integrate model, MCP, skills, Composio, and other vendor SDKs directly in agent code so provider abstractions do not constrain agent development.
 - Require `agent.ts` and `instructions.ts`.
 - Default-export the Tilde `chatKitEndpoint(...)` request handler from `agent.ts`. Import `instructions.ts` explicitly and pass it into the endpoint's system prompt.
 - Default-export TypeScript instructions from `instructions.ts`. Do not add `instructions.md`.
 - Keep reusable import-only TypeScript in `lib/`.
 - Default-export one Vercel AI SDK tool from each file in `tools/`.
 - Require the scaffolded computer tools `await_shell.ts`, `bash.ts`, `copy_from_computer.ts`, `copy_to_computer.ts`, `read_file.ts`, `write_file.ts`, `glob.ts`, `grep.ts`, and `screenshot.ts`. Import them explicitly in `agent.ts` under matching tool names.
-- Keep each authored computer-tool file as a thin default export from `@tryopenbot/computer-provider/tools`, passing the path-derived agent ID as a fixed option. Shared implementations and Zod schemas belong to that package, not in each agent and not in the proto package. Never call Microsandbox, Vercel Sandbox, `fetch`, or an untyped computer endpoint from an agent tool.
+- Keep each authored computer-tool file as a thin default export from `@tryopenbot/computer-tools`, passing the path-derived agent ID as a fixed option. Shared implementations and Zod schemas belong to that non-provider runtime utility package, not in each agent and not in the proto package. Never call Microsandbox, Vercel Sandbox, `fetch`, or an untyped computer endpoint from an agent tool.
 - Authenticate the typed client with the SOPS-installed `OPENBOT_COMPUTER_SERVICE_API_KEY`. Do not generate, derive, return, log, or persist a second agent-local computer credential.
 - Store specification-conformant skill Markdown files or skill folders under `skills/`.
 - Preserve the scaffolded `skills/create-agent/SKILL.md`; it teaches runtime agents to use the non-interactive `new-agent` command from a writable source checkout and to leave deployment explicit.
@@ -42,7 +45,7 @@ configuration/
 
 ## Instrument startup
 
-Use `defineInstrumentation({ setup })` from `@tryopenbot/agent-service-provider`. Keep `configuration/instrumentation.ts` installation-wide and `configuration/agents/<id>/instrumentation.ts` agent-specific. Both are optional at runtime; an empty `setup` function is valid.
+Use `defineInstrumentation({ setup })` from `@tryopenbot/configuration/instrumentation`. Keep `configuration/instrumentation.ts` installation-wide and `configuration/agents/<id>/instrumentation.ts` agent-specific. Both are optional at runtime; an empty `setup` function is valid.
 
 Run global instrumentation first, agent instrumentation second, and import `agent.ts` only afterward. Supply the path-derived `agentName`. Instrumentation is a server startup hook, not an agent tool or request hook.
 
@@ -60,7 +63,7 @@ Scaffold `sandbox/workspace/.profile`. Bash tools run `bash -lc` with `HOME=/wor
 
 ## Initialize examples
 
-Keep `openbot init` calling the same scaffolder as `openbot new-agent` to generate the Hello World agent with:
+Keep `openbot init` seeding the default Handlebars files into `configuration/templates/agent/` without overwriting fork edits, then calling the same scaffolder as `openbot new-agent` to generate the Hello World agent with:
 
 - `agent.ts` importing `instructions.ts`
 - an empty global and agent instrumentation hook
@@ -68,7 +71,7 @@ Keep `openbot init` calling the same scaffolder as `openbot new-agent` to genera
 - a `lib/` helper
 - a sandbox workspace seed with `.profile`
 
-Generate source files from Handlebars assets through `@tryopenbot/utilities`; do not embed whole generated files in TypeScript strings.
+Generate source files from the fork-owned Handlebars template through `@tryopenbot/utilities`; do not embed whole generated files in TypeScript strings. The CLI's packaged assets only seed a missing template during init.
 
 ## Verify
 

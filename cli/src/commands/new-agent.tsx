@@ -1,6 +1,9 @@
 import arg from "arg";
+import { reconcileAgentResources } from "../agent-lifecycle.js";
 import { scaffoldAgent, type ScaffoldedAgent } from "../agent-scaffold.js";
+import { loadLocalEnvironment } from "../environment.js";
 import { repositoryRoot } from "../paths.js";
+import { loadDevelopmentConfiguration } from "./dev.js";
 import { inkPrompts } from "./init.js";
 
 export interface NewAgentRunResult {
@@ -17,5 +20,16 @@ export async function runNewAgent(args: readonly string[] = []): Promise<NewAgen
     );
   }
   const name = suppliedName || (await inkPrompts.input("Agent name", { required: true }));
-  return { agent: await scaffoldAgent(repositoryRoot, name), json: parsed["--json"] ?? false };
+  const agent = await scaffoldAgent(repositoryRoot, name);
+  const environment = await loadLocalEnvironment({
+    prompts: process.stdin.isTTY && process.stdout.isTTY ? inkPrompts : undefined,
+  });
+  const configuration = await loadDevelopmentConfiguration(environment);
+  await reconcileAgentResources({
+    repositoryRoot,
+    environment,
+    providers: configuration.providers,
+    target: "development",
+  });
+  return { agent, json: parsed["--json"] ?? false };
 }

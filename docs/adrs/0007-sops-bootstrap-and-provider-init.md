@@ -34,7 +34,7 @@ After the initial bootstrap, running `openbot init` inside the configured reposi
 
 Plaintext sent to SOPS stays in memory. The CLI uses a private named pipe for SOPS versions that require an input filename; the FIFO contains no stored file data. Generated owner age identities are passed to 1Password or native keychain commands over standard input, never command arguments.
 
-An explicitly selected AWS profile is stored as non-secret OpenBot owner metadata rather than as SOPS `aws_profile` configuration. Before every owner-side SOPS operation, the CLI asks AWS CLI to refresh and export that profile's temporary credentials, then passes them to SOPS only through the child-process environment. This avoids SOPS selecting an expired cached IAM Identity Center session while preserving the profile choice across init, decrypt, and secret mutation.
+Owner identity lookup metadata is machine- and user-specific. It lives in `~/.openbot/config.json` under `sops`, not in the repository. An explicitly selected AWS profile is stored there rather than as SOPS `aws_profile` configuration. Before every owner-side SOPS operation, the CLI asks AWS CLI to refresh and export that profile's temporary credentials, then passes them to SOPS only through the child-process environment. This avoids SOPS selecting an expired cached IAM Identity Center session while preserving the profile choice across init, decrypt, and secret mutation. Interactive commands recover missing lookup metadata without replacing existing recipients; non-interactive commands fail with an actionable instruction instead of guessing.
 
 ```mermaid
 flowchart LR
@@ -54,11 +54,12 @@ flowchart LR
 - Loss of the sandbox does not lose owner access to repository secrets.
 - Compromise of the trusted sandbox exposes this installation's secrets and deployment authority; use a unique age identity per installation.
 - Changing recipients remains an owner maintenance operation using `sops updatekeys` and, after compromise, `sops rotate`.
-- 1Password secret references and native-keychain metadata are non-secret and may be committed; private identities are not.
+- 1Password secret references, AWS profiles, and native-keychain metadata are non-secret but user-specific; keep them in `~/.openbot/config.json`, never the fork.
 - The computer provider owns trusted sandbox creation, source placement, and root-only environment installation.
 
 ## Updates
 
+- 2026-08-14T10:27:59+02:00: Moved user-specific SOPS owner lookup metadata from the fork into typed `~/.openbot/config.json` state, added safe legacy migration and interactive recovery, and made non-interactive commands fail instead of guessing missing identity configuration.
 - 2026-08-14T00:21:24+02:00: Replaced metadata-only initialization dependencies with concrete `Platform` implementations, moved common Tilde and Vercel operations out of domain providers, and made init re-runnable with stored prompt defaults, config reconciliation, existing SOPS ownership, and dependency installation preserved.
 - 2026-08-13T23:59:56+02:00: Added stable shared platform initialization dependencies so Tilde and Vercel setup is collected once across their domain providers while role-specific questions remain with the consuming provider.
 - 2026-08-13T23:34:00+02:00: Replaced grouped secret mappings with mandatory described top-level entries, encrypted only `value`, adopted concise repository-facing built-in names, and added described `openbot env set|unset` management for plaintext configuration.

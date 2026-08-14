@@ -27,10 +27,10 @@ describe("configuration loader", () => {
     temporaryDirectories.push(root);
     await writeFile(
       join(root, "index.ts"),
-      'import runtimeProviders from "./runtime-providers.js";\nexport default runtimeProviders;\n',
+      'import providers from "./providers.js";\nexport default providers;\n',
     );
     await writeFile(
-      join(root, "runtime-providers.ts"),
+      join(root, "providers.ts"),
       "export default { marker: process.env.OPENBOT_LOADER_MARKER };\n",
     );
 

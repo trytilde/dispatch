@@ -53,9 +53,14 @@ export class LocalControlServiceProvider implements Buildable, Deployable, Initi
       steps: ["Install a dedicated user service", "Smoke-test /healthz"],
     };
   }
+  baseUrl(context: Pick<DeploymentContext, "target" | "environment">): URL {
+    return new URL(
+      context.environment.PUBLIC_ORIGIN ?? `http://127.0.0.1:${context.environment.PORT ?? "4100"}`,
+    );
+  }
   async configure(context: DeploymentContext): Promise<DeploymentResult> {
-    const port = context.environment.PORT ?? "4100";
-    const origin = `http://127.0.0.1:${port}`;
+    const origin = this.baseUrl(context).toString().replace(/\/$/, "");
+    const port = new URL(origin).port;
     return {
       outputs: { "control-service.origin": origin, "runtime.origin": origin },
       environmentVariables: { PUBLIC_ORIGIN: origin, PORT: port },

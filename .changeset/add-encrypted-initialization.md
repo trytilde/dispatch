@@ -7,7 +7,6 @@
 "@tryopenbot/configuration": minor
 "@tryopenbot/control-service-proto": minor
 "@tryopenbot/desktop": minor
-"@tryopenbot/inference-model-provider": minor
 "@tryopenbot/control-service-provider": minor
 "@tryopenbot/agent-service-provider": minor
 "@tryopenbot/runtime-provider": minor

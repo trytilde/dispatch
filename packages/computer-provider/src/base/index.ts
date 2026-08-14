@@ -4,19 +4,19 @@ import { basename, posix } from "node:path";
 import { promisify } from "node:util";
 import {
   ComputerProviderError,
-  asRegisteredComputerTool,
   type BuiltComputerImage,
   type ComputerCallContext,
   type ComputerAgentWorkspace,
   type ComputerExecRequest,
+  type ComputerExecResult,
+  type ComputerHandle,
+  type ComputerInput,
   type ComputerSeedFile,
   type ComputerImageSpec,
-  type ComputerPromptContext,
   type ComputerProvider,
-  type ComputerPromptPart,
+  type ComputerSpec,
+  type ComputerVncEndpoint,
   type PublishedComputerImage,
-  type RegisteredComputerTool,
-  type RegisterComputerToolsContext,
   type DeployAgentWorkspacesRequest,
   type DeployDevelopmentSandboxRequest,
 } from "../core/index.js";
@@ -32,18 +32,6 @@ import { renderFileTemplatePath } from "@tryopenbot/utilities";
 import { computerImageAssets, materializeComputerImageContext } from "./assets.js";
 import { developmentSandboxSourceFiles, shellEnvironmentExports } from "./development.js";
 import { computerServiceApiKey } from "../capability.js";
-import {
-  createAwaitShellTool,
-  createBashTool,
-  createCopyFromComputerTool,
-  createCopyToComputerTool,
-  createGlobTool,
-  createGrepTool,
-  createReadFileTool,
-  createScreenshotTool,
-  createWriteFileTool,
-  type ComputerToolOptions,
-} from "../tools/index.js";
 
 const execute = promisify(execFile);
 
@@ -167,197 +155,26 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     };
   }
 
-  abstract create(
-    ...args: Parameters<ComputerProvider["create"]>
-  ): ReturnType<ComputerProvider["create"]>;
-  abstract get(...args: Parameters<ComputerProvider["get"]>): ReturnType<ComputerProvider["get"]>;
-  abstract wake(
-    ...args: Parameters<ComputerProvider["wake"]>
-  ): ReturnType<ComputerProvider["wake"]>;
-  abstract sleep(
-    ...args: Parameters<ComputerProvider["sleep"]>
-  ): ReturnType<ComputerProvider["sleep"]>;
-  abstract delete(
-    ...args: Parameters<ComputerProvider["delete"]>
-  ): ReturnType<ComputerProvider["delete"]>;
+  abstract create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle>;
+  abstract get(id: string, context: ComputerCallContext): Promise<ComputerHandle>;
+  abstract wake(id: string, context: ComputerCallContext): Promise<ComputerHandle>;
+  abstract sleep(id: string, context: ComputerCallContext): Promise<ComputerHandle>;
+  abstract delete(id: string, context: ComputerCallContext): Promise<void>;
   abstract exec(
-    ...args: Parameters<ComputerProvider["exec"]>
-  ): ReturnType<ComputerProvider["exec"]>;
-  abstract readFile(
-    ...args: Parameters<ComputerProvider["readFile"]>
-  ): ReturnType<ComputerProvider["readFile"]>;
+    id: string,
+    request: ComputerExecRequest,
+    context: ComputerCallContext,
+  ): Promise<ComputerExecResult>;
+  abstract readFile(id: string, path: string, context: ComputerCallContext): Promise<Uint8Array>;
   abstract writeFile(
-    ...args: Parameters<ComputerProvider["writeFile"]>
-  ): ReturnType<ComputerProvider["writeFile"]>;
-  abstract screenshot(
-    ...args: Parameters<ComputerProvider["screenshot"]>
-  ): ReturnType<ComputerProvider["screenshot"]>;
-  abstract input(
-    ...args: Parameters<ComputerProvider["input"]>
-  ): ReturnType<ComputerProvider["input"]>;
-  abstract vnc(...args: Parameters<ComputerProvider["vnc"]>): ReturnType<ComputerProvider["vnc"]>;
-
-  injectPromptPart(
-    _context: ComputerPromptContext,
-    _callContext: ComputerCallContext,
-  ): ComputerPromptPart {
-    return {
-      id: `computer:${this.providerId}`,
-      priority: 50,
-      cache: "session",
-      content: [
-        "OpenBot computer:",
-        "- The computer is one shared, resumable Linux machine and filesystem for this installation's agents.",
-        "- Your default directory is /workspace/<agent-id>; sibling agent directories are visible and are not a security boundary.",
-        "- Inspect before changing, use explicit paths, and verify consequential actions.",
-        "- Prefer command and file tools for precise work; use desktop input only when the workflow is graphical.",
-        "- Control-plane credentials are not available inside the computer.",
-      ].join("\n"),
-    };
-  }
-
-  registerTools(context: RegisterComputerToolsContext): readonly RegisteredComputerTool[] {
-    const options: ComputerToolOptions = {
-      agentId: context.agentId,
-      baseUrl: () => this.computerServiceUrl(context.computerId),
-      apiKey: () => computerServiceApiKey(),
-    };
-    return [
-      asRegisteredComputerTool(
-        "bash",
-        {
-          name: "Bash",
-          description: "Run a Bash command from the agent's directory on the shared computer.",
-          input_schema: {
-            type: "object",
-            properties: {
-              command: { type: "string" },
-              cwd: { type: "string" },
-              timeout_ms: { type: "integer", minimum: 1, maximum: 1_200_000 },
-              background: { type: "boolean" },
-            },
-            required: ["command"],
-            additionalProperties: false,
-          },
-        },
-        createBashTool(options),
-      ),
-      asRegisteredComputerTool(
-        "await_shell",
-        {
-          name: "Await shell",
-          description: "Wait for a background Bash job.",
-          input_schema: {
-            type: "object",
-            properties: {
-              job_id: { type: "string", format: "uuid" },
-              timeout_ms: { type: "integer", minimum: 0, maximum: 120_000 },
-            },
-            required: ["job_id"],
-            additionalProperties: false,
-          },
-        },
-        createAwaitShellTool(options),
-      ),
-      asRegisteredComputerTool(
-        "copy_from_computer",
-        {
-          name: "Copy from computer",
-          description: "Copy a binary file from the shared computer as base64 data.",
-          input_schema: {
-            type: "object",
-            properties: { path: { type: "string" } },
-            required: ["path"],
-            additionalProperties: false,
-          },
-        },
-        createCopyFromComputerTool(options),
-      ),
-      asRegisteredComputerTool(
-        "copy_to_computer",
-        {
-          name: "Copy to computer",
-          description: "Copy base64-encoded binary data into a file on the shared computer.",
-          input_schema: {
-            type: "object",
-            properties: { path: { type: "string" }, content_base64: { type: "string" } },
-            required: ["path", "content_base64"],
-            additionalProperties: false,
-          },
-        },
-        createCopyToComputerTool(options),
-      ),
-      asRegisteredComputerTool(
-        "read_file",
-        {
-          name: "Read file",
-          description: "Read a UTF-8 file from the shared computer.",
-          input_schema: {
-            type: "object",
-            properties: { path: { type: "string" } },
-            required: ["path"],
-            additionalProperties: false,
-          },
-        },
-        createReadFileTool(options),
-      ),
-      asRegisteredComputerTool(
-        "write_file",
-        {
-          name: "Write file",
-          description: "Write UTF-8 text to the shared computer.",
-          input_schema: {
-            type: "object",
-            properties: { path: { type: "string" }, content: { type: "string" } },
-            required: ["path", "content"],
-            additionalProperties: false,
-          },
-        },
-        createWriteFileTool(options),
-      ),
-      asRegisteredComputerTool(
-        "glob",
-        {
-          name: "Glob",
-          description: "List files matching a glob on the shared computer.",
-          input_schema: {
-            type: "object",
-            properties: { pattern: { type: "string" }, path: { type: "string" } },
-            required: ["pattern"],
-            additionalProperties: false,
-          },
-        },
-        createGlobTool(options),
-      ),
-      asRegisteredComputerTool(
-        "grep",
-        {
-          name: "Grep",
-          description: "Search file contents on the shared computer.",
-          input_schema: {
-            type: "object",
-            properties: {
-              pattern: { type: "string" },
-              path: { type: "string" },
-              glob: { type: "string" },
-            },
-            required: ["pattern"],
-            additionalProperties: false,
-          },
-        },
-        createGrepTool(options),
-      ),
-      asRegisteredComputerTool(
-        "screenshot",
-        {
-          name: "Screenshot",
-          description: "Capture the current shared computer desktop as PNG.",
-          input_schema: { type: "object", properties: {}, additionalProperties: false },
-        },
-        createScreenshotTool(options),
-      ),
-    ] as readonly RegisteredComputerTool[];
-  }
+    id: string,
+    path: string,
+    content: Uint8Array,
+    context: ComputerCallContext,
+  ): Promise<void>;
+  abstract screenshot(id: string, context: ComputerCallContext): Promise<Uint8Array>;
+  abstract input(id: string, input: ComputerInput, context: ComputerCallContext): Promise<void>;
+  abstract vnc(id: string, context: ComputerCallContext): Promise<ComputerVncEndpoint>;
 
   async deployAgentWorkspaces(
     request: DeployAgentWorkspacesRequest,

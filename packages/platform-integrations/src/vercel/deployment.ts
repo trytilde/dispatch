@@ -46,7 +46,7 @@ export async function installVercelEnvironment(
   request: typeof fetch = fetch,
 ): Promise<void> {
   const variables = new Map(
-    Object.entries(context.environment).flatMap(([name, value]) =>
+    Object.entries(context.configuration ?? context.environment).flatMap(([name, value]) =>
       value === undefined || isControlPlaneCredential(name)
         ? []
         : [[name, { value, sensitive: true }] as const],

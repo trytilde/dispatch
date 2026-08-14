@@ -163,6 +163,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
     dryRun: options.dryRun,
     repositoryRoot,
     environment: deploymentConfiguration.environment,
+    configuration: deploymentConfiguration.configuration,
     persistence,
     report,
   } as const;
@@ -175,6 +176,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
     await reconcileAgentResources({
       repositoryRoot,
       environment: deploymentConfiguration.environment,
+      configuration: deploymentConfiguration.configuration,
       providers: configuration.providers,
       devMode: false,
       report,

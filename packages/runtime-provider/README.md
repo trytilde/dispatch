@@ -22,7 +22,7 @@ Shared provider build, initialization, persistence, and phased deployment contra
 - `ProviderInitialization` and `ProviderInitializationQuestion` describe GUI-agnostic onboarding questions, optional first-run defaults, and value destinations. Persisted answers take precedence over defaults when init is rerun.
 - `Platform` represents an external platform shared by domain providers. `collectProviderInitializations(providers)` combines provider-owned questions with shared `platforms`, rejecting conflicting definitions and returning each stable initialization ID once.
 - `DeploymentParticipant` assigns a stable ID and optional `provider`, `sandbox`, or `runtime` role.
-- `DeploymentContext`, `DeploymentResult`, and `DeploymentRunOptions` carry the required `devMode`, repository paths, one mutable provider environment map, named outputs, persistence, reporting, and dry-run state. Deployment environment selection remains provider or command configuration rather than lifecycle mode.
+- `DeploymentContext`, `DeploymentResult`, and `DeploymentRunOptions` carry the required `devMode`, repository paths, the mutable process environment and repository-configured subset, named outputs, persistence, reporting, and dry-run state. The configured subset is one combined `.env` and secrets map; it only prevents inherited shell variables from being deployed accidentally.
 
 Every lifecycle hook receives the same `DeploymentContext`. Development is a local mode: remote
 adapters may no-op after checks, while providers such as Tilde can still reconcile external resources.

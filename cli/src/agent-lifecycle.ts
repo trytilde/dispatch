@@ -21,6 +21,7 @@ import {
 export interface ReconcileAgentResourcesOptions {
   repositoryRoot: string;
   environment: NodeJS.ProcessEnv;
+  configuration?: NodeJS.ProcessEnv;
   providers: {
     agent: AgentProvider;
     agentService: AgentServiceProvider;
@@ -67,6 +68,7 @@ export async function reconcileAgentResources(
       devMode: options.devMode,
       repositoryRoot: options.repositoryRoot,
       environment: options.environment,
+      configuration: options.configuration,
       inputs: new DeploymentOutputs(),
       persistence,
       agentId: source.slug,

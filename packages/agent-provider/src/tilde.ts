@@ -119,7 +119,7 @@ export class TildeAgentProvider implements AgentProvider {
           body: {
             id: slug,
             display_name: displayName,
-            endpoint_url: endpointValue(endpointUrl, localRunningEndpoint),
+            endpoint_url: endpointValue(endpointUrl),
             local_running_endpoint: localRunningEndpoint,
             streaming: true,
             timeout_ms: 300_000,
@@ -134,7 +134,7 @@ export class TildeAgentProvider implements AgentProvider {
       };
     } else if (
       agent.displayName !== displayName ||
-      agent.endpointUrl !== endpointValue(endpointUrl, localRunningEndpoint) ||
+      agent.endpointUrl !== endpointValue(endpointUrl) ||
       agent.localRunningEndpoint !== localRunningEndpoint ||
       !agent.streaming ||
       agent.timeoutMs !== 300_000
@@ -146,7 +146,7 @@ export class TildeAgentProvider implements AgentProvider {
             path: { team_id: this.#teamId, agent_id: slug },
             body: {
               display_name: displayName,
-              endpoint_url: endpointValue(endpointUrl, localRunningEndpoint),
+              endpoint_url: endpointValue(endpointUrl),
               local_running_endpoint: localRunningEndpoint,
               streaming: true,
               timeout_ms: 300_000,
@@ -322,10 +322,8 @@ function requireAgent(context: DeploymentContext): { id: string; path: string } 
   return { id: context.agentId, path: context.agentPath };
 }
 
-function endpointValue(endpointUrl: URL, localRunningEndpoint: boolean): string {
-  return localRunningEndpoint
-    ? `${endpointUrl.pathname}${endpointUrl.search}`
-    : endpointUrl.toString();
+function endpointValue(endpointUrl: URL): string {
+  return endpointUrl.toString();
 }
 
 function agentResource(value: JsonRecord): AgentResource {

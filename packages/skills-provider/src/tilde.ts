@@ -23,6 +23,7 @@ import type {
   SkillProvider,
   SkillsProviderCallContext,
 } from "./core.js";
+import { persistEnvironment, type DeploymentContext } from "@tryopenbot/runtime-provider";
 import { providerSignal, SkillsProviderError } from "./core.js";
 
 export interface TildeSkillProviderConfig extends TildePlatformConfig {}
@@ -31,6 +32,18 @@ export class TildeSkillProvider implements SkillProvider {
   readonly platform: TildePlatform;
   readonly platforms: readonly TildePlatform[];
   readonly #config: TildePlatformConfig;
+  readonly buildable = {
+    check: async (context: DeploymentContext) => {
+      requireAgent(context);
+    },
+    build: async (_context: DeploymentContext) => undefined,
+  };
+  readonly deployable = {
+    plan: async (context: DeploymentContext) => ({
+      summary: `Reconcile the Tilde skill registry for ${requireAgent(context).id}`,
+    }),
+    deploy: async (context: DeploymentContext) => this.#deploy(context),
+  };
 
   constructor(platformOrConfig: TildePlatform | TildeSkillProviderConfig) {
     this.platform =
@@ -97,6 +110,41 @@ export class TildeSkillProvider implements SkillProvider {
     });
   }
 
+  async #deploy(context: DeploymentContext): Promise<void> {
+    const { id } = requireAgent(context);
+    const prefix = agentPrefix(id);
+    const configuredId = context.environment[`${prefix}_SKILL_REGISTRY_ID`]?.trim();
+    const call = { requestId: `agent-lifecycle:${id}:skill-registry` };
+    let registry: SkillRegistry | undefined;
+    if (configuredId) {
+      try {
+        registry = await this.getRegistry(configuredId, call);
+      } catch (error) {
+        if (!(error instanceof SkillsProviderError) || error.code !== "not_found") throw error;
+      }
+    }
+    if (!registry) {
+      const name = `OpenBot ${id}`;
+      const existing = await this.listRegistries({ namePrefix: name }, call);
+      registry =
+        existing.find((candidate) => candidate.name === name) ??
+        (await this.registerSkills(
+          {
+            name,
+            description: `Skills available to the ${id} OpenBot agent.`,
+            skillIds: [],
+          },
+          call,
+        ));
+    }
+    await persistEnvironment(
+      context,
+      `${prefix}_SKILL_REGISTRY_ID`,
+      registry.id,
+      `Tilde skill registry ID for ${id}.`,
+    );
+  }
+
   #api(context: SkillsProviderCallContext) {
     return createTildeApiClient({
       apiKey: this.#config.apiKey,
@@ -125,6 +173,19 @@ export class TildeSkillProvider implements SkillProvider {
       );
     }
   }
+}
+
+function requireAgent(context: DeploymentContext): { id: string; path: string } {
+  if (!context.agentId || !context.agentPath)
+    throw new SkillsProviderError(
+      "invalid_configuration",
+      "The skills lifecycle requires an agent ID and absolute path",
+    );
+  return { id: context.agentId, path: context.agentPath };
+}
+
+function agentPrefix(id: string): string {
+  return `AGENT_${id.replaceAll("-", "_").toUpperCase()}`;
 }
 
 function registry(value: TildeSkillRegistry): SkillRegistry {

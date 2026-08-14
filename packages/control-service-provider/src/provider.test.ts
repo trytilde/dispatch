@@ -82,10 +82,9 @@ describe("control service providers", () => {
         target: "production",
         dryRun: false,
         repositoryRoot: repository,
-        environment: { PORT: "4100" },
+        environment: { PORT: "4100", API_KEY: "private-value" },
         initialInputs: {
           outputs: { "control-service.artifact": "/tmp/control.mjs" },
-          secrets: { API_KEY: "private-value" },
         },
       },
     );
@@ -186,10 +185,9 @@ describe("control service providers", () => {
         target: "production",
         dryRun: false,
         repositoryRoot: root,
-        environment: { PORT: "4100" },
+        environment: { PORT: "4100", API_KEY: "private-value" },
         initialInputs: {
           outputs: { "control-service.artifact": "/tmp/control.mjs" },
-          secrets: { API_KEY: "private-value" },
         },
       },
     );

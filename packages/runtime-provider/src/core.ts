@@ -9,16 +9,39 @@ export type DeploymentReporter = (event: DeploymentEvent) => void;
 
 export interface DeploymentResult {
   outputs?: Readonly<Record<string, string>>;
-  secrets?: Readonly<Record<string, string>>;
-  /** Credentials used by deployment participants but never installed in the final runtime. */
-  deploymentSecrets?: Readonly<Record<string, string>>;
-  /** Secrets consumed only while provisioning the trusted development sandbox. */
-  sandboxSecrets?: Readonly<Record<string, string>>;
-  environmentVariables?: Readonly<Record<string, string>>;
-  /** Previously persisted runtime secrets that no longer belong to desired state. */
-  secretRemovals?: readonly string[];
-  /** Previously persisted non-secret values that no longer belong to desired state. */
-  environmentVariableRemovals?: readonly string[];
+}
+
+/** In-memory handoff for non-secret lifecycle artifacts and resource identifiers. */
+export class DeploymentOutputs {
+  readonly #outputs = new Map<string, string>();
+
+  merge(result: DeploymentResult | void): void {
+    for (const [name, value] of Object.entries(result?.outputs ?? {})) {
+      if (!name || !value) throw new Error("Deployment output names and values must not be empty");
+      const existing = this.#outputs.get(name);
+      if (existing !== undefined && existing !== value)
+        throw new Error(`Conflicting deployment output: ${name}`);
+      this.#outputs.set(name, value);
+    }
+  }
+
+  get(name: string): string | undefined {
+    return this.#outputs.get(name);
+  }
+
+  require(name: string): string {
+    const value = this.get(name);
+    if (!value) throw new Error(`Required deployment output is unavailable: ${name}`);
+    return value;
+  }
+
+  outputs(): Readonly<Record<string, string>> {
+    return Object.fromEntries(this.#outputs);
+  }
+
+  result(): DeploymentResult {
+    return { outputs: this.outputs() };
+  }
 }
 
 /** A provider-owned, idempotent software artifact lifecycle. */
@@ -27,7 +50,7 @@ export interface Buildable {
   build(context: DeploymentContext): Promise<DeploymentResult | void>;
 }
 
-export type InitializationValueDestination = "environment" | "secret" | "deployment-secret";
+export type InitializationValueDestination = "environment" | "secret";
 
 export interface ProviderInitializationQuestion {
   id: string;
@@ -54,6 +77,19 @@ export interface ProviderInitialization {
   questions: readonly ProviderInitializationQuestion[];
 }
 
+export interface ProviderInitializationContext {
+  repositoryRoot: string;
+  environment: NodeJS.ProcessEnv;
+  request?: typeof fetch;
+  setEnvironment(name: string, value: string, description: string): Promise<void>;
+  setSecret(name: string, value: string, description: string): Promise<void>;
+}
+
+/** Provider-owned provisioning that runs after initialization questions are collected. */
+export interface ProviderInitializer {
+  initialize(context: ProviderInitializationContext): Promise<void>;
+}
+
 /** An external platform shared by one or more domain providers. */
 export interface Platform {
   readonly id: string;
@@ -64,6 +100,8 @@ export interface InitializableProvider {
   readonly initialization?: ProviderInitialization;
   /** Shared external platforms required before this provider can be configured. */
   readonly platforms?: readonly Platform[];
+  /** Idempotently provision values or resources required by this provider. */
+  initialize?(context: ProviderInitializationContext): Promise<void>;
 }
 
 /** Collect provider-owned setup and shared platform dependencies once by stable ID. */
@@ -93,141 +131,90 @@ export function collectProviderInitializations(
   return [...result.values()];
 }
 
-/** Shared, in-memory deployment data. Secret values must never be reported. */
-export class DeploymentOutputs {
-  readonly #outputs = new Map<string, string>();
-  readonly #secrets = new Map<string, string>();
-  readonly #deploymentSecrets = new Map<string, string>();
-  readonly #sandboxSecrets = new Map<string, string>();
-  readonly #environmentVariables = new Map<string, string>();
-  readonly #secretRemovals = new Set<string>();
-  readonly #environmentVariableRemovals = new Set<string>();
-
-  merge(result: DeploymentResult | void): void {
-    if (!result) return;
-    this.#mergeMap(this.#outputs, result.outputs, "output", false);
-    this.#mergeMap(this.#secrets, result.secrets, "secret", true);
-    this.#mergeMap(this.#deploymentSecrets, result.deploymentSecrets, "deployment secret", true);
-    this.#mergeMap(this.#sandboxSecrets, result.sandboxSecrets, "sandbox secret", true);
-    this.#mergeMap(
-      this.#environmentVariables,
-      result.environmentVariables,
-      "environment variable",
-      true,
-    );
-    this.#mergeRemovals(this.#secrets, this.#secretRemovals, result.secretRemovals, "secret");
-    this.#mergeRemovals(
-      this.#environmentVariables,
-      this.#environmentVariableRemovals,
-      result.environmentVariableRemovals,
-      "environment variable",
-    );
-  }
-
-  get(name: string): string | undefined {
-    return this.#outputs.get(name);
-  }
-
-  require(name: string): string {
-    const value = this.get(name);
-    if (!value) throw new Error(`Required deployment output is unavailable: ${name}`);
-    return value;
-  }
-
-  outputs(): Readonly<Record<string, string>> {
-    return Object.fromEntries(this.#outputs);
-  }
-
-  secrets(): Readonly<Record<string, string>> {
-    return Object.fromEntries(this.#secrets);
-  }
-
-  deploymentSecrets(): Readonly<Record<string, string>> {
-    return Object.fromEntries(this.#deploymentSecrets);
-  }
-
-  sandboxSecrets(): Readonly<Record<string, string>> {
-    return Object.fromEntries(this.#sandboxSecrets);
-  }
-
-  environmentVariables(): Readonly<Record<string, string>> {
-    return Object.fromEntries(this.#environmentVariables);
-  }
-
-  result(): DeploymentResult {
-    return {
-      outputs: this.outputs(),
-      secrets: this.secrets(),
-      deploymentSecrets: this.deploymentSecrets(),
-      sandboxSecrets: this.sandboxSecrets(),
-      environmentVariables: this.environmentVariables(),
-      ...(this.#secretRemovals.size ? { secretRemovals: [...this.#secretRemovals] } : {}),
-      ...(this.#environmentVariableRemovals.size
-        ? { environmentVariableRemovals: [...this.#environmentVariableRemovals] }
-        : {}),
-    };
-  }
-
-  #mergeMap(
-    target: Map<string, string>,
-    values: Readonly<Record<string, string>> | undefined,
-    kind: string,
-    environmentName: boolean,
-  ): void {
-    for (const [name, value] of Object.entries(values ?? {})) {
-      if (!name || !value) throw new Error(`Deployment ${kind} names and values must not be empty`);
-      if (environmentName && !/^[A-Z][A-Z0-9_]*$/.test(name))
-        throw new Error(`Invalid ${kind} name: ${name}`);
-      const existing = target.get(name);
-      if (existing !== undefined && existing !== value)
-        throw new Error(`Conflicting deployment ${kind}: ${name}`);
-      target.set(name, value);
-      if (target === this.#secrets) this.#secretRemovals.delete(name);
-      if (target === this.#environmentVariables) this.#environmentVariableRemovals.delete(name);
-    }
-  }
-
-  #mergeRemovals(
-    target: Map<string, string>,
-    removals: Set<string>,
-    names: readonly string[] | undefined,
-    kind: string,
-  ): void {
-    for (const name of names ?? []) {
-      if (!/^[A-Z][A-Z0-9_]*$/.test(name)) throw new Error(`Invalid ${kind} name: ${name}`);
-      target.delete(name);
-      removals.add(name);
-    }
+/** Run provider-owned initialization provisioning once per stable initialization ID. */
+export async function initializeProviders(
+  providers: readonly InitializableProvider[],
+  context: ProviderInitializationContext,
+): Promise<void> {
+  const initialized = new Set<string>();
+  for (const provider of providers) {
+    if (!provider.initialize) continue;
+    const id = provider.initialization?.id;
+    if (!id) throw new Error("Provider initializers require stable initialization metadata");
+    if (initialized.has(id)) continue;
+    await provider.initialize(context);
+    initialized.add(id);
   }
 }
 
-/** Values installed in the trusted development sandbox, including its SOPS identity. */
-export function sandboxDeploymentEnvironment(
-  inputs: DeploymentOutputs,
-): Readonly<Record<string, string>> {
-  const values = new Map<string, string>();
-  for (const source of [
-    inputs.environmentVariables(),
-    inputs.secrets(),
-    inputs.deploymentSecrets(),
-    inputs.sandboxSecrets(),
-  ]) {
-    for (const [name, value] of Object.entries(source)) {
-      const existing = values.get(name);
-      if (existing !== undefined && existing !== value)
-        throw new Error(`Conflicting sandbox environment value: ${name}`);
-      values.set(name, value);
-    }
-  }
-  return Object.fromEntries(values);
+export interface DeploymentPersistence {
+  setEnvironment(name: string, value: string, description: string): Promise<void>;
+  setSecret(name: string, value: string, description: string): Promise<void>;
+  unsetEnvironment(name: string): Promise<void>;
+  unsetSecret(name: string): Promise<void>;
 }
+
+const noPersistence: DeploymentPersistence = {
+  setEnvironment: async () => undefined,
+  setSecret: async () => undefined,
+  unsetEnvironment: async () => undefined,
+  unsetSecret: async () => undefined,
+};
 
 export interface DeploymentContext {
   target: DeploymentTarget;
   repositoryRoot: string;
   environment: NodeJS.ProcessEnv;
+  persistence?: DeploymentPersistence;
   inputs: DeploymentOutputs;
+  agentId?: string;
+  agentPath?: string;
+  agentServiceOrigin?: string;
   report: DeploymentReporter;
+}
+
+export async function persistEnvironment(
+  context: DeploymentContext,
+  name: string,
+  value: string,
+  description: string,
+): Promise<void> {
+  validateEnvironmentName(name);
+  if (!value) throw new Error(`Environment value must not be empty: ${name}`);
+  if (context.environment[name] !== value)
+    await (context.persistence ?? noPersistence).setEnvironment(name, value, description);
+  context.environment[name] = value;
+}
+
+export async function persistSecret(
+  context: DeploymentContext,
+  name: string,
+  value: string,
+  description: string,
+): Promise<void> {
+  validateEnvironmentName(name);
+  if (!value) throw new Error(`Secret value must not be empty: ${name}`);
+  if (context.environment[name] !== value)
+    await (context.persistence ?? noPersistence).setSecret(name, value, description);
+  context.environment[name] = value;
+}
+
+export async function unsetEnvironment(context: DeploymentContext, name: string): Promise<void> {
+  validateEnvironmentName(name);
+  if (context.environment[name] !== undefined)
+    await (context.persistence ?? noPersistence).unsetEnvironment(name);
+  delete context.environment[name];
+}
+
+export async function unsetSecret(context: DeploymentContext, name: string): Promise<void> {
+  validateEnvironmentName(name);
+  if (context.environment[name] !== undefined)
+    await (context.persistence ?? noPersistence).unsetSecret(name);
+  delete context.environment[name];
+}
+
+function validateEnvironmentName(name: string): void {
+  if (!/^[A-Z][A-Z0-9_]*$/.test(name)) throw new Error(`Invalid environment name: ${name}`);
 }
 
 export interface DeploymentPlan {
@@ -262,6 +249,7 @@ export interface DeploymentRunOptions {
   dryRun: boolean;
   repositoryRoot: string;
   environment?: NodeJS.ProcessEnv;
+  persistence?: DeploymentPersistence;
   initialInputs?: DeploymentResult;
   report?: DeploymentReporter;
 }
@@ -272,13 +260,14 @@ export async function buildProviders(
   options: DeploymentRunOptions,
 ): Promise<DeploymentOutputs> {
   assertUniqueParticipantIds(participants);
+  const report = options.report ?? (() => undefined);
   const inputs = new DeploymentOutputs();
   inputs.merge(options.initialInputs);
-  const report = options.report ?? (() => undefined);
   const context: DeploymentContext = {
     target: options.target,
     repositoryRoot: options.repositoryRoot,
     environment: options.environment ?? process.env,
+    persistence: options.persistence ?? noPersistence,
     inputs,
     report,
   };
@@ -286,10 +275,7 @@ export async function buildProviders(
   for (const participant of participants) {
     const buildable = participant.provider.buildable;
     if (!buildable) continue;
-    const scopedContext =
-      participant.role === "sandbox"
-        ? context
-        : { ...context, inputs: withoutSandboxSecrets(inputs) };
+    const scopedContext = context;
     report({ event: "build.provider.check.started", details: { providerId: participant.id } });
     await buildable.check(scopedContext);
     report({ event: "build.provider.check.complete", details: { providerId: participant.id } });
@@ -317,20 +303,19 @@ export async function deployProviders(
   if (runtime.length > 1)
     throw new Error("Only one runtime deployment participant may be registered");
 
+  const report = options.report ?? (() => undefined);
   const inputs = new DeploymentOutputs();
   inputs.merge(options.initialInputs);
-  const report = options.report ?? (() => undefined);
   const context: DeploymentContext = {
     target: options.target,
     repositoryRoot: options.repositoryRoot,
     environment: options.environment ?? process.env,
+    persistence: options.persistence ?? noPersistence,
     inputs,
     report,
   };
-  const contextFor = (participant: { role?: DeploymentParticipant["role"] }): DeploymentContext =>
-    participant.role === "sandbox"
-      ? context
-      : { ...context, inputs: withoutSandboxSecrets(inputs) };
+  const contextFor = (_participant: { role?: DeploymentParticipant["role"] }): DeploymentContext =>
+    context;
 
   for (const participant of deployable) {
     report({ event: "deployment.provider.plan.started", details: { providerId: participant.id } });
@@ -384,17 +369,4 @@ function assertUniqueParticipantIds(participants: readonly DeploymentParticipant
       throw new Error(`Duplicate deployment participant id: ${participant.id}`);
     ids.add(participant.id);
   }
-}
-
-function withoutSandboxSecrets(inputs: DeploymentOutputs): DeploymentOutputs {
-  const scoped = new DeploymentOutputs();
-  scoped.merge({
-    outputs: inputs.outputs(),
-    secrets: inputs.secrets(),
-    deploymentSecrets: inputs.deploymentSecrets(),
-    environmentVariables: inputs.environmentVariables(),
-    secretRemovals: inputs.result().secretRemovals,
-    environmentVariableRemovals: inputs.result().environmentVariableRemovals,
-  });
-  return scoped;
 }

@@ -4,7 +4,8 @@ import { TildeChatProvider } from "@tryopenbot/chat-provider";
 import { Configuration } from "@tryopenbot/configuration";
 import { LocalControlServiceProvider } from "@tryopenbot/control-service-provider";
 import { MicrosandboxComputerProvider } from "@tryopenbot/computer-provider";
-import { TildePlatform } from "@tryopenbot/platform-integrations";
+import { VercelInferenceProvider } from "@tryopenbot/inference-provider";
+import { TildePlatform, VercelPlatform } from "@tryopenbot/platform-integrations";
 import { TildeSkillProvider } from "@tryopenbot/skills-provider";
 import { TildeToolProvider } from "@tryopenbot/tools-provider";
 
@@ -14,6 +15,7 @@ const tilde = new TildePlatform({
   orgId: process.env.TILDE_ORG_ID!,
   teamId: process.env.TILDE_TEAM_ID!,
 });
+const vercel = new VercelPlatform();
 
 export default Configuration({
   providers: {
@@ -22,6 +24,7 @@ export default Configuration({
     chat: new TildeChatProvider(tilde),
     agent: new TildeAgentProvider(tilde),
     computer: new MicrosandboxComputerProvider(),
+    inference: new VercelInferenceProvider(vercel),
     skills: new TildeSkillProvider(tilde),
     tools: new TildeToolProvider({ platform: tilde }),
   },

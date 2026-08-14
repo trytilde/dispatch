@@ -108,8 +108,20 @@ describe("OpenBot initialization", () => {
         runner,
         prompts: {
           select: async () => selections.shift()!,
-          input: async () => inputs.shift() ?? "",
+          input: async (_prompt, options) => {
+            const providerAnswers: Record<string, string> = {
+              "tilde-api-key": "tilde-private",
+              "tilde-org-id": "tilde-org",
+              "tilde-team-id": "tilde-team",
+              "vercel-token": "vercel-private",
+              "vercel-team-id": "",
+              "vercel-ai-gateway-api-key-name": "OpenBot agents",
+            };
+            return options?.id ? (providerAnswers[options.id] ?? "") : (inputs.shift() ?? "");
+          },
         },
+        request: async () =>
+          Response.json({ apiKey: { id: "key_123" }, apiKeyString: "gateway-private" }),
       });
 
       const loaded = await loadDeploymentConfiguration(repositoryRoot, {
@@ -117,77 +129,64 @@ describe("OpenBot initialization", () => {
         environment: { ...process.env },
         userConfigurationPath: testUserConfigurationPath(repositoryRoot),
       });
-      expect(loaded.inputs.sandboxSecrets?.[SANDBOX_SOPS_AGE_KEY]).toMatch(/^AGE-SECRET-KEY-1/);
+      expect(loaded.environment.AGENT_HELLO_WORLD_NAME).toBe("Hello World");
+      expect(loaded.environment[SANDBOX_SOPS_AGE_KEY]).toMatch(/^AGE-SECRET-KEY-1/);
       const configuration = await readFile(join(repositoryRoot, "configuration/index.ts"), "utf8");
       expect(configuration).toContain("providers: {");
       expect(configuration).toContain("controlService: new LocalControlServiceProvider()");
       expect(configuration).toContain("chat: new TildeChatProvider(tilde)");
       expect(configuration).toContain("agent: new TildeAgentProvider(tilde)");
+      expect(configuration).toContain("inference: new VercelInferenceProvider(vercel)");
       expect(configuration).not.toContain("inferenceModel");
       expect(configuration).not.toContain("requiredEnvironment");
       await expect(
         access(join(repositoryRoot, "configuration/runtime-providers.ts")),
       ).rejects.toMatchObject({ code: "ENOENT" });
       expect(
-        await readFile(join(repositoryRoot, "configuration/agents/hello-world/agent.ts"), "utf8"),
+        await readFile(join(repositoryRoot, "configuration/agent/agent.ts"), "utf8"),
       ).toContain("export default chatKitEndpoint");
       expect(
-        await readFile(join(repositoryRoot, "configuration/agents/hello-world/agent.ts"), "utf8"),
+        await readFile(join(repositoryRoot, "configuration/agent/agent.ts"), "utf8"),
       ).not.toContain("@tryopenbot/agent-provider");
       expect(
-        await readFile(
-          join(repositoryRoot, "configuration/agents/hello-world/instructions.ts"),
-          "utf8",
-        ),
+        await readFile(join(repositoryRoot, "configuration/agent/instructions.ts"), "utf8"),
       ).toContain("export default");
       await expect(
-        access(join(repositoryRoot, "configuration/agents/hello-world/tools/hello-world.ts")),
+        access(join(repositoryRoot, "configuration/agent/tools/hello-world.ts")),
       ).rejects.toMatchObject({ code: "ENOENT" });
       const bashTool = await readFile(
-        join(repositoryRoot, "configuration/agents/hello-world/tools/bash.ts"),
+        join(repositoryRoot, "configuration/agent/tools/bash.ts"),
         "utf8",
       );
       expect(bashTool).toContain("createBashTool");
       expect(bashTool).toContain('agentId: "hello-world"');
       expect(
-        await readFile(
-          join(repositoryRoot, "configuration/agents/hello-world/tools/read_file.ts"),
-          "utf8",
-        ),
+        await readFile(join(repositoryRoot, "configuration/agent/tools/read_file.ts"), "utf8"),
       ).toContain("createReadFileTool");
       expect(
-        await readFile(
-          join(repositoryRoot, "configuration/agents/hello-world/tools/write_file.ts"),
-          "utf8",
-        ),
+        await readFile(join(repositoryRoot, "configuration/agent/tools/write_file.ts"), "utf8"),
       ).toContain("createWriteFileTool");
       expect(
-        await readFile(
-          join(repositoryRoot, "configuration/agents/hello-world/tools/glob.ts"),
-          "utf8",
-        ),
+        await readFile(join(repositoryRoot, "configuration/agent/tools/glob.ts"), "utf8"),
       ).toContain("createGlobTool");
       expect(
-        await readFile(
-          join(repositoryRoot, "configuration/agents/hello-world/tools/grep.ts"),
-          "utf8",
-        ),
+        await readFile(join(repositoryRoot, "configuration/agent/tools/grep.ts"), "utf8"),
       ).toContain("createGrepTool");
       expect(
         await readFile(
-          join(repositoryRoot, "configuration/agents/hello-world/skills/hello-world/SKILL.md"),
+          join(repositoryRoot, "configuration/agent/skills/hello-world/SKILL.md"),
           "utf8",
         ),
       ).toContain("name: hello-world");
       expect(
         await readFile(
-          join(repositoryRoot, "configuration/agents/hello-world/skills/create-agent/SKILL.md"),
+          join(repositoryRoot, "configuration/agent/skills/create-agent/SKILL.md"),
           "utf8",
         ),
       ).toContain("pnpm openbot new-agent");
       expect(
         await readFile(
-          join(repositoryRoot, "configuration/agents/hello-world/sandbox/workspace/.profile"),
+          join(repositoryRoot, "configuration/agent/sandbox/workspace/.profile"),
           "utf8",
         ),
       ).toContain("$HOME/.bashrc");
@@ -307,7 +306,7 @@ describe("OpenBot initialization", () => {
       "tilde-org",
       "tilde-team",
       "",
-      "openai-secret",
+      "OpenBot agents",
     ];
     const promptInput = vi.fn(async () => inputs.shift() ?? "");
     const prompts: InitializationPrompts = {
@@ -331,6 +330,8 @@ describe("OpenBot initialization", () => {
     await initializeOpenBot({
       repositoryRoot,
       prompts,
+      request: async () =>
+        Response.json({ apiKey: { id: "key_123" }, apiKeyString: "gateway-private" }),
       runner,
       userConfigurationPath: testUserConfigurationPath(repositoryRoot),
     });
@@ -345,6 +346,8 @@ describe("OpenBot initialization", () => {
       "# Name of the Vercel project that will host the OpenBot control service",
     );
     expect(environment).toContain('VERCEL_AGENT_PROJECT="openbot-agents"');
+    expect(environment).toContain('VERCEL_AI_GATEWAY_API_KEY_NAME="OpenBot agents"');
+    expect(environment).toContain('OPENAI_BASE_URL="https://ai-gateway.vercel.sh/v1"');
     expect(environment).toContain('TILDE_ORG_ID="tilde-org"');
     expect(environment).toContain('TILDE_TEAM_ID="tilde-team"');
     expect(environment).not.toContain("TILDE_RUNTIME_MCP_SERVER_ID");
@@ -356,6 +359,7 @@ describe("OpenBot initialization", () => {
     expect(configuration).toContain(
       "controlService: new VercelControlServiceProvider({ platform: vercel })",
     );
+    expect(configuration).toContain("inference: new VercelInferenceProvider(vercel)");
     const sopsConfig = await readFile(join(repositoryRoot, "configuration/.sops.yaml"), "utf8");
     expect(sopsConfig.match(/- age1/g)).toHaveLength(2);
     const encrypted = await readFile(
@@ -385,7 +389,8 @@ describe("OpenBot initialization", () => {
     expect(encryption?.input).toContain("VERCEL_TOKEN:");
     expect(encryption?.input).toContain("value: vercel-secret");
     expect(encryption?.input).toContain("value: tilde-secret");
-    expect(encryption?.input).toContain("value: openai-secret");
+    expect(encryption?.input).toContain("AI_GATEWAY_API_KEY:");
+    expect(encryption?.input).toContain("value: gateway-private");
     expect(encryption?.input).toContain("COMPUTER_SERVICE_API_KEY:");
     expect(encryption?.args).toContain("--encrypted-regex");
     expect(encryption?.args.join(" ")).not.toContain("vercel-secret");
@@ -504,7 +509,6 @@ export default {
         ["tilde-org-id", "stored-org"],
         ["tilde-team-id", undefined],
         ["tilde-base-url", undefined],
-        ["openai-api-key", undefined],
       ]),
     );
     const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
@@ -588,14 +592,8 @@ export default {
       API_TOKEN: "private",
       VERCEL_TOKEN: "deploy-private",
     });
-    expect(loaded.inputs.secrets).toEqual({
-      API_TOKEN: "private",
-      COMPUTER_SERVICE_API_KEY: "computer-private",
-    });
-    expect(loaded.inputs.deploymentSecrets).toEqual({ VERCEL_TOKEN: "deploy-private" });
-    expect(loaded.inputs.sandboxSecrets).toEqual({
-      [SANDBOX_SOPS_AGE_KEY]: "AGE-SECRET-KEY-1TEST",
-    });
+    expect(loaded.environment.COMPUTER_SERVICE_API_KEY).toBe("computer-private");
+    expect(loaded.environment[SANDBOX_SOPS_AGE_KEY]).toBe("AGE-SECRET-KEY-1TEST");
     expect(JSON.parse(await readFile(testUserConfigurationPath(repositoryRoot), "utf8"))).toEqual({
       version: 1,
       sops: { ownerIdentity: { kind: "aws-profile", profile: "sso-admin" } },

@@ -23,6 +23,7 @@ import { VercelAgentServiceProvider } from "@tryopenbot/agent-service-provider";
 import { TildeChatProvider } from "@tryopenbot/chat-provider";
 import { VercelControlServiceProvider } from "@tryopenbot/control-service-provider";
 import { VercelSandboxComputerProvider } from "@tryopenbot/computer-provider";
+import { VercelInferenceProvider } from "@tryopenbot/inference-provider";
 import { TildePlatform, VercelPlatform } from "@tryopenbot/platform-integrations";
 import { TildeSkillProvider } from "@tryopenbot/skills-provider";
 import { TildeToolProvider } from "@tryopenbot/tools-provider";
@@ -33,7 +34,7 @@ const tilde = new TildePlatform({
   orgId: process.env.TILDE_ORG_ID!,
   teamId: process.env.TILDE_TEAM_ID!,
 });
-const vercel = new VercelPlatform({ token: process.env.VERCEL_TOKEN! });
+const vercel = new VercelPlatform();
 
 export default Configuration({
   providers: {
@@ -42,6 +43,7 @@ export default Configuration({
     chat: new TildeChatProvider(tilde),
     agent: new TildeAgentProvider(tilde),
     computer: new VercelSandboxComputerProvider({ platform: vercel }),
+    inference: new VercelInferenceProvider(vercel),
     skills: new TildeSkillProvider(tilde),
     tools: new TildeToolProvider({ platform: tilde }),
   },
@@ -52,12 +54,13 @@ This composition is for OpenBot control, provisioning, and deployment. Agent fil
 
 Repository resources always use their canonical file locations:
 
-- agents: `configuration/agents/<id>/`, served below `/api/agents/<id>`
+- primary agent: `configuration/agent/`, served below `/api/agents/hello-world`
+- subagents: `configuration/agent/subagents/<id>/`, served below `/api/agents/<id>`
 - future-agent template: `configuration/templates/agent/**/*.hbs`
 - global agent instrumentation: `configuration/instrumentation.ts`
-- agent skills: `configuration/agents/<id>/skills/`
+- agent skills: each primary or subagent directory's `skills/`
 - custom provider source: `configuration/providers/`
-- agent workspace seed: `configuration/agents/<id>/sandbox/workspace/`
+- agent workspace seed: each primary or subagent directory's `sandbox/workspace/`
 
 These locations are conventions, not configuration options. Global `configuration/skills/` and `configuration/sandbox/` directories are not supported. File discovery makes the same fork work from source and from a Vercel function bundle. Symlinks, escaping paths, duplicate IDs, oversized files, and malformed skill metadata fail generation or startup.
 

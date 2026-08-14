@@ -1,14 +1,9 @@
-import { readdir, stat } from "node:fs/promises";
-import { resolve } from "node:path";
-import type {
-  DeploymentContext,
-  DeploymentPlan,
-  DeploymentResult,
-} from "@tryopenbot/runtime-provider";
+import type { DeploymentContext, DeploymentPlan } from "@tryopenbot/runtime-provider";
+import { persistEnvironment, persistSecret } from "@tryopenbot/runtime-provider";
 import { TildePlatform, type TildePlatformConfig } from "@tryopenbot/platform-integrations";
 import {
-  tildeErrorMessage,
   tildeErrorStatus,
+  tildeHttpErrorMessage,
 } from "@tryopenbot/platform-integrations/tilde/errors";
 import {
   chatkitDeleteAgent,
@@ -36,6 +31,12 @@ interface AgentResource {
 export class TildeAgentProvider implements AgentProvider {
   readonly platform: TildePlatform;
   readonly platforms: readonly TildePlatform[];
+  readonly buildable = {
+    check: async (context: DeploymentContext) => {
+      requireAgent(context);
+    },
+    build: async (_context: DeploymentContext) => undefined,
+  };
   readonly deployable = {
     plan: (context: DeploymentContext) => this.#plan(context),
     deploy: (context: DeploymentContext) => this.#deploy(context),
@@ -54,14 +55,16 @@ export class TildeAgentProvider implements AgentProvider {
       baseUrl: config.baseUrl,
       apiKey: config.apiKey,
       orgId: config.orgId,
+      // Keep generated failures as { error, response } so provider errors retain HTTP context.
+      throwOnError: false,
     });
     this.#teamId = config.teamId;
   }
 
   async #plan(context: DeploymentContext): Promise<DeploymentPlan> {
-    const agents = await discoverAgentSlugs(context.repositoryRoot);
+    const agent = requireAgent(context);
     return {
-      summary: `Reconcile ${agents.length} authored agent${agents.length === 1 ? "" : "s"} with Tilde`,
+      summary: `Reconcile authored agent ${agent.id} with Tilde`,
       steps: [
         "Create missing ChatKit agents",
         "Reconcile Vercel AI SDK endpoint URLs and enabled status",
@@ -72,58 +75,61 @@ export class TildeAgentProvider implements AgentProvider {
     };
   }
 
-  async #deploy(context: DeploymentContext): Promise<DeploymentResult | void> {
-    const slugs = await discoverAgentSlugs(context.repositoryRoot);
-    const origin = context.inputs.require("agent-service.origin");
+  async #deploy(context: DeploymentContext): Promise<void> {
+    const { id: slug } = requireAgent(context);
+    const origin = context.agentServiceOrigin ?? context.environment.AGENT_SERVICE_ORIGIN;
+    if (!origin)
+      throw new AgentProviderError(
+        "invalid_configuration",
+        `The agent service origin is unavailable for ${slug}`,
+      );
     const localRunningEndpoint = context.target === "development";
-    const environmentVariables: Record<string, string> = {};
-    const secrets: Record<string, string> = {};
-    const currentPrefixes = new Set(
-      slugs.map((slug) => `AGENT_${slug.replaceAll("-", "_").toUpperCase()}`),
-    );
-    const environmentVariableRemovals: string[] = [];
-    const secretRemovals: string[] = [];
+    const prefix = `AGENT_${slug.replaceAll("-", "_").toUpperCase()}`;
+    const displayName = context.environment[`${prefix}_NAME`]?.trim() || slug;
+    const apiKeyName = `${prefix}_API_KEY`;
+    const webhookKeyName = `${prefix}_WEBHOOK_SIGNING_KEY`;
+    const endpointUrl = new URL(`/api/agents/${slug}`, `${origin}/`);
+    const hasCredentials =
+      Boolean(context.environment[apiKeyName]) && Boolean(context.environment[webhookKeyName]);
+    let agent = await this.#getAgentOrUndefined(slug);
+    let createdSecrets: { apiKey: string; webhookSigningKey: string } | undefined;
 
-    for (const [name, id] of Object.entries(context.environment)) {
-      const match = /^((?:AGENT_[A-Z0-9_]+))_AGENT_ID$/.exec(name);
-      const prefix = match?.[1];
-      if (!prefix || !id || currentPrefixes.has(prefix)) continue;
-      const existing = await this.#getAgentOrUndefined(id);
-      if (existing) await this.#removeAgentEndpoint(existing.id);
-      for (const key of [`${prefix}_AGENT_ID`, `${prefix}_PROVIDER_ID`]) {
-        if (context.environment[key] || context.inputs.environmentVariables()[key])
-          environmentVariableRemovals.push(key);
-      }
-      for (const key of [`${prefix}_API_KEY`, `${prefix}_WEBHOOK_SIGNING_KEY`]) {
-        if (context.environment[key] || context.inputs.secrets()[key]) secretRemovals.push(key);
-      }
+    // Tilde only returns endpoint credentials at creation. Replace an unrecoverable registration
+    // so repeated lifecycle runs converge instead of leaving an unusable endpoint behind.
+    if (agent && (!hasCredentials || !isVercelAiSdkProvider(agent.providerId))) {
+      await this.#removeAgentEndpoint(agent.id);
+      agent = undefined;
     }
 
-    for (const slug of slugs) {
-      const prefix = `AGENT_${slug.replaceAll("-", "_").toUpperCase()}`;
-      const apiKeyName = `${prefix}_API_KEY`;
-      const webhookKeyName = `${prefix}_WEBHOOK_SIGNING_KEY`;
-      const endpointUrl = new URL(`/api/agents/${slug}`, `${origin}/`);
-      const hasCredentials =
-        Boolean(context.inputs.secrets()[apiKeyName] || context.environment[apiKeyName]) &&
-        Boolean(context.inputs.secrets()[webhookKeyName] || context.environment[webhookKeyName]);
-      let agent = await this.#getAgentOrUndefined(slug);
-
-      // Tilde only returns endpoint credentials at creation. Replace an unrecoverable registration
-      // so repeated lifecycle runs converge instead of leaving an unusable endpoint behind.
-      if (agent && (!hasCredentials || !isVercelAiSdkProvider(agent.providerId))) {
-        await this.#removeAgentEndpoint(agent.id);
-        agent = undefined;
-      }
-
-      if (!agent) {
-        const response = await this.#generated((signal) =>
-          chatkitRegisterHttpVercelAiSdkAgent({
+    if (!agent) {
+      const response = await this.#generated(`create agent "${slug}"`, (signal) =>
+        chatkitRegisterHttpVercelAiSdkAgent({
+          client: this.#api,
+          path: { team_id: this.#teamId },
+          body: {
+            id: slug,
+            display_name: displayName,
+            endpoint_url: endpointValue(endpointUrl, localRunningEndpoint),
+            local_running_endpoint: localRunningEndpoint,
+            streaming: true,
+            timeout_ms: 300_000,
+          },
+          signal,
+        }),
+      );
+      agent = agentResource(response.agent as JsonRecord);
+      createdSecrets = {
+        apiKey: response.api_key,
+        webhookSigningKey: response.webhook_signing_key,
+      };
+    } else {
+      agent = agentResource(
+        (await this.#generated(`update agent "${slug}"`, (signal) =>
+          chatkitUpdateAgent({
             client: this.#api,
-            path: { team_id: this.#teamId },
+            path: { team_id: this.#teamId, agent_id: slug },
             body: {
-              id: slug,
-              display_name: slug,
+              display_name: displayName,
               endpoint_url: endpointValue(endpointUrl, localRunningEndpoint),
               local_running_endpoint: localRunningEndpoint,
               streaming: true,
@@ -131,55 +137,52 @@ export class TildeAgentProvider implements AgentProvider {
             },
             signal,
           }),
-        );
-        agent = agentResource(response.agent as JsonRecord);
-        secrets[apiKeyName] = response.api_key;
-        secrets[webhookKeyName] = response.webhook_signing_key;
-      } else {
-        agent = agentResource(
-          (await this.#generated((signal) =>
-            chatkitUpdateAgent({
-              client: this.#api,
-              path: { team_id: this.#teamId, agent_id: slug },
-              body: {
-                display_name: slug,
-                endpoint_url: endpointValue(endpointUrl, localRunningEndpoint),
-                local_running_endpoint: localRunningEndpoint,
-                streaming: true,
-                timeout_ms: 300_000,
-              },
-              signal,
-            }),
-          )) as JsonRecord,
-        );
-      }
-
-      agent = agentResource(
-        (await this.#generated((signal) =>
-          chatkitSetAgentStatus({
-            client: this.#api,
-            path: { team_id: this.#teamId, agent_id: agent!.id },
-            body: { status: InboxStatus.ENABLED },
-            signal,
-          }),
         )) as JsonRecord,
       );
-      environmentVariables[`${prefix}_AGENT_ID`] = agent.id;
-      environmentVariables[`${prefix}_PROVIDER_ID`] = agent.providerId;
     }
 
-    return {
-      environmentVariables,
-      ...(Object.keys(secrets).length ? { secrets } : {}),
-      ...(environmentVariableRemovals.length ? { environmentVariableRemovals } : {}),
-      ...(secretRemovals.length ? { secretRemovals } : {}),
-    };
+    agent = agentResource(
+      (await this.#generated(`enable agent "${slug}"`, (signal) =>
+        chatkitSetAgentStatus({
+          client: this.#api,
+          path: { team_id: this.#teamId, agent_id: agent!.id },
+          body: { status: InboxStatus.ENABLED },
+          signal,
+        }),
+      )) as JsonRecord,
+    );
+    await persistEnvironment(
+      context,
+      `${prefix}_AGENT_ID`,
+      agent.id,
+      `Tilde agent ID for ${slug}.`,
+    );
+    await persistEnvironment(
+      context,
+      `${prefix}_PROVIDER_ID`,
+      agent.providerId,
+      `Tilde agent provider ID for ${slug}.`,
+    );
+    if (createdSecrets) {
+      await persistSecret(
+        context,
+        apiKeyName,
+        createdSecrets.apiKey,
+        `Tilde endpoint API key for ${slug}.`,
+      );
+      await persistSecret(
+        context,
+        webhookKeyName,
+        createdSecrets.webhookSigningKey,
+        `Tilde webhook signing key for ${slug}.`,
+      );
+    }
   }
 
   async #getAgentOrUndefined(id: string): Promise<AgentResource | undefined> {
     try {
       return agentResource(
-        (await this.#generated((signal) =>
+        (await this.#generated(`get agent "${id}"`, (signal) =>
           chatkitGetAgent({
             client: this.#api,
             path: { team_id: this.#teamId, agent_id: id },
@@ -195,7 +198,7 @@ export class TildeAgentProvider implements AgentProvider {
 
   async #removeAgentEndpoint(id: string): Promise<void> {
     try {
-      await this.#generated((signal) =>
+      await this.#generated(`clear endpoint for agent "${id}"`, (signal) =>
         chatkitUpdateAgent({
           client: this.#api,
           path: { team_id: this.#teamId, agent_id: id },
@@ -203,7 +206,7 @@ export class TildeAgentProvider implements AgentProvider {
           signal,
         }),
       );
-      await this.#generated((signal) =>
+      await this.#generated(`disable agent "${id}"`, (signal) =>
         chatkitSetAgentStatus({
           client: this.#api,
           path: { team_id: this.#teamId, agent_id: id },
@@ -211,7 +214,7 @@ export class TildeAgentProvider implements AgentProvider {
           signal,
         }),
       );
-      await this.#generated((signal) =>
+      await this.#generated(`delete agent "${id}"`, (signal) =>
         chatkitDeleteAgent({
           client: this.#api,
           path: { team_id: this.#teamId, agent_id: id },
@@ -225,6 +228,7 @@ export class TildeAgentProvider implements AgentProvider {
   }
 
   async #generated<T>(
+    operationName: string,
     operation: (signal: AbortSignal) => Promise<{ data?: T; error?: unknown; response?: Response }>,
   ): Promise<T> {
     try {
@@ -233,7 +237,11 @@ export class TildeAgentProvider implements AgentProvider {
         const status = result.response?.status;
         throw new AgentProviderError(
           agentErrorCode(status),
-          tildeErrorMessage(result.error, "Tilde API request failed"),
+          `Unable to ${operationName}: ${tildeHttpErrorMessage(
+            result.error,
+            result.response,
+            "Tilde API request failed",
+          )}`,
           !status || status >= 500,
         );
       }
@@ -249,32 +257,20 @@ export class TildeAgentProvider implements AgentProvider {
       const status = tildeErrorStatus(error);
       throw new AgentProviderError(
         agentErrorCode(status),
-        error instanceof Error ? error.message : "Tilde request failed",
+        `Unable to ${operationName}: ${tildeHttpErrorMessage(error, undefined)}`,
         !status || status >= 500,
       );
     }
   }
 }
 
-async function discoverAgentSlugs(repositoryRoot: string): Promise<string[]> {
-  const root = resolve(repositoryRoot, "configuration/agents");
-  const entries = await readdir(root, { withFileTypes: true });
-  const slugs: string[] = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.name)) continue;
-    const entrypoint = resolve(root, entry.name, "agent.ts");
-    let metadata;
-    try {
-      metadata = await stat(entrypoint);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT")
-        throw new Error(`Agent source entrypoint is missing: ${entrypoint}`);
-      throw error;
-    }
-    if (!metadata.isFile()) throw new Error(`Agent source entrypoint is not a file: ${entrypoint}`);
-    slugs.push(entry.name);
-  }
-  return slugs.sort();
+function requireAgent(context: DeploymentContext): { id: string; path: string } {
+  if (!context.agentId || !context.agentPath)
+    throw new AgentProviderError(
+      "invalid_configuration",
+      "The agent lifecycle requires an agent ID and absolute path",
+    );
+  return { id: context.agentId, path: context.agentPath };
 }
 
 function endpointValue(endpointUrl: URL, localRunningEndpoint: boolean): string {

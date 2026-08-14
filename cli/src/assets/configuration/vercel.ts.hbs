@@ -4,6 +4,7 @@ import { TildeChatProvider } from "@tryopenbot/chat-provider";
 import { Configuration } from "@tryopenbot/configuration";
 import { VercelControlServiceProvider } from "@tryopenbot/control-service-provider";
 import { VercelSandboxComputerProvider } from "@tryopenbot/computer-provider";
+import { VercelInferenceProvider } from "@tryopenbot/inference-provider";
 import { TildePlatform, VercelPlatform } from "@tryopenbot/platform-integrations";
 import { TildeSkillProvider } from "@tryopenbot/skills-provider";
 import { TildeToolProvider } from "@tryopenbot/tools-provider";
@@ -23,6 +24,7 @@ export default Configuration({
     chat: new TildeChatProvider(tilde),
     agent: new TildeAgentProvider(tilde),
     computer: new VercelSandboxComputerProvider({ platform: vercel }),
+    inference: new VercelInferenceProvider(vercel),
     skills: new TildeSkillProvider(tilde),
     tools: new TildeToolProvider({ platform: tilde }),
   },

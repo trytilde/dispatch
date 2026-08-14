@@ -8,7 +8,7 @@ OpenBot is a TypeScript monorepo for a local or Vercel-hosted agent workspace. I
 2. Inspect `git status --short --branch`; preserve unrelated work.
 3. Read the owning package and its tests before editing.
 4. Read relevant records under `docs/adrs/` before changing a recorded decision.
-5. Use `.agents/skills/<name>/SKILL.md` for repository workflows. Runtime agent skills under `configuration/agents/<id>/skills/` serve that OpenBot agent, not the coding-agent process.
+5. Use `.agents/skills/<name>/SKILL.md` for repository workflows. Runtime skills under the primary `configuration/agent/skills/` or a `configuration/agent/subagents/<id>/skills/` directory serve that OpenBot agent, not the coding-agent process.
 
 ## Toolchain and commands
 
@@ -44,6 +44,7 @@ pnpm --filter openbot test
 - `packages/control-service-proto`: browser/Electron control protobuf and generated Connect types.
 - `packages/chat-provider`: control-facing agent, session, and message operations plus the Tilde implementation.
 - `packages/agent-provider`: external agent-endpoint provisioning and reconciliation lifecycles.
+- `packages/inference-provider`: inference-account initialization and credential provisioning; never an authored-agent model factory.
 - `packages/computer-tools`: typed Vercel AI SDK tools that call computer-service; this is a runtime utility, not a provider.
 - `packages/configuration`: typed contract for the fork-owned composition root.
 - `packages/utilities`: shared utilities, including strict Handlebars rendering for generated source, configuration, service, and deployment files.
@@ -69,8 +70,9 @@ pnpm --filter openbot test
 ### Providers
 
 - Providers exist only for control-service data operations, initialization and external provisioning, or check/build/deploy lifecycles. Remove interface methods without one of those consumers; do not preserve speculative generic APIs.
-- Code under `configuration/agents/` must not import provider packages or provider composition. Integrate model, tool, prompt, and vendor SDK behavior directly in the authored agent; Composio and other direct integrations do not require a provider abstraction.
+- Code under `configuration/agent/`, including its `subagents/`, must not import provider packages or provider composition. Integrate model, tool, prompt, and vendor SDK behavior directly in the authored agent; Composio and other direct integrations do not require a provider abstraction.
 - Providers must not expose model factories, prompt injection, AI SDK tool registration, or arbitrary vendor-specific convenience functions for authored agents. Put non-provider runtime utilities in a purpose-specific package such as `computer-tools`.
+- Inference providers may provision gateway accounts and credentials, but authored agents still import AI SDK providers directly.
 - Define provider contracts in `core.ts` or `core/` inside the owning provider package and keep implementations beside them. Do not expose internal provider interfaces over RPC by default.
 - Use the `implement-provider` skill whenever adding or editing a provider implementation.
 - Keep small implementations in `<provider>.ts`. When one owns multiple responsibilities or runtime files, use `<provider>/index.ts`, cohesive subfiles, and `assets/`.
@@ -81,7 +83,7 @@ pnpm --filter openbot test
 - Construct concrete providers explicitly under `Configuration({ providers: { ... } })` in `configuration/index.ts`; provider packages must not export string-to-provider selector factories or descriptors.
 - When provider composition changes, inspect `configuration/templates/agent/` and keep future agent wiring aligned; migrate existing agents explicitly when needed.
 - Add focused contract tests for each adapter change.
-- Treat every lifecycle hook as idempotent. Repeated `check`, `build`, `plan`, `configure`, and `deploy` calls must converge without duplicate resources. Keep vendor reconciliation sequences inside provider implementations; the CLI only schedules hooks and persists typed outputs.
+- Treat every lifecycle hook as idempotent. Repeated `check`, `build`, `plan`, `configure`, and `deploy` calls must converge without duplicate resources. Keep vendor reconciliation and configuration persistence inside provider implementations; the CLI only schedules hooks. Deployment results contain named handoff outputs only.
 
 ### Web and desktop
 
@@ -98,20 +100,20 @@ pnpm --filter openbot test
 - Do not guess Tilde identifiers or expose one-time API/webhook keys.
 - The agent loop uses Vercel AI SDK. Verify current SDK signatures before changing them.
 - Agent model, MCP, skill, and other external integrations are ordinary authored code. Keep the matching defaults in `configuration/templates/agent/`; migrate existing agents explicitly.
-- Agent source lives at `configuration/agents/<id>/`. Follow ADR-0011 for its supported Eve-compatible subset, ChatKit entrypoint, instrumentation ordering, and one-time `/workspace/<id>` seeds on the shared computer.
+- The full primary agent lives at `configuration/agent/`; full additional agents live at `configuration/agent/subagents/<id>/`. Nested subagents are unsupported. Follow ADR-0011 for their identical Eve-compatible subset, ChatKit entrypoint, instrumentation ordering, and one-time `/workspace/<id>` seeds on the shared computer.
 - Keep `sandbox/workspace/` as the sole Eve-compatibility naming exception. Use Computer in runtime APIs and require each agent's standard Computer tools to import `@tryopenbot/computer-tools`, which calls the typed computer-service API with that agent's fixed ID.
 
 ### Sandboxes
 
 - Linux with KVM and Apple Silicon use Microsandbox by default; Intel macOS or explicit remote mode uses Vercel Sandbox.
-- Never copy control-plane credentials into a sandbox.
+- Ordinary agent Computers must not receive control-plane credentials. The trusted development sandbox is the explicit exception: deployment refreshes its complete `configuration/.env`, `.sops.yaml`, and encrypted secrets, plus a user-readable-only age identity.
 - Preserve capability checks in `apps/computer-service` and provider implementations.
 - Execute agent computer-tool requests through `apps/computer-service`; validate `agent_id` there and map it to the registered Linux user and private `/workspace` mount.
 - Treat browser profiles, screenshots, and sandbox files as sensitive user data.
 
 ### Fork files
 
-- Repository resources use fixed paths, not `OpenBotConfiguration` options: agents in `configuration/agents/<id>/`, future-agent templates in `configuration/templates/agent/**/*.hbs`, agent skills in `configuration/agents/<id>/skills/`, agent workspace seeds in `configuration/agents/<id>/sandbox/workspace/`, and custom providers in `configuration/providers/`. Global `configuration/skills/` and `configuration/sandbox/` directories are unsupported.
+- Repository resources use fixed paths, not `OpenBotConfiguration` options: the primary agent in `configuration/agent/`, additional agents in `configuration/agent/subagents/<id>/`, future-agent templates in `configuration/templates/agent/**/*.hbs`, agent-local skills and workspace seeds inside either full agent directory, and custom providers in `configuration/providers/`. Global `configuration/skills/` and `configuration/sandbox/` directories are unsupported.
 
 ## Local development
 

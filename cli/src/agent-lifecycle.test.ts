@@ -1,105 +1,85 @@
 import type { AgentProvider } from "@tryopenbot/agent-provider";
 import type { AgentServiceProvider } from "@tryopenbot/agent-service-provider";
-import type { DeploymentContext } from "@tryopenbot/runtime-provider";
-import type { SkillProvider, SkillRegistry } from "@tryopenbot/skills-provider";
+import type { DeployableProvider } from "@tryopenbot/runtime-provider";
+import type { SkillProvider } from "@tryopenbot/skills-provider";
 import type { ToolProvider } from "@tryopenbot/tools-provider";
 import { describe, expect, it, vi } from "vite-plus/test";
-import { reconcileAgentResources } from "./agent-lifecycle.js";
+import { formatAgentLifecycleProgress, reconcileAgentResources } from "./agent-lifecycle.js";
 
 vi.mock("@tryopenbot/agent-service-provider", async (importOriginal) => ({
   ...(await importOriginal()),
   discoverAgents: vi.fn(async () => [
-    { slug: "research-assistant", directory: "/agents/research-assistant", path: "/agent.ts" },
+    {
+      slug: "research-assistant",
+      kind: "subagent",
+      directory: "/repository/configuration/agent/subagents/research-assistant",
+      path: "/repository/configuration/agent/subagents/research-assistant/agent.ts",
+    },
   ]),
 }));
 
-const registry: SkillRegistry = {
-  id: "registry-one",
-  name: "OpenBot research-assistant",
-};
-const lifecycleResult = {
-  environmentVariables: {
-    AGENT_RESEARCH_ASSISTANT_AGENT_ID: "research-assistant",
-    AGENT_RESEARCH_ASSISTANT_PROVIDER_ID: "chatkit.http-vercel-ai-sdk",
-  },
-  secrets: {
-    AGENT_RESEARCH_ASSISTANT_API_KEY: "api-secret",
-    AGENT_RESEARCH_ASSISTANT_WEBHOOK_SIGNING_KEY: "webhook-secret",
-  },
-};
-
 describe("agent resource lifecycle", () => {
-  it("schedules the agent deployable and persists its declared outputs", async () => {
-    const deploy = vi.fn(async (_context: DeploymentContext) => lifecycleResult);
-    const providers = providerMocks(deploy);
-    const environmentWrites: Record<string, string> = {};
-    const secretWrites: Record<string, string> = {};
-
-    const result = await reconcileAgentResources({
-      repositoryRoot: "/repository",
-      environment: {},
-      providers,
-      target: "development",
-      persistEnvironment: async (name, value) => {
-        environmentWrites[name] = value;
+  it("runs check, build, and deploy per agent in skills, tools, agent order", async () => {
+    const calls: string[] = [];
+    const provider = (id: string): DeployableProvider => ({
+      buildable: {
+        check: async (context) => {
+          expect(context.agentId).toBe("research-assistant");
+          expect(context.agentPath).toBe(
+            "/repository/configuration/agent/subagents/research-assistant",
+          );
+          calls.push(`${id}.check`);
+        },
+        build: async () => {
+          calls.push(`${id}.build`);
+        },
       },
-      persistSecret: async (name, value) => {
-        secretWrites[name] = value;
+      deployable: {
+        plan: async () => ({ summary: id }),
+        deploy: async () => {
+          calls.push(`${id}.deploy`);
+        },
       },
     });
-
-    expect(deploy).toHaveBeenCalledOnce();
-    expect(deploy.mock.calls[0]?.[0].inputs.require("agent-service.origin")).toBe(
-      "http://127.0.0.1:4100",
-    );
-    expect(environmentWrites).toEqual({
-      ...lifecycleResult.environmentVariables,
-      AGENT_RESEARCH_ASSISTANT_MCP_SERVER_ID: "server-one",
-      AGENT_RESEARCH_ASSISTANT_SKILL_REGISTRY_ID: "registry-one",
-    });
-    expect(secretWrites).toEqual(lifecycleResult.secrets);
-    expect(result).toEqual({ environmentVariables: environmentWrites, secrets: secretWrites });
-  });
-
-  it("does not rewrite already persisted lifecycle values", async () => {
-    const providers = providerMocks(vi.fn(async (_context: DeploymentContext) => lifecycleResult));
-    const environment = {
-      ...lifecycleResult.environmentVariables,
-      ...lifecycleResult.secrets,
-      AGENT_RESEARCH_ASSISTANT_MCP_SERVER_ID: "server-one",
-      AGENT_RESEARCH_ASSISTANT_SKILL_REGISTRY_ID: "registry-one",
-    };
-    const persistEnvironment = vi.fn(async () => undefined);
-    const persistSecret = vi.fn(async () => undefined);
 
     await reconcileAgentResources({
       repositoryRoot: "/repository",
-      environment,
-      providers,
-      persistEnvironment,
-      persistSecret,
+      environment: {},
+      providers: {
+        skills: provider("skills") as SkillProvider,
+        tools: provider("tools") as ToolProvider,
+        agent: provider("agent") as AgentProvider,
+        agentService: {
+          baseUrl: vi.fn(() => new URL("http://127.0.0.1:4100")),
+        } as unknown as AgentServiceProvider,
+      },
     });
 
-    expect(persistEnvironment).not.toHaveBeenCalled();
-    expect(persistSecret).not.toHaveBeenCalled();
+    expect(calls).toEqual([
+      "skills.check",
+      "skills.build",
+      "skills.deploy",
+      "tools.check",
+      "tools.build",
+      "tools.deploy",
+      "agent.check",
+      "agent.build",
+      "agent.deploy",
+    ]);
+  });
+
+  it("formats concise per-agent progress", () => {
+    expect(
+      formatAgentLifecycleProgress({
+        event: "agent.lifecycle.started",
+        details: { total: 3 },
+      }),
+    ).toBe("Reconciling Tilde resources for 3 authored agents");
+    expect(
+      formatAgentLifecycleProgress({
+        event: "agent.reconcile.started",
+        details: { agentId: "hello-world", index: 1, total: 3 },
+      }),
+    ).toBe("[1/3] Deploying hello-world agent");
   });
 });
-
-function providerMocks(deploy: ReturnType<typeof vi.fn>) {
-  return {
-    agent: {
-      deployable: { plan: vi.fn(async () => ({ summary: "reconcile" })), deploy },
-    } as unknown as AgentProvider,
-    agentService: {
-      baseUrl: vi.fn(() => new URL("http://127.0.0.1:4100")),
-    } as unknown as AgentServiceProvider,
-    skills: {
-      listRegistries: vi.fn(async () => []),
-      registerSkills: vi.fn(async () => registry),
-      getRegistry: vi.fn(async () => registry),
-    } as unknown as SkillProvider,
-    tools: {
-      ensureServer: vi.fn(async () => ({ id: "server-one" })),
-    } as unknown as ToolProvider,
-  };
-}

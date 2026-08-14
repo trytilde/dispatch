@@ -14,7 +14,10 @@ export function bundleOptions(
     outDir,
     clean: false,
     minify,
-    sourcemap: false,
-    outputOptions: { entryFileNames: filename },
+    sourcemap: true,
+    outputOptions: {
+      entryFileNames: filename,
+      sourcemapExcludeSources: true,
+    },
   };
 }

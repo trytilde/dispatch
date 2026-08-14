@@ -1,21 +1,17 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { openai } from "@ai-sdk/openai";
 import {
   chatKitEndpoint,
   convertToAiSdkMessages,
   createClient,
   createMCPClient,
 } from "@trytilde/harness-sdk-vercel-ai-node";
-import { createTildeApiClient, searchSkillRegistry } from "@trytilde/api-client";
 import {
   consumeStream,
   convertToModelMessages,
   stepCountIs,
   streamText,
-  tool,
   type ToolSet,
 } from "ai";
-import { z } from "zod";
-import { agentId, agentName } from "./lib/identity.js";
 import instructions from "./instructions.js";
 import awaitShell from "./tools/await_shell.js";
 import bash from "./tools/bash.js";
@@ -27,69 +23,38 @@ import readFile from "./tools/read_file.js";
 import screenshot from "./tools/screenshot.js";
 import writeFile from "./tools/write_file.js";
 
+if (!process.env.OPENAI_API_KEY && process.env.AI_GATEWAY_API_KEY) {
+  process.env.OPENAI_API_KEY = process.env.AI_GATEWAY_API_KEY;
+}
+
 const agentApiKey = process.env.AGENT_{{AGENT_ENV_PREFIX}}_API_KEY!;
-const configuredAgentId = process.env.AGENT_{{AGENT_ENV_PREFIX}}_AGENT_ID!;
 const mcpServerId = process.env.AGENT_{{AGENT_ENV_PREFIX}}_MCP_SERVER_ID!;
-const skillRegistryId = process.env.AGENT_{{AGENT_ENV_PREFIX}}_SKILL_REGISTRY_ID!;
-if (configuredAgentId !== agentId)
-  throw new Error(
-    `AGENT_{{AGENT_ENV_PREFIX}}_AGENT_ID must match the authored agent ID ${agentId}`,
-  );
 
 const client = createClient({
   apiKey: agentApiKey,
-  baseUrl: process.env.TILDE_BASE_URL ?? "https://api.trytilde.ai",
   orgId: process.env.TILDE_ORG_ID!,
   orgSubdomain: false,
   teamId: process.env.TILDE_TEAM_ID!,
 });
-const skillApi = createTildeApiClient({
-  apiKey: agentApiKey,
-  baseUrl: process.env.TILDE_BASE_URL ?? "https://api.trytilde.ai",
-  headers: { "x-api-key": agentApiKey },
-  orgId: process.env.TILDE_ORG_ID!,
-  throwOnError: true,
-});
-const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const localTools = {
+  await_shell: awaitShell,
+  bash,
+  copy_from_computer: copyFromComputer,
+  copy_to_computer: copyToComputer,
+  glob,
+  grep,
+  read_file: readFile,
+  screenshot,
+  write_file: writeFile,
+} satisfies ToolSet;
 let mcpTools: Promise<ToolSet> | undefined;
 
-function addTools(target: ToolSet, source: ToolSet): void {
-  for (const [name, aiTool] of Object.entries(source)) {
-    if (target[name]) throw new Error(`Duplicate agent tool: ${name}`);
-    target[name] = aiTool;
-  }
-}
-
-function managedSkillTools(): ToolSet {
-  return {
-    search_skills: tool({
-      description: "Search the configured Tilde skill registry for relevant skills.",
-      inputSchema: z.object({
-        query: z.string().min(1),
-        limit: z.number().int().min(1).max(20).default(8),
-      }),
-      execute: async ({ query, limit }, execution) => {
-        const result = await searchSkillRegistry({
-          client: skillApi,
-          path: { team_id: process.env.TILDE_TEAM_ID!, id: skillRegistryId },
-          body: { query, limit },
-          signal: execution.abortSignal,
-          throwOnError: true,
-        });
-        return result.data.items;
-      },
-    }),
-    read_skill: tool({
-      description: "Read one skill from the configured Tilde skill registry by ID or name.",
-      inputSchema: z.object({ skill_id_or_name: z.string().min(1) }),
-      execute: async ({ skill_id_or_name }) =>
-        (await client.skills.registry(skillRegistryId)).find(skill_id_or_name),
-    }),
-  };
-}
-
 async function managedMcpTools(): Promise<ToolSet> {
-  mcpTools ??= createMCPClient({ client, serverId: mcpServerId }).then(({ mcp }) => mcp.tools());
+  mcpTools ??= createMCPClient({
+    client,
+    serverId: mcpServerId,
+    tools: localTools,
+  }).then(({ mcp }) => mcp.tools());
   return mcpTools;
 }
 
@@ -98,26 +63,6 @@ export default chatKitEndpoint({
   webhookSigningKey: process.env.AGENT_{{AGENT_ENV_PREFIX}}_WEBHOOK_SIGNING_KEY!,
   requestTimeoutMs: 285_000,
   async handler(request, context) {
-    const tools: ToolSet = {
-      await_shell: awaitShell,
-      bash,
-      copy_from_computer: copyFromComputer,
-      copy_to_computer: copyToComputer,
-      glob,
-      grep,
-      read_file: readFile,
-      screenshot,
-      write_file: writeFile,
-    };
-    addTools(tools, managedSkillTools());
-    addTools(tools, await managedMcpTools());
-
-    const system = [
-      instructions,
-      `Your name is ${agentName}.`,
-      "Use search_skills to discover relevant managed skills and read_skill only when one applies.",
-      "The configured MCP server uses dynamic tool discovery. Search live tools and schemas before invoking them; never invent parameters or successful outcomes.",
-    ].join("\n\n");
     const history = await context.session.history();
     const messages = await convertToAiSdkMessages({
       messages: [...history.items, ...context.messages],
@@ -126,10 +71,11 @@ export default chatKitEndpoint({
     const result = streamText({
       abortSignal: request.signal,
       messages: await convertToModelMessages(messages),
-      model: openai.responses(process.env.OPENAI_MODEL ?? "gpt-5.4"),
+      model: openai(process.env.OPENAI_MODEL ?? "openai/gpt-5.6-sol"),
+      providerOptions: { openai: { reasoningEffort: "medium" } },
       stopWhen: stepCountIs(12),
-      system,
-      tools,
+      system: instructions,
+      tools: await managedMcpTools(),
     });
     return result.toUIMessageStreamResponse({
       consumeSseStream: consumeStream,

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { tildeErrorMessage, tildeErrorStatus } from "./errors.js";
+import { tildeErrorMessage, tildeErrorStatus, tildeHttpErrorMessage } from "./errors.js";
 import { tildeFetch } from "./fetch.js";
 import { omitUndefinedProperties, undefinedWhenFalsy } from "./request.js";
 
@@ -18,6 +18,15 @@ describe("Tilde platform helpers", () => {
     expect(tildeErrorStatus({ status: 429 })).toBe(429);
     expect(tildeErrorStatus({ response: new Response(null, { status: 503 }) })).toBe(503);
     expect(tildeErrorMessage({ msg: "rate limited" })).toBe("rate limited");
+    expect(tildeErrorMessage({ detail: [{ msg: "team is unavailable" }] })).toBe(
+      "team is unavailable",
+    );
+    expect(
+      tildeHttpErrorMessage(
+        { detail: "organization does not own this team" },
+        new Response(null, { status: 403 }),
+      ),
+    ).toBe("organization does not own this team (HTTP 403)");
     expect(tildeErrorMessage({}, "fallback")).toBe("fallback");
   });
 

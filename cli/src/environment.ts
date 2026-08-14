@@ -26,7 +26,7 @@ export async function loadLocalEnvironment(
   return environment;
 }
 
-/** Keep provider credentials in the Hono process and out of Vite/Electron children. */
+/** Keep control-plane credentials in the Hono process and out of Vite/Electron children. */
 export function publicDevelopmentEnvironment(environment: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   return Object.fromEntries(
     Object.entries(environment).filter(

@@ -1,15 +1,15 @@
 import type { AgentProvider } from "@tryopenbot/agent-provider";
 import { discoverAgents, type AgentServiceProvider } from "@tryopenbot/agent-service-provider";
 import {
-  deployProviders,
-  type DeploymentResult,
+  DeploymentOutputs,
+  type DeploymentContext,
+  type DeploymentEvent,
+  type DeploymentPersistence,
+  type DeploymentReporter,
   type DeploymentTarget,
+  type DeployableProvider,
 } from "@tryopenbot/runtime-provider";
-import {
-  SkillsProviderError,
-  type SkillProvider,
-  type SkillRegistry,
-} from "@tryopenbot/skills-provider";
+import type { SkillProvider } from "@tryopenbot/skills-provider";
 import type { ToolProvider } from "@tryopenbot/tools-provider";
 import {
   setEncryptedSecret,
@@ -32,152 +32,117 @@ export interface ReconcileAgentResourcesOptions {
   persistSecret?: (name: string, value: string, description: string) => Promise<void>;
   unsetEnvironment?: (name: string) => Promise<void>;
   unsetSecret?: (name: string) => Promise<void>;
+  report?: DeploymentReporter;
 }
 
-export interface ReconciledAgentResources {
-  environmentVariables: Record<string, string>;
-  secrets: Record<string, string>;
-}
-
-/** Schedule idempotent provider lifecycles, then reconcile per-agent supporting resources. */
+/** Run each authored agent through skills, tools, then agent provider lifecycles. */
 export async function reconcileAgentResources(
   options: ReconcileAgentResourcesOptions,
-): Promise<ReconciledAgentResources> {
-  const environmentVariables: Record<string, string> = {};
-  const secrets: Record<string, string> = {};
-  const persistEnvironment =
-    options.persistEnvironment ??
-    ((name, value, description) =>
-      setEnvironmentValue(options.repositoryRoot, name, value, description));
-  const persistSecret =
-    options.persistSecret ??
-    ((name, value, description) =>
-      setEncryptedSecret(options.repositoryRoot, name, value, {
-        environment: options.environment,
-        description,
-      }));
-  const unsetEnvironment =
-    options.unsetEnvironment ?? ((name) => unsetEnvironmentValue(options.repositoryRoot, name));
-  const unsetSecret =
-    options.unsetSecret ??
-    ((name) =>
-      unsetEncryptedSecret(options.repositoryRoot, name, { environment: options.environment }));
+): Promise<void> {
+  const sources = await discoverAgents(options.repositoryRoot);
   const target = options.target ?? "development";
-  const endpointOrigin = options.providers.agentService
+  const report = options.report ?? (() => undefined);
+  const persistence = repositoryDeploymentPersistence(options);
+  const agentServiceOrigin = options.providers.agentService
     .baseUrl({ target, environment: options.environment })
     .toString()
     .replace(/\/$/, "");
-  const deployed = await deployProviders([{ id: "agent", provider: options.providers.agent }], {
-    target,
-    dryRun: false,
-    repositoryRoot: options.repositoryRoot,
-    environment: options.environment,
-    initialInputs: { outputs: { "agent-service.origin": endpointOrigin } },
-  });
-  await persistLifecycleOutputs(deployed.result(), options.environment, {
-    persistEnvironment,
-    persistSecret,
-    unsetEnvironment,
-    unsetSecret,
-  });
-  Object.assign(environmentVariables, deployed.environmentVariables());
-  Object.assign(secrets, deployed.secrets());
+  report({ event: "agent.lifecycle.started", details: { total: sources.length } });
 
-  for (const source of await discoverAgents(options.repositoryRoot)) {
-    const prefix = `AGENT_${source.slug.replaceAll("-", "_").toUpperCase()}`;
-    const call = (operation: string) => ({
-      requestId: `agent-lifecycle:${source.slug}:${operation}`,
-      idempotencyKey: `openbot:${source.slug}:${operation}`,
-    });
-    const mcpServer = await options.providers.tools.ensureServer(
-      {
-        id: options.environment[`${prefix}_MCP_SERVER_ID`]?.trim() || `openbot-${source.slug}`,
-        name: `OpenBot ${source.slug}`,
-        dynamicToolDiscovery: true,
-      },
-      call("mcp-server"),
-    );
-    const registry = await ensureSkillRegistry(
-      options.providers.skills,
-      source.slug,
-      options.environment[`${prefix}_SKILL_REGISTRY_ID`],
-    );
-    await saveEnvironment(
-      `${prefix}_MCP_SERVER_ID`,
-      mcpServer.id,
-      `Tilde MCP server ID for ${source.slug}.`,
-    );
-    await saveEnvironment(
-      `${prefix}_SKILL_REGISTRY_ID`,
-      registry.id,
-      `Tilde skill registry ID for ${source.slug}.`,
-    );
-  }
-  return { environmentVariables, secrets };
-
-  async function saveEnvironment(name: string, value: string, description: string) {
-    if (options.environment[name] !== value) await persistEnvironment(name, value, description);
-    environmentVariables[name] = value;
-    options.environment[name] = value;
-  }
-}
-
-/** Persist only outputs explicitly returned by lifecycle providers; contains no vendor logic. */
-export async function persistLifecycleOutputs(
-  result: DeploymentResult,
-  environment: NodeJS.ProcessEnv,
-  persistence: {
-    persistEnvironment(name: string, value: string, description: string): Promise<void>;
-    persistSecret(name: string, value: string, description: string): Promise<void>;
-    unsetEnvironment?(name: string): Promise<void>;
-    unsetSecret?(name: string): Promise<void>;
-  },
-): Promise<void> {
-  for (const name of result.environmentVariableRemovals ?? []) {
-    await persistence.unsetEnvironment?.(name);
-    delete environment[name];
-  }
-  for (const name of result.secretRemovals ?? []) {
-    await persistence.unsetSecret?.(name);
-    delete environment[name];
-  }
-  for (const [name, value] of Object.entries(result.environmentVariables ?? {})) {
-    if (environment[name] !== value)
-      await persistence.persistEnvironment(name, value, "Provider lifecycle output.");
-    environment[name] = value;
-  }
-  for (const [name, value] of Object.entries(result.secrets ?? {})) {
-    if (environment[name] !== value)
-      await persistence.persistSecret(name, value, "Provider lifecycle secret.");
-    environment[name] = value;
-  }
-}
-
-async function ensureSkillRegistry(
-  provider: SkillProvider,
-  agentId: string,
-  configuredId: string | undefined,
-): Promise<SkillRegistry> {
-  const context = { requestId: `agent-lifecycle:${agentId}:skill-registry` };
-  if (configuredId?.trim()) {
-    try {
-      return await provider.getRegistry(configuredId.trim(), context);
-    } catch (error) {
-      if (!(error instanceof SkillsProviderError) || error.code !== "not_found") throw error;
+  for (const [index, source] of sources.entries()) {
+    const progress = { agentId: source.slug, index: index + 1, total: sources.length };
+    report({ event: "agent.reconcile.started", details: progress });
+    const context: DeploymentContext = {
+      target,
+      repositoryRoot: options.repositoryRoot,
+      environment: options.environment,
+      inputs: new DeploymentOutputs(),
+      persistence,
+      agentId: source.slug,
+      agentPath: source.directory,
+      agentServiceOrigin,
+      report,
+    };
+    for (const [providerId, provider] of [
+      ["skills", options.providers.skills],
+      ["tools", options.providers.tools],
+      ["agent", options.providers.agent],
+    ] as const) {
+      await runAgentProvider(providerId, provider, context);
     }
+    report({ event: "agent.reconcile.complete", details: progress });
   }
-  const name = `OpenBot ${agentId}`;
-  const existing = await provider.listRegistries({ namePrefix: name }, context);
-  const exact = existing.find((registry) => registry.name === name);
-  return (
-    exact ??
-    provider.registerSkills(
-      {
-        name,
-        description: `Skills available to the ${agentId} OpenBot agent.`,
-        skillIds: [],
-      },
-      context,
-    )
-  );
+}
+
+async function runAgentProvider(
+  providerId: string,
+  provider: DeployableProvider,
+  context: DeploymentContext,
+): Promise<void> {
+  context.report({
+    event: "agent.provider.started",
+    details: { providerId, agentId: context.agentId },
+  });
+  if (provider.buildable) {
+    await provider.buildable.check(context);
+    context.inputs.merge(await provider.buildable.build(context));
+  }
+  if (provider.deployable) {
+    if (provider.deployable.configure)
+      context.inputs.merge(await provider.deployable.configure(context));
+    context.inputs.merge(await provider.deployable.deploy(context));
+  }
+  context.report({
+    event: "agent.provider.complete",
+    details: { providerId, agentId: context.agentId },
+  });
+}
+
+export function repositoryDeploymentPersistence(
+  options: Pick<
+    ReconcileAgentResourcesOptions,
+    | "repositoryRoot"
+    | "environment"
+    | "persistEnvironment"
+    | "persistSecret"
+    | "unsetEnvironment"
+    | "unsetSecret"
+  >,
+): DeploymentPersistence {
+  return {
+    setEnvironment:
+      options.persistEnvironment ??
+      ((name, value, description) =>
+        setEnvironmentValue(options.repositoryRoot, name, value, description)),
+    setSecret:
+      options.persistSecret ??
+      ((name, value, description) =>
+        setEncryptedSecret(options.repositoryRoot, name, value, {
+          environment: options.environment,
+          description,
+        })),
+    unsetEnvironment:
+      options.unsetEnvironment ?? ((name) => unsetEnvironmentValue(options.repositoryRoot, name)),
+    unsetSecret:
+      options.unsetSecret ??
+      ((name) =>
+        unsetEncryptedSecret(options.repositoryRoot, name, { environment: options.environment })),
+  };
+}
+
+/** Render lifecycle progress for humans while leaving JSON/reporting policy with the command. */
+export function formatAgentLifecycleProgress(event: DeploymentEvent): string | undefined {
+  const total = integer(event.details?.total);
+  if (event.event === "agent.lifecycle.started" && total !== undefined)
+    return `Reconciling Tilde resources for ${total} authored agent${total === 1 ? "" : "s"}`;
+  const index = integer(event.details?.index);
+  const agentId = event.details?.agentId;
+  if (index === undefined || total === undefined || typeof agentId !== "string") return undefined;
+  if (event.event === "agent.reconcile.started")
+    return `[${index}/${total}] Deploying ${agentId} agent`;
+  return undefined;
+}
+
+function integer(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : undefined;
 }

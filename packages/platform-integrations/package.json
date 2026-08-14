@@ -32,6 +32,11 @@
       "development": "./src/vercel/deployment.ts",
       "import": "./dist/vercel/deployment.js"
     },
+    "./vercel/ai-gateway": {
+      "types": "./src/vercel/ai-gateway.ts",
+      "development": "./src/vercel/ai-gateway.ts",
+      "import": "./dist/vercel/ai-gateway.js"
+    },
     "./vercel/registry": {
       "types": "./src/vercel/registry.ts",
       "development": "./src/vercel/registry.ts",
@@ -60,6 +65,10 @@
         "types": "./dist/vercel/deployment.d.ts",
         "import": "./dist/vercel/deployment.js"
       },
+      "./vercel/ai-gateway": {
+        "types": "./dist/vercel/ai-gateway.d.ts",
+        "import": "./dist/vercel/ai-gateway.js"
+      },
       "./vercel/registry": {
         "types": "./dist/vercel/registry.d.ts",
         "import": "./dist/vercel/registry.js"
@@ -68,8 +77,9 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc --noEmit && tsdown --config ../../tsdown.package.config.ts && node ../../scripts/copy-package-assets.mjs",
-    "lint": "tsc --noEmit",
+    "build": "tsc --noEmit && tsdown --config ../../tsdown.node.config.ts && node ../../scripts/copy-package-assets.mjs",
+    "check": "vp check",
+    "lint": "vp lint",
     "prepack": "pnpm build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

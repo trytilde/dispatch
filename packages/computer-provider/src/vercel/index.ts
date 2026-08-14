@@ -71,7 +71,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
     callContext: ComputerCallContext,
   ): Promise<void> {
     if (this.#configuredRepository) return;
-    const token = context.inputs.deploymentSecrets().VERCEL_TOKEN;
+    const token = context.environment.VERCEL_TOKEN;
     if (!token)
       throw new ComputerProviderError(
         "invalid_configuration",
@@ -87,7 +87,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
 
   #vercelRegistryIdentity(context: DeploymentContext): Promise<VercelRegistryIdentity> {
     return (this.#registryIdentity ??= resolveVercelRegistryIdentity({
-      token: context.inputs.deploymentSecrets().VERCEL_TOKEN,
+      token: context.environment.VERCEL_TOKEN,
       project: context.environment.VERCEL_AGENT_PROJECT,
       teamId: context.environment.VERCEL_TEAM_ID,
       request: this.#request,

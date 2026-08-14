@@ -21,11 +21,11 @@ import {
 } from "@tryopenbot/computer-provider";
 import {
   collectProviderInitializations,
-  type DeploymentResult,
+  initializeProviders,
   type InitializableProvider,
-  type ProviderInitialization,
   type ProviderInitializationQuestion,
 } from "@tryopenbot/runtime-provider";
+import { VercelInferenceProvider } from "@tryopenbot/inference-provider";
 import { tildePlatform } from "@tryopenbot/platform-integrations";
 import { tildeToolProviderInitialization } from "@tryopenbot/tools-provider";
 import {
@@ -33,30 +33,14 @@ import {
   VercelControlServiceProvider,
 } from "@tryopenbot/control-service-provider";
 import { materializeFileTemplate, renderFileTemplatePath } from "@tryopenbot/utilities";
-import { scaffoldAgent, scaffoldAgentTemplates } from "./agent-scaffold.js";
+import { scaffoldAgentTemplates, scaffoldPrimaryAgent } from "./agent-scaffold.js";
 import { loadConfigurationModule } from "./configuration-loader.js";
 
 export const SANDBOX_SOPS_AGE_KEY = "SOPS_AGE_KEY";
 const COMPUTER_SERVICE_SECRET = "COMPUTER_SERVICE_API_KEY";
 const COMPUTER_SERVICE_ENVIRONMENT = "COMPUTER_SERVICE_API_KEY";
 const SECRETS_SOPS_AGE_SECRET = "SECRETS_SOPS_AGE_KEY";
-const DEPLOYMENT_SECRET_NAMES = new Set(["VERCEL_TOKEN"]);
 const upstreamConfigurationIgnore = "*\n!.gitignore\n";
-const openAIAgentInitialization: ProviderInitialization = {
-  id: "openai-agent-runtime",
-  label: "OpenAI agent runtime",
-  questions: [
-    {
-      id: "openai-api-key",
-      prompt: "OpenAI API key",
-      description: "API key used directly by the default authored agent template.",
-      input: "secret",
-      required: true,
-      destination: { kind: "secret", key: "OPENAI_API_KEY" },
-    },
-  ],
-};
-
 const configurationAssets = {
   instrumentation: fileURLToPath(
     new URL("./assets/agents/instrumentation.ts.hbs", import.meta.url),
@@ -119,6 +103,7 @@ export interface InitializationOptions {
   environment?: NodeJS.ProcessEnv;
   interactive?: boolean;
   userConfigurationPath?: string;
+  request?: typeof fetch;
 }
 
 interface AgeIdentity {
@@ -263,6 +248,12 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
       environmentValues[question.destination.key] = described;
     else secretValues[question.destination.key] = described;
   }
+  await runInitializationProvisioning(selectedProviders, options.repositoryRoot, {
+    baseEnvironment: options.environment ?? process.env,
+    environmentValues,
+    request: options.request,
+    secretValues,
+  });
   secretValues[COMPUTER_SERVICE_SECRET] ??= {
     description: "Shared bearer key for computer-service RPC authentication.",
     value: randomBytes(32).toString("base64url"),
@@ -270,6 +261,10 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   secretValues[SECRETS_SOPS_AGE_SECRET] = {
     description: "Age identity used by the trusted deployment sandbox to decrypt secrets.",
     value: sandboxIdentity.identity,
+  };
+  environmentValues.AGENT_HELLO_WORLD_NAME = {
+    description: "Display name for the hello-world agent.",
+    value: "Hello World",
   };
 
   const ownerAge = owner.creationRule.age;
@@ -318,7 +313,7 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
     configurationAssets.instrumentation,
   );
   await scaffoldAgentTemplates(options.repositoryRoot);
-  await scaffoldAgent(options.repositoryRoot, "Hello World", { existing: "preserve" });
+  await scaffoldPrimaryAgent(options.repositoryRoot, "Hello World", { existing: "preserve" });
   await rm(configurationIgnorePath, { force: true });
   await runner.run("vp", ["install"], { cwd: options.repositoryRoot });
 }
@@ -386,6 +381,22 @@ async function reconfigureOpenBot(
     }
   }
 
+  await runInitializationProvisioning(providers, options.repositoryRoot, {
+    baseEnvironment: options.environment ?? process.env,
+    environmentValues: {
+      ...Object.fromEntries(
+        Object.entries(state.environmentValues).map(([name, value]) => [
+          name,
+          { description: "Existing OpenBot environment value.", value },
+        ]),
+      ),
+      ...environmentValues,
+    },
+    secretValues: state.secretValues,
+    environmentUpdates: environmentValues,
+    request: options.request,
+  });
+
   const encrypted = await encryptSecretsDocument(
     runner,
     options.repositoryRoot,
@@ -396,6 +407,7 @@ async function reconfigureOpenBot(
   await reconcileEnvironmentFile(paths.environmentPath, environmentValues, removedEnvironmentNames);
   await writeFileAtomically(paths.secretsPath, await renderDocument(encrypted), 0o600);
   await scaffoldAgentTemplates(options.repositoryRoot);
+  await scaffoldPrimaryAgent(options.repositoryRoot, "Hello World", { existing: "preserve" });
   await runner.run("vp", ["install"], { cwd: options.repositoryRoot });
 }
 
@@ -515,17 +527,14 @@ export async function loadDeploymentConfiguration(
     prompts?: InitializationPrompts;
     userConfigurationPath?: string;
   } = {},
-): Promise<{ environment: NodeJS.ProcessEnv; inputs: DeploymentResult }> {
+): Promise<{ environment: NodeJS.ProcessEnv }> {
   const runner = options.runner ?? processCommandRunner;
   const configurationDirectory = resolve(repositoryRoot, "configuration");
   const environmentPath = resolve(configurationDirectory, ".env");
   const secretsPath = resolve(configurationDirectory, "secrets.enc.yaml");
   const staticEnvironment = await readEnvironmentFile(environmentPath);
   if (!(await exists(secretsPath)))
-    return {
-      environment: { ...(options.environment ?? process.env), ...staticEnvironment },
-      inputs: { environmentVariables: staticEnvironment },
-    };
+    return { environment: { ...(options.environment ?? process.env), ...staticEnvironment } };
 
   const commandEnvironment = await sopsCommandEnvironment(repositoryRoot, runner, {
     environment: options.environment ?? process.env,
@@ -547,20 +556,9 @@ export async function loadDeploymentConfiguration(
     ...(options.environment ?? process.env),
     ...staticEnvironment,
     ...parsed.secrets,
-    ...parsed.deploymentSecrets,
+    [SANDBOX_SOPS_AGE_KEY]: parsed.sandboxAgeIdentity,
   };
-  delete deploymentEnvironment.SOPS_AGE_KEY;
-  delete deploymentEnvironment.SOPS_AGE_KEY_FILE;
-  delete deploymentEnvironment.SOPS_AGE_KEY_CMD;
-  return {
-    environment: deploymentEnvironment,
-    inputs: {
-      environmentVariables: staticEnvironment,
-      secrets: parsed.secrets,
-      deploymentSecrets: parsed.deploymentSecrets,
-      sandboxSecrets: { [SANDBOX_SOPS_AGE_KEY]: parsed.sandboxAgeIdentity },
-    },
-  };
+  return { environment: deploymentEnvironment };
 }
 
 export async function setEncryptedSecret(
@@ -1078,26 +1076,22 @@ function validateSecretName(name: string): void {
 function parseSecretsDocument(value: unknown): {
   sandboxAgeIdentity: string;
   secrets: Record<string, string>;
-  deploymentSecrets: Record<string, string>;
 } {
   const describedSecrets = parseDescribedSecretsDocument(value);
   const secrets: Record<string, string> = {};
-  const deploymentSecrets: Record<string, string> = {};
   let sandboxAgeIdentity: string | undefined;
   for (const [storedName, described] of Object.entries(describedSecrets)) {
     if (storedName === SECRETS_SOPS_AGE_SECRET) {
       if (!described.value.startsWith("AGE-SECRET-KEY-1"))
         throw new Error(`${SECRETS_SOPS_AGE_SECRET} is not a valid age identity`);
       sandboxAgeIdentity = described.value;
-    } else if (DEPLOYMENT_SECRET_NAMES.has(storedName)) {
-      deploymentSecrets[storedName] = described.value;
     } else {
       secrets[runtimeSecretName(storedName)] = described.value;
     }
   }
   if (!sandboxAgeIdentity)
     throw new Error(`Encrypted configuration is missing ${SECRETS_SOPS_AGE_SECRET}`);
-  return { sandboxAgeIdentity, secrets, deploymentSecrets };
+  return { sandboxAgeIdentity, secrets };
 }
 
 function parseDescribedSecretsDocument(value: unknown): Record<string, DescribedValue> {
@@ -1344,8 +1338,46 @@ function applicationInitializationProviders(
       platforms: [tildePlatform],
       initialization: tildeToolProviderInitialization,
     },
-    { initialization: openAIAgentInitialization },
+    new VercelInferenceProvider(),
   ];
+}
+
+async function runInitializationProvisioning(
+  providers: readonly InitializableProvider[],
+  repositoryRoot: string,
+  values: {
+    baseEnvironment: NodeJS.ProcessEnv;
+    environmentValues: Record<string, DescribedValue>;
+    secretValues: Record<string, DescribedValue>;
+    environmentUpdates?: Record<string, DescribedValue>;
+    request?: typeof fetch;
+  },
+): Promise<void> {
+  const environment = {
+    ...values.baseEnvironment,
+    ...Object.fromEntries(
+      Object.entries(values.environmentValues).map(([name, described]) => [name, described.value]),
+    ),
+    ...Object.fromEntries(
+      Object.entries(values.secretValues).map(([name, described]) => [
+        runtimeSecretName(name),
+        described.value,
+      ]),
+    ),
+  };
+  await initializeProviders(providers, {
+    repositoryRoot,
+    environment,
+    request: values.request,
+    async setEnvironment(name, value, description) {
+      (values.environmentUpdates ?? values.environmentValues)[name] = { description, value };
+      environment[name] = value;
+    },
+    async setSecret(name, value, description) {
+      values.secretValues[repositorySecretName(name)] = { description, value };
+      environment[name] = value;
+    },
+  });
 }
 
 function uniqueInitializationQuestions(
@@ -1372,6 +1404,7 @@ function configuredProviders(configuration: OpenBotConfiguration): Initializable
     configuration.providers.chat,
     configuration.providers.agent,
     configuration.providers.computer,
+    configuration.providers.inference,
     configuration.providers.skills,
     configuration.providers.tools,
   ];
@@ -1381,10 +1414,7 @@ function configuredProviders(configuration: OpenBotConfiguration): Initializable
 function configuredInitializationProviders(
   configuration: OpenBotConfiguration,
 ): InitializableProvider[] {
-  return [
-    ...configuredProviders(configuration).map(compatibleInitializationProvider),
-    { initialization: openAIAgentInitialization },
-  ];
+  return configuredProviders(configuration).map(compatibleInitializationProvider);
 }
 
 function compatibleInitializationProvider(provider: InitializableProvider): InitializableProvider {

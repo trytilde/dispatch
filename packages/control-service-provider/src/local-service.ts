@@ -109,8 +109,11 @@ export async function waitForHealth(request: typeof fetch, origin: string): Prom
 }
 
 async function renderEnvironment(context: DeploymentContext): Promise<string> {
-  const values = new Map(Object.entries(context.inputs.environmentVariables()));
-  for (const [name, value] of Object.entries(context.inputs.secrets())) values.set(name, value);
+  const values = new Map(
+    Object.entries(context.environment).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined,
+    ),
+  );
   return renderFileTemplatePath(environmentTemplate, {
     entries: [...values]
       .sort(([a], [b]) => a.localeCompare(b))

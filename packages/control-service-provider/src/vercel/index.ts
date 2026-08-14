@@ -7,6 +7,7 @@ import type {
   InitializableProvider,
   ProviderInitialization,
 } from "@tryopenbot/runtime-provider";
+import { persistEnvironment } from "@tryopenbot/runtime-provider";
 import { VercelPlatform, vercelPlatform } from "@tryopenbot/platform-integrations";
 import {
   ensureVercelProject,
@@ -83,10 +84,8 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
     const project = requiredVercelProject(context.environment, "VERCEL_CONTROL_PROJECT");
     await ensureVercelProject(this.#runner, context, project);
     const origin = this.baseUrl(context).toString().replace(/\/$/, "");
-    return {
-      outputs: { "control-service.origin": origin, "runtime.origin": origin },
-      environmentVariables: { PUBLIC_ORIGIN: origin },
-    };
+    await persistEnvironment(context, "PUBLIC_ORIGIN", origin, "OpenBot public origin.");
+    return { outputs: { "control-service.origin": origin, "runtime.origin": origin } };
   }
   async deploy(context: DeploymentContext): Promise<DeploymentResult> {
     const project = requiredVercelProject(context.environment, "VERCEL_CONTROL_PROJECT");

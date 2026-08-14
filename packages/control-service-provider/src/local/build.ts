@@ -25,8 +25,11 @@ export async function buildLocalControlService(
     outDir: dirname(outfile),
     clean: true,
     minify: false,
-    sourcemap: false,
-    outputOptions: { entryFileNames: "service.mjs" },
+    sourcemap: true,
+    outputOptions: {
+      entryFileNames: "service.mjs",
+      sourcemapExcludeSources: true,
+    },
   });
   return { outputs: { "control-service.artifact": outfile } };
 }

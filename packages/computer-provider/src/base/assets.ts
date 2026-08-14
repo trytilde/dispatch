@@ -9,7 +9,7 @@ const providerAssetDirectory = fileURLToPath(new URL("./assets/", import.meta.ur
 export const computerImageAssets = {
   bootstrap: resolve(providerAssetDirectory, "bootstrap.sh.hbs"),
   containerfile: resolve(providerAssetDirectory, "Containerfile.hbs"),
-  developmentEnvironment: resolve(providerAssetDirectory, "development-environment.sh.hbs"),
+  developmentProfile: resolve(providerAssetDirectory, "development-profile.sh.hbs"),
   developmentSetup: resolve(providerAssetDirectory, "development-setup.sh.hbs"),
   marker: resolve(providerAssetDirectory, "marker.hbs"),
   start: resolve(providerAssetDirectory, "start.sh.hbs"),
@@ -73,6 +73,10 @@ export async function materializeComputerImageContext(
     materializeFileTemplate(
       computerImageAssets.developmentSetup,
       resolve(assetDestination, "development-setup.sh"),
+    ),
+    materializeFileTemplate(
+      computerImageAssets.developmentProfile,
+      resolve(assetDestination, "development-profile.sh"),
     ),
     materializeFileTemplate(computerImageAssets.start, resolve(assetDestination, "start.sh")),
   ]);

@@ -102,7 +102,7 @@ describe("non-interactive initialization prompts", () => {
     expect(schema.properties["owner-identity"]?.description).toContain("SOPS");
     expect(schema.properties["vercel-token"]?.description).toContain("Required for Vercel");
     expect(schema.properties["vercel-token"]?.["x-openbot-provider"]).toBe("Vercel");
-    expect(schema.properties["vercel-token"]?.["x-openbot-runtimes"]).toEqual(["vercel"]);
+    expect(schema.properties["vercel-token"]?.["x-openbot-runtimes"]).toEqual(["local", "vercel"]);
     expect(schema.properties["vercel-token"]?.writeOnly).toBe(true);
     expect(schema.properties["vercel-agent-project"]?.description).toBeTruthy();
     expect(schema.properties["tilde-api-key"]?.["x-openbot-provider"]).toBe("Tilde");
@@ -123,7 +123,7 @@ describe("non-interactive initialization prompts", () => {
       "tilde-api-key",
       "tilde-org-id",
       "tilde-team-id",
-      "openai-api-key",
+      "vercel-ai-gateway-api-key-name",
     ]);
   });
 

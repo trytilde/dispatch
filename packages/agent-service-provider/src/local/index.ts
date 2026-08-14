@@ -8,6 +8,7 @@ import type {
   InitializableProvider,
   ProviderInitialization,
 } from "@tryopenbot/runtime-provider";
+import { persistEnvironment } from "@tryopenbot/runtime-provider";
 import {
   installLocalService,
   processRunner,
@@ -69,10 +70,9 @@ export class LocalAgentServiceProvider implements Buildable, Deployable, Initial
   async configure(context: DeploymentContext): Promise<DeploymentResult> {
     const origin = this.baseUrl(context).toString().replace(/\/$/, "");
     const port = new URL(origin).port;
-    return {
-      outputs: { "agent-service.origin": origin },
-      environmentVariables: { AGENT_SERVICE_ORIGIN: origin, AGENT_PORT: port },
-    };
+    await persistEnvironment(context, "AGENT_SERVICE_ORIGIN", origin, "Agent service origin.");
+    await persistEnvironment(context, "AGENT_PORT", port, "Agent service port.");
+    return { outputs: { "agent-service.origin": origin } };
   }
   async deploy(context: DeploymentContext): Promise<DeploymentResult> {
     const artifact = context.inputs.require("agent-service.artifact");

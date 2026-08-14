@@ -17,6 +17,7 @@ import type {
   InitializableProvider,
   ProviderInitialization,
 } from "@tryopenbot/runtime-provider";
+import { persistEnvironment } from "@tryopenbot/runtime-provider";
 import { processRunner, type CommandRunner } from "@tryopenbot/control-service-provider";
 import { checkAgentService } from "../check.js";
 import { agentVercelArtifact, buildVercelAgentService, vercelProjectTemplate } from "./build.js";
@@ -82,10 +83,8 @@ export class VercelAgentServiceProvider implements Buildable, Deployable, Initia
     const project = requiredVercelProject(context.environment, "VERCEL_AGENT_PROJECT");
     await ensureVercelProject(this.#runner, context, project);
     const origin = this.baseUrl(context).toString().replace(/\/$/, "");
-    return {
-      outputs: { "agent-service.origin": origin },
-      environmentVariables: { AGENT_SERVICE_ORIGIN: origin },
-    };
+    await persistEnvironment(context, "AGENT_SERVICE_ORIGIN", origin, "Agent service origin.");
+    return { outputs: { "agent-service.origin": origin } };
   }
   async deploy(context: DeploymentContext): Promise<DeploymentResult> {
     const project = requiredVercelProject(context.environment, "VERCEL_AGENT_PROJECT");

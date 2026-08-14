@@ -33,9 +33,11 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc --noEmit && tsdown --config ../../tsdown.package.config.ts && node ../../scripts/copy-package-assets.mjs",
+    "build": "tsc --noEmit && tsdown --config ../../tsdown.browser.config.ts && node ../../scripts/copy-package-assets.mjs",
+    "check": "vp check",
     "generate": "BUF_CACHE_DIR=../../.cache/buf buf generate",
-    "lint": "BUF_CACHE_DIR=../../.cache/buf buf lint",
+    "lint": "vp lint",
+    "proto:lint": "BUF_CACHE_DIR=../../.cache/buf buf lint",
     "prepack": "pnpm build",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"

@@ -12,7 +12,8 @@ pnpm openbot new-agent "<display name>"
 ```
 
 Let the CLI derive the agent ID and create the complete
-`configuration/agents/<id>/` tree. Inspect and customize the generated
+`configuration/agent/subagents/<id>/` tree. Every subagent has its own
+instrumentation, tools, skills, and sandbox workspace. Inspect and customize the generated
 instructions and endpoint afterward. Never copy another agent directory or
 overwrite an existing one manually.
 

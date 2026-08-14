@@ -48,7 +48,7 @@ Several providers may share one platform object. For example, Tilde-backed chat,
 
 Initialization questions are collected once per shared platform. Provider-specific questions remain with the provider or lifecycle that owns the resulting resource.
 
-The default `VercelInferenceProvider` shares the installation's `VercelPlatform`. Init asks for the AI Gateway key name, creates the key only when `AI_GATEWAY_API_KEY` is absent, and persists that canonical secret through SOPS. Agent code maps that credential into the direct OpenAI-compatible AI SDK client; the provider never crosses into request-time model selection.
+The default `VercelInferenceProvider` shares the installation's `VercelPlatform`. Init asks for the AI Gateway key name, creates the key only when `AI_GATEWAY_API_KEY` is absent, and persists that canonical secret through SOPS. Agent code passes a `creator/model` string directly to AI SDK so its built-in default provider routes through AI Gateway and reads the canonical key. The provider never crosses into request-time model selection.
 
 ## Adding or changing a provider
 

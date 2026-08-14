@@ -20,9 +20,6 @@ importers:
 
   .:
     devDependencies:
-      '@ai-sdk/openai':
-        specifier: 3.0.94
-        version: 3.0.94(zod@4.4.3)
       '@changesets/changelog-github':
         specifier: 0.5.2
         version: 0.5.2
@@ -794,12 +791,6 @@ packages:
 
   '@ai-sdk/mcp@1.0.70':
     resolution: {integrity: sha512-rgbR+UZQF2DTsYUxgqTFjpFMaqXvQoGo9hS9q27qNpnNu5Pfv0qzUCg41YyED19cv3/LmF4tcpBY0YALsfdMxQ==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/openai@3.0.94':
-    resolution: {integrity: sha512-Yr59PMHtQi111WEiyVYy75ilFadbmhA6qPWuAb2GxB6oZzngVdRnvfqA4p+u1bkPAlKtxEQP5Oc+jjFy3rT2Xw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -6310,12 +6301,6 @@ snapshots:
       '@ai-sdk/provider': 3.0.15
       '@ai-sdk/provider-utils': 4.0.45(zod@4.4.3)
       pkce-challenge: 5.0.1
-      zod: 4.4.3
-
-  '@ai-sdk/openai@3.0.94(zod@4.4.3)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.15
-      '@ai-sdk/provider-utils': 4.0.45(zod@4.4.3)
       zod: 4.4.3
 
   '@ai-sdk/provider-utils@4.0.45(zod@4.4.3)':

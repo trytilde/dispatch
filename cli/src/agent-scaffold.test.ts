@@ -51,13 +51,11 @@ describe("agent scaffolding", () => {
     expect(agentSource).not.toContain("function addTools");
     expect(agentSource).not.toContain("searchSkillRegistry");
     expect(agentSource).not.toContain("TILDE_BASE_URL");
-    expect(agentSource).toContain(
-      'model: openai(process.env.OPENAI_MODEL ?? "openai/gpt-5.6-sol")',
-    );
+    expect(agentSource).toContain('model: process.env.AI_MODEL ?? "openai/gpt-5.6-sol"');
     expect(agentSource).toContain('providerOptions: { openai: { reasoningEffort: "medium" } }');
-    expect(agentSource).toContain("process.env.OPENAI_API_KEY = process.env.AI_GATEWAY_API_KEY");
-    expect(agentSource).not.toContain("createOpenAI");
-    expect(agentSource).not.toContain("openai.responses");
+    expect(agentSource).not.toContain("@ai-sdk/openai");
+    expect(agentSource).not.toContain("OPENAI_API_KEY");
+    expect(agentSource).not.toContain("openai(");
     expect(agentSource).toContain("system: instructions");
     expect(agentSource).not.toContain("Your name is");
     expect(agentSource).not.toContain("lib/identity");

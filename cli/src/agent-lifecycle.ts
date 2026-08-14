@@ -28,6 +28,7 @@ export interface ReconcileAgentResourcesOptions {
     tools: ToolProvider;
   };
   devMode: boolean;
+  agentServiceOrigin?: string;
   persistEnvironment?: (name: string, value: string, description: string) => Promise<void>;
   persistSecret?: (name: string, value: string, description: string) => Promise<void>;
   unsetEnvironment?: (name: string) => Promise<void>;
@@ -43,19 +44,20 @@ export async function reconcileAgentResources(
   const report = options.report ?? (() => undefined);
   const persistence = repositoryDeploymentPersistence(options);
   const agentServiceOrigin = (
-    await runProviderLifecycleHook(
-      options.providers.agentService,
-      "Agent Service Provider",
-      "base URL resolution",
-      () =>
-        options.providers.agentService.baseUrl({
-          devMode: options.devMode,
-          environment: options.environment,
-        }),
-    )
-  )
-    .toString()
-    .replace(/\/$/, "");
+    options.agentServiceOrigin ??
+    (
+      await runProviderLifecycleHook(
+        options.providers.agentService,
+        "Agent Service Provider",
+        "base URL resolution",
+        () =>
+          options.providers.agentService.baseUrl({
+            devMode: options.devMode,
+            environment: options.environment,
+          }),
+      )
+    ).toString()
+  ).replace(/\/$/, "");
   report({ event: "agent.lifecycle.started", details: { total: sources.length } });
 
   for (const [index, source] of sources.entries()) {

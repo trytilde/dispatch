@@ -38,9 +38,9 @@ describe("agent scaffolding", () => {
     expect(agentSource).not.toContain("@tryopenbot/tools-provider");
     expect(agentSource).toContain("AGENT_RESEARCH_ASSISTANT_MCP_SERVER_ID");
     expect(agentSource).toContain("AGENT_RESEARCH_ASSISTANT_SKILL_REGISTRY_ID");
-    expect(await readFile(join(directory, "lib/identity.ts"), "utf8")).toContain(
-      '"Research Assistant"',
-    );
+    const identitySource = await readFile(join(directory, "lib/identity.ts"), "utf8");
+    expect(identitySource).toContain('agentId = "research-assistant"');
+    expect(identitySource).toContain('agentName = "Research Assistant"');
     expect(await readFile(join(directory, "tools/bash.ts"), "utf8")).toContain(
       'createBashTool({ agentId: "research-assistant" })',
     );

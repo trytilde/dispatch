@@ -7,7 +7,6 @@ import type { InferenceProvider } from "./core.js";
 
 const AI_GATEWAY_API_KEY = "AI_GATEWAY_API_KEY";
 const AI_GATEWAY_KEY_NAME = "VERCEL_AI_GATEWAY_API_KEY_NAME";
-const OPENAI_BASE_URL = "https://ai-gateway.vercel.sh/v1";
 
 export const vercelInferenceProviderInitialization: ProviderInitialization = {
   id: "vercel-ai-gateway-inference",
@@ -34,11 +33,6 @@ export class VercelInferenceProvider implements InferenceProvider {
   }
 
   async initialize(context: ProviderInitializationContext): Promise<void> {
-    await context.setEnvironment(
-      "OPENAI_BASE_URL",
-      OPENAI_BASE_URL,
-      "OpenAI-compatible endpoint provided by Vercel AI Gateway.",
-    );
     if (context.environment[AI_GATEWAY_API_KEY]?.trim()) return;
     const name = context.environment[AI_GATEWAY_KEY_NAME]?.trim();
     if (!name) throw new Error(`${AI_GATEWAY_KEY_NAME} is required`);

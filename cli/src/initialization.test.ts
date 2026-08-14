@@ -347,7 +347,7 @@ describe("OpenBot initialization", () => {
     );
     expect(environment).toContain('VERCEL_AGENT_PROJECT="openbot-agents"');
     expect(environment).toContain('VERCEL_AI_GATEWAY_API_KEY_NAME="OpenBot agents"');
-    expect(environment).toContain('OPENAI_BASE_URL="https://ai-gateway.vercel.sh/v1"');
+    expect(environment).not.toContain("OPENAI_BASE_URL");
     expect(environment).toContain('TILDE_ORG_ID="tilde-org"');
     expect(environment).toContain('TILDE_TEAM_ID="tilde-team"');
     expect(environment).not.toContain("TILDE_RUNTIME_MCP_SERVER_ID");
@@ -532,7 +532,7 @@ export default {
 
   it("loads runtime values while keeping the sandbox identity sandbox-scoped", async () => {
     const repositoryRoot = await temporaryRepository();
-    await writeFixture(repositoryRoot, "configuration/.env", "OPENAI_MODEL=gpt-test\n");
+    await writeFixture(repositoryRoot, "configuration/.env", "AI_MODEL=openai/gpt-test\n");
     await writeFixture(repositoryRoot, "configuration/secrets.enc.yaml", "encrypted\n");
     await writeFixture(
       repositoryRoot,
@@ -588,7 +588,7 @@ export default {
     });
 
     expect(loaded.environment).toMatchObject({
-      OPENAI_MODEL: "gpt-test",
+      AI_MODEL: "openai/gpt-test",
       API_TOKEN: "private",
       VERCEL_TOKEN: "deploy-private",
     });

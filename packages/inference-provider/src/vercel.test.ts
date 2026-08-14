@@ -8,7 +8,6 @@ describe("VercelInferenceProvider", () => {
       Response.json({ apiKey: { id: "key_123" }, apiKeyString: "gateway-private" }),
     );
     const provider = new VercelInferenceProvider(new VercelPlatform({ request }));
-    const setEnvironment = vi.fn(async () => undefined);
     const setSecret = vi.fn(async () => undefined);
     await provider.initialize({
       repositoryRoot: "/repository",
@@ -17,14 +16,9 @@ describe("VercelInferenceProvider", () => {
         VERCEL_TEAM_ID: "team_123",
         VERCEL_AI_GATEWAY_API_KEY_NAME: "OpenBot agents",
       },
-      setEnvironment,
+      setEnvironment: vi.fn(async () => undefined),
       setSecret,
     });
-    expect(setEnvironment).toHaveBeenCalledWith(
-      "OPENAI_BASE_URL",
-      "https://ai-gateway.vercel.sh/v1",
-      "OpenAI-compatible endpoint provided by Vercel AI Gateway.",
-    );
     expect(setSecret).toHaveBeenCalledWith(
       "AI_GATEWAY_API_KEY",
       "gateway-private",
@@ -42,7 +36,7 @@ describe("VercelInferenceProvider", () => {
       setEnvironment,
       setSecret: vi.fn(async () => undefined),
     });
-    expect(setEnvironment).toHaveBeenCalledOnce();
+    expect(setEnvironment).not.toHaveBeenCalled();
     expect(request).not.toHaveBeenCalled();
   });
 });

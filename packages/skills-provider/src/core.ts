@@ -45,17 +45,7 @@ export interface RegisterSkillsRequest {
 }
 
 /** Startup provisioning boundary for managed skill registries. */
-export interface SkillProvider extends DeployableProvider {
-  listRegistries(
-    request: ListSkillRegistriesRequest,
-    context: SkillsProviderCallContext,
-  ): Promise<readonly SkillRegistry[]>;
-  getRegistry(id: string, context: SkillsProviderCallContext): Promise<SkillRegistry>;
-  registerSkills(
-    request: RegisterSkillsRequest,
-    context: SkillsProviderCallContext,
-  ): Promise<SkillRegistry>;
-}
+export interface SkillProvider extends DeployableProvider {}
 
 export function providerSignal(
   context: SkillsProviderCallContext,

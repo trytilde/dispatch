@@ -16,7 +16,7 @@ export default defineConfig({
       NO_DESKTOP: "1",
       AGENT_HELLO_WORLD_API_KEY: "e2e-agent-api-key",
       AGENT_HELLO_WORLD_WEBHOOK_SIGNING_KEY: "e2e-webhook-signing-key",
-      OPENAI_API_KEY: "e2e-openai-api-key",
+      AI_GATEWAY_API_KEY: "e2e-ai-gateway-api-key",
       TILDE_ORG_ID: "e2e-org",
       TILDE_TEAM_ID: "e2e-team",
     },

@@ -176,6 +176,8 @@ export interface DeploymentContext {
   agentId?: string;
   agentPath?: string;
   agentServiceOrigin?: string;
+  /** External platforms selected by the repository composition for this lifecycle. */
+  platformIds?: readonly string[];
   report: DeploymentReporter;
 }
 

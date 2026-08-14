@@ -67,17 +67,5 @@
   "engines": {
     "node": "24.x"
   },
-  "packageManager": "pnpm@10.33.1",
-  "pnpm": {
-    "packageExtensions": {
-      "@trytilde/api-client@*": {
-        "dependencies": {
-          "@types/node": "24.3.0",
-          "typescript": "5.9.3",
-          "vite": "8.0.16",
-          "vite-plugin-dts": "4.5.4"
-        }
-      }
-    }
-  }
+  "packageManager": "pnpm@10.33.1"
 }

@@ -1,6 +1,7 @@
 import type {
   DeployableProvider,
   DeploymentContext,
+  DeploymentReporter,
   DeploymentResult,
 } from "@tryopenbot/runtime-provider";
 export type { Deployable } from "@tryopenbot/runtime-provider";
@@ -13,6 +14,8 @@ export interface ComputerCallContext {
   signal?: AbortSignal;
   deadline?: Date;
   idempotencyKey?: string;
+  /** Streams provider-owned command progress during lifecycle execution. */
+  report?: DeploymentReporter;
 }
 
 export class ComputerProviderError extends Error {

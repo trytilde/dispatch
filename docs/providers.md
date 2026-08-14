@@ -17,8 +17,8 @@ Anything else belongs in the code that actually uses it.
 | `agent-provider` | Idempotently discover authored agents and reconcile their external endpoints through `Deployable`. It exposes no endpoint CRUD to the CLI and does not serve chat data. |
 | `inference-provider` | Initialize inference accounts and provision credentials such as a Vercel AI Gateway API key. It exposes no model factory to authored agents. |
 | `computer-provider` | Build and deploy the Computer image, provision Computers, install agent workspaces, and prepare the trusted development Computer. |
-| `skills-provider` | Provision and reconcile external skill registries needed by authored agents. |
-| `tools-provider` | Provision and reconcile external MCP servers needed by authored agents. |
+| `skills-provider` | Sync authored skills and reconcile an exact external skill registry per agent. |
+| `tools-provider` | Reconcile a dynamic MCP server, Tilde control-plane toolkit, and deployment-platform tools per agent. |
 | `control-service-provider` | Check, build, configure, and deploy the control-service artifact. |
 | `agent-service-provider` | Discover authored agents and check, build, configure, and deploy their service artifacts. |
 | `runtime-provider` | Shared initialization, build, and phased deployment contracts and coordination. |
@@ -29,6 +29,10 @@ Provider contracts live in `src/core.ts` or `src/core/` in their owning package.
 Every lifecycle method is idempotent. `check`, `build`, `plan`, `configure`, and `deploy` may be called repeatedly. Implementations must reconcile stable identities and update mutable fields without creating duplicates. CLI code only schedules hooks. Each provider owns its vendor-specific get/create/update/delete sequence and persists its own environment or encrypted secrets through `runtime-provider` helpers. `DeploymentResult` is reserved for named handoff outputs.
 
 Authored-agent reconciliation discovers agents once and supplies each lifecycle with the agent ID and absolute source path. For every agent it runs `skills`, then `tools`, then `agent`; each provider receives `check`, `build`, and `deploy` in that order when implemented.
+
+The built-in Tilde adapters use the typed API client directly. They identify resources by persisted IDs and stable OpenBot names, create missing resources, compare mutable fields, and update only drift. Authored `SKILL.md` files are keyed by repository-relative source path; removed files are removed from the agent-owned remote set and registry membership is exact. OpenBot does not import or export a Tilde state file during normal lifecycles. An operator may use the Tilde CLI manually to export a team's state and import it into another team for one-time setup or environment migration; OpenBot then resumes idempotent API reconciliation against that imported state.
+
+Every Tilde agent receives a dynamic MCP server and a team-scoped Tilde control-plane toolkit. When the selected service deployment platform is Vercel, the tools adapter also reconciles Vercel's proxied MCP connection using the configured Vercel token. Development agent endpoints use Tilde local-runtime tunnel mode; production endpoints use their public service origin. Authored local tools execute inside that agent service, so they share its tunnel instead of registering a second custom HTTP endpoint.
 
 ## Authored agents do not use providers
 

@@ -54,7 +54,6 @@ pnpm --filter openbot test
 - `packages/ui`: shared React UI and vendored Beautiful UI components.
 - `scripts/`: non-interactive build helpers that do not belong to the operator CLI.
 - `docs/adrs`: concise records of durable architecture, code, and product design decisions.
-- `tilde.state.yaml`: portable Tilde ChatKit resources; never a secret store.
 
 ## Architecture rules
 
@@ -96,7 +95,7 @@ pnpm --filter openbot test
 
 - Use the canonical Tilde skill and `https://trytilde.ai/llms.txt` for current Tilde behavior.
 - Keep ChatKit webhook verification, history conversion, streaming, and credentials server-side.
-- Keep `tilde.state.yaml` portable and variable-driven.
+- Reconcile Tilde resources through the typed API client inside idempotent provider lifecycles. OpenBot does not use a Tilde state file during normal operation; operators may use the Tilde CLI directly for one-time team-to-team state migration.
 - Do not guess Tilde identifiers or expose one-time API/webhook keys.
 - The agent loop uses Vercel AI SDK. Verify current SDK signatures before changing them.
 - Agent model, MCP, skill, and other external integrations are ordinary authored code. Keep the matching defaults in `configuration/templates/agent/`; migrate existing agents explicitly.
@@ -147,7 +146,7 @@ For browser-visible changes, verify the real route, console, network, and visibl
 ## Deployment and delivery
 
 - Production deployment uses `pnpm deploy:prod -- --dry-run --json`, then `pnpm deploy:prod -- --yes` only when explicitly requested.
-- The deploy script coordinates Vercel, Tilde state, encrypted environment, Sandbox snapshot, and smoke tests. Do not replace it with a raw production deploy.
+- The deploy script coordinates Vercel, Tilde API reconciliation, encrypted environment, Sandbox snapshot, and smoke tests. Do not replace it with a raw production deploy.
 - Commit, push, open a PR, merge, or deploy only when requested.
 - Before creating or updating a PR, always review the full diff for major architecture, strongly opinionated code, or durable code/product design decisions. If found, pause and prompt the user through an ADR under `docs/adrs/`; do not silently invent or skip the decision.
 - Keep ADRs concise. Start with caveman-style `In brief` bullets and add a small Mermaid diagram when it clarifies a real relationship or flow. When amending a governing ADR, append a chronological ISO-8601 timestamped bullet under `Updates` and preserve older entries.

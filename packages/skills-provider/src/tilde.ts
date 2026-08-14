@@ -1,3 +1,5 @@
+import { readdir, readFile } from "node:fs/promises";
+import { relative, resolve, sep } from "node:path";
 import { TildePlatform, type TildePlatformConfig } from "@tryopenbot/platform-integrations";
 import {
   tildeErrorMessage,
@@ -10,10 +12,15 @@ import {
 } from "@tryopenbot/platform-integrations/tilde/request";
 import {
   createSkillRegistry,
+  createSkill,
+  deleteSkill,
   createTildeApiClient,
   getSkillRegistry,
   listSkillRegistries,
+  listSkills,
+  updateSkill,
   updateSkillRegistry,
+  type Skill as TildeSkill,
   type SkillRegistry as TildeSkillRegistry,
 } from "@trytilde/api-client";
 import type {
@@ -111,7 +118,11 @@ export class TildeSkillProvider implements SkillProvider {
   }
 
   async #deploy(context: DeploymentContext): Promise<void> {
-    const { id } = requireAgent(context);
+    return this.#run(() => this.#deployResources(context));
+  }
+
+  async #deployResources(context: DeploymentContext): Promise<void> {
+    const { id, path } = requireAgent(context);
     const prefix = agentPrefix(id);
     const configuredId = context.environment[`${prefix}_SKILL_REGISTRY_ID`]?.trim();
     const call = { requestId: `agent-lifecycle:${id}:skill-registry` };
@@ -123,19 +134,39 @@ export class TildeSkillProvider implements SkillProvider {
         if (!(error instanceof SkillsProviderError) || error.code !== "not_found") throw error;
       }
     }
+    const name = `OpenBot ${id}`;
+    const description = `Skills available to the ${id} OpenBot agent.`;
     if (!registry) {
-      const name = `OpenBot ${id}`;
       const existing = await this.listRegistries({ namePrefix: name }, call);
       registry =
         existing.find((candidate) => candidate.name === name) ??
         (await this.registerSkills(
           {
             name,
-            description: `Skills available to the ${id} OpenBot agent.`,
+            description,
             skillIds: [],
           },
           call,
         ));
+    }
+    const { skillIds, staleSkillIds } = await this.#reconcileSkills(context, path, id);
+    const current = await this.#getRegistryRecord(registry.id, call);
+    if (
+      current.name !== name ||
+      current.description !== description ||
+      !sameStrings(
+        current.skills.map((skill) => skill.id),
+        skillIds,
+      )
+    ) {
+      await this.registerSkills({ registryId: registry.id, name, description, skillIds }, call);
+    }
+    for (const staleSkillId of staleSkillIds) {
+      await deleteSkill({
+        client: this.#api({ requestId: `agent-lifecycle:${id}:skill:delete` }),
+        path: { team_id: this.#config.teamId, id: staleSkillId },
+        throwOnError: true,
+      });
     }
     await persistEnvironment(
       context,
@@ -143,6 +174,88 @@ export class TildeSkillProvider implements SkillProvider {
       registry.id,
       `Tilde skill registry ID for ${id}.`,
     );
+  }
+
+  async #reconcileSkills(
+    context: DeploymentContext,
+    agentPath: string,
+    agentId: string,
+  ): Promise<{ skillIds: string[]; staleSkillIds: string[] }> {
+    const desired = await authoredSkills(context.repositoryRoot, agentPath);
+    const remote = await this.#listAllSkills({ requestId: `agent-lifecycle:${agentId}:skills` });
+    const ownedPrefix = `${agentSourcePrefix(context.repositoryRoot, agentPath)}/skills/`;
+    const owned = remote.filter(
+      (skill) => skill.source_kind === "openbot" && skill.source_path?.startsWith(ownedPrefix),
+    );
+    const ids: string[] = [];
+    for (const skill of desired) {
+      const existing = owned.find((candidate) => candidate.source_path === skill.sourcePath);
+      if (!existing) {
+        const { data } = await createSkill({
+          client: this.#api({ requestId: `agent-lifecycle:${agentId}:skill:create` }),
+          path: { team_id: this.#config.teamId },
+          body: {
+            name: skill.name,
+            description: skill.description,
+            content: skill.content,
+            source_kind: "openbot",
+            source_path: skill.sourcePath,
+          },
+          throwOnError: true,
+        });
+        ids.push(data.id);
+      } else {
+        if (
+          existing.name !== skill.name ||
+          existing.description !== skill.description ||
+          existing.content !== skill.content
+        ) {
+          await updateSkill({
+            client: this.#api({ requestId: `agent-lifecycle:${agentId}:skill:update` }),
+            path: { team_id: this.#config.teamId, id: existing.id },
+            body: {
+              name: skill.name,
+              description: skill.description,
+              content: skill.content,
+            },
+            throwOnError: true,
+          });
+        }
+        ids.push(existing.id);
+      }
+    }
+    const desiredPaths = new Set(desired.map((skill) => skill.sourcePath));
+    const staleSkillIds = owned
+      .filter((stale) => !stale.source_path || !desiredPaths.has(stale.source_path))
+      .map((stale) => stale.id);
+    return { skillIds: ids.sort(), staleSkillIds };
+  }
+
+  async #listAllSkills(context: SkillsProviderCallContext): Promise<TildeSkill[]> {
+    const items: TildeSkill[] = [];
+    let nextPageToken: string | undefined;
+    do {
+      const { data } = await listSkills({
+        client: this.#api(context),
+        path: { team_id: this.#config.teamId },
+        query: { page_size: 100, ...(nextPageToken ? { next_page_token: nextPageToken } : {}) },
+        throwOnError: true,
+      });
+      items.push(...data.items);
+      nextPageToken = data.next_page_token;
+    } while (nextPageToken);
+    return items;
+  }
+
+  async #getRegistryRecord(id: string, context: SkillsProviderCallContext) {
+    return this.#run(async () => {
+      const { data } = await getSkillRegistry({
+        client: this.#api(context),
+        path: { team_id: this.#config.teamId, id },
+        throwOnError: true,
+      });
+      return data;
+    });
   }
 
   #api(context: SkillsProviderCallContext) {
@@ -173,6 +286,66 @@ export class TildeSkillProvider implements SkillProvider {
       );
     }
   }
+}
+
+interface AuthoredSkill {
+  name: string;
+  description: string;
+  content: string;
+  sourcePath: string;
+}
+
+async function authoredSkills(repositoryRoot: string, agentPath: string): Promise<AuthoredSkill[]> {
+  const directory = resolve(agentPath, "skills");
+  let entries;
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+  const result: AuthoredSkill[] = [];
+  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+    if (entry.isSymbolicLink()) throw new Error(`Skill symlinks are not supported: ${entry.name}`);
+    if (!entry.isDirectory()) continue;
+    const path = resolve(directory, entry.name, "SKILL.md");
+    const content = await readFile(path, "utf8");
+    const metadata = skillMetadata(content, entry.name);
+    result.push({
+      ...metadata,
+      content,
+      sourcePath: relative(repositoryRoot, path).split(sep).join("/"),
+    });
+  }
+  return result;
+}
+
+function skillMetadata(
+  content: string,
+  fallbackName: string,
+): { name: string; description: string } {
+  const frontmatter = /^---\s*\n([\s\S]*?)\n---(?:\s*\n|$)/.exec(content)?.[1];
+  const name = frontmatterField(frontmatter, "name") ?? fallbackName;
+  const description = frontmatterField(frontmatter, "description");
+  if (!description) throw new Error(`Skill ${fallbackName} is missing frontmatter description`);
+  return { name, description };
+}
+
+function frontmatterField(frontmatter: string | undefined, key: string): string | undefined {
+  const value = frontmatter
+    ?.split("\n")
+    .find((line) => line.startsWith(`${key}:`))
+    ?.slice(key.length + 1)
+    .trim();
+  return value?.replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, "$1$2") || undefined;
+}
+
+function agentSourcePrefix(repositoryRoot: string, agentPath: string): string {
+  return relative(repositoryRoot, agentPath).split(sep).join("/");
+}
+
+function sameStrings(left: readonly string[], right: readonly string[]): boolean {
+  return [...left].sort().join("\0") === [...right].sort().join("\0");
 }
 
 function requireAgent(context: DeploymentContext): { id: string; path: string } {

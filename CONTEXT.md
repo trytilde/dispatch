@@ -39,8 +39,6 @@ _Avoid_: host, server
 OpenBot-owned installation, onboarding, computer lease, deployment progress, repository reconciliation mappings, and source-publication progress.
 _Avoid_: agent state, chat state
 
-**Portable Tilde State**:
-Secret-free declarative configuration used to create or update the Tilde resources required by an **OpenBot Installation**.
 _Avoid_: credentials, runtime state
 
 ## Relationships
@@ -51,7 +49,7 @@ _Avoid_: credentials, runtime state
 - A **Tilde Team** owns one or more **Tilde Agents** and their **ChatKit Sessions**.
 - An **OpenBot Installation** controls at most one active **OpenBot Computer**.
 - **Control State** belongs to OpenBot; agent and conversation state belongs to the **Tilde Team**.
-- **Portable Tilde State** describes Tilde resources but contains no secrets.
+- Tilde provider lifecycles reconcile their resources through the typed API client.
 
 ## Example dialogue
 
@@ -62,7 +60,7 @@ _Avoid_: credentials, runtime state
 
 - "workspace" can mean the **OpenBot Workspace**, a Tilde team, or the computer filesystem; use the explicit term.
 - "agent" can mean a **Tilde Agent** or the software implementing its behavior; use **Tilde Agent** for the registered runtime resource.
-- "state" can mean **Control State**, **Portable Tilde State**, or Tilde-owned runtime data; name the owner and kind.
+- "state" can mean **Control State** or Tilde-owned runtime data; name the owner and kind.
 
 ## Follow-up markers
 

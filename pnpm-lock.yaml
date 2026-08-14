@@ -372,6 +372,9 @@ importers:
       '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
+      '@trytilde/api-client':
+        specifier: github:trytilde/harness-sdk#c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d&path:packages/api-client
+        version: https://codeload.github.com/trytilde/harness-sdk/tar.gz/c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d#path:packages/api-client(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0)
       '@trytilde/harness-sdk':
         specifier: 0.1.2
         version: 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -515,6 +518,9 @@ importers:
       '@types/node':
         specifier: 24.3.0
         version: 24.3.0
+      tsdown:
+        specifier: 0.22.14
+        version: 0.22.14(@typescript/native-preview@7.0.0-dev.20260707.2)(@volar/typescript@2.4.28)(tsx@4.21.0)(typescript@5.9.2)
       typescript:
         specifier: 5.9.2
         version: 5.9.2
@@ -729,6 +735,9 @@ importers:
       '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
+      '@trytilde/api-client':
+        specifier: github:trytilde/harness-sdk#c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d&path:packages/api-client
+        version: https://codeload.github.com/trytilde/harness-sdk/tar.gz/c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d#path:packages/api-client(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0)
       '@trytilde/harness-sdk':
         specifier: 0.1.2
         version: 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0)
@@ -771,6 +780,9 @@ importers:
       '@types/node':
         specifier: 24.3.0
         version: 24.3.0
+      tsdown:
+        specifier: 0.22.14
+        version: 0.22.14(@typescript/native-preview@7.0.0-dev.20260707.2)(@volar/typescript@2.4.28)(tsx@4.21.0)(typescript@5.9.2)
       typescript:
         specifier: 5.9.2
         version: 5.9.2

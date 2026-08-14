@@ -59,7 +59,7 @@ flowchart LR
 
 ## Updates
 
-- 2026-08-14T10:27:59+02:00: Moved user-specific SOPS owner lookup metadata from the fork into typed `~/.openbot/config.json` state, added safe legacy migration and interactive recovery, and made non-interactive commands fail instead of guessing missing identity configuration.
+- 2026-08-14T10:27:59+02:00: Moved user-specific SOPS owner lookup metadata from the fork into typed `~/.openbot/config.json` state, added interactive recovery, and made non-interactive commands fail instead of guessing missing identity configuration.
 - 2026-08-14T00:21:24+02:00: Replaced metadata-only initialization dependencies with concrete `Platform` implementations, moved common Tilde and Vercel operations out of domain providers, and made init re-runnable with stored prompt defaults, config reconciliation, existing SOPS ownership, and dependency installation preserved.
 - 2026-08-13T23:59:56+02:00: Added stable shared platform initialization dependencies so Tilde and Vercel setup is collected once across their domain providers while role-specific questions remain with the consuming provider.
 - 2026-08-13T23:34:00+02:00: Replaced grouped secret mappings with mandatory described top-level entries, encrypted only `value`, adopted concise repository-facing built-in names, and added described `openbot env set|unset` management for plaintext configuration.

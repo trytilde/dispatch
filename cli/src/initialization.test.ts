@@ -419,7 +419,6 @@ describe("OpenBot initialization", () => {
     );
     await writeFixture(repositoryRoot, "configuration/.sops.yaml", sopsConfiguration);
     await writeFixture(repositoryRoot, "configuration/secrets.enc.yaml", "encrypted\n");
-    await writeFixture(repositoryRoot, "configuration/sops.identity.json", '{"version":1}\n');
     await writeFixture(
       repositoryRoot,
       "user-config.json",
@@ -524,9 +523,6 @@ export default {
     expect(await readFile(join(repositoryRoot, "configuration/.sops.yaml"), "utf8")).toBe(
       sopsConfiguration,
     );
-    await expect(
-      access(join(repositoryRoot, "configuration/sops.identity.json")),
-    ).rejects.toMatchObject({ code: "ENOENT" });
     expect(run).toHaveBeenLastCalledWith("vp", ["install"], { cwd: repositoryRoot });
   });
 
@@ -536,10 +532,10 @@ export default {
     await writeFixture(repositoryRoot, "configuration/secrets.enc.yaml", "encrypted\n");
     await writeFixture(
       repositoryRoot,
-      "configuration/sops.identity.json",
+      "user-config.json",
       JSON.stringify({
         version: 1,
-        ownerIdentity: { kind: "aws-profile", profile: "sso-admin" },
+        sops: { ownerIdentity: { kind: "aws-profile", profile: "sso-admin" } },
       }),
     );
     const runner: InitializationCommandRunner = {
@@ -604,9 +600,6 @@ export default {
       version: 1,
       sops: { ownerIdentity: { kind: "aws-profile", profile: "sso-admin" } },
     });
-    await expect(
-      access(join(repositoryRoot, "configuration/sops.identity.json")),
-    ).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("fails safely when SOPS values are missing from user configuration non-interactively", async () => {

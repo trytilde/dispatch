@@ -43,6 +43,26 @@ describe("runtime provider lifecycle", () => {
     expect(initialize).toHaveBeenCalledOnce();
   });
 
+  it("attributes initialization failures to the concrete provider", async () => {
+    class TildeToolProvider {
+      readonly initialization = { id: "tilde-tools", label: "Tilde tools", questions: [] };
+      async initialize() {
+        throw new Error("Invalid API key");
+      }
+    }
+
+    await expect(
+      initializeProviders([new TildeToolProvider()], {
+        repositoryRoot: "/repository",
+        environment: {},
+        setEnvironment: async () => undefined,
+        setSecret: async () => undefined,
+      }),
+    ).rejects.toThrow(
+      "Invalid API key (occurred in the Tilde implementation of the Tools Provider)",
+    );
+  });
+
   it("retains named non-secret outputs", () => {
     const outputs = new DeploymentOutputs();
     outputs.merge({ outputs: { artifact: "/tmp/artifact" } });
@@ -61,7 +81,7 @@ describe("runtime provider lifecycle", () => {
       unsetSecret: vi.fn(async () => undefined),
     };
     const context = {
-      target: "development" as const,
+      devMode: true,
       repositoryRoot: "/repository",
       environment,
       persistence,
@@ -84,16 +104,19 @@ describe("runtime provider lifecycle", () => {
       id: "service",
       provider: {
         buildable: {
-          check: async () => {
+          check: async (context: DeploymentContext) => {
+            expect(context.devMode).toBe(false);
             calls.push("check");
           },
-          build: async () => {
+          build: async (context: DeploymentContext) => {
+            expect(context.devMode).toBe(false);
             calls.push("build");
             return { outputs: { artifact: "/tmp/service" } };
           },
         },
         deployable: {
-          plan: async () => {
+          plan: async (context: DeploymentContext) => {
+            expect(context.devMode).toBe(false);
             calls.push("plan");
             return { summary: "service" };
           },
@@ -101,25 +124,51 @@ describe("runtime provider lifecycle", () => {
             expect(inputs.require("artifact")).toBe("/tmp/service");
             calls.push("configure");
           },
-          deploy: async () => {
+          deploy: async (context: DeploymentContext) => {
+            expect(context.devMode).toBe(false);
             calls.push("deploy");
           },
         },
       },
     };
     const built = await buildProviders([participant], {
-      target: "production",
+      devMode: false,
       dryRun: false,
       repositoryRoot: "/repository",
       environment: {},
     });
     await deployProviders([participant], {
-      target: "production",
+      devMode: false,
       dryRun: false,
       repositoryRoot: "/repository",
       environment: {},
       initialInputs: built.result(),
     });
     expect(calls).toEqual(["check", "build", "plan", "configure", "deploy"]);
+  });
+
+  it("attributes lifecycle failures to the concrete provider implementation", async () => {
+    class VercelToolProvider {
+      readonly buildable = {
+        check: async () => {
+          throw new Error("authentication error: Invalid API key");
+        },
+        build: async () => undefined,
+      };
+    }
+    const provider = new VercelToolProvider();
+
+    await expect(
+      buildProviders([{ id: "tools", provider }], {
+        devMode: true,
+        dryRun: false,
+        repositoryRoot: "/repository",
+      }),
+    ).rejects.toMatchObject({
+      message:
+        "authentication error: Invalid API key (occurred in the Vercel implementation of the Tools Provider)",
+      cause: expect.objectContaining({ message: "authentication error: Invalid API key" }),
+      operation: "check",
+    });
   });
 });

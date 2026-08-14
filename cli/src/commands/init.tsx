@@ -378,6 +378,11 @@ export const inkPrompts: InitializationPrompts = {
   },
 };
 
+export const interactiveQuestionRenderOptions = {
+  alternateScreen: true,
+  patchConsole: false,
+} as const;
+
 async function renderQuestion<T>(
   view: (complete: (value: T) => void, cancel: () => void) => React.ReactElement,
 ): Promise<T> {
@@ -389,7 +394,7 @@ async function renderQuestion<T>(
   });
   const app = render(
     view(resolveValue, () => rejectValue(new Error("Initialization cancelled"))),
-    { patchConsole: false },
+    interactiveQuestionRenderOptions,
   );
   await app.waitUntilExit();
   return result;

@@ -9,7 +9,7 @@ export type ControlServiceProvider = Buildable &
   Deployable &
   InitializableProvider & {
     /** Stable public URL used by dependent lifecycle providers. */
-    baseUrl(context: Pick<DeploymentContext, "target" | "environment">): URL;
+    baseUrl(context: Pick<DeploymentContext, "devMode" | "environment">): URL;
   };
 export { LocalControlServiceProvider } from "./local/index.js";
 export {

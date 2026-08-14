@@ -29,7 +29,11 @@ import type {
 } from "@tryopenbot/runtime-provider";
 import { persistEnvironment } from "@tryopenbot/runtime-provider";
 import { renderFileTemplatePath } from "@tryopenbot/utilities";
-import { computerImageAssets, materializeComputerImageContext } from "./assets.js";
+import {
+  computerImageAssets,
+  computerImageWatchPaths,
+  materializeComputerImageContext,
+} from "./assets.js";
 import {
   developmentSandboxConfigurationFiles,
   developmentSandboxSourceFiles,
@@ -90,6 +94,8 @@ export abstract class BaseComputerProvider implements ComputerProvider {
           };
     this.buildable = {
       check: async (context) => {
+        const delegate = this.lifecycleDelegate(context);
+        if (delegate?.buildable) return delegate.buildable.check(context);
         await this.imageRepository(context, "build");
         await runDocker(
           ["version", "--format", "{{.Server.Version}}"],
@@ -99,6 +105,8 @@ export abstract class BaseComputerProvider implements ComputerProvider {
           await runDocker(["buildx", "version"], deploymentCallContext("check"));
       },
       build: async (context) => {
+        const delegate = this.lifecycleDelegate(context);
+        if (delegate?.buildable) return delegate.buildable.build(context);
         const materialized = await materializeComputerImageContext(
           context.repositoryRoot,
           this.providerId,
@@ -114,9 +122,16 @@ export abstract class BaseComputerProvider implements ComputerProvider {
           },
         };
       },
+      watchPaths: async (context) => {
+        const delegate = this.lifecycleDelegate(context);
+        if (delegate?.buildable?.watchPaths) return delegate.buildable.watchPaths(context);
+        return computerImageWatchPaths(context.repositoryRoot);
+      },
     };
     this.deployable = {
       plan: async (context) => {
+        const delegate = this.lifecycleDelegate(context);
+        if (delegate?.deployable) return delegate.deployable.plan(context);
         const repository = await this.imageRepository(context, "plan");
         return this.#imageLifecycle.publish
           ? {
@@ -132,6 +147,8 @@ export abstract class BaseComputerProvider implements ComputerProvider {
             };
       },
       deploy: async (context) => {
+        const delegate = this.lifecycleDelegate(context);
+        if (delegate?.deployable) return delegate.deployable.deploy(context);
         const spec = await this.#imageSpec(
           context,
           {
@@ -161,6 +178,11 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     };
   }
 
+  /** Provider-owned development substitution, such as Vercel Sandbox -> Microsandbox. */
+  protected lifecycleDelegate(_context: DeploymentContext): ComputerProvider | undefined {
+    return undefined;
+  }
+
   abstract create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle>;
   abstract get(id: string, context: ComputerCallContext): Promise<ComputerHandle>;
   abstract wake(id: string, context: ComputerCallContext): Promise<ComputerHandle>;
@@ -186,22 +208,26 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     request: DeployAgentWorkspacesRequest,
     context: DeploymentContext,
   ): Promise<DeploymentResult> {
+    const delegate = this.lifecycleDelegate(context);
+    if (delegate) return delegate.deployAgentWorkspaces(request, context);
     const call: ComputerCallContext = { requestId: "computer:deploy-agent-workspaces" };
     const serviceApiKey = computerServiceApiKey(context.environment.COMPUTER_SERVICE_API_KEY);
+    const image = context.environment[this.deployedImageEnvironmentVariable];
+    const spec: ComputerSpec = {
+      id: request.computerId,
+      ...(image ? { image } : {}),
+      environment: { COMPUTER_SERVICE_API_KEY: serviceApiKey },
+    };
     let computer;
     try {
       computer = await this.get(request.computerId, call);
     } catch (error) {
       if (!(error instanceof ComputerProviderError) || error.code !== "not_found") throw error;
-      const image = context.environment[this.deployedImageEnvironmentVariable];
-      computer = await this.create(
-        {
-          id: request.computerId,
-          ...(image ? { image } : {}),
-          environment: { COMPUTER_SERVICE_API_KEY: serviceApiKey },
-        },
-        call,
-      );
+      computer = await this.create(spec, call);
+    }
+    if (context.devMode && image && computer.image !== image) {
+      await this.delete(computer.id, call);
+      computer = await this.create(spec, call);
     }
     if (computer.state === "sleeping") await this.wake(computer.id, call);
     for (const workspace of request.workspaces)
@@ -220,6 +246,8 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     request: DeployDevelopmentSandboxRequest,
     context: DeploymentContext,
   ) {
+    const delegate = this.lifecycleDelegate(context);
+    if (delegate) return delegate.deployDevelopmentSandbox(request, context);
     const call: ComputerCallContext = { requestId: "computer:deploy-development-sandbox" };
     const image = context.environment[this.deployedImageEnvironmentVariable];
     let computer;

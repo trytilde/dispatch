@@ -2,6 +2,10 @@ import { resolve } from "node:path";
 import type { OpenBotConfiguration } from "@tryopenbot/configuration";
 import { formatAgentLifecycleProgress, reconcileAgentResources } from "../agent-lifecycle.js";
 import { loadConfigurationModule } from "../configuration-loader.js";
+import {
+  reconcileDevelopmentInfrastructure,
+  watchDevelopmentComputer,
+} from "../development-lifecycle.js";
 import { loadLocalEnvironment, publicDevelopmentEnvironment } from "../environment.js";
 import { repositoryRoot } from "../paths.js";
 import { run, runChecked, supervise } from "../processes.js";
@@ -13,22 +17,40 @@ export async function runDevelopment(): Promise<never> {
   });
   const serverPort = env.PORT ?? "4100";
   const configuration = await loadDevelopmentConfiguration(env);
+  console.log("Preparing OpenBot development infrastructure");
+  await reconcileDevelopmentInfrastructure({
+    repositoryRoot,
+    environment: env,
+    providers: configuration.providers,
+  });
   await reconcileAgentResources({
     repositoryRoot,
     environment: env,
     providers: configuration.providers,
-    target: "development",
+    devMode: true,
     report: (event) => {
       const line = formatAgentLifecycleProgress(event);
       if (line) console.log(line);
     },
   });
+  const computerWatcher = await watchDevelopmentComputer({
+    repositoryRoot,
+    environment: env,
+    providers: configuration.providers,
+    onRebuildStarted: () => console.log("Computer image changed; rebuilding Microsandbox"),
+    onRebuildComplete: () => console.log("Computer restarted with the updated image"),
+    onRebuildError: (error) =>
+      console.error(
+        `Computer rebuild failed: ${error instanceof Error ? error.message : String(error)}`,
+      ),
+  });
+  process.once("exit", () => computerWatcher.close());
   const publicEnvironment = publicDevelopmentEnvironment(env);
   await runChecked("pnpm", ["contracts:generate"], env);
 
   const webPort = env.WEB_PORT ?? "4173";
   console.log(`OpenBot web: http://127.0.0.1:${webPort}`);
-  console.log(`OpenBot control and agent server: http://127.0.0.1:${serverPort}`);
+  console.log(`OpenBot control and agent HMR server: http://127.0.0.1:${serverPort}`);
 
   const [serverCommand, serverArguments] = developmentServerCommand();
   const server = run(serverCommand, serverArguments, developmentServerEnvironment(env));

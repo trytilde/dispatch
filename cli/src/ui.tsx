@@ -165,11 +165,28 @@ export function Success({ title, children }: { title: string; children?: ReactNo
   );
 }
 
-export function Failure({ message }: { message: string }) {
+export function Failure({
+  message,
+  stack,
+  logPath,
+}: {
+  message: string;
+  stack?: string;
+  logPath?: string;
+}) {
   return (
-    <Box borderStyle="round" borderColor="red" paddingX={1}>
-      <Text color="red">Error: </Text>
-      <Text>{message}</Text>
+    <Box flexDirection="column">
+      <Box borderStyle="round" borderColor="red" paddingX={1}>
+        <Text color="red">Error: </Text>
+        <Text>{message}</Text>
+      </Box>
+      {stack ? (
+        <Box flexDirection="column" marginTop={1}>
+          <Text bold>Stack trace</Text>
+          <Text>{stack}</Text>
+        </Box>
+      ) : null}
+      {logPath ? <Text dimColor>Full details: {logPath}</Text> : null}
     </Box>
   );
 }

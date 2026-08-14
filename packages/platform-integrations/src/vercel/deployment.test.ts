@@ -46,7 +46,7 @@ describe("Vercel deployment helpers", () => {
   it("installs the combined environment as sensitive values", async () => {
     const inputs = new DeploymentOutputs();
     const context: DeploymentContext = {
-      target: "production",
+      devMode: false,
       repositoryRoot: "/repo",
       environment: {
         PUBLIC_ORIGIN: "https://openbot.test",

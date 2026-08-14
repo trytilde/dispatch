@@ -15,6 +15,10 @@ Build and deployment providers for independently compiled agent entrypoints. It 
 - `LocalAgentServiceProvider` implements the build and deploy lifecycle for one local Hono server and accepts `LocalAgentServiceProviderOptions`.
 - `VercelAgentServiceProvider` builds agents concurrently into separate Vercel Functions and accepts `VercelAgentServiceProviderOptions`.
 
+Both service providers leave development startup to OpenBot's watched Hono process. The Vercel
+adapter performs its check but skips artifact creation, project configuration, and remote deployment
+when `DeploymentContext.devMode` is `true`.
+
 ### Critical interfaces
 
 - `AgentServiceProvider` combines `Buildable`, `Deployable`, and `InitializableProvider`.

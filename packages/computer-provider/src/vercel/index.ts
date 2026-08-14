@@ -8,6 +8,7 @@ import {
 import {
   ComputerProviderError,
   type ComputerCallContext,
+  type ComputerProvider,
   type ComputerExecRequest,
   type ComputerHandle,
   type ComputerImageSpec,
@@ -23,10 +24,13 @@ import {
   type ComputerImageDeploymentConfig,
 } from "../base/index.js";
 import { computerServiceApiKey, scopedCapability } from "../capability.js";
+import { MicrosandboxComputerProvider } from "../microsandbox/index.js";
 
-interface VercelSandboxComputerProviderOptions extends ComputerImageDeploymentConfig {
+export interface VercelSandboxComputerProviderOptions extends ComputerImageDeploymentConfig {
   platform?: VercelPlatform;
   request?: typeof fetch;
+  /** Local implementation used whenever the lifecycle runs in development mode. */
+  developmentProvider?: ComputerProvider;
 }
 
 export class VercelSandboxComputerProvider extends BaseComputerProvider {
@@ -40,10 +44,11 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
   readonly #specs = new Map<string, ComputerSpec>();
   readonly #configuredRepository: string | undefined;
   readonly #request: typeof fetch;
+  readonly #developmentProvider: ComputerProvider;
   #registryIdentity: Promise<VercelRegistryIdentity> | undefined;
 
   constructor(options: VercelSandboxComputerProviderOptions = {}) {
-    const { platform, request, ...imageDeployment } = options;
+    const { platform, request, developmentProvider, ...imageDeployment } = options;
     super(imageDeployment, {
       publish: true,
       buildxPlatform: "linux/amd64",
@@ -53,6 +58,11 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
     this.platforms = [this.platform];
     this.#configuredRepository = imageDeployment.repository;
     this.#request = request ?? fetch;
+    this.#developmentProvider = developmentProvider ?? new MicrosandboxComputerProvider();
+  }
+
+  protected override lifecycleDelegate(context: DeploymentContext): ComputerProvider | undefined {
+    return context.devMode ? this.#developmentProvider : undefined;
   }
 
   protected async imageRepository(

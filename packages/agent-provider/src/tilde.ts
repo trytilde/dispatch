@@ -68,7 +68,7 @@ export class TildeAgentProvider implements AgentProvider {
       steps: [
         "Create missing ChatKit agents",
         "Reconcile Vercel AI SDK endpoint URLs and enabled status",
-        context.target === "development"
+        context.devMode
           ? "Enable Tilde local-runtime tunneling"
           : "Use the deployed public agent-service URL",
       ],
@@ -83,7 +83,7 @@ export class TildeAgentProvider implements AgentProvider {
         "invalid_configuration",
         `The agent service origin is unavailable for ${slug}`,
       );
-    const localRunningEndpoint = context.target === "development";
+    const localRunningEndpoint = context.devMode;
     const prefix = `AGENT_${slug.replaceAll("-", "_").toUpperCase()}`;
     const displayName = context.environment[`${prefix}_NAME`]?.trim() || slug;
     const apiKeyName = `${prefix}_API_KEY`;

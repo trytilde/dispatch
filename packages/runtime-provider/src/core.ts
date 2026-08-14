@@ -1,5 +1,3 @@
-export type DeploymentTarget = "development" | "preview" | "production";
-
 export interface DeploymentEvent {
   event: string;
   details?: Readonly<Record<string, unknown>>;
@@ -48,6 +46,8 @@ export class DeploymentOutputs {
 export interface Buildable {
   check(context: DeploymentContext): Promise<void>;
   build(context: DeploymentContext): Promise<DeploymentResult | void>;
+  /** Source paths whose changes require this development artifact to be rebuilt. */
+  watchPaths?(context: DeploymentContext): Promise<readonly string[]>;
 }
 
 export type InitializationValueDestination = "environment" | "secret";
@@ -142,7 +142,12 @@ export async function initializeProviders(
     const id = provider.initialization?.id;
     if (!id) throw new Error("Provider initializers require stable initialization metadata");
     if (initialized.has(id)) continue;
-    await provider.initialize(context);
+    await runProviderLifecycleHook(
+      provider,
+      providerTypeForImplementation(provider),
+      "initialize",
+      () => provider.initialize!(context),
+    );
     initialized.add(id);
   }
 }
@@ -162,7 +167,8 @@ const noPersistence: DeploymentPersistence = {
 };
 
 export interface DeploymentContext {
-  target: DeploymentTarget;
+  /** Whether this lifecycle is preparing the watched local development environment. */
+  devMode: boolean;
   repositoryRoot: string;
   environment: NodeJS.ProcessEnv;
   persistence?: DeploymentPersistence;
@@ -171,6 +177,10 @@ export interface DeploymentContext {
   agentPath?: string;
   agentServiceOrigin?: string;
   report: DeploymentReporter;
+}
+
+export function isDevelopmentLifecycle(context: Pick<DeploymentContext, "devMode">): boolean {
+  return context.devMode;
 }
 
 export async function persistEnvironment(
@@ -242,10 +252,50 @@ export interface DeploymentParticipant {
   id: string;
   role?: "provider" | "sandbox" | "runtime";
   provider: DeployableProvider;
+  /** Concrete adapter identity when the participant wraps its lifecycle methods. */
+  implementation?: object;
+  /** Human-readable provider domain, such as "Tools Provider". */
+  providerType?: string;
+}
+
+export class ProviderLifecycleError extends Error {
+  constructor(
+    readonly implementation: string,
+    readonly providerType: string,
+    readonly operation: string,
+    cause: unknown,
+  ) {
+    const error = cause instanceof Error ? cause : new Error(String(cause));
+    super(
+      `${error.message} (occurred in the ${implementation} implementation of the ${providerType})`,
+      { cause: error },
+    );
+    this.name = "ProviderLifecycleError";
+  }
+}
+
+/** Preserve the vendor error while attributing a lifecycle failure to its concrete adapter. */
+export async function runProviderLifecycleHook<T>(
+  provider: object,
+  providerType: string,
+  operation: string,
+  run: () => T | Promise<T>,
+): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (error instanceof ProviderLifecycleError) throw error;
+    throw new ProviderLifecycleError(
+      providerImplementationName(provider, providerType),
+      providerType,
+      operation,
+      error,
+    );
+  }
 }
 
 export interface DeploymentRunOptions {
-  target: DeploymentTarget;
+  devMode: boolean;
   dryRun: boolean;
   repositoryRoot: string;
   environment?: NodeJS.ProcessEnv;
@@ -264,7 +314,7 @@ export async function buildProviders(
   const inputs = new DeploymentOutputs();
   inputs.merge(options.initialInputs);
   const context: DeploymentContext = {
-    target: options.target,
+    devMode: options.devMode,
     repositoryRoot: options.repositoryRoot,
     environment: options.environment ?? process.env,
     persistence: options.persistence ?? noPersistence,
@@ -276,11 +326,19 @@ export async function buildProviders(
     const buildable = participant.provider.buildable;
     if (!buildable) continue;
     const scopedContext = context;
+    const providerType = participant.providerType ?? providerTypeName(participant.id);
+    const implementation = participant.implementation ?? participant.provider;
     report({ event: "build.provider.check.started", details: { providerId: participant.id } });
-    await buildable.check(scopedContext);
+    await runProviderLifecycleHook(implementation, providerType, "check", () =>
+      buildable.check(scopedContext),
+    );
     report({ event: "build.provider.check.complete", details: { providerId: participant.id } });
     report({ event: "build.provider.build.started", details: { providerId: participant.id } });
-    inputs.merge(await buildable.build(scopedContext));
+    inputs.merge(
+      await runProviderLifecycleHook(implementation, providerType, "build", () =>
+        buildable.build(scopedContext),
+      ),
+    );
     report({ event: "build.provider.build.complete", details: { providerId: participant.id } });
   }
   return inputs;
@@ -307,7 +365,7 @@ export async function deployProviders(
   const inputs = new DeploymentOutputs();
   inputs.merge(options.initialInputs);
   const context: DeploymentContext = {
-    target: options.target,
+    devMode: options.devMode,
     repositoryRoot: options.repositoryRoot,
     environment: options.environment ?? process.env,
     persistence: options.persistence ?? noPersistence,
@@ -319,7 +377,9 @@ export async function deployProviders(
 
   for (const participant of deployable) {
     report({ event: "deployment.provider.plan.started", details: { providerId: participant.id } });
-    const plan = await participant.deployable.plan(contextFor(participant));
+    const plan = await runParticipantHook(participant, "plan", () =>
+      participant.deployable.plan(contextFor(participant)),
+    );
     report({
       event: "deployment.provider.plan.complete",
       details: { providerId: participant.id, summary: plan.summary, steps: plan.steps ?? [] },
@@ -333,7 +393,11 @@ export async function deployProviders(
       event: "deployment.provider.configure.started",
       details: { providerId: participant.id },
     });
-    inputs.merge(await participant.deployable.configure(contextFor(participant)));
+    inputs.merge(
+      await runParticipantHook(participant, "configure", () =>
+        participant.deployable.configure!(contextFor(participant)),
+      ),
+    );
     report({
       event: "deployment.provider.configure.complete",
       details: { providerId: participant.id },
@@ -352,13 +416,86 @@ export async function deployProviders(
       event: "deployment.provider.deploy.started",
       details: { providerId: participant.id, role: participant.role ?? "provider" },
     });
-    inputs.merge(await participant.deployable.deploy(contextFor(participant)));
+    inputs.merge(
+      await runParticipantHook(participant, "deploy", () =>
+        participant.deployable.deploy(contextFor(participant)),
+      ),
+    );
     report({
       event: "deployment.provider.deploy.complete",
       details: { providerId: participant.id, role: participant.role ?? "provider" },
     });
   }
   return inputs;
+}
+
+function runParticipantHook<T>(
+  participant: DeploymentParticipant & { deployable: Deployable },
+  operation: string,
+  run: () => T | Promise<T>,
+): Promise<T> {
+  return runProviderLifecycleHook(
+    participant.implementation ?? participant.provider,
+    participant.providerType ?? providerTypeName(participant.id),
+    operation,
+    run,
+  );
+}
+
+function providerTypeName(id: string): string {
+  const known: Readonly<Record<string, string>> = {
+    agent: "Agent Provider",
+    "agent-service": "Agent Service Provider",
+    "agent-workspaces": "Computer Provider",
+    computer: "Computer Provider",
+    "control-service": "Control Service Provider",
+    "development-sandbox": "Computer Provider",
+    skills: "Skills Provider",
+    tools: "Tools Provider",
+  };
+  return known[id] ?? `${titleCase(id)} Provider`;
+}
+
+function providerTypeForImplementation(provider: object): string {
+  const name = provider.constructor?.name ?? "";
+  const domains = [
+    "AgentService",
+    "ControlService",
+    "Computer",
+    "Inference",
+    "Chat",
+    "Skills",
+    "Skill",
+    "Tools",
+    "Tool",
+    "Agent",
+  ];
+  const domain = domains.find((candidate) => name.endsWith(`${candidate}Provider`));
+  if (!domain) return "Provider";
+  const label = domain === "Skill" ? "Skills" : domain === "Tool" ? "Tools" : domain;
+  return `${titleCase(label)} Provider`;
+}
+
+function providerImplementationName(provider: object, providerType: string): string {
+  const constructorName = provider.constructor?.name;
+  if (!constructorName || constructorName === "Object") return "Configured";
+  let name = constructorName.replace(/Provider$/, "");
+  const typeStem = providerType.replace(/ Provider$/, "").replaceAll(" ", "");
+  const suffixes = [typeStem, typeStem.replace(/s$/, "")].sort((a, b) => b.length - a.length);
+  for (const suffix of suffixes) {
+    if (suffix && name.endsWith(suffix)) {
+      name = name.slice(0, -suffix.length);
+      break;
+    }
+  }
+  return titleCase(name || constructorName);
+}
+
+function titleCase(value: string): string {
+  return value
+    .replaceAll(/[-_]+/g, " ")
+    .replaceAll(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/^./, (character) => character.toUpperCase());
 }
 
 function assertUniqueParticipantIds(participants: readonly DeploymentParticipant[]): void {

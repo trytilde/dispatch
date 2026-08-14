@@ -25,6 +25,11 @@ Vercel receives prebuilt Build Output API artifacts. The control project contain
 
 Local builds emit two Node artifacts. Deployment installs `openbot-control` and `openbot-agents` user services through systemd on Linux or launchd on macOS. Control defaults to port 4100 and agents to 4101. `openbot dev` mounts agent routes before the control/web fallback in one watched Hono server on port 4100.
 
+During development both local and Vercel service deployables stop after their
+checks and leave startup to that watched process. The Computer image has a
+separate provider-owned watch loop because changing a container base image
+requires rebuilding and replacing Microsandbox rather than restarting Hono.
+
 The deploy coordinator runs all selected `check()` and `build()` methods before any provider deploy lifecycle. Build outputs feed planning and deployment. `--service agents` avoids control compilation and deployment; `--service control` does the inverse. `--skip-deploy` is a safe build-only exit. Providers without `Buildable` remain deployable, and providers without `Deployable` remain buildable.
 
 Native `@typescript/native-preview` is deliberately limited to artifact checks while it remains a preview. tsdown replaces tsup for server bundles and supplies direct programmatic, concurrent builds over Rolldown. Vite+ owns the repository command surface and delegates dependency installation to pnpm; the provider build implementations continue to call the artifact tools that match their output.
@@ -56,3 +61,4 @@ flowchart LR
 - 2026-08-13T12:27:55+02:00: Made each directory-owned `agent.ts` the independent build entrypoint and included the full authored agent tree in invalidation.
 - 2026-08-13T16:09:00+02:00: Reconciled this artifact decision with ADR-0004: Vite+ replaces Turbo for orchestration while `tsgo` and tsdown/Rolldown remain the service artifact compiler path.
 - 2026-08-13T16:27:00+02:00: Split agent-runtime provider construction from the full composition module so independently bundled agent entrypoints cannot retain control/agent deployment compilers or their native bindings.
+- 2026-08-14T17:18:21+02:00: Made development run provider checks without service artifact deployment, retained one control/agent HMR process, and added a separate watched Microsandbox image rebuild/restart loop.

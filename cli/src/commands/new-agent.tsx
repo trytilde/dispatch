@@ -36,7 +36,7 @@ export async function runNewAgent(args: readonly string[] = []): Promise<NewAgen
     repositoryRoot,
     environment,
     providers: configuration.providers,
-    target: "development",
+    devMode: true,
     report: parsed["--json"]
       ? undefined
       : (event) => {

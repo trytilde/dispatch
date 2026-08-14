@@ -14,6 +14,7 @@ import type {
 } from "./core/index.js";
 import { DeploymentOutputs } from "@tryopenbot/runtime-provider";
 import { computerImageAssets } from "./base/assets.js";
+import { developmentSandboxSourceFiles } from "./base/development.js";
 import {
   BaseComputerProvider,
   computerWorkspacePath,
@@ -174,6 +175,28 @@ describe("agent workspace deployment", () => {
       expect.any(Uint8Array),
       expect.any(Object),
     );
+  });
+});
+
+describe("development sandbox source", () => {
+  it("skips tracked files that are absent from the working tree", async () => {
+    const repositoryRoot = await mkdtemp(join(tmpdir(), "openbot-computer-source-"));
+    try {
+      await execute("git", ["init"], { cwd: repositoryRoot });
+      await writeFile(join(repositoryRoot, "present.txt"), "present");
+      await writeFile(join(repositoryRoot, "absent.txt"), "absent");
+      await execute("git", ["add", "present.txt", "absent.txt"], { cwd: repositoryRoot });
+      await rm(join(repositoryRoot, "absent.txt"));
+
+      await expect(developmentSandboxSourceFiles(repositoryRoot)).resolves.toEqual([
+        {
+          path: "openbot/present.txt",
+          content: new TextEncoder().encode("present"),
+        },
+      ]);
+    } finally {
+      await rm(repositoryRoot, { recursive: true, force: true });
+    }
   });
 });
 

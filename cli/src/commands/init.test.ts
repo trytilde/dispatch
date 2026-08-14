@@ -123,7 +123,6 @@ describe("non-interactive initialization prompts", () => {
       "tilde-api-key",
       "tilde-org-id",
       "tilde-team-id",
-      "tilde-runtime-mcp-server-id",
       "openai-api-key",
     ]);
   });

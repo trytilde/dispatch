@@ -31,10 +31,10 @@ importers:
         version: 2.29.7(@types/node@24.3.0)
       '@connectrpc/connect':
         specifier: 2.1.2
-        version: 2.1.2(@bufbuild/protobuf@2.7.0)
+        version: 2.1.2(@bufbuild/protobuf@2.11.0)
       '@connectrpc/connect-node':
         specifier: 2.1.2
-        version: 2.1.2(@bufbuild/protobuf@2.7.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.7.0))
+        version: 2.1.2(@bufbuild/protobuf@2.11.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.11.0))
       '@playwright/test':
         specifier: 1.55.0
         version: 1.55.0
@@ -44,12 +44,18 @@ importers:
       '@tryopenbot/agent-service-provider':
         specifier: workspace:*
         version: link:packages/agent-service-provider
+      '@tryopenbot/chat-provider':
+        specifier: workspace:*
+        version: link:packages/chat-provider
       '@tryopenbot/computer-provider':
         specifier: workspace:*
         version: link:packages/computer-provider
       '@tryopenbot/computer-service-proto':
         specifier: workspace:*
         version: link:packages/computer-service-proto
+      '@tryopenbot/computer-tools':
+        specifier: workspace:*
+        version: link:packages/computer-tools
       '@tryopenbot/configuration':
         specifier: workspace:*
         version: link:packages/configuration
@@ -59,9 +65,6 @@ importers:
       '@tryopenbot/control-service-provider':
         specifier: workspace:*
         version: link:packages/control-service-provider
-      '@tryopenbot/inference-model-provider':
-        specifier: workspace:*
-        version: link:packages/inference-model-provider
       '@tryopenbot/platform-integrations':
         specifier: workspace:*
         version: link:packages/platform-integrations
@@ -74,6 +77,9 @@ importers:
       '@tryopenbot/tools-provider':
         specifier: workspace:*
         version: link:packages/tools-provider
+      '@trytilde/api-client':
+        specifier: github:trytilde/harness-sdk#c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d&path:packages/api-client
+        version: https://codeload.github.com/trytilde/harness-sdk/tar.gz/c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d#path:packages/api-client(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.20.4)(yaml@2.9.0)
       '@trytilde/cli':
         specifier: 0.1.0
         version: 0.1.0(@types/react@19.2.18)(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.20.4)
@@ -128,6 +134,9 @@ importers:
 
   apps/computer-service:
     dependencies:
+      '@bufbuild/protobuf':
+        specifier: 2.7.0
+        version: 2.7.0
       '@connectrpc/connect':
         specifier: 2.1.2
         version: 2.1.2(@bufbuild/protobuf@2.7.0)
@@ -164,7 +173,7 @@ importers:
     dependencies:
       '@connectrpc/connect':
         specifier: 2.1.2
-        version: 2.1.2(@bufbuild/protobuf@2.7.0)
+        version: 2.1.2(@bufbuild/protobuf@2.11.0)
       '@hono/node-server':
         specifier: 1.19.1
         version: 1.19.1(hono@4.13.1)
@@ -275,9 +284,15 @@ importers:
       '@tryopenbot/agent-service-provider':
         specifier: workspace:*
         version: link:../packages/agent-service-provider
+      '@tryopenbot/chat-provider':
+        specifier: workspace:*
+        version: link:../packages/chat-provider
       '@tryopenbot/computer-provider':
         specifier: workspace:*
         version: link:../packages/computer-provider
+      '@tryopenbot/computer-tools':
+        specifier: workspace:*
+        version: link:../packages/computer-tools
       '@tryopenbot/configuration':
         specifier: workspace:*
         version: link:../packages/configuration
@@ -287,21 +302,24 @@ importers:
       '@tryopenbot/control-service-provider':
         specifier: workspace:*
         version: link:../packages/control-service-provider
-      '@tryopenbot/inference-model-provider':
-        specifier: workspace:*
-        version: link:../packages/inference-model-provider
       '@tryopenbot/platform-integrations':
         specifier: workspace:*
         version: link:../packages/platform-integrations
       '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../packages/runtime-provider
+      '@tryopenbot/skills-provider':
+        specifier: workspace:*
+        version: link:../packages/skills-provider
       '@tryopenbot/tools-provider':
         specifier: workspace:*
         version: link:../packages/tools-provider
       '@tryopenbot/utilities':
         specifier: workspace:*
         version: link:../packages/utilities
+      '@trytilde/api-client':
+        specifier: github:trytilde/harness-sdk#c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d&path:packages/api-client
+        version: https://codeload.github.com/trytilde/harness-sdk/tar.gz/c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d#path:packages/api-client(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.20.4)(yaml@2.9.0)
       arg:
         specifier: 5.0.2
         version: 5.0.2
@@ -411,17 +429,42 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
+  packages/chat-provider:
+    dependencies:
+      '@tryopenbot/platform-integrations':
+        specifier: workspace:*
+        version: link:../platform-integrations
+      '@tryopenbot/runtime-provider':
+        specifier: workspace:*
+        version: link:../runtime-provider
+      '@trytilde/harness-sdk':
+        specifier: 0.1.2
+        version: 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0)
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
+
   packages/computer-provider:
     dependencies:
       '@connectrpc/connect':
         specifier: 2.1.2
-        version: 2.1.2(@bufbuild/protobuf@2.7.0)
+        version: 2.1.2(@bufbuild/protobuf@2.11.0)
       '@connectrpc/connect-node':
         specifier: 2.1.2
-        version: 2.1.2(@bufbuild/protobuf@2.7.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.7.0))
+        version: 2.1.2(@bufbuild/protobuf@2.11.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.11.0))
       '@tryopenbot/computer-service-proto':
         specifier: workspace:*
         version: link:../computer-service-proto
+      '@tryopenbot/computer-tools':
+        specifier: workspace:*
+        version: link:../computer-tools
       '@tryopenbot/platform-integrations':
         specifier: workspace:*
         version: link:../platform-integrations
@@ -476,17 +519,54 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
+  packages/computer-tools:
+    dependencies:
+      '@bufbuild/protobuf':
+        specifier: 2.7.0
+        version: 2.7.0
+      '@connectrpc/connect':
+        specifier: 2.1.2
+        version: 2.1.2(@bufbuild/protobuf@2.7.0)
+      '@connectrpc/connect-node':
+        specifier: 2.1.2
+        version: 2.1.2(@bufbuild/protobuf@2.7.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.7.0))
+      '@tryopenbot/computer-service-proto':
+        specifier: workspace:*
+        version: link:../computer-service-proto
+      ai:
+        specifier: 6.0.250
+        version: 6.0.250(zod@4.4.3)
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
+
   packages/configuration:
     dependencies:
       '@tryopenbot/agent-provider':
         specifier: workspace:*
         version: link:../agent-provider
+      '@tryopenbot/agent-service-provider':
+        specifier: workspace:*
+        version: link:../agent-service-provider
+      '@tryopenbot/chat-provider':
+        specifier: workspace:*
+        version: link:../chat-provider
       '@tryopenbot/computer-provider':
         specifier: workspace:*
         version: link:../computer-provider
-      '@tryopenbot/inference-model-provider':
+      '@tryopenbot/control-service-provider':
         specifier: workspace:*
-        version: link:../inference-model-provider
+        version: link:../control-service-provider
       '@tryopenbot/runtime-provider':
         specifier: workspace:*
         version: link:../runtime-provider
@@ -560,31 +640,6 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
-  packages/inference-model-provider:
-    dependencies:
-      '@ai-sdk/openai':
-        specifier: 3.0.94
-        version: 3.0.94(zod@4.4.3)
-      '@ai-sdk/provider':
-        specifier: 3.0.15
-        version: 3.0.15
-      '@tryopenbot/runtime-provider':
-        specifier: workspace:*
-        version: link:../runtime-provider
-      ai:
-        specifier: 6.0.250
-        version: 6.0.250(zod@4.4.3)
-    devDependencies:
-      '@types/node':
-        specifier: 24.3.0
-        version: 24.3.0
-      typescript:
-        specifier: 5.9.2
-        version: 5.9.2
-      vitest:
-        specifier: 4.1.10
-        version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
-
   packages/platform-integrations:
     dependencies:
       '@tryopenbot/runtime-provider':
@@ -630,12 +685,6 @@ importers:
       '@trytilde/harness-sdk':
         specifier: 0.1.2
         version: 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0)
-      ai:
-        specifier: 6.0.250
-        version: 6.0.250(zod@4.4.3)
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
     devDependencies:
       '@types/node':
         specifier: 24.3.0
@@ -658,12 +707,6 @@ importers:
       '@trytilde/harness-sdk':
         specifier: 0.1.2
         version: 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0)
-      '@trytilde/harness-sdk-vercel-ai-node':
-        specifier: 0.2.0
-        version: 0.2.0(@ai-sdk/mcp@1.0.70(zod@4.4.3))(@trytilde/harness-sdk@0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0))(ai@6.0.250(zod@4.4.3))
-      ai:
-        specifier: 6.0.250
-        version: 6.0.250(zod@4.4.3)
     devDependencies:
       '@types/node':
         specifier: 24.3.0
@@ -821,6 +864,9 @@ packages:
     resolution: {integrity: sha512-N51MOnjROdtBX3fPU2KGdmwfiT1WWXzs8Jw1tMMkyVAmCSahWbObGIPq7e1fw7lR5i0s3bTxQyk3KRmb2/uwNg==}
     engines: {node: '>=12'}
     hasBin: true
+
+  '@bufbuild/protobuf@2.11.0':
+    resolution: {integrity: sha512-sBXGT13cpmPR5BMgHE6UEEfEaShh5Ror6rfN3yEK5si7QVrtZg8LEPQb0VVhiLRUslD2yLnXtnRzG035J/mZXQ==}
 
   '@bufbuild/protobuf@2.7.0':
     resolution: {integrity: sha512-qn6tAIZEw5i/wiESBF4nQxZkl86aY4KoO0IkUa2Lh+rya64oTOdJQFlZuMwI1Qz9VBJQrQC4QlSA2DNek5gCOA==}
@@ -6315,6 +6361,8 @@ snapshots:
       '@bufbuild/buf-win32-arm64': 1.57.2
       '@bufbuild/buf-win32-x64': 1.57.2
 
+  '@bufbuild/protobuf@2.11.0': {}
+
   '@bufbuild/protobuf@2.7.0': {}
 
   '@bufbuild/protoc-gen-es@2.7.0(@bufbuild/protobuf@2.7.0)':
@@ -6495,10 +6543,19 @@ snapshots:
       human-id: 4.2.0
       prettier: 2.8.8
 
+  '@connectrpc/connect-node@2.1.2(@bufbuild/protobuf@2.11.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.11.0))':
+    dependencies:
+      '@bufbuild/protobuf': 2.11.0
+      '@connectrpc/connect': 2.1.2(@bufbuild/protobuf@2.11.0)
+
   '@connectrpc/connect-node@2.1.2(@bufbuild/protobuf@2.7.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.7.0))':
     dependencies:
       '@bufbuild/protobuf': 2.7.0
       '@connectrpc/connect': 2.1.2(@bufbuild/protobuf@2.7.0)
+
+  '@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.11.0)':
+    dependencies:
+      '@bufbuild/protobuf': 2.11.0
 
   '@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.7.0)':
     dependencies:
@@ -7810,6 +7867,31 @@ snapshots:
       - unrun
       - yaml
 
+  '@trytilde/api-client@https://codeload.github.com/trytilde/harness-sdk/tar.gz/c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d#path:packages/api-client(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.20.4)(yaml@2.9.0)':
+    dependencies:
+      '@types/node': 24.3.0
+      typescript: 5.9.3
+      vite: '@voidzero-dev/vite-plus-core@0.2.9(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.20.4)(typescript@5.9.3)(yaml@2.9.0)'
+      vite-plugin-dts: 4.5.4(@types/node@24.3.0)(@voidzero-dev/vite-plus-core@0.2.9(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.20.4)(typescript@5.9.2)(yaml@2.9.0))(rollup@4.62.4)(typescript@5.9.3)
+    transitivePeerDependencies:
+      - '@arethetypeswrong/core'
+      - '@vitejs/devtools'
+      - esbuild
+      - jiti
+      - less
+      - publint
+      - rollup
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - tsx
+      - unplugin-unused
+      - unrun
+      - yaml
+
   '@trytilde/api-client@https://codeload.github.com/trytilde/harness-sdk/tar.gz/c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d#path:packages/api-client(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0)':
     dependencies:
       '@types/node': 24.3.0
@@ -7867,13 +7949,6 @@ snapshots:
     dependencies:
       '@ai-sdk/mcp': 1.0.70(zod@4.4.3)
       '@trytilde/harness-sdk': 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.20.4)(yaml@2.9.0)
-    optionalDependencies:
-      ai: 6.0.250(zod@4.4.3)
-
-  '@trytilde/harness-sdk-vercel-ai-node@0.2.0(@ai-sdk/mcp@1.0.70(zod@4.4.3))(@trytilde/harness-sdk@0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0))(ai@6.0.250(zod@4.4.3))':
-    dependencies:
-      '@ai-sdk/mcp': 1.0.70(zod@4.4.3)
-      '@trytilde/harness-sdk': 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0)
     optionalDependencies:
       ai: 6.0.250(zod@4.4.3)
 

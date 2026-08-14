@@ -1,8 +1,7 @@
 import { resolve } from "node:path";
 import arg from "arg";
-import { AgentProviderError, type AgentProvider } from "@tryopenbot/agent-provider";
 import type { OpenBotConfiguration } from "@tryopenbot/configuration";
-import { discoverAgents, discoverAgentWorkspaces } from "@tryopenbot/agent-service-provider";
+import { discoverAgentWorkspaces } from "@tryopenbot/agent-service-provider";
 import {
   buildProviders,
   deployProviders,
@@ -10,9 +9,17 @@ import {
   type DeploymentEvent,
   type DeploymentParticipant,
 } from "@tryopenbot/runtime-provider";
-import { loadDeploymentConfiguration, setEncryptedSecret } from "../initialization.js";
+import { persistLifecycleOutputs } from "../agent-lifecycle.js";
+import {
+  loadDeploymentConfiguration,
+  setEncryptedSecret,
+  setEnvironmentValue,
+  unsetEncryptedSecret,
+  unsetEnvironmentValue,
+} from "../initialization.js";
 import { loadConfigurationModule } from "../configuration-loader.js";
 import { repositoryRoot } from "../paths.js";
+import { inkPrompts } from "./init.js";
 
 export interface DeployOptions {
   yes: boolean;
@@ -69,6 +76,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
 
   const deploymentConfiguration = await loadDeploymentConfiguration(repositoryRoot, {
     environment: process.env,
+    prompts: process.stdin.isTTY && process.stdout.isTTY ? inkPrompts : undefined,
   });
   Object.assign(process.env, deploymentConfiguration.environment);
   const configuration = await loadRepositoryConfiguration();
@@ -104,29 +112,9 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
           },
         ]
       : []),
+    ...(deployAgents ? [{ id: "agent", provider: configuration.providers.agent }] : []),
     ...(deployAgents
       ? [{ id: "agent-service", provider: { buildable: agentService, deployable: agentService } }]
-      : []),
-    ...(deployAgents
-      ? [
-          {
-            id: "agent-registration",
-            provider: {
-              deployable: {
-                plan: async () => ({
-                  summary: "Register configured agent entrypoints",
-                  steps: [
-                    "Create missing provider agents",
-                    "Update stable endpoint URLs",
-                    "Persist newly issued endpoint credentials in SOPS",
-                  ],
-                }),
-                deploy: async (context: DeploymentContext) =>
-                  configureAgentRegistrations(configuration.providers.agent, context),
-              },
-            },
-          },
-        ]
       : []),
     ...(options.service === "all" && computer
       ? [
@@ -160,12 +148,26 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
         ]
       : []),
   ];
+  const initialInputs = {
+    ...deploymentConfiguration.inputs,
+    outputs: {
+      ...deploymentConfiguration.inputs.outputs,
+      ...(deployAgents
+        ? {
+            "agent-service.origin": agentService
+              .baseUrl({ target: "production", environment: deploymentConfiguration.environment })
+              .toString()
+              .replace(/\/$/, ""),
+          }
+        : {}),
+    },
+  };
   const runOptions = {
     target: "production",
     dryRun: options.dryRun,
     repositoryRoot,
     environment: deploymentConfiguration.environment,
-    initialInputs: deploymentConfiguration.inputs,
+    initialInputs,
     report,
   } as const;
   const built = await buildProviders(participants, runOptions);
@@ -173,71 +175,24 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
     report({ event: "build.complete", details: { deploySkipped: true } });
     return;
   }
-  await deployProviders(participants, { ...runOptions, initialInputs: built.result() });
-}
-
-export async function configureAgentRegistrations(
-  agentProvider: AgentProvider,
-  context: DeploymentContext,
-  persistSecret: (name: string, value: string, description: string) => Promise<void> = (
-    name,
-    value,
-    description,
-  ) =>
-    setEncryptedSecret(context.repositoryRoot, name, value, {
-      environment: context.environment,
-      description,
-    }),
-) {
-  const origin = context.inputs.require("agent-service.origin");
-  const secrets: Record<string, string> = {};
-  for (const agent of await discoverAgents(context.repositoryRoot)) {
-    const prefix = agent.slug.replaceAll("-", "_").toUpperCase();
-    const apiKeyName = `AGENT_${prefix}_API_KEY`;
-    const webhookKeyName = `AGENT_${prefix}_WEBHOOK_SIGNING_KEY`;
-    const endpointUrl = new URL(`/api/agents/${agent.slug}`, `${origin}/`);
-    try {
-      await agentProvider.getAgent(agent.slug, { requestId: `deploy:agent:${agent.slug}` });
-      if (!context.inputs.secrets()[apiKeyName] || !context.inputs.secrets()[webhookKeyName]) {
-        throw new Error(
-          `Agent ${agent.slug} already exists but its endpoint credentials are missing from encrypted configuration`,
-        );
-      }
-      await agentProvider.updateAgent(
-        agent.slug,
-        { displayName: agent.slug, endpointUrl, enabled: true },
-        { requestId: `deploy:agent:${agent.slug}:update` },
-      );
-    } catch (error) {
-      if (!(error instanceof AgentProviderError) || error.code !== "not_found") throw error;
-      const registered = await agentProvider.registerAgent(
-        {
-          id: agent.slug,
-          displayName: agent.slug,
-          endpointUrl,
-          streaming: true,
-          timeoutMs: 300_000,
-        },
-        {
-          requestId: `deploy:agent:${agent.slug}:register`,
-          idempotencyKey: `openbot-agent:${agent.slug}`,
-        },
-      );
-      secrets[apiKeyName] = registered.credentials.apiKey;
-      secrets[webhookKeyName] = registered.credentials.webhookSigningKey;
-      await persistSecret(
-        apiKeyName,
-        registered.credentials.apiKey,
-        `ChatKit API key for the ${agent.slug} agent endpoint.`,
-      );
-      await persistSecret(
-        webhookKeyName,
-        registered.credentials.webhookSigningKey,
-        `ChatKit webhook signing key for the ${agent.slug} agent endpoint.`,
-      );
-    }
-  }
-  return Object.keys(secrets).length ? { secrets } : undefined;
+  const deployed = await deployProviders(participants, {
+    ...runOptions,
+    initialInputs: built.result(),
+  });
+  await persistLifecycleOutputs(deployed.result(), deploymentConfiguration.environment, {
+    persistEnvironment: (name, value, description) =>
+      setEnvironmentValue(repositoryRoot, name, value, description),
+    persistSecret: (name, value, description) =>
+      setEncryptedSecret(repositoryRoot, name, value, {
+        environment: deploymentConfiguration.environment,
+        description,
+      }),
+    unsetEnvironment: (name) => unsetEnvironmentValue(repositoryRoot, name),
+    unsetSecret: (name) =>
+      unsetEncryptedSecret(repositoryRoot, name, {
+        environment: deploymentConfiguration.environment,
+      }),
+  });
 }
 
 async function loadRepositoryConfiguration(): Promise<OpenBotConfiguration> {

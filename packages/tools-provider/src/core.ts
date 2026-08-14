@@ -1,10 +1,5 @@
-import type { ToolSet } from "ai";
 import type { DeployableProvider } from "@tryopenbot/runtime-provider";
 export type { Deployable } from "@tryopenbot/runtime-provider";
-
-export type JsonPrimitive = string | number | boolean | null;
-export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
-export type JsonObject = { readonly [key: string]: JsonValue };
 
 export interface ToolsProviderCallContext {
   requestId: string;
@@ -34,58 +29,37 @@ export class ToolsProviderError extends Error {
   }
 }
 
-export interface ToolSummary {
+export interface ToolServer {
+  id: string;
+}
+
+export interface EnsureToolServerRequest {
+  id: string;
   name: string;
-  description: string;
-  inputSchema?: JsonObject;
-  outputSchema?: JsonObject;
+  dynamicToolDiscovery?: boolean;
 }
 
-/** An AI SDK tool paired with the name used when adding it to a ToolSet. */
-export type RegisteredTool = ToolSet[string] & { readonly name: string };
-
-export interface ToolsPromptContext {
-  agentId: string;
-  sessionId: string;
-  userId?: string;
-}
-
+/** Startup provisioning boundary for external tool servers. */
 export interface ToolProvider extends DeployableProvider {
-  listTools(context: ToolsProviderCallContext): Promise<readonly ToolSummary[]>;
-  invoke(name: string, input: JsonObject, context: ToolsProviderCallContext): Promise<JsonValue>;
-  registerTools(context: ToolsProviderCallContext): Promise<readonly RegisteredTool[]>;
-  injectPromptPart(
-    context: ToolsPromptContext,
-    callContext: ToolsProviderCallContext,
-  ): string | undefined | Promise<string | undefined>;
-  close(): Promise<void>;
-}
-
-export function asRegisteredTool(name: string, aiTool: ToolSet[string]): RegisteredTool {
-  return Object.assign(aiTool, { name });
-}
-
-export function registeredToolsToToolSet(tools: readonly RegisteredTool[]): ToolSet {
-  const result: ToolSet = {};
-  for (const registered of tools) result[registered.name] = registered;
-  return result;
+  ensureServer(
+    request: EnsureToolServerRequest,
+    context: ToolsProviderCallContext,
+  ): Promise<ToolServer>;
 }
 
 export function providerSignal(
   context: ToolsProviderCallContext,
   fallbackMs = 30_000,
 ): AbortSignal {
-  if (context.signal?.aborted) {
+  if (context.signal?.aborted)
     throw new ToolsProviderError("deadline_exceeded", "The tools provider call was aborted", true);
-  }
   if (context.signal) return context.signal;
   const remaining = context.deadline ? context.deadline.valueOf() - Date.now() : fallbackMs;
-  if (remaining <= 0) {
+  if (remaining <= 0)
     throw new ToolsProviderError(
       "deadline_exceeded",
       "The tools provider deadline has elapsed",
       true,
     );
-  }
   return AbortSignal.timeout(Math.min(remaining, fallbackMs));
 }

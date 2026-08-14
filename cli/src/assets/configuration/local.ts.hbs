@@ -1,16 +1,28 @@
-import { Configuration } from "@tryopenbot/configuration";
+import { TildeAgentProvider } from "@tryopenbot/agent-provider";
 import { LocalAgentServiceProvider } from "@tryopenbot/agent-service-provider";
+import { TildeChatProvider } from "@tryopenbot/chat-provider";
+import { Configuration } from "@tryopenbot/configuration";
 import { LocalControlServiceProvider } from "@tryopenbot/control-service-provider";
-import runtimeProviders from "./runtime-providers.js";
+import { MicrosandboxComputerProvider } from "@tryopenbot/computer-provider";
+import { TildePlatform } from "@tryopenbot/platform-integrations";
+import { TildeSkillProvider } from "@tryopenbot/skills-provider";
+import { TildeToolProvider } from "@tryopenbot/tools-provider";
+
+const tilde = new TildePlatform({
+  apiKey: process.env.TILDE_API_KEY!,
+  baseUrl: process.env.TILDE_BASE_URL ?? "https://api.trytilde.ai",
+  orgId: process.env.TILDE_ORG_ID!,
+  teamId: process.env.TILDE_TEAM_ID!,
+});
 
 export default Configuration({
   providers: {
     controlService: new LocalControlServiceProvider(),
     agentService: new LocalAgentServiceProvider(),
-    agent: runtimeProviders.agent,
-    computer: runtimeProviders.computer,
-    inferenceModel: runtimeProviders.inferenceModel,
-    skills: runtimeProviders.skills,
-    tools: runtimeProviders.tools,
+    chat: new TildeChatProvider(tilde),
+    agent: new TildeAgentProvider(tilde),
+    computer: new MicrosandboxComputerProvider(),
+    skills: new TildeSkillProvider(tilde),
+    tools: new TildeToolProvider({ platform: tilde }),
   },
 });

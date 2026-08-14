@@ -69,10 +69,20 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
       steps: [`Upload ${controlVercelArtifact} as a prebuilt deployment`, "Smoke-test /healthz"],
     };
   }
+  baseUrl(context: Pick<DeploymentContext, "target" | "environment">): URL {
+    if (context.target === "development") {
+      return new URL(
+        context.environment.PUBLIC_ORIGIN ??
+          `http://127.0.0.1:${context.environment.PORT ?? "4100"}`,
+      );
+    }
+    const project = requiredVercelProject(context.environment, "VERCEL_CONTROL_PROJECT");
+    return new URL(`https://${project}.vercel.app`);
+  }
   async configure(context: DeploymentContext): Promise<DeploymentResult> {
     const project = requiredVercelProject(context.environment, "VERCEL_CONTROL_PROJECT");
     await ensureVercelProject(this.#runner, context, project);
-    const origin = `https://${project}.vercel.app`;
+    const origin = this.baseUrl(context).toString().replace(/\/$/, "");
     return {
       outputs: { "control-service.origin": origin, "runtime.origin": origin },
       environmentVariables: { PUBLIC_ORIGIN: origin },

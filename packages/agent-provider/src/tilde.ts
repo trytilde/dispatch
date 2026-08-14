@@ -1,53 +1,46 @@
+import { readdir, stat } from "node:fs/promises";
+import { resolve } from "node:path";
 import type {
-  Agent,
-  AgentMessage,
-  AgentProvider,
-  AgentProviderCallContext,
-  AgentSession,
-  AgentSessionGroup,
-  ListAgentsRequest,
-  ListMessagesRequest,
-  ListSessionGroupsRequest,
-  ListSessionsRequest,
-  Page,
-  RegisterAgentRequest,
-  RegisteredAgent,
-  UpdateAgentRequest,
-} from "./core.js";
-import { AgentProviderError, pageSize, providerSignal } from "./core.js";
+  DeploymentContext,
+  DeploymentPlan,
+  DeploymentResult,
+} from "@tryopenbot/runtime-provider";
 import { TildePlatform, type TildePlatformConfig } from "@tryopenbot/platform-integrations";
 import {
   tildeErrorMessage,
   tildeErrorStatus,
 } from "@tryopenbot/platform-integrations/tilde/errors";
-import type { Client } from "@trytilde/harness-sdk";
 import {
   chatkitDeleteAgent,
   chatkitGetAgent,
-  chatkitMissionControlAgentSessions,
-  chatkitMissionControlCreateSession,
-  chatkitMissionControlInterruptSession,
-  chatkitMissionControlMarkThreadUnread,
-  chatkitMissionControlMessages,
-  chatkitMissionControlRenameThread,
-  chatkitMissionControlSendMessage,
-  chatkitMissionControlSidebar,
+  chatkitRegisterHttpVercelAiSdkAgent,
   chatkitSetAgentStatus,
   chatkitUpdateAgent,
   createTildeApiClient,
   InboxStatus,
   type TildeApiClient,
 } from "@trytilde/harness-sdk/api";
+import type { AgentProvider } from "./core.js";
+import { AgentProviderError } from "./core.js";
 
 export interface TildeAgentProviderConfig extends TildePlatformConfig {}
 
 type JsonRecord = Record<string, unknown>;
 
+interface AgentResource {
+  id: string;
+  providerId: string;
+}
+
+/** Idempotently reconciles every authored agent with Tilde ChatKit. */
 export class TildeAgentProvider implements AgentProvider {
   readonly platform: TildePlatform;
   readonly platforms: readonly TildePlatform[];
+  readonly deployable = {
+    plan: (context: DeploymentContext) => this.#plan(context),
+    deploy: (context: DeploymentContext) => this.#deploy(context),
+  };
   readonly #api: TildeApiClient;
-  readonly #client: Client;
   readonly #teamId: string;
 
   constructor(platformOrConfig: TildePlatform | TildeAgentProviderConfig) {
@@ -57,300 +50,194 @@ export class TildeAgentProvider implements AgentProvider {
         : new TildePlatform(platformOrConfig);
     this.platforms = [this.platform];
     const config = this.platform.connection();
-    const { baseUrl } = config;
     this.#api = createTildeApiClient({
-      baseUrl,
+      baseUrl: config.baseUrl,
       apiKey: config.apiKey,
       orgId: config.orgId,
     });
-    this.#client = this.platform.client();
     this.#teamId = config.teamId;
   }
 
-  async listAgents(
-    request: ListAgentsRequest,
-    context: AgentProviderCallContext,
-  ): Promise<Page<Agent>> {
-    const response = await this.#generated(context, (signal) =>
-      chatkitMissionControlSidebar({
-        client: this.#api,
-        path: { team_id: this.#teamId },
-        query: {
-          agent_page_size: pageSize(request.pageSize, 50),
-          agent_next_page_token: request.nextPageToken,
-          session_page_size: 1,
-          agent_sort: request.sort ?? "updated_at",
-          session_sort: "updated_at",
-          q: request.query,
-        },
-        signal,
-      }),
-    );
-    return page(response, (value) => agentRecord(value));
-  }
-
-  async getAgent(id: string, context: AgentProviderCallContext): Promise<Agent> {
-    const response = await this.#generated(context, (signal) =>
-      chatkitGetAgent({
-        client: this.#api,
-        path: { team_id: this.#teamId, agent_id: id },
-        signal,
-      }),
-    );
-    return agentRecord(response);
-  }
-
-  async registerAgent(
-    request: RegisterAgentRequest,
-    context: AgentProviderCallContext,
-  ): Promise<RegisteredAgent> {
-    const response = await this.#call(context, () =>
-      this.#client.chatkit.registerHttpVercelAiSdkAgent({
-        ...(request.id ? { id: request.id } : {}),
-        displayName: request.displayName,
-        endpointUrl: request.endpointUrl.toString(),
-        streaming: request.streaming ?? true,
-        timeoutMs: request.timeoutMs ?? 300_000,
-      }),
-    );
+  async #plan(context: DeploymentContext): Promise<DeploymentPlan> {
+    const agents = await discoverAgentSlugs(context.repositoryRoot);
     return {
-      agent: agentRecord(response.agent),
-      credentials: {
-        apiKey: response.apiKey,
-        webhookSigningKey: response.webhookSigningKey,
-      },
+      summary: `Reconcile ${agents.length} authored agent${agents.length === 1 ? "" : "s"} with Tilde`,
+      steps: [
+        "Create missing ChatKit agents",
+        "Reconcile Vercel AI SDK endpoint URLs and enabled status",
+        context.target === "development"
+          ? "Enable Tilde local-runtime tunneling"
+          : "Use the deployed public agent-service URL",
+      ],
     };
   }
 
-  async updateAgent(
-    id: string,
-    request: UpdateAgentRequest,
-    context: AgentProviderCallContext,
-  ): Promise<Agent> {
-    let agent: Agent | undefined;
-    if (request.displayName !== undefined || request.endpointUrl !== undefined) {
-      agent = agentRecord(
-        await this.#generated(context, (signal) =>
-          chatkitUpdateAgent({
+  async #deploy(context: DeploymentContext): Promise<DeploymentResult | void> {
+    const slugs = await discoverAgentSlugs(context.repositoryRoot);
+    const origin = context.inputs.require("agent-service.origin");
+    const localRunningEndpoint = context.target === "development";
+    const environmentVariables: Record<string, string> = {};
+    const secrets: Record<string, string> = {};
+    const currentPrefixes = new Set(
+      slugs.map((slug) => `AGENT_${slug.replaceAll("-", "_").toUpperCase()}`),
+    );
+    const environmentVariableRemovals: string[] = [];
+    const secretRemovals: string[] = [];
+
+    for (const [name, id] of Object.entries(context.environment)) {
+      const match = /^((?:AGENT_[A-Z0-9_]+))_AGENT_ID$/.exec(name);
+      const prefix = match?.[1];
+      if (!prefix || !id || currentPrefixes.has(prefix)) continue;
+      const existing = await this.#getAgentOrUndefined(id);
+      if (existing) await this.#removeAgentEndpoint(existing.id);
+      for (const key of [`${prefix}_AGENT_ID`, `${prefix}_PROVIDER_ID`]) {
+        if (context.environment[key] || context.inputs.environmentVariables()[key])
+          environmentVariableRemovals.push(key);
+      }
+      for (const key of [`${prefix}_API_KEY`, `${prefix}_WEBHOOK_SIGNING_KEY`]) {
+        if (context.environment[key] || context.inputs.secrets()[key]) secretRemovals.push(key);
+      }
+    }
+
+    for (const slug of slugs) {
+      const prefix = `AGENT_${slug.replaceAll("-", "_").toUpperCase()}`;
+      const apiKeyName = `${prefix}_API_KEY`;
+      const webhookKeyName = `${prefix}_WEBHOOK_SIGNING_KEY`;
+      const endpointUrl = new URL(`/api/agents/${slug}`, `${origin}/`);
+      const hasCredentials =
+        Boolean(context.inputs.secrets()[apiKeyName] || context.environment[apiKeyName]) &&
+        Boolean(context.inputs.secrets()[webhookKeyName] || context.environment[webhookKeyName]);
+      let agent = await this.#getAgentOrUndefined(slug);
+
+      // Tilde only returns endpoint credentials at creation. Replace an unrecoverable registration
+      // so repeated lifecycle runs converge instead of leaving an unusable endpoint behind.
+      if (agent && (!hasCredentials || !isVercelAiSdkProvider(agent.providerId))) {
+        await this.#removeAgentEndpoint(agent.id);
+        agent = undefined;
+      }
+
+      if (!agent) {
+        const response = await this.#generated((signal) =>
+          chatkitRegisterHttpVercelAiSdkAgent({
             client: this.#api,
-            path: { team_id: this.#teamId, agent_id: id },
+            path: { team_id: this.#teamId },
             body: {
-              ...(request.displayName !== undefined ? { display_name: request.displayName } : {}),
-              ...(request.endpointUrl !== undefined
-                ? { endpoint_url: request.endpointUrl.toString() }
-                : {}),
+              id: slug,
+              display_name: slug,
+              endpoint_url: endpointValue(endpointUrl, localRunningEndpoint),
+              local_running_endpoint: localRunningEndpoint,
+              streaming: true,
+              timeout_ms: 300_000,
             },
             signal,
           }),
-        ),
-      );
-    }
-    if (request.enabled !== undefined) {
-      agent = agentRecord(
-        await this.#generated(context, (signal) =>
+        );
+        agent = agentResource(response.agent as JsonRecord);
+        secrets[apiKeyName] = response.api_key;
+        secrets[webhookKeyName] = response.webhook_signing_key;
+      } else {
+        agent = agentResource(
+          (await this.#generated((signal) =>
+            chatkitUpdateAgent({
+              client: this.#api,
+              path: { team_id: this.#teamId, agent_id: slug },
+              body: {
+                display_name: slug,
+                endpoint_url: endpointValue(endpointUrl, localRunningEndpoint),
+                local_running_endpoint: localRunningEndpoint,
+                streaming: true,
+                timeout_ms: 300_000,
+              },
+              signal,
+            }),
+          )) as JsonRecord,
+        );
+      }
+
+      agent = agentResource(
+        (await this.#generated((signal) =>
           chatkitSetAgentStatus({
             client: this.#api,
-            path: { team_id: this.#teamId, agent_id: id },
-            body: { status: request.enabled ? InboxStatus.ENABLED : InboxStatus.DISABLED },
+            path: { team_id: this.#teamId, agent_id: agent!.id },
+            body: { status: InboxStatus.ENABLED },
             signal,
           }),
-        ),
+        )) as JsonRecord,
       );
+      environmentVariables[`${prefix}_AGENT_ID`] = agent.id;
+      environmentVariables[`${prefix}_PROVIDER_ID`] = agent.providerId;
     }
-    return agent ?? this.getAgent(id, context);
+
+    return {
+      environmentVariables,
+      ...(Object.keys(secrets).length ? { secrets } : {}),
+      ...(environmentVariableRemovals.length ? { environmentVariableRemovals } : {}),
+      ...(secretRemovals.length ? { secretRemovals } : {}),
+    };
   }
 
-  async unregisterAgent(id: string, context: AgentProviderCallContext): Promise<void> {
-    await this.#generated(context, (signal) =>
-      chatkitDeleteAgent({
-        client: this.#api,
-        path: { team_id: this.#teamId, agent_id: id },
-        signal,
-      }),
-    );
+  async #getAgentOrUndefined(id: string): Promise<AgentResource | undefined> {
+    try {
+      return agentResource(
+        (await this.#generated((signal) =>
+          chatkitGetAgent({
+            client: this.#api,
+            path: { team_id: this.#teamId, agent_id: id },
+            signal,
+          }),
+        )) as JsonRecord,
+      );
+    } catch (error) {
+      if (error instanceof AgentProviderError && error.code === "not_found") return undefined;
+      throw error;
+    }
   }
 
-  async listSessionGroups(
-    request: ListSessionGroupsRequest,
-    context: AgentProviderCallContext,
-  ): Promise<Page<AgentSessionGroup>> {
-    const response = await this.#generated(context, (signal) =>
-      chatkitMissionControlSidebar({
-        client: this.#api,
-        path: { team_id: this.#teamId },
-        query: {
-          agent_page_size: pageSize(request.pageSize, 50),
-          agent_next_page_token: request.nextPageToken,
-          session_page_size: pageSize(request.sessionsPerAgent, 8, 50),
-          agent_sort: request.sort ?? "updated_at",
-          session_sort: request.sessionSort ?? "updated_at",
-          q: request.query,
-        },
-        signal,
-      }),
-    );
-    return page(response, sessionGroup);
-  }
-
-  async listSessions(
-    request: ListSessionsRequest,
-    context: AgentProviderCallContext,
-  ): Promise<Page<AgentSession>> {
-    if (request.agentId) {
-      const agentId = request.agentId;
-      const response = await this.#generated(context, (signal) =>
-        chatkitMissionControlAgentSessions({
+  async #removeAgentEndpoint(id: string): Promise<void> {
+    try {
+      await this.#generated((signal) =>
+        chatkitUpdateAgent({
           client: this.#api,
-          path: { team_id: this.#teamId, agent_id: agentId },
-          query: {
-            page_size: pageSize(request.pageSize, 20),
-            next_page_token: request.nextPageToken,
-            session_sort: request.sort ?? "updated_at",
-            q: request.query,
-          },
+          path: { team_id: this.#teamId, agent_id: id },
+          body: { endpoint_url: null, local_running_endpoint: false },
           signal,
         }),
       );
-      return page(response, (value) => sessionRecord(value, agentId));
-    }
-
-    if (request.nextPageToken) {
-      throw new AgentProviderError(
-        "not_supported",
-        "Tilde does not expose a global session continuation token",
+      await this.#generated((signal) =>
+        chatkitSetAgentStatus({
+          client: this.#api,
+          path: { team_id: this.#teamId, agent_id: id },
+          body: { status: InboxStatus.DISABLED },
+          signal,
+        }),
       );
+      await this.#generated((signal) =>
+        chatkitDeleteAgent({
+          client: this.#api,
+          path: { team_id: this.#teamId, agent_id: id },
+          signal,
+        }),
+      );
+    } catch (error) {
+      if (error instanceof AgentProviderError && error.code === "not_found") return;
+      throw error;
     }
-    const limit = pageSize(request.pageSize, 50);
-    const groups = await this.listSessionGroups(
-      {
-        pageSize: 100,
-        sessionsPerAgent: 50,
-        sort: "updated_at",
-        sessionSort: request.sort ?? "updated_at",
-        ...(request.query ? { query: request.query } : {}),
-      },
-      context,
-    );
-    const items = groups.items
-      .flatMap((group) => group.sessions.items)
-      .sort((left, right) => sessionTime(right, request.sort) - sessionTime(left, request.sort))
-      .slice(0, limit);
-    return { items };
-  }
-
-  async createSession(
-    agentId: string,
-    title: string | undefined,
-    context: AgentProviderCallContext,
-  ): Promise<AgentSession> {
-    const response = await this.#generated(context, (signal) =>
-      chatkitMissionControlCreateSession({
-        client: this.#api,
-        path: { team_id: this.#teamId, agent_id: agentId },
-        body: { title: title ?? null },
-        signal,
-      }),
-    );
-    return sessionRecord(response.session, agentId);
-  }
-
-  async renameSession(
-    sessionId: string,
-    title: string,
-    context: AgentProviderCallContext,
-  ): Promise<AgentSession> {
-    const response = await this.#generated(context, (signal) =>
-      chatkitMissionControlRenameThread({
-        client: this.#api,
-        path: { team_id: this.#teamId, session_id: sessionId },
-        body: { title },
-        signal,
-      }),
-    );
-    return sessionRecord(response, "");
-  }
-
-  async markSessionUnread(
-    sessionId: string,
-    context: AgentProviderCallContext,
-  ): Promise<AgentSession> {
-    const response = await this.#generated(context, (signal) =>
-      chatkitMissionControlMarkThreadUnread({
-        client: this.#api,
-        path: { team_id: this.#teamId, session_id: sessionId },
-        signal,
-      }),
-    );
-    return sessionRecord(response, "");
-  }
-
-  async interruptSession(sessionId: string, context: AgentProviderCallContext): Promise<void> {
-    await this.#generated(context, (signal) =>
-      chatkitMissionControlInterruptSession({
-        client: this.#api,
-        path: { team_id: this.#teamId, session_id: sessionId },
-        signal,
-      }),
-    );
-  }
-
-  async listMessages(
-    request: ListMessagesRequest,
-    context: AgentProviderCallContext,
-  ): Promise<Page<AgentMessage>> {
-    const response = await this.#generated(context, (signal) =>
-      chatkitMissionControlMessages({
-        client: this.#api,
-        path: { team_id: this.#teamId, session_id: request.sessionId },
-        query: {
-          page_size: pageSize(request.pageSize, 50),
-          next_page_token: request.nextPageToken,
-        },
-        signal,
-      }),
-    );
-    return page(response, messageRecord);
-  }
-
-  async sendMessage(
-    agentId: string,
-    sessionId: string,
-    text: string,
-    context: AgentProviderCallContext,
-  ): Promise<Page<AgentMessage>> {
-    const response = await this.#generated(context, (signal) =>
-      chatkitMissionControlSendMessage({
-        client: this.#api,
-        path: { team_id: this.#teamId, agent_id: agentId, session_id: sessionId },
-        body: { text, attachment_ids: [] },
-        signal,
-      }),
-    );
-    return page(response, messageRecord);
   }
 
   async #generated<T>(
-    context: AgentProviderCallContext,
     operation: (signal: AbortSignal) => Promise<{ data?: T; error?: unknown; response?: Response }>,
   ): Promise<T> {
-    return this.#call(context, async () => {
-      const result = await operation(providerSignal(context));
+    try {
+      const result = await operation(AbortSignal.timeout(30_000));
       if (result.error !== undefined) {
-        throw Object.assign(
-          new Error(tildeErrorMessage(result.error, "Tilde API request failed")),
-          {
-            response: result.response,
-          },
+        const status = result.response?.status;
+        throw new AgentProviderError(
+          agentErrorCode(status),
+          tildeErrorMessage(result.error, "Tilde API request failed"),
+          !status || status >= 500,
         );
       }
       return result.data as T;
-    });
-  }
-
-  async #call<T>(context: AgentProviderCallContext, operation: () => Promise<T>): Promise<T> {
-    try {
-      providerSignal(context).throwIfAborted();
-      return await operation();
     } catch (error) {
       if (error instanceof AgentProviderError) throw error;
       if (
@@ -360,16 +247,8 @@ export class TildeAgentProvider implements AgentProvider {
         throw new AgentProviderError("deadline_exceeded", "Tilde request timed out", true);
       }
       const status = tildeErrorStatus(error);
-      const code =
-        status === 400
-          ? "invalid_request"
-          : status === 404
-            ? "not_found"
-            : status === 401 || status === 403
-              ? "permission_denied"
-              : "provider_unavailable";
       throw new AgentProviderError(
-        code,
+        agentErrorCode(status),
         error instanceof Error ? error.message : "Tilde request failed",
         !status || status >= 500,
       );
@@ -377,102 +256,43 @@ export class TildeAgentProvider implements AgentProvider {
   }
 }
 
-function sessionGroup(value: JsonRecord): AgentSessionGroup {
-  const agent = agentRecord(value);
-  const sessions = asRecord(value.sessions);
-  return { agent, sessions: page(sessions, (item) => sessionRecord(item, agent.id)) };
-}
-
-function agentRecord(value: JsonRecord): Agent {
-  const configuration = asRecord(value.configuration);
-  const id = stringValue(value.id, "agent identifier");
-  const endpointUrl =
-    optionalString(value.endpoint_url) ?? optionalString(configuration.endpoint_url);
-  return {
-    id,
-    displayName:
-      optionalString(value.display_name) ?? optionalString(configuration.display_name) ?? id,
-    providerId:
-      optionalString(value.provider_id) ??
-      optionalString(value.inbox_type_id) ??
-      "chatkit.http-vercel-ai-sdk",
-    status: optionalString(value.status) ?? "unknown",
-    hasUiEndpoint:
-      typeof value.has_vercel_ui_endpoint === "boolean"
-        ? value.has_vercel_ui_endpoint
-        : Boolean(endpointUrl),
-    ...(endpointUrl ? { endpointUrl } : {}),
-    createdAt: dateValue(value.created_at) ?? new Date(0),
-    updatedAt: dateValue(value.updated_at) ?? new Date(0),
-    ...(dateValue(value.last_user_message_at)
-      ? { lastUserMessageAt: dateValue(value.last_user_message_at) }
-      : {}),
-  };
-}
-
-function sessionRecord(value: JsonRecord, agentId: string): AgentSession {
-  return {
-    id: stringValue(value.id, "session identifier"),
-    agentId: optionalString(value.agent_id) ?? agentId,
-    ...(optionalString(value.title) ? { title: optionalString(value.title) } : {}),
-    unread: value.unread === true,
-    createdAt: dateValue(value.created_at) ?? new Date(0),
-    updatedAt: dateValue(value.updated_at) ?? new Date(0),
-    ...(dateValue(value.last_user_message_at)
-      ? { lastUserMessageAt: dateValue(value.last_user_message_at) }
-      : {}),
-  };
-}
-
-function messageRecord(value: JsonRecord): AgentMessage {
-  const role =
-    value.role === "system" ||
-    value.role === "user" ||
-    value.role === "assistant" ||
-    value.role === "tool"
-      ? value.role
-      : "assistant";
-  return {
-    id: stringValue(value.id, "message identifier"),
-    sessionId: stringValue(value.session_id, "session identifier"),
-    role,
-    text: messageText(value),
-    createdAt: dateValue(value.created_at) ?? new Date(0),
-    ...(dateValue(value.updated_at) ? { updatedAt: dateValue(value.updated_at) } : {}),
-  };
-}
-
-function page<T>(value: JsonRecord, map: (item: JsonRecord) => T): Page<T> {
-  const nextPageToken = optionalString(value.next_page_token);
-  return {
-    items: arrayValue(value.items).map((item) => map(asRecord(item))),
-    ...(nextPageToken ? { nextPageToken } : {}),
-  };
-}
-
-function sessionTime(session: AgentSession, sort: ListSessionsRequest["sort"]): number {
-  return (sort === "created_at" ? session.createdAt : session.updatedAt).valueOf();
-}
-
-function messageText(value: JsonRecord): string {
-  if (typeof value.text === "string") return value.text;
-  return arrayValue(value.parts)
-    .map((part) => optionalString(asRecord(part).text) ?? "")
-    .join("");
-}
-
-function asRecord(value: unknown): JsonRecord {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as JsonRecord) : {};
-}
-
-function arrayValue(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-function stringValue(value: unknown, label: string): string {
-  if (typeof value !== "string" || !value) {
-    throw new AgentProviderError("provider_unavailable", `Tilde returned an invalid ${label}`);
+async function discoverAgentSlugs(repositoryRoot: string): Promise<string[]> {
+  const root = resolve(repositoryRoot, "configuration/agents");
+  const entries = await readdir(root, { withFileTypes: true });
+  const slugs: string[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.name)) continue;
+    const entrypoint = resolve(root, entry.name, "agent.ts");
+    let metadata;
+    try {
+      metadata = await stat(entrypoint);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT")
+        throw new Error(`Agent source entrypoint is missing: ${entrypoint}`);
+      throw error;
+    }
+    if (!metadata.isFile()) throw new Error(`Agent source entrypoint is not a file: ${entrypoint}`);
+    slugs.push(entry.name);
   }
+  return slugs.sort();
+}
+
+function endpointValue(endpointUrl: URL, localRunningEndpoint: boolean): string {
+  return localRunningEndpoint
+    ? `${endpointUrl.pathname}${endpointUrl.search}`
+    : endpointUrl.toString();
+}
+
+function agentResource(value: JsonRecord): AgentResource {
+  return {
+    id: requiredString(value.id, "agent identifier"),
+    providerId: optionalString(value.provider_id) ?? "chatkit.http-vercel-ai-sdk",
+  };
+}
+
+function requiredString(value: unknown, label: string): string {
+  if (typeof value !== "string" || !value)
+    throw new AgentProviderError("provider_unavailable", `Tilde returned an invalid ${label}`);
   return value;
 }
 
@@ -480,8 +300,20 @@ function optionalString(value: unknown): string | undefined {
   return typeof value === "string" && value ? value : undefined;
 }
 
-function dateValue(value: unknown): Date | undefined {
-  if (typeof value !== "string") return undefined;
-  const date = new Date(value);
-  return Number.isNaN(date.valueOf()) ? undefined : date;
+function isVercelAiSdkProvider(providerId: string): boolean {
+  return providerId === "http-vercel-ai-sdk" || providerId.endsWith(".http-vercel-ai-sdk");
+}
+
+function agentErrorCode(status: number | undefined): AgentProviderError["code"] {
+  switch (status) {
+    case 400:
+      return "invalid_request";
+    case 404:
+      return "not_found";
+    case 401:
+    case 403:
+      return "permission_denied";
+    default:
+      return "provider_unavailable";
+  }
 }

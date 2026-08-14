@@ -20,6 +20,12 @@ describe("control service providers", () => {
     expect(provider.initialization.questions.map(({ id }) => id)).toEqual([
       "vercel-control-project",
     ]);
+    expect(
+      provider.baseUrl({
+        target: "production",
+        environment: { VERCEL_CONTROL_PROJECT: "control" },
+      }),
+    ).toEqual(new URL("https://control.vercel.app"));
   });
 
   it("bundles provider-owned Vercel assets into a prebuilt artifact", async () => {

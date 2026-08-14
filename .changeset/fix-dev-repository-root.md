@@ -9,7 +9,6 @@
 "@tryopenbot/control-service-proto": patch
 "@tryopenbot/desktop": patch
 "@tryopenbot/utilities": patch
-"@tryopenbot/inference-model-provider": patch
 "@tryopenbot/control-service-provider": patch
 "@tryopenbot/runtime-provider": patch
 "@tryopenbot/control-service": patch

@@ -1,4 +1,4 @@
-export type DeploymentTarget = "preview" | "production";
+export type DeploymentTarget = "development" | "preview" | "production";
 
 export interface DeploymentEvent {
   event: string;
@@ -15,9 +15,13 @@ export interface DeploymentResult {
   /** Secrets consumed only while provisioning the trusted development sandbox. */
   sandboxSecrets?: Readonly<Record<string, string>>;
   environmentVariables?: Readonly<Record<string, string>>;
+  /** Previously persisted runtime secrets that no longer belong to desired state. */
+  secretRemovals?: readonly string[];
+  /** Previously persisted non-secret values that no longer belong to desired state. */
+  environmentVariableRemovals?: readonly string[];
 }
 
-/** A provider-owned software artifact lifecycle. */
+/** A provider-owned, idempotent software artifact lifecycle. */
 export interface Buildable {
   check(context: DeploymentContext): Promise<void>;
   build(context: DeploymentContext): Promise<DeploymentResult | void>;
@@ -96,6 +100,8 @@ export class DeploymentOutputs {
   readonly #deploymentSecrets = new Map<string, string>();
   readonly #sandboxSecrets = new Map<string, string>();
   readonly #environmentVariables = new Map<string, string>();
+  readonly #secretRemovals = new Set<string>();
+  readonly #environmentVariableRemovals = new Set<string>();
 
   merge(result: DeploymentResult | void): void {
     if (!result) return;
@@ -108,6 +114,13 @@ export class DeploymentOutputs {
       result.environmentVariables,
       "environment variable",
       true,
+    );
+    this.#mergeRemovals(this.#secrets, this.#secretRemovals, result.secretRemovals, "secret");
+    this.#mergeRemovals(
+      this.#environmentVariables,
+      this.#environmentVariableRemovals,
+      result.environmentVariableRemovals,
+      "environment variable",
     );
   }
 
@@ -148,6 +161,10 @@ export class DeploymentOutputs {
       deploymentSecrets: this.deploymentSecrets(),
       sandboxSecrets: this.sandboxSecrets(),
       environmentVariables: this.environmentVariables(),
+      ...(this.#secretRemovals.size ? { secretRemovals: [...this.#secretRemovals] } : {}),
+      ...(this.#environmentVariableRemovals.size
+        ? { environmentVariableRemovals: [...this.#environmentVariableRemovals] }
+        : {}),
     };
   }
 
@@ -165,6 +182,21 @@ export class DeploymentOutputs {
       if (existing !== undefined && existing !== value)
         throw new Error(`Conflicting deployment ${kind}: ${name}`);
       target.set(name, value);
+      if (target === this.#secrets) this.#secretRemovals.delete(name);
+      if (target === this.#environmentVariables) this.#environmentVariableRemovals.delete(name);
+    }
+  }
+
+  #mergeRemovals(
+    target: Map<string, string>,
+    removals: Set<string>,
+    names: readonly string[] | undefined,
+    kind: string,
+  ): void {
+    for (const name of names ?? []) {
+      if (!/^[A-Z][A-Z0-9_]*$/.test(name)) throw new Error(`Invalid ${kind} name: ${name}`);
+      target.delete(name);
+      removals.add(name);
     }
   }
 }
@@ -203,7 +235,10 @@ export interface DeploymentPlan {
   steps?: readonly string[];
 }
 
-/** A provider-owned deployment lifecycle. Configuration is optional. */
+/**
+ * A provider-owned deployment lifecycle. Every method must be idempotent: callers may invoke
+ * planning, configuration, and deployment repeatedly to reconcile the desired state.
+ */
 export interface Deployable {
   plan(context: DeploymentContext): Promise<DeploymentPlan>;
   configure?(context: DeploymentContext): Promise<DeploymentResult | void>;
@@ -358,6 +393,8 @@ function withoutSandboxSecrets(inputs: DeploymentOutputs): DeploymentOutputs {
     secrets: inputs.secrets(),
     deploymentSecrets: inputs.deploymentSecrets(),
     environmentVariables: inputs.environmentVariables(),
+    secretRemovals: inputs.result().secretRemovals,
+    environmentVariableRemovals: inputs.result().environmentVariableRemovals,
   });
   return scoped;
 }

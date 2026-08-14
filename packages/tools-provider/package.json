@@ -32,9 +32,7 @@
   "dependencies": {
     "@tryopenbot/platform-integrations": "workspace:*",
     "@tryopenbot/runtime-provider": "workspace:*",
-    "@trytilde/harness-sdk": "0.1.2",
-    "@trytilde/harness-sdk-vercel-ai-node": "0.2.0",
-    "ai": "6.0.250"
+    "@trytilde/harness-sdk": "0.1.2"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

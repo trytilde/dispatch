@@ -1,6 +1,16 @@
-import type { Buildable, Deployable, InitializableProvider } from "@tryopenbot/runtime-provider";
+import type {
+  Buildable,
+  Deployable,
+  DeploymentContext,
+  InitializableProvider,
+} from "@tryopenbot/runtime-provider";
 
-export type AgentServiceProvider = Buildable & Deployable & InitializableProvider;
+export type AgentServiceProvider = Buildable &
+  Deployable &
+  InitializableProvider & {
+    /** Stable base URL used when reconciling authored agent endpoints. */
+    baseUrl(context: Pick<DeploymentContext, "target" | "environment">): URL;
+  };
 export { createAgentServiceApp } from "./development.js";
 export { discoverAgents } from "./discovery.js";
 export { discoverAgentWorkspaces } from "./workspaces.js";

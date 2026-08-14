@@ -22,6 +22,11 @@
       "development": "./src/tilde/fetch.ts",
       "import": "./dist/tilde/fetch.js"
     },
+    "./tilde/request": {
+      "types": "./src/tilde/request.ts",
+      "development": "./src/tilde/request.ts",
+      "import": "./dist/tilde/request.js"
+    },
     "./vercel/deployment": {
       "types": "./src/vercel/deployment.ts",
       "development": "./src/vercel/deployment.ts",
@@ -46,6 +51,10 @@
       "./tilde/fetch": {
         "types": "./dist/tilde/fetch.d.ts",
         "import": "./dist/tilde/fetch.js"
+      },
+      "./tilde/request": {
+        "types": "./dist/tilde/request.d.ts",
+        "import": "./dist/tilde/request.js"
       },
       "./vercel/deployment": {
         "types": "./dist/vercel/deployment.d.ts",

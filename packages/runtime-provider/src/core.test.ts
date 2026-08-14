@@ -233,6 +233,24 @@ describe("provider deployment", () => {
     );
   });
 
+  it("removes lifecycle values from later runtime inputs", () => {
+    const outputs = new DeploymentOutputs();
+    outputs.merge({
+      environmentVariables: { AGENT_OLD_AGENT_ID: "old" },
+      secrets: { AGENT_OLD_API_KEY: "secret" },
+    });
+    outputs.merge({
+      environmentVariableRemovals: ["AGENT_OLD_AGENT_ID"],
+      secretRemovals: ["AGENT_OLD_API_KEY"],
+    });
+    expect(outputs.environmentVariables()).toEqual({});
+    expect(outputs.secrets()).toEqual({});
+    expect(outputs.result()).toMatchObject({
+      environmentVariableRemovals: ["AGENT_OLD_AGENT_ID"],
+      secretRemovals: ["AGENT_OLD_API_KEY"],
+    });
+  });
+
   it("builds the trusted sandbox environment without changing runtime secrets", () => {
     const outputs = new DeploymentOutputs();
     outputs.merge({

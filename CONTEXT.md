@@ -87,5 +87,5 @@ Work: design the narrow preview-only transport without exposing general computer
 <FOLLOW UP>
 Owner: production deployment orchestrator
 Trigger: when computer-provider replaces the legacy production sandbox adapter
-Work: build and publish the OpenBot computer image with ensurePublishedComputerImage, persist its source digest and immutable image reference in redacted deployment state, and prove a second unchanged deployment skips both buildImage and publishImage
+Work: persist the computer-provider build lifecycle's source digest and immutable image reference in redacted deployment state, and prove a second unchanged deployment skips both image build and publication
 </FOLLOW UP>

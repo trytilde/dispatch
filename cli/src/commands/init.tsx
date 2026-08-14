@@ -65,7 +65,12 @@ export async function runInitialization(
       prompts,
       runner: processCommandRunner,
     });
-  await initializeOpenBot({ repositoryRoot, prompts });
+  await initializeOpenBot({
+    repositoryRoot,
+    prompts,
+    interactive: !nonInteractive,
+    environment: process.env,
+  });
   return {
     kind: "initialized",
     json,

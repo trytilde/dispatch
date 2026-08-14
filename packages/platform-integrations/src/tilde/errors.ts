@@ -2,8 +2,14 @@
 export function tildeErrorStatus(error: unknown): number | undefined {
   if (!error || typeof error !== "object") return undefined;
   if ("status" in error && typeof error.status === "number") return error.status;
-  const response = "response" in error ? error.response : undefined;
-  return response instanceof Response ? response.status : undefined;
+  switch ("response" in error) {
+    case true:
+      const response = (error as { response?: unknown }).response;
+      if (response instanceof Response) return response.status;
+      return undefined;
+    case false:
+      return undefined;
+  }
 }
 
 /** Normalize the different error shapes returned by Tilde clients. */

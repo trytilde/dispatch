@@ -35,6 +35,7 @@ describe("OpenBot initialization", () => {
     await expect(
       initializeOpenBot({
         repositoryRoot,
+        userConfigurationPath: testUserConfigurationPath(repositoryRoot),
         prompts: {
           select: vi.fn(async () => ""),
           input: vi.fn(async () => ""),
@@ -103,6 +104,7 @@ describe("OpenBot initialization", () => {
       const inputs = ["Engineering", "OpenBot owner identity"];
       await initializeOpenBot({
         repositoryRoot,
+        userConfigurationPath: testUserConfigurationPath(repositoryRoot),
         runner,
         prompts: {
           select: async () => selections.shift()!,
@@ -113,21 +115,25 @@ describe("OpenBot initialization", () => {
       const loaded = await loadDeploymentConfiguration(repositoryRoot, {
         runner,
         environment: { ...process.env },
+        userConfigurationPath: testUserConfigurationPath(repositoryRoot),
       });
       expect(loaded.inputs.sandboxSecrets?.[SANDBOX_SOPS_AGE_KEY]).toMatch(/^AGE-SECRET-KEY-1/);
       const configuration = await readFile(join(repositoryRoot, "configuration/index.ts"), "utf8");
       expect(configuration).toContain("providers: {");
       expect(configuration).toContain("controlService: new LocalControlServiceProvider()");
-      expect(configuration).toContain("agent: runtimeProviders.agent");
-      const runtimeProviders = await readFile(
-        join(repositoryRoot, "configuration/runtime-providers.ts"),
-        "utf8",
-      );
-      expect(runtimeProviders).toContain("agent: new TildeAgentProvider(tilde)");
-      expect(runtimeProviders).toContain("inferenceModel: new OpenAIApiKeyInferenceModelProvider");
+      expect(configuration).toContain("chat: new TildeChatProvider(tilde)");
+      expect(configuration).toContain("agent: new TildeAgentProvider(tilde)");
+      expect(configuration).not.toContain("inferenceModel");
+      expect(configuration).not.toContain("requiredEnvironment");
+      await expect(
+        access(join(repositoryRoot, "configuration/runtime-providers.ts")),
+      ).rejects.toMatchObject({ code: "ENOENT" });
       expect(
         await readFile(join(repositoryRoot, "configuration/agents/hello-world/agent.ts"), "utf8"),
       ).toContain("export default chatKitEndpoint");
+      expect(
+        await readFile(join(repositoryRoot, "configuration/agents/hello-world/agent.ts"), "utf8"),
+      ).not.toContain("@tryopenbot/agent-provider");
       expect(
         await readFile(
           join(repositoryRoot, "configuration/agents/hello-world/instructions.ts"),
@@ -188,6 +194,9 @@ describe("OpenBot initialization", () => {
       expect(
         await readFile(join(repositoryRoot, "configuration/instrumentation.ts"), "utf8"),
       ).toContain("defineInstrumentation");
+      expect(
+        await readFile(join(repositoryRoot, "configuration/templates/agent/agent.ts.hbs"), "utf8"),
+      ).toContain("AGENT_{{AGENT_ENV_PREFIX}}_API_KEY");
       await expect(access(join(repositoryRoot, "configuration/skills"))).rejects.toMatchObject({
         code: "ENOENT",
       });
@@ -209,6 +218,7 @@ describe("OpenBot initialization", () => {
     await expect(
       initializeOpenBot({
         repositoryRoot,
+        userConfigurationPath: testUserConfigurationPath(repositoryRoot),
         prompts: {
           select: vi.fn(async () => ""),
           input: vi.fn(async () => ""),
@@ -268,7 +278,12 @@ describe("OpenBot initialization", () => {
     };
 
     await expect(
-      initializeOpenBot({ repositoryRoot, prompts: { select, input }, runner }),
+      initializeOpenBot({
+        repositoryRoot,
+        prompts: { select, input },
+        runner,
+        userConfigurationPath: testUserConfigurationPath(repositoryRoot),
+      }),
     ).rejects.toThrow("SOPS encryption test failed: KMS access denied");
 
     expect(select).toHaveBeenCalledTimes(1);
@@ -292,7 +307,6 @@ describe("OpenBot initialization", () => {
       "tilde-org",
       "tilde-team",
       "",
-      "runtime-mcp",
       "openai-secret",
     ];
     const promptInput = vi.fn(async () => inputs.shift() ?? "");
@@ -314,11 +328,16 @@ describe("OpenBot initialization", () => {
       }),
     };
 
-    await initializeOpenBot({ repositoryRoot, prompts, runner });
+    await initializeOpenBot({
+      repositoryRoot,
+      prompts,
+      runner,
+      userConfigurationPath: testUserConfigurationPath(repositoryRoot),
+    });
 
     expect(calls.at(-1)).toMatchObject({ command: "vp", args: ["install"] });
 
-    expect(promptInput).toHaveBeenCalledTimes(12);
+    expect(promptInput).toHaveBeenCalledTimes(11);
     const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
     expect(environment).not.toContain("RUNTIME_PROVIDER");
     expect(environment).toContain('VERCEL_CONTROL_PROJECT="openbot-control"');
@@ -328,7 +347,7 @@ describe("OpenBot initialization", () => {
     expect(environment).toContain('VERCEL_AGENT_PROJECT="openbot-agents"');
     expect(environment).toContain('TILDE_ORG_ID="tilde-org"');
     expect(environment).toContain('TILDE_TEAM_ID="tilde-team"');
-    expect(environment).toContain('TILDE_RUNTIME_MCP_SERVER_ID="runtime-mcp"');
+    expect(environment).not.toContain("TILDE_RUNTIME_MCP_SERVER_ID");
     expect(environment).not.toContain("TILDE_BASE_URL");
     expect(environment).not.toContain("COMPUTER_IMAGE_REPOSITORY");
     expect(environment).not.toContain("vercel-secret");
@@ -345,11 +364,12 @@ describe("OpenBot initialization", () => {
     );
     expect(encrypted).not.toContain("AGE-SECRET-KEY");
     expect(encrypted).not.toContain("vercel-secret");
-    const metadata = await readFile(
-      join(repositoryRoot, "configuration/sops.identity.json"),
-      "utf8",
-    );
+    const metadata = await readFile(testUserConfigurationPath(repositoryRoot), "utf8");
+    expect(metadata).toContain('"sops"');
     expect(metadata).toContain("op://Engineering/OpenBot owner identity/password");
+    await expect(
+      access(join(repositoryRoot, "configuration/sops.identity.json")),
+    ).rejects.toMatchObject({ code: "ENOENT" });
 
     const onePasswordCreate = calls.find(
       (call) => call.command === "op" && call.args.includes("create"),
@@ -402,6 +422,11 @@ describe("OpenBot initialization", () => {
     await writeFixture(repositoryRoot, "configuration/sops.identity.json", '{"version":1}\n');
     await writeFixture(
       repositoryRoot,
+      "user-config.json",
+      '{"version":1,"sops":{"ownerIdentity":{"kind":"gcp-kms"}}}\n',
+    );
+    await writeFixture(
+      repositoryRoot,
       "configuration/index.ts",
       `function requiredEnvironment(name) {
   const value = process.env[name]?.trim();
@@ -417,9 +442,9 @@ export default {
   providers: {
     controlService: {},
     agentService: {},
+    chat: {},
     agent: new TildeAgentProvider(),
     computer: {},
-    inferenceModel: {},
     skills: {},
     tools: {},
   },
@@ -467,7 +492,12 @@ export default {
     };
 
     expect(await isInitializedOpenBotRepository(repositoryRoot)).toBe(true);
-    await initializeOpenBot({ repositoryRoot, prompts, runner });
+    await initializeOpenBot({
+      repositoryRoot,
+      prompts,
+      runner,
+      userConfigurationPath: testUserConfigurationPath(repositoryRoot),
+    });
 
     expect(defaults).toEqual(
       new Map([
@@ -475,6 +505,7 @@ export default {
         ["tilde-org-id", "stored-org"],
         ["tilde-team-id", undefined],
         ["tilde-base-url", undefined],
+        ["openai-api-key", undefined],
       ]),
     );
     const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
@@ -493,9 +524,9 @@ export default {
     expect(await readFile(join(repositoryRoot, "configuration/.sops.yaml"), "utf8")).toBe(
       sopsConfiguration,
     );
-    expect(await readFile(join(repositoryRoot, "configuration/sops.identity.json"), "utf8")).toBe(
-      '{"version":1}\n',
-    );
+    await expect(
+      access(join(repositoryRoot, "configuration/sops.identity.json")),
+    ).rejects.toMatchObject({ code: "ENOENT" });
     expect(run).toHaveBeenLastCalledWith("vp", ["install"], { cwd: repositoryRoot });
   });
 
@@ -550,7 +581,11 @@ export default {
       }),
     };
 
-    const loaded = await loadDeploymentConfiguration(repositoryRoot, { runner, environment: {} });
+    const loaded = await loadDeploymentConfiguration(repositoryRoot, {
+      runner,
+      environment: {},
+      userConfigurationPath: testUserConfigurationPath(repositoryRoot),
+    });
 
     expect(loaded.environment).toMatchObject({
       OPENAI_MODEL: "gpt-test",
@@ -565,6 +600,85 @@ export default {
     expect(loaded.inputs.sandboxSecrets).toEqual({
       [SANDBOX_SOPS_AGE_KEY]: "AGE-SECRET-KEY-1TEST",
     });
+    expect(JSON.parse(await readFile(testUserConfigurationPath(repositoryRoot), "utf8"))).toEqual({
+      version: 1,
+      sops: { ownerIdentity: { kind: "aws-profile", profile: "sso-admin" } },
+    });
+    await expect(
+      access(join(repositoryRoot, "configuration/sops.identity.json")),
+    ).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("fails safely when SOPS values are missing from user configuration non-interactively", async () => {
+    const repositoryRoot = await temporaryRepository();
+    await writeFixture(
+      repositoryRoot,
+      "configuration/.sops.yaml",
+      stringifyYaml({ creation_rules: [{ age: ["age1owner"] }] }),
+    );
+    await writeFixture(repositoryRoot, "configuration/secrets.enc.yaml", "encrypted\n");
+    await writeFixture(repositoryRoot, "user-config.json", '{"version":1}\n');
+    const runner: InitializationCommandRunner = { run: vi.fn() };
+
+    await expect(
+      loadDeploymentConfiguration(repositoryRoot, {
+        runner,
+        environment: {},
+        userConfigurationPath: testUserConfigurationPath(repositoryRoot),
+      }),
+    ).rejects.toThrow(
+      "Run openbot init in an interactive terminal to configure the existing owner identity",
+    );
+    expect(runner.run).not.toHaveBeenCalled();
+  });
+
+  it("recovers missing age lookup metadata interactively without replacing the identity", async () => {
+    const repositoryRoot = await temporaryRepository();
+    await writeFixture(
+      repositoryRoot,
+      "configuration/.sops.yaml",
+      stringifyYaml({ creation_rules: [{ age: ["age1owner"] }] }),
+    );
+    await writeFixture(repositoryRoot, "configuration/secrets.enc.yaml", "encrypted\n");
+    const runner: InitializationCommandRunner = {
+      run: vi.fn(async (command, args, options) => {
+        if (command === "op") return { stdout: "AGE-SECRET-KEY-1EXISTING", stderr: "" };
+        expect(command).toBe("sops");
+        expect(args[0]).toBe("decrypt");
+        expect(options?.environment?.SOPS_AGE_KEY).toBe("AGE-SECRET-KEY-1EXISTING");
+        return {
+          stdout: stringifyYaml({
+            SECRETS_SOPS_AGE_KEY: {
+              description: "Sandbox age identity",
+              value: "AGE-SECRET-KEY-1SANDBOX",
+            },
+          }),
+          stderr: "",
+        };
+      }),
+    };
+    const prompts: InitializationPrompts = {
+      select: vi.fn(async () => "onepassword"),
+      input: vi.fn(async () => "op://Engineering/OpenBot owner identity/password"),
+    };
+
+    await loadDeploymentConfiguration(repositoryRoot, {
+      runner,
+      environment: {},
+      prompts,
+      userConfigurationPath: testUserConfigurationPath(repositoryRoot),
+    });
+
+    expect(JSON.parse(await readFile(testUserConfigurationPath(repositoryRoot), "utf8"))).toEqual({
+      version: 1,
+      sops: {
+        ownerIdentity: {
+          kind: "onepassword",
+          reference: "op://Engineering/OpenBot owner identity/password",
+        },
+      },
+    });
+    expect(prompts.select).toHaveBeenCalledTimes(1);
   });
 
   it("sets and unsets encrypted secrets without putting values in arguments", async () => {
@@ -630,6 +744,10 @@ async function temporaryRepository(): Promise<string> {
   await writeFixture(path, "cli/package.json", '{"name":"openbot"}\n');
   await writeFixture(path, "configuration/.gitignore", "*\n!.gitignore\n");
   return path;
+}
+
+function testUserConfigurationPath(repositoryRoot: string): string {
+  return join(repositoryRoot, "user-config.json");
 }
 
 async function writeFixture(root: string, relativePath: string, contents: string): Promise<void> {

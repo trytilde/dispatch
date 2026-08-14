@@ -1,12 +1,28 @@
+import { resolve } from "node:path";
+import type { OpenBotConfiguration } from "@tryopenbot/configuration";
+import { reconcileAgentResources } from "../agent-lifecycle.js";
+import { loadConfigurationModule } from "../configuration-loader.js";
 import { loadLocalEnvironment, publicDevelopmentEnvironment } from "../environment.js";
+import { repositoryRoot } from "../paths.js";
 import { run, runChecked, supervise } from "../processes.js";
+import { inkPrompts } from "./init.js";
 
 export async function runDevelopment(): Promise<never> {
-  const env = await loadLocalEnvironment();
+  const env = await loadLocalEnvironment({
+    prompts: process.stdin.isTTY && process.stdout.isTTY ? inkPrompts : undefined,
+  });
+  const serverPort = env.PORT ?? "4100";
+  const configuration = await loadDevelopmentConfiguration(env);
+  console.log("Reconciling Tilde resources for authored agents");
+  await reconcileAgentResources({
+    repositoryRoot,
+    environment: env,
+    providers: configuration.providers,
+    target: "development",
+  });
   const publicEnvironment = publicDevelopmentEnvironment(env);
   await runChecked("pnpm", ["contracts:generate"], env);
 
-  const serverPort = env.PORT ?? "4100";
   const webPort = env.WEB_PORT ?? "4173";
   console.log(`OpenBot web: http://127.0.0.1:${webPort}`);
   console.log(`OpenBot control and agent server: http://127.0.0.1:${serverPort}`);
@@ -37,6 +53,19 @@ export async function runDevelopment(): Promise<never> {
   }
 
   return supervise(children);
+}
+
+export async function loadDevelopmentConfiguration(
+  environment: NodeJS.ProcessEnv,
+): Promise<OpenBotConfiguration> {
+  const path = resolve(repositoryRoot, "configuration/index.ts");
+  const module = await loadConfigurationModule<{ default?: OpenBotConfiguration }>(
+    path,
+    environment,
+  );
+  if (!module.default)
+    throw new Error("configuration/index.ts must export the OpenBot configuration as default");
+  return module.default;
 }
 
 export function developmentServerCommand(): readonly [string, readonly string[]] {

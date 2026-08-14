@@ -6,7 +6,6 @@
 "@tryopenbot/configuration": patch
 "@tryopenbot/agent-provider": patch
 "@tryopenbot/computer-provider": patch
-"@tryopenbot/inference-model-provider": patch
 "@tryopenbot/skills-provider": patch
 "@tryopenbot/tools-provider": patch
 ---

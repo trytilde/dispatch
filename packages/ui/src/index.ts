@@ -45,6 +45,9 @@ export {
   type FileViewerProps,
   JsonBlock,
   MarkdownText,
+  MediaViewer,
+  type MediaViewerItem,
+  type MediaViewerProps,
   ReasoningCard,
   ToolCallCard,
 } from "./rich-message-components.js";

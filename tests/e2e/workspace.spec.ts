@@ -75,6 +75,16 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
     await route.fulfill({ contentType: "text/html", body: "<main>Agent desktop</main>" });
   });
 
+  await page.route("**/media/**", async (route) => {
+    await route.fulfill({
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        "base64",
+      ),
+      contentType: "image/png",
+    });
+  });
+
   await page.route("**/api/chat/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -201,6 +211,12 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
               url: "https://example.com",
             },
             {
+              type: "file",
+              filename: "screenshot.png",
+              media_type: "image/png",
+              url: "/media/screenshot.png",
+            },
+            {
               type: "connector",
               connector: "GitHub",
               variant: "connect",
@@ -310,6 +326,13 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await expect(page.locator(".file-viewer-panel")).toHaveCSS("max-width", "1100px");
   await page.getByRole("button", { name: "Close preview" }).click();
   await expect(page.getByRole("dialog", { name: "Preview brief.txt" })).toHaveCount(0);
+  await page.getByRole("button", { name: /screenshot.png/ }).click();
+  const mediaViewer = page.getByRole("dialog", { name: "Media preview" });
+  await expect(mediaViewer).toBeVisible();
+  await expect(mediaViewer).toHaveCSS("background-color", "rgba(20, 20, 20, 0.898)");
+  await expect(mediaViewer.getByRole("img", { name: "screenshot.png" })).toBeVisible();
+  await page.getByRole("button", { name: "Close media preview" }).click();
+  await expect(mediaViewer).toHaveCount(0);
   await expect(page.locator(".connection-card")).toHaveCSS(
     "background-color",
     "rgb(247, 247, 247)",

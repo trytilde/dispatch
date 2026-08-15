@@ -8,9 +8,21 @@ export { default as ToolChips } from "./beautiful-ui/upstream/tool-chips.js";
 export { AgentWorkspacePanel, type AgentWorkspacePanelProps } from "./agent-workspace-panel.js";
 export { ComputerStagePlaceholder, type ComputerStagePlaceholderProps } from "./computer-stage.js";
 export {
+  ComputerLifecycleDialog,
+  type ComputerLifecycleDialogProps,
   type ComputerMonitor,
   ComputerMonitorStrip,
   type ComputerMonitorStripProps,
+  type ComputerOperationKind,
+  ComputerReconnectBanner,
+  type ComputerReconnectBannerProps,
+  type ComputerReconnectVariant,
+  ComputerRecoveryConfirmDialog,
+  type ComputerRecoveryConfirmDialogProps,
+  ComputerTakingLongerDialog,
+  type ComputerTakingLongerDialogProps,
+  ComputerUnreachableDialog,
+  type ComputerUnreachableDialogProps,
 } from "./computer-components.js";
 export { useWorkspaceLayout, type WorkspaceLayout } from "./use-workspace-layout.js";
 export { AgentAvatar, type AgentAvatarProps } from "./agent-avatar.js";

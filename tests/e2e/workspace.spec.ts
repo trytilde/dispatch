@@ -54,6 +54,10 @@ test("loads the bare workspace without setup", async ({ page }) => {
 
 test("streams rich messages and uploads a file through Tilde ChatKit", async ({ page }) => {
   const now = new Date().toISOString();
+  let releaseComputerPreview = () => {};
+  const computerPreviewReady = new Promise<void>((resolve) => {
+    releaseComputerPreview = resolve;
+  });
   let messages: Array<Record<string, unknown>> = [
     {
       id: "message-one",
@@ -67,6 +71,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   ];
 
   await page.route("**/api/computer/**", async (route) => {
+    await computerPreviewReady;
     await route.fulfill({ contentType: "text/html", body: "<main>Agent desktop</main>" });
   });
 
@@ -240,6 +245,13 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
     "transition-duration",
     "0.24s, 0.09s, 0.2s, 0s",
   );
+  await expect(page.getByText("Booting up the computer")).toBeVisible();
+  await expect(page.locator(".computer-stage-progress")).toHaveCSS("width", "237px");
+  await expect(page.locator(".computer-stage-progress > .indeterminate")).toHaveCSS(
+    "animation-duration",
+    "1.4s",
+  );
+  releaseComputerPreview();
   await expect(page.getByTitle("Hello World Computer")).toBeVisible();
   await expect(
     page.getByTitle("Hello World Computer").contentFrame().getByText("Agent desktop"),

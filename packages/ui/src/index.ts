@@ -6,6 +6,7 @@ export { default as TaskRows } from "./beautiful-ui/upstream/task-rows.js";
 export { default as Thinking } from "./beautiful-ui/upstream/thinking.js";
 export { default as ToolChips } from "./beautiful-ui/upstream/tool-chips.js";
 export { AgentWorkspacePanel, type AgentWorkspacePanelProps } from "./agent-workspace-panel.js";
+export { ComputerStagePlaceholder, type ComputerStagePlaceholderProps } from "./computer-stage.js";
 export { useWorkspaceLayout, type WorkspaceLayout } from "./use-workspace-layout.js";
 export { AgentAvatar, type AgentAvatarProps } from "./agent-avatar.js";
 export {

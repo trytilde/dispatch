@@ -142,12 +142,14 @@ describe("OpenBot initialization", () => {
       await expect(
         access(join(repositoryRoot, "configuration/runtime-providers.ts")),
       ).rejects.toMatchObject({ code: "ENOENT" });
-      expect(
-        await readFile(join(repositoryRoot, "configuration/agent/agent.ts"), "utf8"),
-      ).toContain("export default chatKitEndpoint");
-      expect(
-        await readFile(join(repositoryRoot, "configuration/agent/agent.ts"), "utf8"),
-      ).not.toContain("@tryopenbot/agent-provider");
+      const primaryAgent = await readFile(
+        join(repositoryRoot, "configuration/agent/agent.ts"),
+        "utf8",
+      );
+      expect(primaryAgent).toContain("export default chatKitEndpoint");
+      expect(primaryAgent).toContain("createChatKitAttachmentFilePartHandler(client, context");
+      expect(primaryAgent).toContain('headers.delete("authorization")');
+      expect(primaryAgent).not.toContain("@tryopenbot/agent-provider");
       expect(
         await readFile(join(repositoryRoot, "configuration/agent/instructions.ts"), "utf8"),
       ).toContain("export default");

@@ -13,7 +13,7 @@
 The repository carried both a legacy `apps/box-host` RPC from `packages/contracts`
 and the newer `apps/computer-service` backed by `computer-service-proto`. They
 overlapped on process, file, screenshot, input, and port operations. The newer
-service also owns lifecycle bundles and the VNC tunnel, so renaming both would
+service also owns lifecycle bundles and the capability-routed VNC tunnel, so renaming both would
 leave two competing computer APIs.
 
 The owner-facing application was also named `apps/server`, which described its
@@ -33,6 +33,10 @@ their remaining consumers migrate. The shared computer image compiles this
 service in a multi-stage container build; providers never copy a host-built
 `dist` file into the image. Remove the obsolete legacy contracts package after
 the remaining consumers use `computer-service-proto`.
+
+Computer-service also owns the idempotent per-agent desktop registry. It routes
+screenshot, input, and VNC streams by agent ID to separate displays inside the
+same Computer; the agent ID does not create a security boundary.
 
 ```mermaid
 flowchart LR
@@ -54,3 +58,4 @@ flowchart LR
 - 2026-08-13T11:12:53+02:00: Required the shared computer image to compile the sole computer service in a multi-stage container build instead of copying a host-built bundle.
 - 2026-08-13T12:09:51+02:00: Removed the obsolete legacy contracts package after `computer-service-proto` became the only computer RPC contract.
 - 2026-08-13T17:33:29+02:00: Renamed the private workspace package scope from `@openbot` to `@tryopenbot` while retaining the `openbot` CLI command.
+- 2026-08-15T13:25:19+02:00: Made computer-service the owner of per-agent display reconciliation and capability-routed VNC streams inside the one shared Computer.

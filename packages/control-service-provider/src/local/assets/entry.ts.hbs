@@ -8,7 +8,10 @@ if (!Number.isSafeInteger(port) || port < 1 || port > 65_535) {
 }
 
 serve({
-  fetch: createApp({ chatProvider: configuration.providers.chat }).fetch,
+  fetch: createApp({
+    chatProvider: configuration.providers.chat,
+    computerProvider: configuration.providers.computer,
+  }).fetch,
   port,
   hostname: "127.0.0.1",
 });

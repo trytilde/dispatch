@@ -1,7 +1,11 @@
 import { createHash, randomBytes } from "node:crypto";
 import { execFile, spawn } from "node:child_process";
 import { basename, posix } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
+import { Code, ConnectError, createClient } from "@connectrpc/connect";
+import { createConnectTransport } from "@connectrpc/connect-node";
+import { ComputerService } from "@tryopenbot/computer-service-proto";
 import {
   ComputerProviderError,
   type BuiltComputerImage,
@@ -38,7 +42,7 @@ import {
   developmentSandboxConfigurationFiles,
   developmentSandboxSourceFiles,
 } from "./development.js";
-import { computerServiceApiKey } from "../capability.js";
+import { computerServiceApiKey, scopedCapability } from "../capability.js";
 
 const execute = promisify(execFile);
 
@@ -213,6 +217,20 @@ export abstract class BaseComputerProvider implements ComputerProvider {
   abstract input(id: string, input: ComputerInput, context: ComputerCallContext): Promise<void>;
   abstract vnc(id: string, context: ComputerCallContext): Promise<ComputerVncEndpoint>;
 
+  async previewAgentDesktop(
+    agentId: string,
+    context: ComputerCallContext,
+  ): Promise<ComputerVncEndpoint> {
+    const computerId = context.environment?.COMPUTER_ID?.trim() || process.env.COMPUTER_ID?.trim();
+    if (!computerId)
+      throw new ComputerProviderError(
+        "invalid_configuration",
+        "COMPUTER_ID is required to open an agent desktop",
+      );
+    await this.ensureAgentDesktop(computerId, agentId, context);
+    return await this.vnc(computerId, { ...context, agentId });
+  }
+
   async deployAgentWorkspaces(
     request: DeployAgentWorkspacesRequest,
     context: DeploymentContext,
@@ -244,6 +262,8 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     if (computer.state === "sleeping") await this.wake(computer.id, call);
     for (const workspace of request.workspaces)
       await this.#registerAgentWorkspace(computer.id, workspace, call);
+    for (const workspace of request.workspaces)
+      await this.ensureAgentDesktop(computer.id, workspace.agentId, call);
     await persistEnvironment(context, "COMPUTER_ID", computer.id, "OpenBot computer ID.");
     await persistEnvironment(
       context,
@@ -387,7 +407,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     computerId: string,
     workspace: ComputerAgentWorkspace,
     context: ComputerCallContext,
-  ): Promise<void> {
+  ) {
     if (workspace.files.length === 0) return;
     const root = agentWorkspaceRoot(workspace.agentId);
     const marker = `${root}/.openbot-agent`;
@@ -421,6 +441,48 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       new TextEncoder().encode(await renderMarker(workspace.agentId)),
       context,
     );
+  }
+
+  protected async ensureAgentDesktop(
+    computerId: string,
+    agentId: string,
+    context: ComputerCallContext,
+  ): Promise<{ display: string; vncPort: number }> {
+    const service = createClient(
+      ComputerService,
+      createConnectTransport({
+        baseUrl: await this.computerServiceUrl(computerId),
+        httpVersion: "1.1",
+      }),
+    );
+    const request = {
+      agentId,
+      capability: scopedCapability(
+        "vnc",
+        computerId,
+        agentId,
+        computerServiceApiKey(context.environment?.COMPUTER_SERVICE_API_KEY),
+      ),
+    };
+    const options = {
+      headers: {
+        authorization: `Bearer ${computerServiceApiKey(context.environment?.COMPUTER_SERVICE_API_KEY)}`,
+      },
+      ...(context.signal ? { signal: context.signal } : {}),
+    };
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return (await service.ensureDesktop(request, options)) as unknown as {
+          display: string;
+          vncPort: number;
+        };
+      } catch (error) {
+        const failure = ConnectError.from(error);
+        if (attempt >= 59 || (failure.code !== Code.Unavailable && failure.code !== Code.Unknown))
+          throw error;
+        await delay(250, undefined, context.signal ? { signal: context.signal } : undefined);
+      }
+    }
   }
 
   async #writeComputerFiles(

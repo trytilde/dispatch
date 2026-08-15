@@ -223,14 +223,15 @@ export function DiagramCard({
   const [copied, setCopied] = useState(false);
   return (
     <>
-      <section className="diagram-card" data-state={state}>
-        <div className="diagram-card-actions">
+      <section className="diagram-card ui-code-block" data-state={state}>
+        <div className="diagram-card-actions ui-code-block-copy-overlay">
           <button aria-label="Expand diagram" onClick={() => setExpanded(true)} type="button">
             ↗
           </button>
           {onCopy ? (
             <button
               aria-label={copied ? "Copied" : "Copy code"}
+              className="ui-code-block-copy"
               onClick={() => {
                 onCopy(source);
                 setCopied(true);
@@ -258,11 +259,12 @@ export function DiagramCard({
 }
 
 function DiagramContent({ state, source, error, children }: DiagramCardProps) {
-  if (state === "loading") return <div className="diagram-loading">Rendering diagram...</div>;
+  if (state === "loading")
+    return <div className="diagram-loading ui-mermaid-diagram">Rendering diagram...</div>;
   if (state === "error") {
     return (
-      <div className="diagram-error" role="alert">
-        <strong>
+      <div className="diagram-error ui-mermaid-diagram ui-mermaid-diagram__error" role="alert">
+        <strong className="ui-mermaid-diagram__error-header">
           <span aria-hidden="true">⚠</span> Diagram Syntax Error
         </strong>
         <details>
@@ -273,7 +275,9 @@ function DiagramContent({ state, source, error, children }: DiagramCardProps) {
       </div>
     );
   }
-  return <div className="diagram-content">{children}</div>;
+  return (
+    <div className="diagram-content ui-mermaid-diagram ui-mermaid-diagram__content">{children}</div>
+  );
 }
 
 function DiagramModal({ children, onClose }: { children: ReactNode; onClose: () => void }) {
@@ -293,7 +297,7 @@ function DiagramModal({ children, onClose }: { children: ReactNode; onClose: () 
 
   return (
     <div aria-label="Diagram" aria-modal="true" className="diagram-modal" role="dialog">
-      <div className="diagram-modal-controls">
+      <div className="diagram-modal-controls ui-expandable-node__modal-controls">
         <button
           aria-label="Zoom in"
           onClick={() =>
@@ -318,7 +322,7 @@ function DiagramModal({ children, onClose }: { children: ReactNode; onClose: () 
         </button>
       </div>
       <div
-        className="diagram-modal-viewport"
+        className="diagram-modal-viewport ui-expandable-node__modal-viewport"
         onPointerDown={startDrag}
         onPointerMove={(event) => {
           const drag = dragRef.current;
@@ -340,7 +344,7 @@ function DiagramModal({ children, onClose }: { children: ReactNode; onClose: () 
         }}
       >
         <div
-          className="diagram-modal-content"
+          className="diagram-modal-content ui-expandable-node__transform-content"
           style={{
             transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
           }}

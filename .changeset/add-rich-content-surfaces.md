@@ -2,4 +2,4 @@
 "@tryopenbot/ui": minor
 ---
 
-Add reusable audio, link preview, diagram, and Computer handoff components with Storybook coverage.
+Add reusable rich content, full Markdown, code, Computer handoff, model picker, form, status, and animated voice components with Storybook coverage.

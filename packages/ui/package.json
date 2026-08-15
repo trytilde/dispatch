@@ -52,7 +52,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "react": "19.1.2"
+    "react": "19.1.2",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1"
   },
   "devDependencies": {
     "@storybook/react-vite": "10.5.0",

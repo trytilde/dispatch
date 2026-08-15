@@ -51,7 +51,7 @@ export function DialogSurface({
   if (!present) return null;
   return (
     <div
-      className="dialog-layer"
+      className="dialog-layer ui-dialog-backdrop"
       data-state={closing ? "closing" : "open"}
       onMouseDown={(event) => {
         if (open && event.target === event.currentTarget) onClose?.();
@@ -62,19 +62,25 @@ export function DialogSurface({
         aria-describedby={description ? descriptionId : undefined}
         aria-labelledby={titleId}
         aria-modal="true"
-        className={`dialog-surface ${className}`.trim()}
+        className={`dialog-surface ui-dialog ${className}`.trim()}
         data-state={closing ? "closing" : "open"}
         ref={surfaceRef}
         role="dialog"
         style={{ width }}
         tabIndex={-1}
       >
-        <header className="dialog-header">
-          <h2 id={titleId}>{title}</h2>
-          {description ? <p id={descriptionId}>{description}</p> : null}
+        <header className="dialog-header ui-dialog-header">
+          <h2 className="ui-dialog-title" id={titleId}>
+            {title}
+          </h2>
+          {description ? (
+            <p className="ui-dialog-description" id={descriptionId}>
+              {description}
+            </p>
+          ) : null}
         </header>
         {children ? <div className="dialog-body">{children}</div> : null}
-        {actions ? <footer className="dialog-actions">{actions}</footer> : null}
+        {actions ? <footer className="dialog-actions ui-dialog-footer">{actions}</footer> : null}
       </div>
     </div>
   );

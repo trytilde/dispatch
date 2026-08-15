@@ -1,4 +1,7 @@
-import { Fragment, type ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { MarkdownText } from "./markdown-components.js";
+
+export { MarkdownText } from "./markdown-components.js";
 
 export interface MessagePart {
   type: string;
@@ -383,46 +386,6 @@ function useModalLifecycle(open: boolean, onClose: () => void): void {
   }, [onClose, open]);
 }
 
-export function MarkdownText({ text }: { text: string }) {
-  if (!text) return null;
-  const blocks = text.split(/```/);
-  return (
-    <div className="markdown">
-      {blocks.map((block, index) => {
-        if (index % 2 === 1) {
-          const newline = block.indexOf("\n");
-          const language = newline >= 0 ? block.slice(0, newline).trim() : "";
-          const code = newline >= 0 ? block.slice(newline + 1) : block;
-          return (
-            <div className="code-block" key={index}>
-              {language ? <span>{language}</span> : null}
-              <button onClick={() => void navigator.clipboard.writeText(code)} type="button">
-                Copy
-              </button>
-              <pre>
-                <code>{code.trimEnd()}</code>
-              </pre>
-            </div>
-          );
-        }
-        return block
-          .split(/\n{2,}/)
-          .filter(Boolean)
-          .map((paragraph, paragraphIndex) => (
-            <p key={`${index}-${paragraphIndex}`}>
-              {paragraph.split("\n").map((line, lineIndex) => (
-                <Fragment key={lineIndex}>
-                  {lineIndex > 0 ? <br /> : null}
-                  {inlineMarkdown(line)}
-                </Fragment>
-              ))}
-            </p>
-          ));
-      })}
-    </div>
-  );
-}
-
 export function JsonBlock({ label, value }: { label: string; value: unknown }) {
   return (
     <div className="json-block">
@@ -460,26 +423,4 @@ function formatSize(value: number | null | undefined): string {
   if (value < 1024) return ` · ${value} B`;
   if (value < 1024 * 1024) return ` · ${(value / 1024).toFixed(1)} KB`;
   return ` · ${(value / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function inlineMarkdown(value: string): ReactNode[] {
-  const pattern = /(`[^`]+`|\[([^\]]+)\]\((https?:\/\/[^)]+)\)|\*\*([^*]+)\*\*)/g;
-  const nodes: ReactNode[] = [];
-  let cursor = 0;
-  for (const match of value.matchAll(pattern)) {
-    const start = match.index ?? 0;
-    if (start > cursor) nodes.push(value.slice(cursor, start));
-    const token = match[0];
-    if (token.startsWith("`")) nodes.push(<code key={start}>{token.slice(1, -1)}</code>);
-    else if (match[2] && match[3])
-      nodes.push(
-        <a href={match[3]} key={start} rel="noreferrer" target="_blank">
-          {match[2]}
-        </a>,
-      );
-    else if (match[4]) nodes.push(<strong key={start}>{match[4]}</strong>);
-    cursor = start + token.length;
-  }
-  if (cursor < value.length) nodes.push(value.slice(cursor));
-  return nodes;
 }

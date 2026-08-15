@@ -228,6 +228,15 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
     "transition-timing-function",
     "cubic-bezier(0.22, 1, 0.36, 1)",
   );
+  await page.keyboard.press("Control+b");
+  await expect(page.locator(".rail")).toHaveCSS("width", "88px");
+  await expect(page.locator(".agent-row")).toHaveCSS("width", "54px");
+  await expect(page.locator(".agent-row-body")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Search", exact: true })).toBeHidden();
+  await expect(page.locator(".rail-footer")).toHaveCSS("width", "44px");
+  await page.keyboard.press("Control+b");
+  await expect(page.locator(".rail")).toHaveCSS("width", "280px");
+  await expect(page.locator(".agent-row-body")).toBeVisible();
   await expect(page.getByText("Working session")).toHaveCount(0);
   await expect(page.getByText("Ready when you are.")).toBeVisible();
   await expect(page.locator(".message.assistant .message-bubble").first()).toHaveCSS(

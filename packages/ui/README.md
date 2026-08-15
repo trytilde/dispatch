@@ -14,13 +14,14 @@ The package root exports the complete workspace surface:
   loading and error states, unread and new-message markers, message delivery
   notices, and system-event primitives.
 - Rich content: `MarkdownText`, `JsonBlock`, `ReasoningCard`, `ToolCallCard`,
-  `ConnectionCard`, `FileCard`, `FileViewer`, and `MediaViewer`.
+  `ConnectionCard`, `FileCard`, `FileViewer`, `MediaViewer`, `AudioPlayer`,
+  `LinkPreviewCard`, `LinkHoverPreview`, and `DiagramCard`.
 - Agent activity: `AgentActivity`, `ActivityQueue`, `ActivityTimeline`,
   `AsyncTasksPanel`, and `ConversationOutlinePanel`.
 - Computer: `AgentWorkspacePanel`, `ComputerStagePlaceholder`,
   `ComputerMonitorStrip`, `ComputerReconnectBanner`, `ComputerRebuildBanner`,
   `ComputerRebuildDialog`, `ComputerFailureDialog`, and the remaining Computer
-  lifecycle dialogs.
+  lifecycle dialogs, including `ComputerHandoffCard`.
 - Overlays: `DialogSurface`, `PermissionRequestCard`,
   `LocalToolPermissionCard`, `LocalToolPermissionDock`, and `ThreadOverlay`.
 - Identity: `AgentAvatar` and its packaged avatar artwork.

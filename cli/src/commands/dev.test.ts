@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
+import { resolve } from "node:path";
+import { repositoryRoot } from "../paths.js";
 import {
   developmentServerCommand,
   developmentServerEnvironment,
@@ -6,10 +8,10 @@ import {
 } from "./dev.js";
 
 describe("development server command", () => {
-  it("keeps the watched CLI process at the repository root", () => {
+  it("uses an absolute entrypoint when the tunnel changes the child cwd", () => {
     expect(developmentServerCommand()).toEqual([
       "pnpm",
-      ["exec", "tsx", "watch", "cli/src/index.tsx", "_serve"],
+      ["exec", "tsx", "watch", resolve(repositoryRoot, "cli/src/index.tsx"), "_serve"],
     ]);
   });
 });

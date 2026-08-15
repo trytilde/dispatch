@@ -119,7 +119,7 @@ export async function loadDevelopmentConfiguration(
 }
 
 export function developmentServerCommand(): readonly [string, readonly string[]] {
-  return ["pnpm", ["exec", "tsx", "watch", "cli/src/index.tsx", "_serve"]];
+  return ["pnpm", ["exec", "tsx", "watch", resolve(repositoryRoot, "cli/src/index.tsx"), "_serve"]];
 }
 
 export function developmentServerEnvironment(environment: NodeJS.ProcessEnv): NodeJS.ProcessEnv {

@@ -6,6 +6,7 @@
     [
       "@tryopenbot/agent-provider",
       "@tryopenbot/agent-service-provider",
+      "@tryopenbot/auth-provider",
       "@tryopenbot/chat-provider",
       "openbot",
       "@tryopenbot/computer-provider",

@@ -7,7 +7,13 @@ describe("platform initialization", () => {
     expect(tildePlatform.id).toBe("tilde");
     expect(
       tildePlatform.initialization.questions.map(({ destination }) => destination.key),
-    ).toEqual(["TILDE_API_KEY", "TILDE_ORG_ID", "TILDE_TEAM_ID", "TILDE_BASE_URL"]);
+    ).toEqual([
+      "TILDE_API_KEY",
+      "TILDE_ORG_ID",
+      "TILDE_TEAM_ID",
+      "OPENBOT_DEPLOYMENT_NAME",
+      "TILDE_BASE_URL",
+    ]);
   });
 
   it("owns one configured Tilde client for all dependent providers", () => {

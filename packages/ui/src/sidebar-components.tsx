@@ -1,3 +1,4 @@
+import { useEffect, useId, useRef, useState } from "react";
 import { AgentAvatar } from "./agent-avatar.js";
 import { SearchIcon } from "./workspace-icons.js";
 
@@ -100,17 +101,101 @@ export function AgentSearchDialog({
   );
 }
 
-export function WorkspaceAccount({ status }: { status: string }) {
+export interface WorkspaceAccountProps {
+  name?: string;
+  defaultOpen?: boolean;
+}
+
+const accountMenuItems = [
+  { icon: "gear", label: "Settings" },
+  { icon: "info", label: "About" },
+  { icon: "help", label: "Help Center" },
+  { icon: "feedback", label: "Send Feedback" },
+] as const;
+
+export function WorkspaceAccount({
+  name = "Daniel Adams",
+  defaultOpen = false,
+}: WorkspaceAccountProps) {
+  const [open, setOpen] = useState(defaultOpen);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      buttonRef.current?.focus();
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
   return (
-    <button className="rail-footer" type="button">
-      <span className="footer-avatar">O</span>
-      <span>
-        <strong>OpenBot</strong>
-        <small>
-          <i className={`status-dot ${status.toLowerCase()}`} /> {status}
-        </small>
-      </span>
-    </button>
+    <div className="rail-account" ref={containerRef}>
+      {open ? (
+        <div aria-label="Account" className="account-menu" id={menuId} role="menu">
+          <div className="account-menu-section">
+            {accountMenuItems.map((item) => (
+              <button key={item.label} onClick={() => setOpen(false)} role="menuitem" type="button">
+                <AccountMenuIcon name={item.icon} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="account-menu-section">
+            <button onClick={() => setOpen(false)} role="menuitem" type="button">
+              <AccountMenuIcon name="logout" />
+              <span>Log out</span>
+            </button>
+          </div>
+        </div>
+      ) : null}
+      <button
+        aria-controls={open ? menuId : undefined}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={`Open account menu for ${name}`}
+        className="rail-footer"
+        onClick={() => setOpen((current) => !current)}
+        ref={buttonRef}
+        type="button"
+      >
+        <span aria-hidden="true" className="footer-avatar">
+          {name.charAt(0).toUpperCase()}
+        </span>
+        <span className="account-name">{name}</span>
+      </button>
+    </div>
+  );
+}
+
+function AccountMenuIcon({ name }: { name: (typeof accountMenuItems)[number]["icon"] | "logout" }) {
+  const path = {
+    gear: "M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm0-3v1.25m0 8.5v1.25m5.5-5.5h-1.25M3.75 8H2.5m9.39-3.89-.88.88m-6.02 6.02-.88.88m7.78 0-.88-.88M4.99 4.99l-.88-.88",
+    info: "M8 13.25A5.25 5.25 0 1 0 8 2.75a5.25 5.25 0 0 0 0 10.5ZM8 7v3.25M8 5.25h.01",
+    help: "M8 13.25A5.25 5.25 0 1 0 8 2.75a5.25 5.25 0 0 0 0 10.5Zm-1.5-7a1.55 1.55 0 0 1 3 0c0 1.25-1.5 1.4-1.5 2.5M8 10.75h.01",
+    feedback:
+      "M3 11.25v2l2.25-2H11a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11 3.25H4.5A1.5 1.5 0 0 0 3 4.75v6.5Z",
+    logout:
+      "M6.25 3.25H4.5A1.5 1.5 0 0 0 3 4.75v6.5a1.5 1.5 0 0 0 1.5 1.5h1.75M9.5 5.25 12.25 8 9.5 10.75M12 8H6.5",
+  }[name];
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16">
+      <path d={path} />
+    </svg>
   );
 }
 

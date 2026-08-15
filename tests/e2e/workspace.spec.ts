@@ -286,6 +286,23 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
     "src",
     /avatars\/.+\.svg/,
   );
+  const accountButton = page.getByRole("button", { name: "Open account menu for Daniel Adams" });
+  await expect(accountButton).toBeVisible();
+  await expect(page.getByText("OpenBot", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Connected", { exact: true })).toHaveCount(0);
+  await accountButton.click();
+  const accountMenu = page.getByRole("menu", { name: "Account" });
+  await expect(accountMenu).toBeVisible();
+  await expect(accountMenu.getByRole("menuitem")).toHaveText([
+    "Settings",
+    "About",
+    "Help Center",
+    "Send Feedback",
+    "Log out",
+  ]);
+  await expect(accountMenu.getByText("Plugins", { exact: true })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(accountMenu).toBeHidden();
   await expect(page.locator(".workspace-shell")).toHaveCSS(
     "transition-timing-function",
     "cubic-bezier(0.22, 1, 0.36, 1)",

@@ -77,6 +77,11 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
       const stored = await Sandbox.get(id);
       if (stored.status === "running") this.#instances.set(id, await stored.connect());
       const config = stored.config();
+      const desktopPort = publishedHostPort(config, 6080);
+      const servicePort = publishedHostPort(config, 4101);
+      const image = configuredImageReference(config);
+      if (desktopPort) this.#desktopPorts.set(id, desktopPort);
+      if (servicePort) this.#servicePorts.set(id, servicePort);
       const discovered: ComputerHandle = {
         id,
         providerId: this.providerId,
@@ -87,7 +92,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
               ? "failed"
               : "sleeping",
         createdAt: stored.createdAt ?? new Date(),
-        ...(typeof config.image === "string" ? { image: config.image } : {}),
+        ...(image ? { image } : {}),
       };
       this.#handles.set(id, discovered);
       return discovered;
@@ -331,6 +336,37 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
       throw new ComputerProviderError("not_found", `Computer ${id} is sleeping or not attached`);
     return sandbox;
   }
+}
+
+export function publishedHostPort(config: Record<string, unknown>, guestPort: number): number {
+  const network = config.network;
+  if (!network || typeof network !== "object") return 0;
+  const ports = (network as { ports?: unknown }).ports;
+  if (!Array.isArray(ports)) return 0;
+  for (const candidate of ports) {
+    if (!candidate || typeof candidate !== "object") continue;
+    const port = candidate as { guestPort?: unknown; hostPort?: unknown };
+    if (
+      port.guestPort === guestPort &&
+      typeof port.hostPort === "number" &&
+      Number.isSafeInteger(port.hostPort) &&
+      port.hostPort > 0 &&
+      port.hostPort <= 65_535
+    )
+      return port.hostPort;
+  }
+  return 0;
+}
+
+export function configuredImageReference(config: Record<string, unknown>): string {
+  if (typeof config.image === "string") return config.image;
+  if (!config.image || typeof config.image !== "object") return "";
+  const image = config.image as { Oci?: unknown; oci?: unknown; reference?: unknown };
+  if (typeof image.reference === "string") return image.reference;
+  const oci = image.Oci ?? image.oci;
+  if (!oci || typeof oci !== "object") return "";
+  const reference = (oci as { reference?: unknown }).reference;
+  return typeof reference === "string" ? reference : "";
 }
 
 async function seedComputer(sandbox: MicroSandbox, spec: ComputerSpec): Promise<void> {

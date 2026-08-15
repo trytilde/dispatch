@@ -470,19 +470,14 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       },
       ...(context.signal ? { signal: context.signal } : {}),
     };
-    for (let attempt = 0; ; attempt += 1) {
-      try {
-        return (await service.ensureDesktop(request, options)) as unknown as {
+    return await retryComputerServiceStartup(
+      async () =>
+        (await service.ensureDesktop(request, options)) as unknown as {
           display: string;
           vncPort: number;
-        };
-      } catch (error) {
-        const failure = ConnectError.from(error);
-        if (attempt >= 59 || (failure.code !== Code.Unavailable && failure.code !== Code.Unknown))
-          throw error;
-        await delay(250, undefined, context.signal ? { signal: context.signal } : undefined);
-      }
-    }
+        },
+      context.signal,
+    );
   }
 
   async #writeComputerFiles(
@@ -641,6 +636,25 @@ export abstract class BaseComputerProvider implements ComputerProvider {
 
   #outputName(suffix: string): string {
     return `${this.providerId.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase()}_IMAGE_${suffix}`;
+  }
+}
+
+export async function retryComputerServiceStartup<T>(
+  operation: () => Promise<T>,
+  signal?: AbortSignal,
+  options: { attempts?: number; delayMs?: number } = {},
+): Promise<T> {
+  const attempts = options.attempts ?? 60;
+  const delayMs = options.delayMs ?? 250;
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      const failure = ConnectError.from(error);
+      const retryable = [Code.Aborted, Code.Unavailable, Code.Unknown].includes(failure.code);
+      if (attempt >= attempts || !retryable) throw error;
+      await delay(delayMs, undefined, signal ? { signal } : undefined);
+    }
   }
 }
 

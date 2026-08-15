@@ -1,4 +1,5 @@
 import { TildeAgentProvider } from "@tryopenbot/agent-provider";
+import { TildeAuthProvider } from "@tryopenbot/auth-provider";
 import { VercelAgentServiceProvider } from "@tryopenbot/agent-service-provider";
 import { TildeChatProvider } from "@tryopenbot/chat-provider";
 import { Configuration } from "@tryopenbot/configuration";
@@ -19,6 +20,7 @@ const vercel = new VercelPlatform();
 
 export default Configuration({
   providers: {
+    auth: new TildeAuthProvider(tilde),
     controlService: new VercelControlServiceProvider({ platform: vercel }),
     agentService: new VercelAgentServiceProvider({ platform: vercel }),
     chat: new TildeChatProvider(tilde),

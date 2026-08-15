@@ -1,31 +1,38 @@
 import { defineConfig } from "@playwright/test";
 
+const controlPort = 14_100;
+const webPort = 14_173;
+const webOrigin = `http://127.0.0.1:${webPort}`;
+
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 45_000,
   expect: { timeout: 8_000 },
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: webOrigin,
+    extraHTTPHeaders: { authorization: "Bearer e2e-owner" },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
   webServer: [
     {
       command:
-        'pnpm --filter @tryopenbot/control-service exec node --conditions=development --import tsx --input-type=module -e \'import { serve } from "@hono/node-server"; import { app } from "./src/index.ts"; serve({ fetch: app.fetch, hostname: "127.0.0.1", port: 4100 });\'',
+        "pnpm --filter @tryopenbot/control-service exec node --conditions=development --import tsx test/e2e-server.ts",
       env: {
         ...process.env,
         TILDE_ORG_ID: "e2e-org",
         TILDE_TEAM_ID: "e2e-team",
+        OPENBOT_E2E_CONTROL_PORT: String(controlPort),
       },
-      url: "http://127.0.0.1:4100/healthz",
-      reuseExistingServer: !process.env.CI,
+      url: `http://127.0.0.1:${controlPort}/healthz`,
+      reuseExistingServer: false,
       timeout: 120_000,
     },
     {
-      command: "pnpm --filter @tryopenbot/web dev",
-      url: "http://127.0.0.1:4173/",
-      reuseExistingServer: !process.env.CI,
+      command: `pnpm --filter @tryopenbot/web exec vp dev --host 127.0.0.1 --port ${webPort}`,
+      env: { ...process.env, OPENBOT_CONTROL_PORT: String(controlPort) },
+      url: `${webOrigin}/`,
+      reuseExistingServer: false,
       timeout: 120_000,
     },
   ],

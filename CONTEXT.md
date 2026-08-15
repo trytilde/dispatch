@@ -16,6 +16,16 @@ _Avoid_: Tilde workspace
 The person responsible for configuring and operating an **OpenBot Installation**.
 _Avoid_: admin, user, or customer when ownership is meant
 
+**Installation Resource**:
+The OAuth protected-resource identity assigned to one **OpenBot Installation**. Its exact URI is
+the required access-token audience for that installation.
+_Avoid_: client ID or scope when the protected installation is meant
+
+**Owner Principal**:
+The verified subject, **Installation Resource**, client, scopes, roles, and entitlements available
+to an owner-facing control handler after authentication and authorization.
+_Avoid_: treating a decoded token or session cookie alone as authorization
+
 **Tilde Organization**:
 The Tilde ownership and billing boundary selected during setup.
 
@@ -43,7 +53,11 @@ _Avoid_: credentials, runtime state
 
 ## Relationships
 
-- An **Owner** opens an **OpenBot Installation** without a pairing-code gate.
+- An **Owner** authenticates through OIDC without a pairing-code gate.
+- Each **OpenBot Installation** has one **Installation Resource** and accepts only access tokens
+  with that exact audience.
+- Tilde login may provide SSO across installations, but each installation keeps independent access
+  tokens and host-only cookies.
 - An **OpenBot Installation** presents one **OpenBot Workspace**.
 - An **OpenBot Installation** connects to one **Tilde Organization** and **Tilde Team**.
 - A **Tilde Team** owns one or more **Tilde Agents** and their **ChatKit Sessions**.

@@ -42,6 +42,7 @@
   "dependencies": {
     "@tryopenbot/agent-provider": "workspace:*",
     "@tryopenbot/agent-service-provider": "workspace:*",
+    "@tryopenbot/auth-provider": "workspace:*",
     "@tryopenbot/chat-provider": "workspace:*",
     "@tryopenbot/computer-provider": "workspace:*",
     "@tryopenbot/control-service-provider": "workspace:*",

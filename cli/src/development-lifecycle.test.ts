@@ -41,6 +41,7 @@ describe("development lifecycle", () => {
       computer,
       agentService: service("agents"),
       controlService: service("control"),
+      auth: provider("auth"),
     } as unknown as OpenBotConfiguration["providers"];
 
     await reconcileDevelopmentInfrastructure({
@@ -57,14 +58,19 @@ describe("development lifecycle", () => {
       "agents.build",
       "control.check",
       "control.build",
+      "auth.check",
+      "auth.build",
       "computer.plan",
       "agents.plan",
       "control.plan",
+      "auth.plan",
       "computer.configure",
       "agents.configure",
       "control.configure",
+      "auth.configure",
       "computer.deploy",
       "agents.deploy",
+      "auth.deploy",
       "control.deploy",
       "computer.workspaces",
     ]);

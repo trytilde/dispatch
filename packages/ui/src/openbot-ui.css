@@ -5993,3 +5993,503 @@ button.system-event-chip {
   display: grid;
   gap: 20px;
 }
+
+/* Rich content surfaces */
+.audio-player {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ob-text-secondary);
+}
+
+.audio-player[data-surface="chip"] {
+  padding: 0 10px 10px 54px;
+}
+
+.audio-player[data-surface="fullscreen"] {
+  width: min(620px, calc(100vw - 80px));
+  padding: 18px;
+  border: 0.5px solid var(--ob-border-default);
+  border-radius: 12px;
+  background: var(--ob-bg-elevated);
+  box-shadow: var(--ob-shadow-control);
+}
+
+.audio-player audio {
+  display: none;
+}
+
+.audio-player button {
+  border: 0;
+  color: var(--ob-text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.audio-player-transport {
+  width: 28px;
+  height: 28px;
+  border-radius: 50% !important;
+  display: grid;
+  place-items: center;
+  color: var(--ob-text-primary) !important;
+  background: var(--ob-fill-secondary) !important;
+  font-size: 10px;
+}
+
+.audio-player-scrubber {
+  min-width: 72px;
+  height: 3px;
+  flex: 1 1 auto;
+  margin: 0;
+  appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--ob-fill-primary) var(--audio-progress),
+    var(--ob-border-default) var(--audio-progress)
+  );
+  cursor: pointer;
+}
+
+.audio-player-scrubber::-webkit-slider-thumb {
+  width: 10px;
+  height: 10px;
+  appearance: none;
+  border-radius: 50%;
+  background: var(--ob-fill-primary);
+}
+
+.audio-player-time {
+  flex: 0 0 auto;
+  color: var(--ob-text-tertiary);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.audio-player-speed {
+  min-width: 32px;
+  height: 24px;
+  border-radius: 6px !important;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.audio-player-speed:hover,
+.audio-player-mute:hover {
+  background: var(--ob-bg-hover);
+}
+
+.audio-player-mute {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px !important;
+}
+
+.link-preview-card {
+  width: min(520px, 100%);
+  overflow: hidden;
+  border: 0.5px solid var(--ob-border-default);
+  border-radius: 12px;
+  color: var(--ob-text-primary);
+  background: var(--ob-bg-elevated);
+  box-shadow: var(--ob-shadow-control);
+  transition:
+    border-color var(--ob-duration-fast) var(--ob-ease-default),
+    background var(--ob-duration-fast) var(--ob-ease-default);
+}
+
+.link-preview-card:hover {
+  border-color: var(--ob-border-strong);
+  background: var(--ob-bg-hover);
+}
+
+.link-preview-card > a {
+  color: inherit;
+  display: flex;
+  text-decoration: none;
+}
+
+.link-preview-image {
+  position: relative;
+  width: 154px;
+  min-height: 116px;
+  flex: 0 0 154px;
+  overflow: hidden;
+  background: var(--ob-bg-subtle);
+}
+
+.link-preview-image img {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+}
+
+.link-preview-body {
+  min-width: 0;
+  padding: 13px 14px;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.link-preview-body > strong,
+.link-preview-body > span {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+}
+
+.link-preview-body > strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  -webkit-line-clamp: 2;
+}
+
+.link-preview-body > span {
+  color: var(--ob-text-secondary);
+  font-size: 11px;
+  line-height: 16px;
+  -webkit-line-clamp: 2;
+}
+
+.link-preview-body small {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--ob-text-tertiary);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-preview-body small img,
+.link-preview-body small i {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border-radius: 3px;
+  object-fit: cover;
+  font-style: normal;
+}
+
+.link-preview-card.compact {
+  width: 300px;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.link-hover-preview {
+  position: relative;
+  display: inline;
+}
+
+.link-hover-preview-popover {
+  position: absolute;
+  z-index: 60;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  width: 300px;
+  padding: 6px;
+  border: 0.5px solid var(--ob-border-default);
+  border-radius: 12px;
+  display: block;
+  color: var(--ob-text-primary);
+  background: var(--ob-bg-elevated);
+  box-shadow:
+    0 10px 20px -3px var(--ob-shadow-popover-ambient),
+    0 4px 6px -4px var(--ob-shadow-popover-key),
+    0 0 0 1px var(--ob-shadow-ring);
+  transform: translateX(-50%);
+  animation: overlay-surface-in var(--ob-duration-fast) var(--ob-ease-out) both;
+}
+
+.diagram-card {
+  position: relative;
+  min-height: 160px;
+  overflow: hidden;
+  border: 0.5px solid var(--ob-border-default);
+  border-radius: 12px;
+  background: var(--ob-bg-elevated);
+}
+
+.diagram-card-actions,
+.diagram-modal-controls {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+.diagram-card-actions button,
+.diagram-modal-controls button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0.5px solid var(--ob-border-default);
+  border-radius: 7px;
+  color: var(--ob-text-secondary);
+  background: color-mix(in srgb, var(--ob-bg-elevated) 90%, transparent);
+  cursor: pointer;
+}
+
+.diagram-card-actions button:hover,
+.diagram-modal-controls button:hover {
+  color: var(--ob-text-primary);
+  background: var(--ob-bg-hover);
+}
+
+.diagram-content {
+  min-height: 160px;
+  padding: 36px 24px 24px;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+}
+
+.diagram-content svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.diagram-loading,
+.diagram-error {
+  min-height: 160px;
+  padding: 36px 24px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ob-text-tertiary);
+  font-size: 11px;
+}
+
+.diagram-error {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  color: var(--ob-text-secondary);
+}
+
+.diagram-error strong {
+  display: flex;
+  gap: 6px;
+  color: var(--ob-text-danger);
+}
+
+.diagram-error details,
+.diagram-error pre {
+  margin: 0;
+}
+
+.diagram-error summary {
+  color: var(--ob-text-tertiary);
+  cursor: pointer;
+}
+
+.diagram-error pre {
+  max-height: 180px;
+  margin-top: 6px;
+  padding: 10px;
+  overflow: auto;
+  border-radius: 8px;
+  background: var(--ob-bg-subtle);
+  font: 10px/1.5 var(--font-mono-face);
+  white-space: pre-wrap;
+}
+
+.diagram-modal {
+  position: fixed;
+  z-index: 300;
+  inset: 0;
+  color: var(--ob-text-primary);
+  background: var(--ob-bg-elevated);
+  animation: overlay-scrim-in var(--ob-duration-fast) var(--ob-ease-out) both;
+}
+
+.diagram-modal-controls {
+  top: 16px;
+  right: 16px;
+}
+
+.diagram-modal-viewport {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  touch-action: none;
+}
+
+.diagram-modal-viewport:active {
+  cursor: grabbing;
+}
+
+.diagram-modal-content {
+  transform-origin: center;
+  transition: opacity 0.15s ease-out;
+}
+
+.computer-handoff-card {
+  width: min(520px, 100%);
+  padding: 14px;
+  border: 0.5px solid var(--ob-border-default);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--ob-text-primary);
+  background: var(--ob-bg-elevated);
+  box-shadow: var(--ob-shadow-control);
+  animation: permission-card-in var(--ob-duration-normal) var(--ob-ease-out) both;
+}
+
+.computer-handoff-heading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.computer-handoff-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.computer-handoff-header strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.computer-handoff-heading p {
+  margin: 0;
+  color: var(--ob-text-secondary);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.computer-handoff-badge {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ob-text-success);
+  background: var(--ob-fill-success-subtle);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.computer-handoff-badge i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.computer-handoff-card[data-status="waiting"] .computer-handoff-badge {
+  color: var(--ob-text-warning);
+  background: var(--ob-fill-warning-subtle);
+}
+
+.computer-handoff-card[data-status="waiting"] .computer-handoff-badge i {
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  background: transparent;
+  animation: floating-panel-spin 0.8s linear infinite;
+}
+
+.computer-handoff-card[data-status="skipped"] .computer-handoff-badge {
+  color: var(--ob-text-tertiary);
+  background: var(--ob-fill-neutral-subtle);
+}
+
+.computer-handoff-frame {
+  height: 180px;
+  padding: 0;
+  overflow: hidden;
+  border: 0.5px solid var(--ob-border-default);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--ob-text-tertiary);
+  background: var(--ob-bg-subtle);
+  cursor: pointer;
+  transition:
+    transform var(--ob-duration-fast) var(--ob-ease-out),
+    border-color var(--ob-duration-fast) var(--ob-ease-default);
+}
+
+.computer-handoff-frame:hover {
+  border-color: var(--ob-border-strong);
+  transform: scale(1.005);
+}
+
+.computer-handoff-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.computer-handoff-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.computer-handoff-footer button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0.5px solid var(--ob-border-default);
+  border-radius: 8px;
+  color: var(--ob-text-primary);
+  background: var(--ob-bg-elevated);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.computer-handoff-footer button.primary {
+  border-color: var(--ob-fill-primary);
+  color: var(--ob-text-on-primary);
+  background: var(--ob-fill-primary);
+}
+
+.computer-handoff-footer button.quiet {
+  margin-left: auto;
+  border-color: transparent;
+  color: var(--ob-text-tertiary);
+  background: transparent;
+}
+
+@media (max-width: 560px) {
+  .link-preview-card > a {
+    flex-direction: column;
+  }
+
+  .link-preview-image {
+    width: 100%;
+    height: 140px;
+    min-height: 0;
+    flex-basis: 140px;
+  }
+
+  .computer-handoff-footer {
+    flex-wrap: wrap;
+  }
+}

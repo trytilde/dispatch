@@ -42,6 +42,15 @@ export interface FileCardProps {
   rewriteUrl: (url: string) => string;
 }
 
+export interface FileViewerProps {
+  open: boolean;
+  title: string;
+  subtitle?: string;
+  url: string;
+  mediaType: string;
+  onClose: () => void;
+}
+
 export function ConnectionCard({ connection }: { connection: ConnectionView }) {
   const connected = connection.status.toLowerCase() === "connected";
   const action = connected
@@ -108,6 +117,7 @@ export function FileCard({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: 
   const attachmentId = part.attachment_id ?? part.attachmentId;
   const mediaType = part.media_type ?? part.mediaType ?? "application/octet-stream";
   const [resolvedUrl, setResolvedUrl] = useState(directUrl);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   useEffect(() => {
     if (resolvedUrl || !attachmentId || !mediaType.startsWith("image/")) return;
@@ -124,7 +134,7 @@ export function FileCard({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: 
 
   async function open(): Promise<void> {
     if (resolvedUrl) {
-      window.open(resolvedUrl, "_blank", "noopener,noreferrer");
+      setViewerOpen(true);
       return;
     }
     if (!attachmentId || loading) return;
@@ -132,8 +142,10 @@ export function FileCard({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: 
     setError("");
     try {
       const url = await resolveAttachmentUrl(sessionId, attachmentId);
-      setResolvedUrl(safeUrl(url));
-      window.open(url, "_blank", "noopener,noreferrer");
+      const safe = safeUrl(url);
+      if (!safe) throw new Error("Attachment URL is invalid");
+      setResolvedUrl(safe);
+      setViewerOpen(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Download failed");
     } finally {
@@ -141,29 +153,102 @@ export function FileCard({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: 
     }
   }
 
+  const filename = part.filename || "Attachment";
   return (
-    <button
-      className="file-part"
-      disabled={!resolvedUrl && !attachmentId}
-      onClick={() => void open()}
-      title={error || undefined}
-      type="button"
+    <>
+      <button
+        className="file-part"
+        disabled={!resolvedUrl && !attachmentId}
+        onClick={() => void open()}
+        title={error || undefined}
+        type="button"
+      >
+        {mediaType.startsWith("image/") && resolvedUrl ? (
+          <img alt="" loading="lazy" src={resolvedUrl} />
+        ) : (
+          <span>↗</span>
+        )}
+        <span>
+          <strong>{filename}</strong>
+          <small>
+            {error ||
+              (loading
+                ? "Preparing download…"
+                : `${mediaType}${formatSize(part.size_bytes ?? part.sizeBytes)}`)}
+          </small>
+        </span>
+      </button>
+      {resolvedUrl ? (
+        <FileViewer
+          mediaType={mediaType}
+          onClose={() => setViewerOpen(false)}
+          open={viewerOpen}
+          subtitle={mediaType}
+          title={filename}
+          url={resolvedUrl}
+        />
+      ) : null}
+    </>
+  );
+}
+
+export function FileViewer({ open, title, subtitle, url, mediaType, onClose }: FileViewerProps) {
+  useEffect(() => {
+    if (!open) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      onClose();
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape, true);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape, true);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [onClose, open]);
+
+  if (!open) return null;
+  return (
+    <div
+      aria-label={`Preview ${title}`}
+      aria-modal="true"
+      className="file-viewer"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      role="dialog"
     >
-      {mediaType.startsWith("image/") && resolvedUrl ? (
-        <img alt="" loading="lazy" src={resolvedUrl} />
-      ) : (
-        <span>↗</span>
-      )}
-      <span>
-        <strong>{part.filename || "Attachment"}</strong>
-        <small>
-          {error ||
-            (loading
-              ? "Preparing download…"
-              : `${mediaType}${formatSize(part.size_bytes ?? part.sizeBytes)}`)}
-        </small>
-      </span>
-    </button>
+      <div className="file-viewer-panel">
+        <header className="file-viewer-header">
+          <span className="file-viewer-title">
+            <strong>{title}</strong>
+            {subtitle ? <small>{subtitle}</small> : null}
+          </span>
+          <span className="file-viewer-actions">
+            <a aria-label="Open file in new window" href={url} rel="noreferrer" target="_blank">
+              ↗
+            </a>
+            <button aria-label="Close preview" onClick={onClose} type="button">
+              ×
+            </button>
+          </span>
+        </header>
+        <div className="file-viewer-body">
+          {mediaType.startsWith("image/") ? (
+            <img alt={title} src={url} />
+          ) : mediaType.startsWith("video/") ? (
+            <video controls src={url} />
+          ) : mediaType.startsWith("audio/") ? (
+            <audio controls src={url} />
+          ) : (
+            <iframe src={url} title={title} />
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

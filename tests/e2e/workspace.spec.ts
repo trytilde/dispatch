@@ -296,6 +296,15 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   );
   await expect(page.getByText("read_file")).toBeVisible();
   await expect(page.getByRole("button", { name: /brief.txt/ })).toBeVisible();
+  await page.getByRole("button", { name: /brief.txt/ }).click();
+  await expect(page.getByRole("dialog", { name: "Preview brief.txt" })).toBeVisible();
+  await expect(page.locator(".file-viewer")).toHaveCSS(
+    "background-color",
+    "rgba(20, 20, 20, 0.898)",
+  );
+  await expect(page.locator(".file-viewer-panel")).toHaveCSS("max-width", "1100px");
+  await page.getByRole("button", { name: "Close preview" }).click();
+  await expect(page.getByRole("dialog", { name: "Preview brief.txt" })).toHaveCount(0);
   await expect(page.locator(".connection-card")).toHaveCSS(
     "background-color",
     "rgb(247, 247, 247)",

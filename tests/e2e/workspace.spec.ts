@@ -273,6 +273,11 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await page.getByRole("button", { name: /Click to take over/ }).click();
   await expect(page.getByRole("button", { name: "Release" })).toBeVisible();
   await page.getByRole("button", { name: /Activity/ }).click();
+  await expect(page.locator(".activity-surface")).toHaveCSS(
+    "background-color",
+    "rgb(252, 252, 252)",
+  );
+  await expect(page.locator(".queue-panel")).toHaveCSS("background-color", "rgb(252, 252, 252)");
   await expect(page.getByText("Streaming preview")).toBeVisible();
   await expect(page.getByText("Queued follow-up")).toBeVisible();
   await expect(page.getByRole("button", { name: "Run now" })).toBeVisible();

@@ -72,6 +72,10 @@ export {
   type WorkspaceShellProps,
 } from "./workspace-shell.js";
 export {
+  ActivityEmpty,
+  ActivityQueue,
+  type ActivityQueueProps,
+  ActivityTimeline,
   AgentActivity,
   type AgentActivityProps,
   type ActivityQueueItem,

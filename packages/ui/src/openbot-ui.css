@@ -3338,7 +3338,8 @@ body.resizing-workspace .workspace-resize-handle::after {
 .activity-surface {
   min-height: 0;
   overflow: auto;
-  background: #0c0c0d;
+  color: var(--ob-text-primary);
+  background: var(--ob-bg-base);
 }
 
 .activity-empty,

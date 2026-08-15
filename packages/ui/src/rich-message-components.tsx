@@ -51,6 +51,22 @@ export interface FileViewerProps {
   onClose: () => void;
 }
 
+export interface MediaViewerItem {
+  id: string;
+  title: string;
+  url: string;
+  mediaType: string;
+  caption?: string;
+}
+
+export interface MediaViewerProps {
+  open: boolean;
+  items: readonly MediaViewerItem[];
+  activeIndex?: number;
+  onClose: () => void;
+  onSelect?: (index: number) => void;
+}
+
 export function ConnectionCard({ connection }: { connection: ConnectionView }) {
   const connected = connection.status.toLowerCase() === "connected";
   const action = connected
@@ -193,22 +209,29 @@ export function FileCard({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: 
 }
 
 export function FileViewer({ open, title, subtitle, url, mediaType, onClose }: FileViewerProps) {
-  useEffect(() => {
-    if (!open) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      event.stopPropagation();
-      onClose();
-    };
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", closeOnEscape, true);
-    return () => {
-      document.removeEventListener("keydown", closeOnEscape, true);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [onClose, open]);
+  if (mediaType.startsWith("image/") || mediaType.startsWith("video/")) {
+    return (
+      <MediaViewer
+        items={[{ id: url, title, url, mediaType, caption: subtitle }]}
+        onClose={onClose}
+        open={open}
+      />
+    );
+  }
+  return (
+    <DocumentFileViewer
+      mediaType={mediaType}
+      onClose={onClose}
+      open={open}
+      subtitle={subtitle}
+      title={title}
+      url={url}
+    />
+  );
+}
+
+function DocumentFileViewer({ open, title, subtitle, url, mediaType, onClose }: FileViewerProps) {
+  useModalLifecycle(open, onClose);
 
   if (!open) return null;
   return (
@@ -237,11 +260,7 @@ export function FileViewer({ open, title, subtitle, url, mediaType, onClose }: F
           </span>
         </header>
         <div className="file-viewer-body">
-          {mediaType.startsWith("image/") ? (
-            <img alt={title} src={url} />
-          ) : mediaType.startsWith("video/") ? (
-            <video controls src={url} />
-          ) : mediaType.startsWith("audio/") ? (
+          {mediaType.startsWith("audio/") ? (
             <audio controls src={url} />
           ) : (
             <iframe src={url} title={title} />
@@ -250,6 +269,118 @@ export function FileViewer({ open, title, subtitle, url, mediaType, onClose }: F
       </div>
     </div>
   );
+}
+
+export function MediaViewer({ open, items, activeIndex = 0, onClose, onSelect }: MediaViewerProps) {
+  useModalLifecycle(open, onClose);
+  const index = Math.min(Math.max(0, activeIndex), Math.max(0, items.length - 1));
+  const item = items[index];
+
+  useEffect(() => {
+    if (!open || items.length < 2 || !onSelect) return;
+    const navigate = (event: KeyboardEvent) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      const delta = event.key === "ArrowLeft" ? -1 : 1;
+      onSelect((index + delta + items.length) % items.length);
+    };
+    document.addEventListener("keydown", navigate, true);
+    return () => document.removeEventListener("keydown", navigate, true);
+  }, [index, items.length, onSelect, open]);
+
+  if (!open || !item) return null;
+  const hasNavigation = items.length > 1 && onSelect;
+  return (
+    <div
+      aria-label={items.length > 1 ? `Media ${index + 1} of ${items.length}` : "Media preview"}
+      aria-modal="true"
+      className="media-viewer"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      role="dialog"
+    >
+      <div className="media-viewer-top-bar">
+        <button aria-label="Close media preview" onClick={onClose} type="button">
+          ×
+        </button>
+      </div>
+      <div className="media-viewer-column">
+        <div className="media-viewer-cell">
+          {hasNavigation ? (
+            <button
+              aria-label="Previous media"
+              className="media-viewer-nav previous"
+              onClick={() => onSelect((index - 1 + items.length) % items.length)}
+              type="button"
+            >
+              ‹
+            </button>
+          ) : null}
+          {item.mediaType.startsWith("video/") ? (
+            <video aria-label={item.title} autoPlay controls src={item.url} />
+          ) : (
+            <img alt={item.title || "Media preview"} draggable={false} src={item.url} />
+          )}
+          {hasNavigation ? (
+            <button
+              aria-label="Next media"
+              className="media-viewer-nav next"
+              onClick={() => onSelect((index + 1) % items.length)}
+              type="button"
+            >
+              ›
+            </button>
+          ) : null}
+        </div>
+        {item.caption || item.title ? (
+          <div className="media-viewer-caption">
+            <strong>{item.title}</strong>
+            {item.caption ? <small>{item.caption}</small> : null}
+          </div>
+        ) : null}
+        {items.length > 1 ? (
+          <div className="media-viewer-filmstrip" role="list">
+            {items.map((candidate, candidateIndex) => (
+              <button
+                aria-current={candidateIndex === index}
+                aria-label={`View ${candidate.title}`}
+                key={candidate.id}
+                onClick={() => onSelect?.(candidateIndex)}
+                role="listitem"
+                type="button"
+              >
+                {candidate.mediaType.startsWith("image/") ? (
+                  <img alt="" src={candidate.url} />
+                ) : (
+                  <span>▶</span>
+                )}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function useModalLifecycle(open: boolean, onClose: () => void): void {
+  useEffect(() => {
+    if (!open) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      onClose();
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape, true);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape, true);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [onClose, open]);
 }
 
 export function MarkdownText({ text }: { text: string }) {

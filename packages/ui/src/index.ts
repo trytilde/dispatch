@@ -180,3 +180,26 @@ export {
   type LinkPreviewCardProps,
   type LinkPreviewMetadata,
 } from "./content-components.js";
+export {
+  CitationLink,
+  type CitationLinkProps,
+  CodeBlock,
+  type CodeBlockProps,
+  DiffBlock,
+  InlinePath,
+} from "./markdown-components.js";
+export {
+  InputGroup,
+  type InputGroupProps,
+  KeyboardKey,
+  ModelPicker,
+  type ModelPickerOption,
+  type ModelPickerProps,
+  ScrollArea,
+  SelectField,
+  type SelectOption,
+  StatusBadge,
+  type StatusBadgeTone,
+  TextRoll,
+  VoiceWaveform,
+} from "./primitive-components.js";

@@ -1,9 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import {
+  CitationLink,
+  CodeBlock,
   ConnectionCard,
+  DiffBlock,
   FileCard,
   FileViewer,
+  InlinePath,
   JsonBlock,
   MarkdownText,
   MediaViewer,
@@ -26,6 +30,46 @@ export const Markdown: Story = {
         text={"Here is a **concise answer** with `inline code`.\n\n```ts\nconst ready = true;\n```"}
       />
     </div>
+  ),
+};
+
+export const MarkdownDocument: Story = {
+  render: () => (
+    <div style={{ maxWidth: 650 }}>
+      <MarkdownText
+        text={`# Build an agent\n\nA concise paragraph with **strong text**, ~~old text~~, [a link](https://example.com), and a citation [[1]](https://example.com/source).\n\n> Keep the agent focused and let tools do the work.\n\n- [x] Configure the workspace\n- [ ] Deploy the agent\n\n| Surface | State |\n| --- | --- |\n| Chat | Ready |\n| Computer | Connected |\n\nUse \`configuration/agent/index.ts\` as the entrypoint.\n\n\`\`\`ts\nexport const agent = { name: "OpenBot" };\n\`\`\``}
+      />
+    </div>
+  ),
+};
+
+export const Code: Story = {
+  render: () => (
+    <div style={{ maxWidth: 650 }}>
+      <CodeBlock
+        language="typescript"
+        showLineNumbers
+      >{`const agent = await createAgent({\n  name: "OpenBot",\n});`}</CodeBlock>
+    </div>
+  ),
+};
+
+export const Diff: Story = {
+  render: () => (
+    <div style={{ maxWidth: 650 }}>
+      <DiffBlock
+        value={` export const mode = "preview";\n-export const enabled = false;\n+export const enabled = true;`}
+      />
+    </div>
+  ),
+};
+
+export const InlineContent: Story = {
+  render: () => (
+    <p style={{ fontSize: 13 }}>
+      Edit <InlinePath value="configuration/agent/index.ts" /> and verify{" "}
+      <CitationLink href="https://example.com/source">1</CitationLink>.
+    </p>
   ),
 };
 

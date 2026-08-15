@@ -15,7 +15,8 @@ The package root exports the complete workspace surface:
   notices, and system-event primitives.
 - Rich content: `MarkdownText`, `JsonBlock`, `ReasoningCard`, `ToolCallCard`,
   `ConnectionCard`, `FileCard`, `FileViewer`, `MediaViewer`, `AudioPlayer`,
-  `LinkPreviewCard`, `LinkHoverPreview`, and `DiagramCard`.
+  `LinkPreviewCard`, `LinkHoverPreview`, `DiagramCard`, `CodeBlock`,
+  `DiffBlock`, `CitationLink`, and `InlinePath`.
 - Agent activity: `AgentActivity`, `ActivityQueue`, `ActivityTimeline`,
   `AsyncTasksPanel`, and `ConversationOutlinePanel`.
 - Computer: `AgentWorkspacePanel`, `ComputerStagePlaceholder`,
@@ -25,6 +26,8 @@ The package root exports the complete workspace surface:
 - Overlays: `DialogSurface`, `PermissionRequestCard`,
   `LocalToolPermissionCard`, `LocalToolPermissionDock`, and `ThreadOverlay`.
 - Identity: `AgentAvatar` and its packaged avatar artwork.
+- Controls: `StatusBadge`, `KeyboardKey`, `InputGroup`, `SelectField`,
+  `ScrollArea`, `TextRoll`, `VoiceWaveform`, and `ModelPicker`.
 - Vendored Beautiful UI: `ApprovalCard`, `BeautifulChat`,
   `BeautifulSidebarNav`, `StreamingText`, `TaskRows`, `Thinking`, and
   `ToolChips`.

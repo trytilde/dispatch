@@ -26,6 +26,26 @@ export function ComputerIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function ClockIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" {...props}>
+      <circle cx="8" cy="8" r="5.25" />
+      <path d="M8 4.75V8l2.25 1.5" />
+    </svg>
+  );
+}
+
+export function ListIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" {...props}>
+      <path d="M5.25 4h7M5.25 8h7M5.25 12h7" />
+      <circle cx="2.75" cy="4" r=".6" />
+      <circle cx="2.75" cy="8" r=".6" />
+      <circle cx="2.75" cy="12" r=".6" />
+    </svg>
+  );
+}
+
 export function MoreIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg aria-hidden="true" viewBox="0 0 16 16" {...props}>

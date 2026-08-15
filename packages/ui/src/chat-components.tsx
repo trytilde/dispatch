@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { AgentAvatar } from "./agent-avatar.js";
-import { ComputerIcon, MoreIcon, ReplyIcon } from "./workspace-icons.js";
+import { ClockIcon, ComputerIcon, ListIcon, MoreIcon, ReplyIcon } from "./workspace-icons.js";
 
 export interface ChatHeaderProps {
   agentId?: string;
@@ -8,6 +8,10 @@ export interface ChatHeaderProps {
   status?: string;
   computerOpen: boolean;
   onToggleComputer: () => void;
+  conversationOutlineOpen?: boolean;
+  asyncTasksOpen?: boolean;
+  onToggleConversationOutline?: () => void;
+  onToggleAsyncTasks?: () => void;
 }
 
 export function ChatHeader({
@@ -16,6 +20,10 @@ export function ChatHeader({
   status,
   computerOpen,
   onToggleComputer,
+  conversationOutlineOpen = false,
+  asyncTasksOpen = false,
+  onToggleConversationOutline,
+  onToggleAsyncTasks,
 }: ChatHeaderProps) {
   return (
     <header className="chat-header">
@@ -27,6 +35,28 @@ export function ChatHeader({
         </div>
       </div>
       <div className="chat-actions">
+        {onToggleConversationOutline ? (
+          <button
+            aria-expanded={conversationOutlineOpen}
+            aria-label="Toggle full conversation"
+            className={conversationOutlineOpen ? "active" : ""}
+            onClick={onToggleConversationOutline}
+            title="Full conversation"
+          >
+            <ListIcon />
+          </button>
+        ) : null}
+        {onToggleAsyncTasks ? (
+          <button
+            aria-expanded={asyncTasksOpen}
+            aria-label="Toggle async tasks"
+            className={asyncTasksOpen ? "active" : ""}
+            onClick={onToggleAsyncTasks}
+            title="Async tasks"
+          >
+            <ClockIcon />
+          </button>
+        ) : null}
         <button
           aria-expanded={computerOpen}
           aria-label="Toggle Computer pane"

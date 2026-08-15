@@ -125,6 +125,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
         contentType: "text/event-stream",
         body:
           'id: turn-working\nevent: agent_turn_status\ndata: {"status":"working"}\n\n' +
+          'id: shell-running\nevent: shell_started\ndata: {"id":"shell-one","status":"running","label":"Build workspace","summary":"pnpm build"}\n\n' +
           'id: stream-preview\nevent: message_streaming\ndata: {"kind":{"message_streaming":{"session_id":"session-one","message_id":"stream-one","delta":{"type":"text-delta","delta":"Streaming preview"}}}}\n\n' +
           'id: turn-idle\nevent: agent_turn_status\ndata: {"status":"idle"}\n\n',
       });
@@ -270,6 +271,25 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await expect(page.locator(".agent-row-body").first()).toBeVisible();
   await expect(page.getByText("Working session")).toHaveCount(0);
   await expect(page.getByText("Ready when you are.")).toBeVisible();
+  await page.getByRole("button", { name: "Toggle full conversation" }).click();
+  const outlinePanel = page.getByRole("dialog", { name: "Full conversation: Hello World" });
+  await expect(outlinePanel).toBeVisible();
+  await expect(outlinePanel).toHaveCSS("width", "360px");
+  await expect(outlinePanel).toHaveCSS("top", "56px");
+  await expect(outlinePanel).toHaveCSS("border-radius", "14px");
+  await expect(outlinePanel).toHaveCSS("animation-duration", "0.16s");
+  await outlinePanel.getByRole("button", { name: /Agent/ }).first().click();
+  await expect(outlinePanel.locator(".outline-item-detail-text").first()).toHaveText(
+    "Ready when you are.",
+  );
+  await outlinePanel.getByRole("button", { name: "Close full conversation" }).click();
+  await page.getByRole("button", { name: "Toggle async tasks" }).click();
+  const asyncTasksPanel = page.getByRole("dialog", { name: "Async tasks: Hello World" });
+  await expect(asyncTasksPanel).toBeVisible();
+  await expect(asyncTasksPanel).toHaveCSS("width", "340px");
+  await expect(asyncTasksPanel.getByText("Build workspace")).toBeVisible();
+  await expect(asyncTasksPanel.getByText("Shell · pnpm build")).toBeVisible();
+  await asyncTasksPanel.getByRole("button", { name: "Close async tasks" }).click();
   await expect(page.locator(".message.assistant .message-bubble").first()).toHaveCSS(
     "background-color",
     "rgb(238, 238, 238)",

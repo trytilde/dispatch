@@ -119,9 +119,9 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
       await route.fulfill({
         contentType: "text/event-stream",
         body:
-          'event: agent_turn_status\ndata: {"status":"working"}\n\n' +
-          'event: message_streaming\ndata: {"kind":{"message_streaming":{"session_id":"session-one","message_id":"stream-one","delta":{"type":"text-delta","delta":"Streaming preview"}}}}\n\n' +
-          'event: agent_turn_status\ndata: {"status":"idle"}\n\n',
+          'id: turn-working\nevent: agent_turn_status\ndata: {"status":"working"}\n\n' +
+          'id: stream-preview\nevent: message_streaming\ndata: {"kind":{"message_streaming":{"session_id":"session-one","message_id":"stream-one","delta":{"type":"text-delta","delta":"Streaming preview"}}}}\n\n' +
+          'id: turn-idle\nevent: agent_turn_status\ndata: {"status":"idle"}\n\n',
       });
       return;
     }
@@ -309,6 +309,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   );
   await expect(page.locator(".queue-panel")).toHaveCSS("background-color", "rgb(252, 252, 252)");
   await expect(page.getByText("Streaming preview")).toBeVisible();
+  await expect(page.getByText("Streaming preview", { exact: true })).toHaveCount(1);
   await expect(page.getByText("Queued follow-up")).toBeVisible();
   await expect(page.getByRole("button", { name: "Run now" })).toBeVisible();
   await page.getByRole("button", { name: "Edit" }).click();

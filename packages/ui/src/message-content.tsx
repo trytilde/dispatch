@@ -1,23 +1,72 @@
 import { Fragment, type ReactNode, useEffect, useState } from "react";
-import {
-  type ChatMessage,
-  type ChatPart,
-  getAttachmentDownloadUrl,
-  rewriteTildeUrl,
-} from "./chat-api.js";
 
-export function MessageContent({ message }: { message: ChatMessage }) {
+export interface MessagePart {
+  type: string;
+  text?: string | null;
+  state?: string | null;
+  filename?: string | null;
+  media_type?: string;
+  mediaType?: string;
+  size_bytes?: number | null;
+  sizeBytes?: number | null;
+  url?: string;
+  attachment_id?: string | null;
+  attachmentId?: string | null;
+  tool_name?: string;
+  toolName?: string;
+  tool_invocation_id?: string;
+  toolCallId?: string;
+  input?: unknown;
+  output?: unknown;
+  error_text?: string | null;
+  errorText?: string | null;
+  approval?: unknown;
+  title?: string | null;
+  source_id?: string;
+  data?: unknown;
+  provider_metadata?: unknown;
+}
+
+export interface MessageContentMessage {
+  type: string;
+  session_id: string;
+  text?: string;
+  summary?: string | null;
+  data?: Record<string, unknown> | null;
+  parts?: MessagePart[];
+  metadata?: unknown;
+}
+
+export interface MessageContentProps {
+  message: MessageContentMessage;
+  resolveAttachmentUrl: (sessionId: string, attachmentId: string) => Promise<string>;
+  rewriteUrl?: (url: string) => string;
+}
+
+export function MessageContent({
+  message,
+  resolveAttachmentUrl,
+  rewriteUrl = (url) => url,
+}: MessageContentProps) {
   if (message.type === "ui" && message.parts) {
     return (
       <div className="message-parts">
-        {message.parts.map((part, index) => renderPart(part, index, message.session_id))}
+        {message.parts.map((part, index) =>
+          renderPart(part, index, message.session_id, resolveAttachmentUrl, rewriteUrl),
+        )}
       </div>
     );
   }
   return <MarkdownText text={message.text ?? signalText(message)} />;
 }
 
-function renderPart(part: ChatPart, index: number, sessionId: string): ReactNode {
+function renderPart(
+  part: MessagePart,
+  index: number,
+  sessionId: string,
+  resolveAttachmentUrl: MessageContentProps["resolveAttachmentUrl"],
+  rewriteUrl: NonNullable<MessageContentProps["rewriteUrl"]>,
+): ReactNode {
   const key = `${part.type}-${part.tool_invocation_id ?? part.toolCallId ?? part.attachment_id ?? part.attachmentId ?? index}`;
   if (isToolPart(part)) return <ToolPart key={key} part={part} />;
   switch (part.type) {
@@ -31,7 +80,15 @@ function renderPart(part: ChatPart, index: number, sessionId: string): ReactNode
         </details>
       ) : null;
     case "file": {
-      return <FilePart key={key} part={part} sessionId={sessionId} />;
+      return (
+        <FilePart
+          key={key}
+          part={part}
+          sessionId={sessionId}
+          resolveAttachmentUrl={resolveAttachmentUrl}
+          rewriteUrl={rewriteUrl}
+        />
+      );
     }
     case "source-url": {
       const href = part.url ? safeUrl(part.url) : undefined;
@@ -105,7 +162,7 @@ function ConnectionCard({ connection }: { connection: ConnectionView }) {
   );
 }
 
-function connectionFrom(part: ChatPart): ConnectionView {
+function connectionFrom(part: MessagePart): ConnectionView {
   const data = asRecord(part.data);
   const nested = asRecord(data.message);
   const name = firstText(
@@ -146,7 +203,7 @@ function connectionFrom(part: ChatPart): ConnectionView {
   };
 }
 
-function connectionsFrom(part: ChatPart): ConnectionView[] {
+function connectionsFrom(part: MessagePart): ConnectionView[] {
   const data = asRecord(part.data);
   const source = part as unknown as Record<string, unknown>;
   const candidates = Array.isArray(part.data)
@@ -162,7 +219,7 @@ function connectionsFrom(part: ChatPart): ConnectionView[] {
 }
 
 function firstText(
-  part: ChatPart,
+  part: MessagePart,
   data: Record<string, unknown>,
   nested: Record<string, unknown>,
   ...keys: string[]
@@ -182,11 +239,11 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function isToolPart(part: ChatPart): boolean {
+function isToolPart(part: MessagePart): boolean {
   return part.type === "tool" || part.type === "dynamic-tool" || part.type.startsWith("tool-");
 }
 
-function ToolPart({ part }: { part: ChatPart }) {
+function ToolPart({ part }: { part: MessagePart }) {
   const state = part.state ?? "";
   const error = part.error_text ?? part.errorText;
   return (
@@ -204,10 +261,17 @@ function ToolPart({ part }: { part: ChatPart }) {
   );
 }
 
-function FilePart({ part, sessionId }: { part: ChatPart; sessionId: string }) {
+interface FilePartProps {
+  part: MessagePart;
+  sessionId: string;
+  resolveAttachmentUrl: MessageContentProps["resolveAttachmentUrl"];
+  rewriteUrl: NonNullable<MessageContentProps["rewriteUrl"]>;
+}
+
+function FilePart({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: FilePartProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const directUrl = part.url ? safeUrl(rewriteTildeUrl(part.url)) : undefined;
+  const directUrl = part.url ? safeUrl(rewriteUrl(part.url)) : undefined;
   const attachmentId = part.attachment_id ?? part.attachmentId;
   const mediaType = part.media_type ?? part.mediaType ?? "application/octet-stream";
   const [resolvedUrl, setResolvedUrl] = useState(directUrl);
@@ -215,7 +279,7 @@ function FilePart({ part, sessionId }: { part: ChatPart; sessionId: string }) {
   useEffect(() => {
     if (resolvedUrl || !attachmentId || !mediaType.startsWith("image/")) return;
     let cancelled = false;
-    void getAttachmentDownloadUrl(sessionId, attachmentId)
+    void resolveAttachmentUrl(sessionId, attachmentId)
       .then((url) => {
         if (!cancelled) setResolvedUrl(safeUrl(url));
       })
@@ -223,7 +287,7 @@ function FilePart({ part, sessionId }: { part: ChatPart; sessionId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [attachmentId, mediaType, resolvedUrl, sessionId]);
+  }, [attachmentId, mediaType, resolveAttachmentUrl, resolvedUrl, sessionId]);
 
   async function open(): Promise<void> {
     if (resolvedUrl) {
@@ -234,7 +298,7 @@ function FilePart({ part, sessionId }: { part: ChatPart; sessionId: string }) {
     setLoading(true);
     setError("");
     try {
-      const url = await getAttachmentDownloadUrl(sessionId, attachmentId);
+      const url = await resolveAttachmentUrl(sessionId, attachmentId);
       setResolvedUrl(safeUrl(url));
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (reason) {
@@ -346,7 +410,7 @@ function JsonBlock({ label, value }: { label: string; value: unknown }) {
   );
 }
 
-function signalText(message: ChatMessage): string {
+function signalText(message: MessageContentMessage): string {
   if (message.summary) return message.summary;
   const metadata = message.metadata;
   if (typeof metadata === "object" && metadata !== null && "summary" in metadata) {

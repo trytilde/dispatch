@@ -14,7 +14,6 @@ export interface WorkspaceSidebarProps {
   selectedAgentId: string;
   loading?: boolean;
   hasMore?: boolean;
-  streamStatus: string;
   searchOpen: boolean;
   searchValue: string;
   onSearchChange: (value: string) => void;
@@ -30,7 +29,6 @@ export function WorkspaceSidebar({
   selectedAgentId,
   loading = false,
   hasMore = false,
-  streamStatus,
   searchOpen,
   searchValue,
   onSearchChange,
@@ -87,7 +85,7 @@ export function WorkspaceSidebar({
             </button>
           ) : null}
         </nav>
-        <WorkspaceAccount status={streamStatus} />
+        <WorkspaceAccount />
         <div
           aria-label="Resize sidebar"
           className="sidebar-resize-handle"

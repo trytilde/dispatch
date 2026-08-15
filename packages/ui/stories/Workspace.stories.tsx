@@ -74,8 +74,29 @@ export const AgentSearch: Story = {
 
 export const Account: Story = {
   render: () => (
-    <div style={{ width: 280 }}>
-      <WorkspaceAccount status="Connected" />
+    <div
+      className="rich-chat"
+      style={{ background: "#f7f7f7", display: "flex", flexDirection: "column", width: 280 }}
+    >
+      <WorkspaceAccount />
+    </div>
+  ),
+};
+
+export const AccountMenu: Story = {
+  render: () => (
+    <div
+      className="rich-chat"
+      style={{
+        background: "#f7f7f7",
+        display: "flex",
+        flexDirection: "column",
+        height: 340,
+        position: "relative",
+        width: 280,
+      }}
+    >
+      <WorkspaceAccount defaultOpen />
     </div>
   ),
 };
@@ -93,7 +114,6 @@ export const Sidebar: Story = {
         searchOpen={false}
         searchValue=""
         selectedAgentId="hello-world"
-        streamStatus="Connected"
       />
     </div>
   ),
@@ -229,7 +249,6 @@ function LayoutExample() {
         searchOpen={false}
         searchValue=""
         selectedAgentId="hello-world"
-        streamStatus="Connected"
       />
       <ChatPane>
         <ChatHeader

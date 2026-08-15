@@ -3410,11 +3410,16 @@ body.resizing-workspace .rich-chat.workspace-shell {
   background: #77777717;
 }
 
+.rich-chat .rail-account {
+  position: relative;
+  margin-top: auto;
+}
+
 .rich-chat .rail-footer {
   width: calc(100% - 16px);
   height: 44px;
   min-height: 44px;
-  margin: auto 8px 8px;
+  margin: 0 8px 8px;
   padding: 8px;
   border: 0;
   border-radius: 6px;
@@ -3450,23 +3455,90 @@ body.resizing-workspace .rich-chat.workspace-shell {
   display: grid;
 }
 
-.rail-footer strong {
+.rail-footer .account-name {
+  overflow: hidden;
   color: #141414;
   font-size: 12px;
   font-weight: 500;
-  line-height: 15px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.rail-footer small {
-  color: #14141499;
-  font-size: 11px;
-  line-height: 13px;
+.account-menu {
+  position: absolute;
+  z-index: 110;
+  bottom: calc(100% + 4px);
+  left: 8px;
+  width: 228px;
+  padding: 5px;
+  border: 0.5px solid #1414141f;
+  border-radius: 8px;
+  color: #141414;
+  background: #fcfcfc;
+  box-shadow:
+    0 8px 24px #0000001a,
+    0 2px 8px #00000014;
+  animation: account-menu-enter 0.12s ease-out;
+  transform-origin: bottom left;
 }
 
-.rail-footer .status-dot {
-  width: 6px;
-  height: 6px;
-  display: inline-block;
+.account-menu-section {
+  display: grid;
+  gap: 1px;
+}
+
+.account-menu-section + .account-menu-section {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 0.5px solid #14141414;
+}
+
+.account-menu button {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.account-menu button:hover,
+.account-menu button:focus-visible {
+  outline: none;
+  background: #77777717;
+}
+
+.account-menu svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.15;
+}
+
+@keyframes account-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-menu {
+    animation: none;
+  }
 }
 
 .rich-chat .chat-pane {

@@ -555,7 +555,6 @@ export function OpenBotApp() {
         selectedAgentId={agentId}
         loading={loading}
         hasMore={Boolean(nextAgentToken)}
-        streamStatus={streamStatus}
         searchOpen={searchOpen}
         searchValue={search}
         onSearchChange={setSearch}

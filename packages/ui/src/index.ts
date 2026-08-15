@@ -62,6 +62,7 @@ export {
   type AgentSearchDialogProps,
   type SidebarAgent,
   WorkspaceAccount,
+  type WorkspaceAccountProps,
 } from "./sidebar-components.js";
 export {
   ClockIcon,

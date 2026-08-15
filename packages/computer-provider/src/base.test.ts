@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -18,6 +19,7 @@ import { developmentSandboxSourceFiles } from "./base/development.js";
 import {
   BaseComputerProvider,
   computerWorkspacePath,
+  retryComputerServiceStartup,
   scopeComputerExecRequest,
   type ComputerImageDeploymentConfig,
 } from "./base/index.js";
@@ -137,6 +139,20 @@ describe("computerWorkspacePath", () => {
       },
       timeoutMs: undefined,
     });
+  });
+});
+
+describe("computer-service startup", () => {
+  it("retries a socket hang-up reported as an aborted Connect request", async () => {
+    const operation = vi
+      .fn<() => Promise<string>>()
+      .mockRejectedValueOnce(new ConnectError("socket hang up", Code.Aborted))
+      .mockResolvedValue("ready");
+
+    await expect(
+      retryComputerServiceStartup(operation, undefined, { attempts: 2, delayMs: 0 }),
+    ).resolves.toBe("ready");
+    expect(operation).toHaveBeenCalledTimes(2);
   });
 });
 

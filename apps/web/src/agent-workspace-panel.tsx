@@ -1,10 +1,13 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useState } from "react";
 
 interface AgentWorkspacePanelProps {
   agentId: string;
   agentName: string;
   activityCount: number;
   activity: ReactNode;
+  open: boolean;
+  onClose: () => void;
+  onResize: (event: ReactPointerEvent<HTMLDivElement>) => void;
 }
 
 export function AgentWorkspacePanel({
@@ -12,11 +15,15 @@ export function AgentWorkspacePanel({
   agentName,
   activityCount,
   activity,
+  open,
+  onClose,
+  onResize,
 }: AgentWorkspacePanelProps) {
   const [view, setView] = useState<"computer" | "activity">("computer");
   const [controlling, setControlling] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
   const [previewReady, setPreviewReady] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
     setControlling(false);
@@ -24,8 +31,27 @@ export function AgentWorkspacePanel({
     setPreviewKey((value) => value + 1);
   }, [agentId]);
 
+  useEffect(() => {
+    if (!fullscreen) return;
+    const exitFullscreen = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFullscreen(false);
+    };
+    window.addEventListener("keydown", exitFullscreen);
+    return () => window.removeEventListener("keydown", exitFullscreen);
+  }, [fullscreen]);
+
   return (
-    <section className="work-pane agent-workspace-pane">
+    <section
+      aria-hidden={!open && !fullscreen}
+      className={`work-pane agent-workspace-pane ${open ? "open" : "closed"} ${fullscreen ? "fullscreen" : ""}`}
+      inert={!open && !fullscreen}
+    >
+      <div
+        aria-label="Resize Computer pane"
+        className="workspace-resize-handle"
+        onPointerDown={onResize}
+        role="separator"
+      />
       <header className="workspace-tabs">
         <div>
           <button
@@ -55,13 +81,36 @@ export function AgentWorkspacePanel({
               ↻
             </button>
             <button
+              aria-label={fullscreen ? "Exit full screen" : "Enter full screen"}
+              onClick={() => setFullscreen((value) => !value)}
+              title={fullscreen ? "Exit full screen" : "Enter full screen"}
+            >
+              {fullscreen ? "↙" : "↗"}
+            </button>
+            <button
               className={controlling ? "active" : "take-over"}
               onClick={() => setControlling((value) => !value)}
             >
               {controlling ? "Release" : "Take over"}
             </button>
+            <button
+              aria-label="Close Computer pane"
+              onClick={() => {
+                setFullscreen(false);
+                onClose();
+              }}
+              title="Close Computer pane"
+            >
+              ×
+            </button>
           </div>
-        ) : null}
+        ) : (
+          <div className="computer-actions">
+            <button aria-label="Close Computer pane" onClick={onClose} title="Close Computer pane">
+              ×
+            </button>
+          </div>
+        )}
       </header>
 
       {view === "activity" ? (

@@ -3,8 +3,49 @@ import { expect, test } from "@playwright/test";
 test("loads the bare workspace without setup", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "What should OpenBot do?" })).toBeVisible();
+  await expect(page.locator(".rail")).toHaveCSS("width", "280px");
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "0px");
+  await page.getByRole("button", { name: "Toggle Computer pane" }).click();
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "320px");
+  await expect(page.locator(".chat-pane > header")).toHaveCSS("height", "52px");
   await page.getByRole("button", { name: "Activity" }).click();
   await expect(page.getByText("Agent activity")).toBeVisible();
+  await page.getByRole("button", { name: "Collapse sidebar" }).click();
+  await expect(page.locator(".rail")).toHaveCSS("width", "88px");
+  await page.getByRole("button", { name: "Expand sidebar" }).click();
+  await expect(page.locator(".rail")).toHaveCSS("width", "280px");
+
+  const sidebarHandle = await page.getByRole("separator", { name: "Resize sidebar" }).boundingBox();
+  if (!sidebarHandle) throw new Error("Sidebar resize handle is not visible");
+  const sidebarHandleX = sidebarHandle.x + sidebarHandle.width / 2;
+  await page.mouse.move(sidebarHandleX, sidebarHandle.y + 120);
+  await page.mouse.down();
+  await page.mouse.move(sidebarHandleX + 60, sidebarHandle.y + 120);
+  await page.mouse.up();
+  await expect(page.locator(".rail")).toHaveCSS("width", "340px");
+
+  const workspaceHandle = await page
+    .getByRole("separator", { name: "Resize Computer pane" })
+    .boundingBox();
+  if (!workspaceHandle) throw new Error("Computer resize handle is not visible");
+  const workspaceHandleX = workspaceHandle.x + workspaceHandle.width / 2;
+  await page.mouse.move(workspaceHandleX, workspaceHandle.y + 120);
+  await page.mouse.down();
+  await page.mouse.move(workspaceHandleX - 40, workspaceHandle.y + 120);
+  await page.mouse.up();
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "360px");
+
+  await page.reload();
+  await expect(page.locator(".rail")).toHaveCSS("width", "340px");
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "360px");
+  await page.keyboard.press("Control+b");
+  await expect(page.locator(".rail")).toHaveCSS("width", "88px");
+  await page.keyboard.press("Control+b");
+  await expect(page.locator(".rail")).toHaveCSS("width", "340px");
+  await page.keyboard.press("Control+Alt+b");
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "0px");
+  await page.keyboard.press("Control+Alt+b");
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "360px");
   await expect(page.getByLabel("Setup code")).toHaveCount(0);
 
   await page.goto("/api/setup/unlock");
@@ -165,10 +206,16 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
 
   await page.goto("/");
   await page.getByRole("button", { name: "Working session" }).click();
+  await page.getByRole("button", { name: "Toggle Computer pane" }).click();
   await expect(page.getByTitle("Hello World Computer")).toBeVisible();
   await expect(
     page.getByTitle("Hello World Computer").contentFrame().getByText("Agent desktop"),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Enter full screen" }).click();
+  await expect(page.locator(".agent-workspace-pane")).toHaveClass(/fullscreen/);
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "1280px");
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".agent-workspace-pane")).not.toHaveClass(/fullscreen/);
   await page.getByRole("button", { name: /Click to take over/ }).click();
   await expect(page.getByRole("button", { name: "Release" })).toBeVisible();
   await page.getByRole("button", { name: /Activity/ }).click();
@@ -277,10 +324,12 @@ test("queues another turn while the agent is busy", async ({ page }) => {
   await expect(page.getByLabel("Queue message")).toBeVisible();
   await page.getByRole("textbox", { name: "Message", exact: true }).fill("Do this next");
   await page.getByLabel("Queue message").click();
+  await page.getByRole("button", { name: "Toggle Computer pane" }).click();
   await page.getByRole("button", { name: /Activity/ }).click();
   await expect(page.getByText("Do this next")).toBeVisible();
   await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
 
+  await page.getByRole("button", { name: "Sort conversations" }).click();
   await page.getByLabel("Sort agents").selectOption("created_at");
   await expect.poll(() => requestedAgentSort).toBe("created_at");
 });

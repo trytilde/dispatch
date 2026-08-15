@@ -225,7 +225,21 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   );
   await expect(page.getByText("Working session")).toHaveCount(0);
   await expect(page.getByText("Ready when you are.")).toBeVisible();
+  await expect(page.locator(".message.assistant .message-bubble").first()).toHaveCSS(
+    "background-color",
+    "rgb(238, 238, 238)",
+  );
+  await expect(page.locator(".message.assistant .message-bubble").first()).toHaveCSS(
+    "border-radius",
+    "18px 18px 18px 6px",
+  );
+  await expect(page.locator(".composer")).toHaveCSS("background-color", "rgb(247, 247, 247)");
+  await expect(page.locator(".composer")).toHaveCSS("border-radius", "16px");
   await page.getByRole("button", { name: "Toggle Computer pane" }).click();
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS(
+    "transition-duration",
+    "0.24s, 0.09s, 0.2s, 0s",
+  );
   await expect(page.getByTitle("Hello World Computer")).toBeVisible();
   await expect(
     page.getByTitle("Hello World Computer").contentFrame().getByText("Agent desktop"),
@@ -255,8 +269,17 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await page.getByLabel("Send message").click();
 
   await expect(page.getByText("The file is clear and complete.")).toBeVisible();
+  await expect(page.locator(".message.user .message-bubble")).toHaveCSS(
+    "background-color",
+    "rgb(7, 7, 7)",
+  );
   await expect(page.getByText("read_file")).toBeVisible();
   await expect(page.getByRole("button", { name: /brief.txt/ })).toBeVisible();
+  await expect(page.locator(".connection-card")).toHaveCSS(
+    "background-color",
+    "rgb(247, 247, 247)",
+  );
+  await expect(page.locator(".connection-card")).toHaveCSS("border-radius", "9px");
   await expect(page.getByRole("link", { name: "Authorize" })).toHaveAttribute(
     "href",
     "https://github.com/login/oauth/authorize?client_id=openbot-test",

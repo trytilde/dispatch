@@ -16,9 +16,11 @@ The package root exports the complete workspace surface:
 - Agent activity: `AgentActivity`, `ActivityQueue`, `ActivityTimeline`,
   `AsyncTasksPanel`, and `ConversationOutlinePanel`.
 - Computer: `AgentWorkspacePanel`, `ComputerStagePlaceholder`,
-  `ComputerMonitorStrip`, `ComputerReconnectBanner`, and the Computer lifecycle
-  dialogs.
-- Overlays: `DialogSurface`, `PermissionRequestCard`, and `ThreadOverlay`.
+  `ComputerMonitorStrip`, `ComputerReconnectBanner`, `ComputerRebuildBanner`,
+  `ComputerRebuildDialog`, `ComputerFailureDialog`, and the remaining Computer
+  lifecycle dialogs.
+- Overlays: `DialogSurface`, `PermissionRequestCard`,
+  `LocalToolPermissionCard`, `LocalToolPermissionDock`, and `ThreadOverlay`.
 - Identity: `AgentAvatar` and its packaged avatar artwork.
 - Vendored Beautiful UI: `ApprovalCard`, `BeautifulChat`,
   `BeautifulSidebarNav`, `StreamingText`, `TaskRows`, `Thinking`, and

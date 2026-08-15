@@ -20,12 +20,23 @@ export {
 } from "./activity-panels.js";
 export { ComputerStagePlaceholder, type ComputerStagePlaceholderProps } from "./computer-stage.js";
 export {
+  ComputerFailureDialog,
+  type ComputerFailureDialogProps,
   ComputerLifecycleDialog,
   type ComputerLifecycleDialogProps,
+  type ComputerLifecycleStep,
+  type ComputerLifecycleStepState,
+  type ComputerMigrationStatus,
   type ComputerMonitor,
   ComputerMonitorStrip,
   type ComputerMonitorStripProps,
   type ComputerOperationKind,
+  type ComputerOperationStage,
+  ComputerRebuildBanner,
+  type ComputerRebuildBannerProps,
+  ComputerRebuildDialog,
+  type ComputerRebuildDialogProps,
+  type ComputerRebuildProgress,
   ComputerReconnectBanner,
   type ComputerReconnectBannerProps,
   type ComputerReconnectVariant,
@@ -35,6 +46,7 @@ export {
   type ComputerTakingLongerDialogProps,
   ComputerUnreachableDialog,
   type ComputerUnreachableDialogProps,
+  getComputerRebuildProgress,
 } from "./computer-components.js";
 export { useWorkspaceLayout, type WorkspaceLayout } from "./use-workspace-layout.js";
 export { AgentAvatar, type AgentAvatarProps } from "./agent-avatar.js";
@@ -118,9 +130,16 @@ export {
 export {
   DialogSurface,
   type DialogSurfaceProps,
+  LocalToolPermissionCard,
+  type LocalToolPermissionCardProps,
+  LocalToolPermissionDock,
+  type LocalToolPermissionResolution,
+  type LocalToolPermissionStatus,
   type PermissionAction,
+  type PermissionDisclosure,
   PermissionRequestCard,
   type PermissionRequestCardProps,
+  type PermissionStatus,
   ThreadOverlay,
   type ThreadOverlayProps,
 } from "./overlay-components.js";

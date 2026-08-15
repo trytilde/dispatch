@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useId, useRef } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 
 export interface DialogSurfaceProps {
   open: boolean;
@@ -24,6 +24,23 @@ export function DialogSurface({
   const titleId = useId();
   const descriptionId = useId();
   const surfaceRef = useRef<HTMLDivElement>(null);
+  const [present, setPresent] = useState(open);
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setPresent(true);
+      setClosing(false);
+      return;
+    }
+    if (!present) return;
+    setClosing(true);
+    const timeout = window.setTimeout(() => {
+      setPresent(false);
+      setClosing(false);
+    }, 160);
+    return () => window.clearTimeout(timeout);
+  }, [open, present]);
 
   useDialogKeyboard(open, onClose);
   useEffect(() => {
@@ -31,12 +48,13 @@ export function DialogSurface({
     surfaceRef.current?.focus();
   }, [open]);
 
-  if (!open) return null;
+  if (!present) return null;
   return (
     <div
       className="dialog-layer"
+      data-state={closing ? "closing" : "open"}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose?.();
+        if (open && event.target === event.currentTarget) onClose?.();
       }}
       role="presentation"
     >
@@ -45,6 +63,7 @@ export function DialogSurface({
         aria-labelledby={titleId}
         aria-modal="true"
         className={`dialog-surface ${className}`.trim()}
+        data-state={closing ? "closing" : "open"}
         ref={surfaceRef}
         role="dialog"
         style={{ width }}
@@ -66,59 +85,245 @@ export interface PermissionAction {
   onClick: () => void;
   disabled?: boolean;
   primary?: boolean;
+  tooltip?: string;
+}
+
+export interface PermissionStatus {
+  kind: "success" | "danger" | "muted";
+  label: string;
+}
+
+export interface PermissionDisclosure {
+  kind: string;
+  text: string;
+  copyText?: string;
 }
 
 export interface PermissionRequestCardProps {
   title: string;
-  description: string;
-  actions: readonly PermissionAction[];
+  description?: string;
+  actions?: readonly PermissionAction[];
+  ariaLabel?: string;
   badge?: ReactNode;
+  hideBadge?: boolean;
+  leading?: ReactNode;
+  location?: string;
+  summary?: ReactNode;
   failureNote?: string;
+  settledNote?: string;
+  status?: PermissionStatus;
+  disclosure?: PermissionDisclosure;
   onDismiss?: () => void;
+  dismissLabel?: string;
+  dismissTooltip?: string;
 }
 
 export function PermissionRequestCard({
   title,
   description,
-  actions,
-  badge = "!",
+  actions = [],
+  ariaLabel = title,
+  badge,
+  hideBadge = false,
+  leading,
+  location,
+  summary,
   failureNote,
+  settledNote,
+  status,
+  disclosure,
   onDismiss,
+  dismissLabel = "Dismiss permission request",
+  dismissTooltip,
 }: PermissionRequestCardProps) {
+  const pending = status == null;
+  const [disclosureOpen, setDisclosureOpen] = useState(false);
   return (
-    <section aria-label={title} className="permission-card">
-      <span aria-hidden="true" className="permission-card-badge">
-        {badge}
-      </span>
-      <span className="permission-card-copy">
-        <strong>{title}</strong>
-        <small>{description}</small>
-        {failureNote ? <em role="alert">{failureNote}</em> : null}
-      </span>
-      <span className="permission-card-actions">
-        {actions.map((action) => (
-          <button
-            className={action.primary ? "primary" : ""}
-            disabled={action.disabled}
-            key={action.label}
-            onClick={action.onClick}
-            type="button"
-          >
-            {action.label}
-          </button>
-        ))}
-      </span>
-      {onDismiss ? (
-        <button
-          aria-label="Dismiss permission request"
-          className="permission-card-dismiss"
-          onClick={onDismiss}
-          type="button"
-        >
-          ×
-        </button>
+    <section
+      aria-label={ariaLabel}
+      className="permission-card"
+      data-state={pending ? "pending" : "settled"}
+    >
+      <div className="permission-card-copy">
+        <div className="permission-card-heading">
+          {leading ? (
+            <span aria-hidden="true" className="permission-card-leading">
+              {leading}
+            </span>
+          ) : null}
+          <strong>{title}</strong>
+          {!hideBadge ? (
+            <span className="permission-card-status" data-kind={status?.kind ?? "pending"}>
+              {pending ? (
+                <span aria-hidden="true" className="permission-card-status-spinner" />
+              ) : (
+                <span aria-hidden="true" className="permission-card-status-dot" />
+              )}
+              {badge ?? (pending ? "Approval needed" : status.label)}
+            </span>
+          ) : null}
+          {onDismiss && pending ? (
+            <button
+              aria-label={dismissLabel}
+              className="permission-card-dismiss"
+              onClick={onDismiss}
+              title={dismissTooltip}
+              type="button"
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
+        {location ? <small className="permission-card-location">{location}</small> : null}
+        {summary ? <div className="permission-card-summary">{summary}</div> : null}
+        {pending && description ? <small>{description}</small> : null}
+        {pending && failureNote ? <em role="alert">{failureNote}</em> : null}
+        {!pending && settledNote ? <small>{settledNote}</small> : null}
+        {disclosure ? (
+          <div className="permission-card-disclosure">
+            <button
+              aria-expanded={disclosureOpen}
+              onClick={() => setDisclosureOpen((current) => !current)}
+              type="button"
+            >
+              <span aria-hidden="true">{disclosureOpen ? "⌄" : "›"}</span>
+              {disclosureOpen ? `Hide the ${disclosure.kind}` : `Show the ${disclosure.kind}`}
+            </button>
+            {disclosureOpen ? <pre>{disclosure.text}</pre> : null}
+          </div>
+        ) : null}
+      </div>
+      {pending && actions.length > 0 ? (
+        <div className="permission-card-actions">
+          {actions.map((action) => (
+            <button
+              className={action.primary ? "primary" : ""}
+              disabled={action.disabled}
+              key={action.label}
+              onClick={action.onClick}
+              title={action.tooltip}
+              type="button"
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
       ) : null}
     </section>
+  );
+}
+
+export type LocalToolPermissionResolution = "always" | "allow-once" | "never" | "deny";
+export type LocalToolPermissionStatus =
+  | "pending"
+  | "submitting"
+  | "always"
+  | "allow-once"
+  | "never"
+  | "denied"
+  | "expired";
+
+export interface LocalToolPermissionCardProps {
+  status: LocalToolPermissionStatus;
+  canSubmit?: boolean;
+  canAlwaysAllow?: boolean;
+  alwaysAllowDisabledReason?: string;
+  failureNote?: string;
+  productName?: string;
+  escapeTarget?: boolean;
+  onResolve: (resolution: LocalToolPermissionResolution) => void;
+}
+
+export function LocalToolPermissionCard({
+  status,
+  canSubmit = true,
+  canAlwaysAllow = true,
+  alwaysAllowDisabledReason,
+  failureNote,
+  productName = "OpenBot",
+  escapeTarget = false,
+  onResolve,
+}: LocalToolPermissionCardProps) {
+  const pending = status === "pending" || status === "submitting";
+  const enabled = status === "pending" && canSubmit;
+
+  useEffect(() => {
+    if (!escapeTarget || !enabled) return;
+    const denyOnEscape = (event: KeyboardEvent) => {
+      if (
+        event.key !== "Escape" ||
+        event.repeat ||
+        event.defaultPrevented ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.shiftKey ||
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement ||
+        event.target instanceof HTMLSelectElement ||
+        document.querySelector('[role="dialog"], [role="alertdialog"]')
+      ) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      onResolve("deny");
+    };
+    window.addEventListener("keydown", denyOnEscape, { capture: true });
+    return () => window.removeEventListener("keydown", denyOnEscape, { capture: true });
+  }, [enabled, escapeTarget, onResolve]);
+
+  if (!pending) {
+    const outcome =
+      status === "always"
+        ? `${productName} can run commands on your computer.`
+        : status === "never"
+          ? `${productName} cannot run commands on your computer.`
+          : status === "denied" || status === "expired"
+            ? `${productName} was not allowed to run commands on your computer.`
+            : `${productName} can run commands on your computer this time.`;
+    return (
+      <div className="local-tool-permission-outcome" title={outcome}>
+        {outcome}
+      </div>
+    );
+  }
+
+  return (
+    <PermissionRequestCard
+      actions={[
+        {
+          label: "Always allow",
+          onClick: () => onResolve("always"),
+          disabled: !enabled || !canAlwaysAllow,
+          tooltip: !canAlwaysAllow ? alwaysAllowDisabledReason : undefined,
+          primary: true,
+        },
+        {
+          label: "Allow once",
+          onClick: () => onResolve("allow-once"),
+          disabled: !enabled,
+        },
+        { label: "Never", onClick: () => onResolve("never"), disabled: !enabled },
+      ]}
+      ariaLabel="Local tool permission"
+      description={`This applies to ${productName} and every agent. It can always be changed in Settings.`}
+      dismissLabel="Deny once"
+      dismissTooltip="Deny once (Esc)"
+      failureNote={failureNote}
+      hideBadge
+      leading={<span className="local-tool-permission-warning">!</span>}
+      onDismiss={() => onResolve("deny")}
+      title={`Allow ${productName} and all agents to run commands on your local computer?`}
+    />
+  );
+}
+
+export function LocalToolPermissionDock({ children }: { children: ReactNode }) {
+  return (
+    <div aria-label="Local tool permissions" className="local-tool-permission-dock" role="region">
+      {children}
+    </div>
   );
 }
 

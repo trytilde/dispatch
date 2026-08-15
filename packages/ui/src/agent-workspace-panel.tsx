@@ -1,6 +1,6 @@
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useState } from "react";
 
-interface AgentWorkspacePanelProps {
+export interface AgentWorkspacePanelProps {
   agentId: string;
   agentName: string;
   activityCount: number;

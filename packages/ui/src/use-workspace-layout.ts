@@ -21,7 +21,7 @@ const sidebarCollapsedKey = "openbot.workspace.sidebar-collapsed";
 const workspaceWidthKey = "openbot.workspace.computer-width";
 const workspaceOpenKey = "openbot.workspace.computer-open";
 
-interface WorkspaceLayout {
+export interface WorkspaceLayout {
   sidebarCollapsed: boolean;
   workspaceOpen: boolean;
   style: CSSProperties;

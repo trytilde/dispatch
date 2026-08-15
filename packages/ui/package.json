@@ -16,6 +16,10 @@
       "development": "./src/beautiful-ui/upstream/globals.css",
       "default": "./dist/beautiful-ui/upstream/globals.css"
     },
+    "./openbot-ui.css": {
+      "development": "./src/openbot-ui.css",
+      "default": "./dist/openbot-ui.css"
+    },
     "./beautiful-ui/*": {
       "types": "./src/beautiful-ui/upstream/*.tsx",
       "development": "./src/beautiful-ui/upstream/*.tsx",
@@ -29,6 +33,7 @@
         "import": "./dist/index.js"
       },
       "./beautiful-ui.css": "./dist/beautiful-ui/upstream/globals.css",
+      "./openbot-ui.css": "./dist/openbot-ui.css",
       "./beautiful-ui/*": {
         "types": "./dist/beautiful-ui/upstream/*.d.ts",
         "import": "./dist/beautiful-ui/upstream/*.js"

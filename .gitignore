@@ -10,6 +10,7 @@ test-results/
 /.env
 /.env.*
 configuration/.env
+configuration/secrets.enc.yaml
 .vercel/
 .openbot-deploy/
 .openbot/

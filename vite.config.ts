@@ -9,6 +9,7 @@ export default defineConfig({
       ".agents/**",
       "**/*.md",
       "**/*.hbs",
+      "configuration/secrets.enc.yaml",
       "apps/control-service/src/generated/**",
       "apps/web/src/routeTree.gen.ts",
       "packages/control-service-proto/src/gen/**",

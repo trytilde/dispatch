@@ -25,6 +25,8 @@ export async function runDevelopmentServer(): Promise<void> {
     createApp({
       chatProvider: configuration.providers.chat,
       computerProvider: configuration.providers.computer,
+      devMode: true,
+      environment,
     }),
   );
   await new Promise<void>((resolvePromise, reject) => {

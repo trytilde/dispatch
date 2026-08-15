@@ -2,7 +2,16 @@ import { randomUUID } from "node:crypto";
 import type { Hono } from "hono";
 import { ComputerProviderError, type ComputerProvider } from "@tryopenbot/computer-provider";
 
-export function registerComputerPreview(app: Hono, provider?: ComputerProvider): void {
+export interface ComputerPreviewOptions {
+  devMode?: boolean;
+  environment?: NodeJS.ProcessEnv;
+}
+
+export function registerComputerPreview(
+  app: Hono,
+  provider?: ComputerProvider,
+  options: ComputerPreviewOptions = {},
+): void {
   app.get("/api/computer/:agentId/preview", async (context) => {
     if (!provider) return context.json({ error: "Computer preview is not configured" }, 503);
     const agentId = context.req.param("agentId");
@@ -11,6 +20,8 @@ export function registerComputerPreview(app: Hono, provider?: ComputerProvider):
     try {
       const endpoint = await provider.previewAgentDesktop(agentId, {
         requestId: randomUUID(),
+        ...(options.devMode ? { devMode: true } : {}),
+        ...(options.environment ? { environment: options.environment } : {}),
         signal: context.req.raw.signal,
       });
       const response = context.redirect(endpoint.url.toString(), 307);

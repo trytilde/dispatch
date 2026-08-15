@@ -21,6 +21,8 @@ export interface AppOptions {
   webRoot?: string;
   chatProvider?: ChatProvider;
   computerProvider?: ComputerProvider;
+  devMode?: boolean;
+  environment?: NodeJS.ProcessEnv;
   tildeChatProxy?: TildeChatProxyOptions;
 }
 
@@ -38,7 +40,10 @@ export function createApp(options: AppOptions = {}): Hono {
 
   app.use("*", secureHeaders());
   app.get("/healthz", (context) => context.json({ ok: true, service: "openbot" }));
-  registerComputerPreview(app, options.computerProvider);
+  registerComputerPreview(app, options.computerProvider, {
+    devMode: options.devMode,
+    environment: options.environment,
+  });
   registerTildeChatProxy(app, options.tildeChatProxy);
   app.all("/rpc/*", async (context) => {
     const handler = controlHandlers.get(new URL(context.req.url).pathname);

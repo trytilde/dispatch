@@ -15,6 +15,14 @@ export {
   type WorkspaceSidebarProps,
 } from "./workspace-sidebar.js";
 export {
+  AgentListItem,
+  type AgentListItemProps,
+  AgentSearchDialog,
+  type AgentSearchDialogProps,
+  type SidebarAgent,
+  WorkspaceAccount,
+} from "./sidebar-components.js";
+export {
   ComputerIcon,
   MoreIcon,
   PlusIcon,

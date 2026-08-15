@@ -1,14 +1,13 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { AgentAvatar } from "./agent-avatar.js";
+import {
+  AgentListItem,
+  AgentSearchDialog,
+  type SidebarAgent,
+  WorkspaceAccount,
+} from "./sidebar-components.js";
 import { SearchIcon } from "./workspace-icons.js";
 
-export interface WorkspaceSidebarAgent {
-  id: string;
-  name: string;
-  status: string;
-  updatedAt?: string;
-  unread?: boolean;
-}
+export type WorkspaceSidebarAgent = SidebarAgent;
 
 export interface WorkspaceSidebarProps {
   agents: readonly WorkspaceSidebarAgent[];
@@ -75,23 +74,12 @@ export function WorkspaceSidebar({
             <p className="agent-status">No agents are available.</p>
           ) : null}
           {agents.map((agent) => (
-            <button
-              className={agent.id === selectedAgentId ? "agent-row active" : "agent-row"}
+            <AgentListItem
+              agent={agent}
               key={agent.id}
-              onClick={() => onSelectAgent(agent.id)}
-              title={agent.name}
-            >
-              <AgentAvatar id={agent.id} unread={agent.unread} />
-              <span className="agent-row-body">
-                <span className="agent-row-title">
-                  <strong>{agent.name}</strong>
-                  {agent.updatedAt ? (
-                    <time dateTime={agent.updatedAt}>{relativeTime(agent.updatedAt)}</time>
-                  ) : null}
-                </span>
-                <small>{agent.status || "Ready"}</small>
-              </span>
-            </button>
+              onSelect={onSelectAgent}
+              selected={agent.id === selectedAgentId}
+            />
           ))}
           {hasMore && !searchValue && onLoadMore ? (
             <button className="load-more-agents" onClick={onLoadMore}>
@@ -99,15 +87,7 @@ export function WorkspaceSidebar({
             </button>
           ) : null}
         </nav>
-        <button className="rail-footer" type="button">
-          <span className="footer-avatar">O</span>
-          <span>
-            <strong>OpenBot</strong>
-            <small>
-              <i className={`status-dot ${streamStatus.toLowerCase()}`} /> {streamStatus}
-            </small>
-          </span>
-        </button>
+        <WorkspaceAccount status={streamStatus} />
         <div
           aria-label="Resize sidebar"
           className="sidebar-resize-handle"
@@ -117,62 +97,15 @@ export function WorkspaceSidebar({
       </aside>
 
       {searchOpen ? (
-        <div className="sidebar-search-overlay" onMouseDown={onSearchClose} role="presentation">
-          <section
-            aria-label="Search agents"
-            aria-modal="true"
-            className="sidebar-search-dialog"
-            onKeyDown={(event) => {
-              if (event.key === "Escape") onSearchClose();
-            }}
-            onMouseDown={(event) => event.stopPropagation()}
-            role="dialog"
-          >
-            <label>
-              <SearchIcon />
-              <input
-                aria-label="Search agents"
-                autoFocus
-                onChange={(event) => onSearchChange(event.target.value)}
-                placeholder="Search agents"
-                value={searchValue}
-              />
-            </label>
-            <div className="sidebar-search-results">
-              {agents.map((agent) => (
-                <button
-                  key={agent.id}
-                  onClick={() => {
-                    onSearchClose();
-                    onSelectAgent(agent.id);
-                  }}
-                  type="button"
-                >
-                  <AgentAvatar id={agent.id} />
-                  <span>
-                    <strong>{agent.name}</strong>
-                    <small>{agent.status || "Ready"}</small>
-                  </span>
-                </button>
-              ))}
-              {!loading && agents.length === 0 ? <p>No agents found</p> : null}
-            </div>
-          </section>
-        </div>
+        <AgentSearchDialog
+          agents={agents}
+          loading={loading}
+          onChange={onSearchChange}
+          onClose={onSearchClose}
+          onSelect={onSelectAgent}
+          value={searchValue}
+        />
       ) : null}
     </>
   );
-}
-
-function relativeTime(value: string): string {
-  const timestamp = new Date(value).valueOf();
-  if (!Number.isFinite(timestamp)) return "";
-  const minutes = Math.floor(Math.max(0, Date.now() - timestamp) / 60_000);
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(timestamp);
 }

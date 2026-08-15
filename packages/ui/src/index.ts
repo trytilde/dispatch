@@ -28,6 +28,16 @@ export {
   type MessagePart,
 } from "./message-content.js";
 export {
+  ConnectionCard,
+  type ConnectionView,
+  FileCard,
+  type FileCardProps,
+  JsonBlock,
+  MarkdownText,
+  ReasoningCard,
+  ToolCallCard,
+} from "./rich-message-components.js";
+export {
   ChatHeader,
   type ChatHeaderProps,
   ConversationMessage,

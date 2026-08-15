@@ -6,6 +6,18 @@ export { default as TaskRows } from "./beautiful-ui/upstream/task-rows.js";
 export { default as Thinking } from "./beautiful-ui/upstream/thinking.js";
 export { default as ToolChips } from "./beautiful-ui/upstream/tool-chips.js";
 export { AgentWorkspacePanel, type AgentWorkspacePanelProps } from "./agent-workspace-panel.js";
+export {
+  type AsyncTask,
+  type AsyncTaskKind,
+  AsyncTasksPanel,
+  type AsyncTasksPanelProps,
+  type ConversationOutlineItem,
+  ConversationOutlinePanel,
+  type ConversationOutlinePanelProps,
+  type ConversationOutlineTab,
+  type ConversationOutlineTabStatus,
+  type ConversationOutlineToolStatus,
+} from "./activity-panels.js";
 export { ComputerStagePlaceholder, type ComputerStagePlaceholderProps } from "./computer-stage.js";
 export {
   ComputerLifecycleDialog,
@@ -40,7 +52,9 @@ export {
   WorkspaceAccount,
 } from "./sidebar-components.js";
 export {
+  ClockIcon,
   ComputerIcon,
+  ListIcon,
   MoreIcon,
   PlusIcon,
   ReplyIcon,

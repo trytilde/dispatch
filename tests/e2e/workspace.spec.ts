@@ -7,12 +7,12 @@ test("loads the bare workspace without setup", async ({ page }) => {
   await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "0px");
   await page.getByRole("button", { name: "Toggle Computer pane" }).click();
   await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "320px");
-  await expect(page.locator(".chat-pane > header")).toHaveCSS("height", "52px");
+  await expect(page.locator(".chat-pane > header")).toHaveCSS("height", "38px");
   await page.getByRole("button", { name: "Activity" }).click();
   await expect(page.getByText("Agent activity")).toBeVisible();
-  await page.getByRole("button", { name: "Collapse sidebar" }).click();
+  await page.keyboard.press("Control+b");
   await expect(page.locator(".rail")).toHaveCSS("width", "88px");
-  await page.getByRole("button", { name: "Expand sidebar" }).click();
+  await page.keyboard.press("Control+b");
   await expect(page.locator(".rail")).toHaveCSS("width", "280px");
 
   const sidebarHandle = await page.getByRole("separator", { name: "Resize sidebar" }).boundingBox();
@@ -195,6 +195,13 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
               title: "Reference",
               url: "https://example.com",
             },
+            {
+              type: "connector",
+              connector: "GitHub",
+              variant: "connect",
+              reason: "Authorize GitHub so I can work with repositories.",
+              authorizationUrl: "https://github.com/login/oauth/authorize?client_id=openbot-test",
+            },
           ],
         },
       ];
@@ -205,7 +212,9 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Working session" }).click();
+  await expect(page.locator(".agent-row")).toHaveCount(1);
+  await expect(page.getByText("Working session")).toHaveCount(0);
+  await expect(page.getByText("Ready when you are.")).toBeVisible();
   await page.getByRole("button", { name: "Toggle Computer pane" }).click();
   await expect(page.getByTitle("Hello World Computer")).toBeVisible();
   await expect(
@@ -219,7 +228,6 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await page.getByRole("button", { name: /Click to take over/ }).click();
   await expect(page.getByRole("button", { name: "Release" })).toBeVisible();
   await page.getByRole("button", { name: /Activity/ }).click();
-  await expect(page.getByText("Ready when you are.")).toBeVisible();
   await expect(page.getByText("Streaming preview")).toBeVisible();
   await expect(page.getByText("Queued follow-up")).toBeVisible();
   await expect(page.getByRole("button", { name: "Run now" })).toBeVisible();
@@ -234,11 +242,19 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
     buffer: Buffer.from("OpenBot brief"),
   });
   await page.getByRole("textbox", { name: "Message", exact: true }).fill("Read this file");
-  await page.getByLabel("Send").click();
+  await page.getByLabel("Send message").click();
 
   await expect(page.getByText("The file is clear and complete.")).toBeVisible();
   await expect(page.getByText("read_file")).toBeVisible();
   await expect(page.getByRole("button", { name: /brief.txt/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Authorize" })).toHaveAttribute(
+    "href",
+    "https://github.com/login/oauth/authorize?client_id=openbot-test",
+  );
+  await page.getByLabel("Agent message").first().hover();
+  await page.getByLabel("Reply").first().click();
+  await expect(page.getByText("Replying to Hello World")).toBeVisible();
+  await page.getByLabel("Cancel reply").click();
   await expect(page.getByText("Agent Turn Status").first()).toBeVisible();
 });
 
@@ -246,7 +262,6 @@ test("queues another turn while the agent is busy", async ({ page }) => {
   const now = new Date().toISOString();
   let queued = false;
   let postedText = "";
-  let requestedAgentSort = "";
 
   await page.route("**/api/computer/**", async (route) => {
     await route.fulfill({ contentType: "text/html", body: "<main>Busy agent desktop</main>" });
@@ -257,7 +272,6 @@ test("queues another turn while the agent is busy", async ({ page }) => {
     const url = new URL(request.url());
     const path = url.pathname;
     if (path.endsWith("/mission-control/sidebar")) {
-      requestedAgentSort = url.searchParams.get("agent_sort") ?? "";
       await route.fulfill({
         json: {
           items: [
@@ -320,7 +334,6 @@ test("queues another turn while the agent is busy", async ({ page }) => {
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Busy session" }).click();
   await expect(page.getByLabel("Queue message")).toBeVisible();
   await page.getByRole("textbox", { name: "Message", exact: true }).fill("Do this next");
   await page.getByLabel("Queue message").click();
@@ -329,9 +342,12 @@ test("queues another turn while the agent is busy", async ({ page }) => {
   await expect(page.getByText("Do this next")).toBeVisible();
   await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Sort conversations" }).click();
-  await page.getByLabel("Sort agents").selectOption("created_at");
-  await expect.poll(() => requestedAgentSort).toBe("created_at");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Search agents" })).toBeVisible();
+  await page.getByRole("textbox", { name: "Search agents" }).fill("Busy");
+  await expect(page.getByRole("dialog").getByRole("button", { name: /Busy Agent/ })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Search agents" })).toHaveCount(0);
 });
 
 test("keeps the server healthy and control namespace empty", async ({ request }) => {

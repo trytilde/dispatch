@@ -152,6 +152,7 @@ export function OpenBotApp() {
     (id: string) => {
       observerRef.current?.abort();
       const controller = new AbortController();
+      const seenEventIds = new Set<string>();
       observerRef.current = controller;
       setStreamStatus("Connecting");
 
@@ -160,6 +161,14 @@ export function OpenBotApp() {
           try {
             setStreamStatus("Live");
             await observeSession(id, controller.signal, (event) => {
+              if (event.id && seenEventIds.has(event.id)) return;
+              if (event.id) {
+                seenEventIds.add(event.id);
+                if (seenEventIds.size > 1_000) {
+                  const oldest = seenEventIds.values().next().value;
+                  if (oldest) seenEventIds.delete(oldest);
+                }
+              }
               setActivity((current) =>
                 [{ ...event, receivedAt: new Date() }, ...current].slice(0, 60),
               );

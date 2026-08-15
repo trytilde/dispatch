@@ -3,6 +3,43 @@ import type { AuthProvider } from "@tryopenbot/auth-provider";
 import { createApp } from "./app.js";
 
 describe("owner authentication", () => {
+  it("completes browser PKCE login and establishes host-only token cookies", async () => {
+    const provider = stubProvider();
+    const app = createApp({ authProvider: provider, webRoot: "/missing" });
+    const login = await app.request("https://openbot.test/auth/login");
+    expect(login.status).toBe(302);
+    const authorizationInput = provider.authorizationUrl.mock.calls[0]?.[0];
+    expect(authorizationInput).toMatchObject({
+      redirectUri: "https://openbot.test/auth/callback",
+    });
+    expect(authorizationInput?.state).toBeTruthy();
+    expect(authorizationInput?.codeChallenge).toBeTruthy();
+
+    const loginCookies = login.headers.getSetCookie();
+    const callbackCookie = loginCookies.map((cookie) => cookie.split(";", 1)[0]).join("; ");
+    const callback = await app.request(
+      `https://openbot.test/auth/callback?code=code-one&state=${encodeURIComponent(authorizationInput?.state ?? "")}`,
+      { headers: { cookie: callbackCookie } },
+    );
+    expect(callback.status).toBe(302);
+    expect(provider.exchangeCode).toHaveBeenCalledWith({
+      code: "code-one",
+      codeVerifier: expect.any(String),
+      redirectUri: "https://openbot.test/auth/callback",
+    });
+    const established = callback.headers.getSetCookie();
+    expect(established).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("openbot_access=fresh-token"),
+        expect.stringContaining("openbot_refresh=refresh-one"),
+      ]),
+    );
+    for (const cookie of established) {
+      expect(cookie).toContain("Path=/");
+      expect(cookie).not.toContain("Domain=");
+    }
+  });
+
   it("protects control routes and accepts an installation-scoped bearer token", async () => {
     const provider = stubProvider();
     const app = createApp({ authProvider: provider, webRoot: "/missing" });
@@ -71,6 +108,8 @@ function stubProvider() {
     })),
     verify: vi.fn(async () => ({ subject: "human-one", groups: [], scope: ["openbot:control"] })),
   } as unknown as AuthProvider & {
+    authorizationUrl: ReturnType<typeof vi.fn>;
+    exchangeCode: ReturnType<typeof vi.fn>;
     verify: ReturnType<typeof vi.fn>;
     refresh: ReturnType<typeof vi.fn>;
   };

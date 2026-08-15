@@ -21,15 +21,12 @@ import {
   createSession,
   deleteAttachment,
   deleteQueuedTurn,
-  getAgentSessions,
   getMessages,
   getQueuedTurns,
   getSidebar,
   interruptSession,
-  markSessionUnread,
   observeSession,
   type QueuedTurn,
-  renameSession,
   reorderQueuedTurn,
   sendMessage,
   type SessionSortOrder,
@@ -79,12 +76,12 @@ export function OpenBotApp() {
   const [streamStatus, setStreamStatus] = useState("Disconnected");
   const [turnStatus, setTurnStatus] = useState("");
   const [search, setSearch] = useState("");
-  const [showSorters, setShowSorters] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [composerFocused, setComposerFocused] = useState(false);
-  const [agentSort, setAgentSort] = useState<AgentSortOrder>("updated_at");
-  const [sessionSort, setSessionSort] = useState<SessionSortOrder>("updated_at");
-  const [renaming, setRenaming] = useState(false);
-  const [titleDraft, setTitleDraft] = useState("");
+  const [agentSort] = useState<AgentSortOrder>("updated_at");
+  const [sessionSort] = useState<SessionSortOrder>("updated_at");
+  const [messageMenuId, setMessageMenuId] = useState("");
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const observerRef = useRef<AbortController | undefined>(undefined);
   const refreshTimerRef = useRef<number | undefined>(undefined);
   const conversationRef = useRef<HTMLDivElement>(null);
@@ -94,11 +91,11 @@ export function OpenBotApp() {
   const restoredSessionRef = useRef("");
   const stickToBottomRef = useRef(true);
   const previousMessageIdRef = useRef("");
+  const loadedAgentRef = useRef("");
   const [showScrollLatest, setShowScrollLatest] = useState(false);
   const layout = useWorkspaceLayout();
 
   const selectedAgent = agents.find((agent) => agent.id === agentId);
-  const selectedSession = selectedAgent?.sessions.items.find((item) => item.id === sessionId);
   const hasContent = Boolean(draft.trim() || files.length);
   const composerExpanded =
     composerFocused || draft.includes("\n") || draft.length > 80 || files.length > 0;
@@ -110,19 +107,16 @@ export function OpenBotApp() {
     input.style.height = `${Math.min(200, Math.max(44, input.scrollHeight))}px`;
   }, [draft]);
 
-  const refreshSidebar = useCallback(
-    async (query = search) => {
-      const response = await getSidebar(query, agentSort, sessionSort);
-      setAgents(response.items);
-      setNextAgentToken(response.next_page_token);
-      setAgentId((current) =>
-        response.items.some((agent) => agent.id === current)
-          ? current
-          : (response.items[0]?.id ?? ""),
-      );
-    },
-    [agentSort, search, sessionSort],
-  );
+  const refreshSidebar = useCallback(async () => {
+    const response = await getSidebar("", agentSort, sessionSort);
+    setAgents(response.items);
+    setNextAgentToken(response.next_page_token);
+    setAgentId((current) =>
+      response.items.some((agent) => agent.id === current)
+        ? current
+        : (response.items[0]?.id ?? ""),
+    );
+  }, [agentSort, sessionSort]);
 
   const refreshMessages = useCallback(async (id: string, preserveLiveMessages = false) => {
     const response = await getMessages(id);
@@ -186,16 +180,21 @@ export function OpenBotApp() {
   );
 
   useEffect(() => {
-    const timer = window.setTimeout(
-      () => {
-        void refreshSidebar(search)
-          .catch((reason: unknown) => setError(errorMessage(reason)))
-          .finally(() => setLoading(false));
-      },
-      search ? 180 : 0,
-    );
+    const timer = window.setTimeout(() => {
+      void refreshSidebar()
+        .catch((reason: unknown) => setError(errorMessage(reason)))
+        .finally(() => setLoading(false));
+    }, 0);
     return () => window.clearTimeout(timer);
-  }, [refreshSidebar, search]);
+  }, [refreshSidebar]);
+
+  useEffect(() => {
+    if (loading || !agentId || loadedAgentRef.current === agentId) return;
+    const agent = agents.find((candidate) => candidate.id === agentId);
+    const latestSession = agent?.sessions.items[0];
+    loadedAgentRef.current = agentId;
+    if (latestSession) void selectSession(agentId, latestSession);
+  }, [agentId, agents, loading]);
 
   useEffect(
     () => () => {
@@ -244,24 +243,13 @@ export function OpenBotApp() {
 
   const filteredAgents = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return agents;
-    return agents
-      .map((agent) => ({
-        ...agent,
-        sessions: {
-          ...agent.sessions,
-          items: agent.sessions.items.filter((session) =>
-            (session.title || "Untitled chat").toLowerCase().includes(query),
-          ),
-        },
-      }))
-      .filter(
-        (agent) =>
-          agent.display_name.toLowerCase().includes(query) || agent.sessions.items.length > 0,
-      );
+    return query
+      ? agents.filter((agent) => agent.display_name.toLowerCase().includes(query))
+      : agents;
   }, [agents, search]);
 
   async function selectSession(nextAgentId: string, nextSession: ChatSession): Promise<void> {
+    loadedAgentRef.current = nextAgentId;
     setAgentId(nextAgentId);
     setSessionId(nextSession.id);
     setMessages([]);
@@ -284,9 +272,15 @@ export function OpenBotApp() {
     }
   }
 
-  function startNewChat(nextAgentId = agentId): void {
+  function selectAgent(agent: ChatAgent): void {
+    const latestSession = agent.sessions.items[0];
+    if (latestSession) {
+      void selectSession(agent.id, latestSession);
+      return;
+    }
     observerRef.current?.abort();
-    setAgentId(nextAgentId);
+    loadedAgentRef.current = agent.id;
+    setAgentId(agent.id);
     setSessionId("");
     setMessages([]);
     setFiles([]);
@@ -301,8 +295,11 @@ export function OpenBotApp() {
 
   async function send(event: FormEvent): Promise<void> {
     event.preventDefault();
-    const text = draft.trim();
+    const authoredText = draft.trim();
     if (!hasContent || !agentId || submitting) return;
+    const text = replyingTo
+      ? `> ${messageText(replyingTo).replaceAll("\n", "\n> ")}\n\n${authoredText}`.trim()
+      : authoredText;
     const queueing = agentBusy;
     const outgoingFiles = files;
     setSubmitting(true);
@@ -323,6 +320,7 @@ export function OpenBotApp() {
         setMessages((current) => [...current, optimistic]);
       }
       setDraft("");
+      setReplyingTo(null);
       setFiles([]);
 
       const attachmentIds: string[] = [];
@@ -352,7 +350,7 @@ export function OpenBotApp() {
       }
       setFiles([]);
       setTurnStatus(queueing ? "Queued" : "Agent working");
-      await refreshSidebar(search);
+      await refreshSidebar();
       await refreshQueue(activeSessionId);
     } catch (reason) {
       setError(errorMessage(reason));
@@ -395,19 +393,6 @@ export function OpenBotApp() {
     setFiles((current) => current.filter((file) => file.id !== pending.id));
   }
 
-  async function saveTitle(event: FormEvent): Promise<void> {
-    event.preventDefault();
-    const title = titleDraft.trim();
-    if (!sessionId || !title) return;
-    try {
-      const updated = await renameSession(sessionId, title);
-      setAgents((current) => updateSession(current, sessionId, updated));
-      setRenaming(false);
-    } catch (reason) {
-      setError(errorMessage(reason));
-    }
-  }
-
   async function loadOlderMessages(): Promise<void> {
     if (!sessionId || !nextMessageToken) return;
     const response = await getMessages(sessionId, nextMessageToken);
@@ -415,28 +400,10 @@ export function OpenBotApp() {
     setNextMessageToken(response.next_page_token);
   }
 
-  async function loadMoreSessions(agent: ChatAgent): Promise<void> {
-    if (!agent.sessions.next_page_token) return;
-    const response = await getAgentSessions(agent.id, agent.sessions.next_page_token, sessionSort);
-    setAgents((current) =>
-      current.map((candidate) =>
-        candidate.id === agent.id
-          ? {
-              ...candidate,
-              sessions: {
-                items: uniqueSessions([...candidate.sessions.items, ...response.items]),
-                next_page_token: response.next_page_token,
-              },
-            }
-          : candidate,
-      ),
-    );
-  }
-
   async function loadMoreAgents(): Promise<void> {
     if (!nextAgentToken) return;
     try {
-      const response = await getSidebar(search, agentSort, sessionSort, nextAgentToken);
+      const response = await getSidebar("", agentSort, sessionSort, nextAgentToken);
       setAgents((current) => uniqueAgents([...current, ...response.items]));
       setNextAgentToken(response.next_page_token);
     } catch (reason) {
@@ -478,115 +445,75 @@ export function OpenBotApp() {
     saveScrollSnapshot(sessionId, 0, scrollSnapshotsRef);
   }
 
+  function openSearch(): void {
+    setSearch("");
+    setSearchOpen(true);
+  }
+
+  function closeSearch(): void {
+    setSearchOpen(false);
+    setSearch("");
+  }
+
   return (
     <main
       className={`workspace-shell rich-chat ${layout.sidebarCollapsed ? "sidebar-collapsed" : ""} ${layout.workspaceOpen ? "workspace-open" : "workspace-closed"}`}
       style={layout.style}
     >
       <aside className="rail">
-        <div className="sidebar-titlebar">
-          <div className="brand">
-            <span>✣</span>
-            <strong>OpenBot</strong>
-          </div>
-          <div className="sidebar-actions">
-            <button
-              aria-label={layout.sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-pressed={layout.sidebarCollapsed}
-              onClick={layout.toggleSidebar}
-              title={`${layout.sidebarCollapsed ? "Expand" : "Collapse"} sidebar (Ctrl+B)`}
-            >
-              {layout.sidebarCollapsed ? "›" : "‹"}
-            </button>
-            <button
-              aria-label="Sort conversations"
-              aria-expanded={showSorters}
-              onClick={() => setShowSorters((visible) => !visible)}
-              title="Sort conversations"
-            >
-              ↕
-            </button>
-            <button
-              aria-label="Start a new chat"
-              disabled={!agentId}
-              onClick={() => startNewChat()}
-              title="New chat"
-            >
-              +
-            </button>
-          </div>
-        </div>
-        <label className="chat-search">
-          <span>⌕</span>
-          <input
-            aria-label="Search conversations"
-            placeholder="Search chats"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </label>
-        <div className={showSorters ? "chat-sorters open" : "chat-sorters"}>
-          <label>
-            Agents
-            <select
-              aria-label="Sort agents"
-              value={agentSort}
-              onChange={(event) => setAgentSort(event.target.value as AgentSortOrder)}
-            >
-              <option value="updated_at">Recent</option>
-              <option value="created_at">Created</option>
-              <option value="manual">Manual</option>
-            </select>
-          </label>
-          <label>
-            Chats
-            <select
-              aria-label="Sort chats"
-              value={sessionSort}
-              onChange={(event) => setSessionSort(event.target.value as SessionSortOrder)}
-            >
-              <option value="updated_at">Recent</option>
-              <option value="created_at">Created</option>
-            </select>
-          </label>
-        </div>
+        <div className="sidebar-titlebar" />
+        <button
+          aria-label="Search"
+          className="chat-search"
+          onClick={openSearch}
+          onKeyDown={(event) => {
+            if (
+              !event.defaultPrevented &&
+              event.key.length === 1 &&
+              event.key !== " " &&
+              !event.metaKey &&
+              !event.ctrlKey &&
+              !event.altKey
+            ) {
+              event.preventDefault();
+              openSearch();
+            }
+          }}
+          type="button"
+        >
+          <span>
+            <SearchIcon />
+            Search
+          </span>
+        </button>
         <nav className="agent-navigation">
-          <p>Recent</p>
           {loading ? <p className="agent-status">Loading agents…</p> : null}
           {!loading && agents.length === 0 ? (
             <p className="agent-status">No agents are available.</p>
           ) : null}
           {filteredAgents.map((agent) => (
-            <div className="agent-group" key={agent.id}>
-              <button
-                className={agent.id === agentId ? "agent-row active" : "agent-row"}
-                onClick={() => startNewChat(agent.id)}
-              >
-                <span className="avatar">{agent.display_name.slice(0, 1).toUpperCase()}</span>
-                <span>
+            <button
+              className={agent.id === agentId ? "agent-row active" : "agent-row"}
+              key={agent.id}
+              onClick={() => selectAgent(agent)}
+              title={agent.display_name}
+            >
+              <AgentAvatar
+                agent={agent}
+                unread={agent.sessions.items.some((item) => item.unread)}
+              />
+              <span className="agent-row-body">
+                <span className="agent-row-title">
                   <strong>{agent.display_name}</strong>
-                  <small>{agent.status}</small>
+                  {agent.sessions.items[0] ? (
+                    <time dateTime={agent.sessions.items[0].updated_at}>
+                      {relativeSessionTime(agent.sessions.items[0].updated_at)}
+                    </time>
+                  ) : null}
                 </span>
-              </button>
-              <div className="session-list">
-                {agent.sessions.items.map((item) => (
-                  <button
-                    className={item.id === sessionId ? "active" : ""}
-                    key={item.id}
-                    onClick={() => void selectSession(agent.id, item)}
-                    title={item.title || "Untitled chat"}
-                  >
-                    {item.unread ? <i /> : null}
-                    {item.title || "Untitled chat"}
-                  </button>
-                ))}
-                {agent.sessions.next_page_token ? (
-                  <button className="load-more" onClick={() => void loadMoreSessions(agent)}>
-                    Show more
-                  </button>
-                ) : null}
-              </div>
-            </div>
+                <small>{agent.status || "Ready"}</small>
+              </span>
+            </button>
           ))}
           {nextAgentToken && !search ? (
             <button className="load-more-agents" onClick={() => void loadMoreAgents()}>
@@ -594,7 +521,7 @@ export function OpenBotApp() {
             </button>
           ) : null}
         </nav>
-        <div className="rail-footer">
+        <button className="rail-footer" type="button">
           <span className="footer-avatar">O</span>
           <span>
             <strong>OpenBot</strong>
@@ -602,7 +529,7 @@ export function OpenBotApp() {
               <i className={`status-dot ${streamStatus.toLowerCase()}`} /> {streamStatus}
             </small>
           </span>
-        </div>
+        </button>
         <div
           aria-label="Resize sidebar"
           className="sidebar-resize-handle"
@@ -611,26 +538,67 @@ export function OpenBotApp() {
         />
       </aside>
 
+      {searchOpen ? (
+        <div className="sidebar-search-overlay" onMouseDown={closeSearch} role="presentation">
+          <section
+            aria-label="Search agents"
+            aria-modal="true"
+            className="sidebar-search-dialog"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") closeSearch();
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <label>
+              <SearchIcon />
+              <input
+                aria-label="Search agents"
+                autoFocus
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search agents"
+                value={search}
+              />
+            </label>
+            <div className="sidebar-search-results">
+              {filteredAgents.map((agent) => (
+                <button
+                  key={agent.id}
+                  onClick={() => {
+                    closeSearch();
+                    selectAgent(agent);
+                  }}
+                  type="button"
+                >
+                  <AgentAvatar agent={agent} />
+                  <span>
+                    <strong>{agent.display_name}</strong>
+                    <small>{agent.status || "Ready"}</small>
+                  </span>
+                </button>
+              ))}
+              {!loading && filteredAgents.length === 0 ? <p>No agents found</p> : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
+
       <section className="chat-pane">
-        <header>
-          <div className="chat-title">
-            <p className="eyebrow">{selectedAgent?.status || "Agent workspace"}</p>
-            {renaming ? (
-              <form onSubmit={(event) => void saveTitle(event)}>
-                <input
-                  aria-label="Conversation title"
-                  autoFocus
-                  value={titleDraft}
-                  onChange={(event) => setTitleDraft(event.target.value)}
-                  onBlur={() => setRenaming(false)}
-                />
-              </form>
+        <header className="chat-header">
+          <div className="chat-identity">
+            {selectedAgent ? (
+              <AgentAvatar agent={selectedAgent} />
             ) : (
-              <h2>{selectedSession?.title || selectedAgent?.display_name || "OpenBot"}</h2>
+              <span className="agent-avatar">O</span>
             )}
+            <div className="chat-title">
+              <h2>{selectedAgent?.display_name || "OpenBot"}</h2>
+              <span>
+                {turnStatus || (streamStatus === "Live" ? "Online" : selectedAgent?.status)}
+              </span>
+            </div>
           </div>
           <div className="chat-actions">
-            {turnStatus ? <span>{turnStatus}</span> : null}
             <button
               aria-expanded={layout.workspaceOpen}
               aria-label="Toggle Computer pane"
@@ -638,33 +606,8 @@ export function OpenBotApp() {
               onClick={layout.toggleWorkspace}
               title="Toggle Computer pane (Ctrl+Alt+B)"
             >
-              Computer
+              <ComputerIcon />
             </button>
-            {sessionId ? (
-              <>
-                <button
-                  title="Rename chat"
-                  onClick={() => {
-                    setTitleDraft(selectedSession?.title || "");
-                    setRenaming(true);
-                  }}
-                >
-                  Rename
-                </button>
-                <button
-                  title="Mark unread"
-                  onClick={() =>
-                    void markSessionUnread(sessionId)
-                      .then((updated) =>
-                        setAgents((current) => updateSession(current, sessionId, updated)),
-                      )
-                      .catch((reason: unknown) => setError(errorMessage(reason)))
-                  }
-                >
-                  Unread
-                </button>
-              </>
-            ) : null}
           </div>
         </header>
 
@@ -697,25 +640,68 @@ export function OpenBotApp() {
                   Load earlier messages
                 </button>
               ) : null}
-              {visibleMessages.map((message) => (
-                <article className={`message ${message.role}`} key={message.id}>
-                  <div className="message-meta">
-                    <span>
-                      {message.role === "user"
-                        ? "You"
-                        : message.user_display_name || selectedAgent?.display_name || message.role}
-                    </span>
-                    <time dateTime={message.created_at}>{formatTime(message.created_at)}</time>
-                    <button
-                      aria-label="Copy message"
-                      onClick={() => void navigator.clipboard.writeText(messageText(message))}
-                    >
-                      Copy
-                    </button>
-                  </div>
-                  <MessageContent message={message} />
-                </article>
-              ))}
+              {visibleMessages.map((message, index) => {
+                const previous = visibleMessages[index - 1];
+                const next = visibleMessages[index + 1];
+                const continuedPrevious = previous?.role === message.role;
+                const continuedNext = next?.role === message.role;
+                return (
+                  <article
+                    aria-label={message.role === "user" ? "Your message" : "Agent message"}
+                    className={`message ${message.role} ${continuedPrevious ? "continued-previous" : "group-start"} ${continuedNext ? "continued-next" : ""}`}
+                    key={message.id}
+                  >
+                    <div className="message-bubble">
+                      <MessageContent message={message} />
+                    </div>
+                    <div className="message-footer">
+                      <time dateTime={message.created_at}>{formatTime(message.created_at)}</time>
+                    </div>
+                    <div className="message-actions">
+                      <button
+                        aria-label="Reply"
+                        onClick={() => {
+                          setReplyingTo(message);
+                          composerInputRef.current?.focus();
+                        }}
+                      >
+                        <ReplyIcon />
+                      </button>
+                      <button
+                        aria-label="More message actions"
+                        onClick={() => {
+                          setMessageMenuId((current) => (current === message.id ? "" : message.id));
+                        }}
+                      >
+                        <MoreIcon />
+                      </button>
+                      {messageMenuId === message.id ? (
+                        <div className="message-menu" role="menu">
+                          <button
+                            role="menuitem"
+                            onClick={() => {
+                              setDraft(`Start a thread about: ${messageText(message)}`);
+                              setMessageMenuId("");
+                              composerInputRef.current?.focus();
+                            }}
+                          >
+                            Start a thread
+                          </button>
+                          <button
+                            role="menuitem"
+                            onClick={() => {
+                              void navigator.clipboard.writeText(messageText(message));
+                              setMessageMenuId("");
+                            }}
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
               {agentBusy ? (
                 <div className="thinking-inline">
                   <span /> {turnStatus || `${selectedAgent?.display_name || "Agent"} is working…`}
@@ -742,6 +728,21 @@ export function OpenBotApp() {
             addFiles(event.dataTransfer.files);
           }}
         >
+          {replyingTo ? (
+            <div className="reply-preview">
+              <ReplyIcon />
+              <span>
+                <strong>
+                  Replying to{" "}
+                  {replyingTo.role === "user" ? "yourself" : selectedAgent?.display_name || "agent"}
+                </strong>
+                <small>{messageText(replyingTo) || "Message"}</small>
+              </span>
+              <button aria-label="Cancel reply" onClick={() => setReplyingTo(null)} type="button">
+                ×
+              </button>
+            </div>
+          ) : null}
           {files.length ? (
             <div className="attachment-tray">
               {files.map((pending) => (
@@ -774,7 +775,7 @@ export function OpenBotApp() {
             aria-label="Message"
             disabled={!agentId}
             ref={composerInputRef}
-            placeholder={agentId ? "Message your agent…" : "No agent is available."}
+            placeholder={agentId ? "Ask anything, or drop a file." : "No agent is available."}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onBlur={() => setComposerFocused(false)}
@@ -806,7 +807,7 @@ export function OpenBotApp() {
                 aria-label="Attach files"
                 title="Attach files"
               >
-                +
+                <PlusIcon />
               </button>
               <span className={error ? "error" : ""}>
                 {error || "Shift + Enter for a new line"}
@@ -824,10 +825,10 @@ export function OpenBotApp() {
                 </button>
               ) : null}
               <button
-                aria-label={agentBusy ? "Queue message" : "Send"}
+                aria-label={agentBusy ? "Queue message" : "Send message"}
                 disabled={!agentId || !hasContent || submitting}
               >
-                ↑
+                <SendIcon />
               </button>
             </div>
           </div>
@@ -931,6 +932,81 @@ function EventSummary({ value }: { value: unknown }) {
   return summary ? <p>{summary}</p> : null;
 }
 
+function PlusIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16">
+      <path d="M8 3.25v9.5M3.25 8h9.5" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16">
+      <circle cx="7" cy="7" r="4.25" />
+      <path d="m10.25 10.25 3 3" />
+    </svg>
+  );
+}
+
+function AgentAvatar({ agent, unread = false }: { agent: ChatAgent; unread?: boolean }) {
+  const palettes = [
+    { surface: "#204f7c", mark: "#159efa" },
+    { surface: "#315e45", mark: "#33c276" },
+    { surface: "#743927", mark: "#ff6333" },
+  ];
+  const palette = palettes[stableHue(agent.id) % palettes.length] ?? palettes[0];
+  return (
+    <span aria-hidden="true" className="avatar">
+      <svg viewBox="0 0 40 40">
+        <rect width="40" height="40" rx="9.5" fill={palette?.surface} />
+        <g fill={palette?.mark}>
+          <circle cx="12" cy="8" r="2.1" />
+          <circle cx="20" cy="8" r="2.1" />
+          <circle cx="28" cy="8" r="2.1" />
+          <circle cx="8" cy="12" r="2.1" />
+          <rect x="12" y="10" width="8" height="4.2" rx="2.1" />
+          <circle cx="24" cy="12" r="2.1" />
+          <circle cx="32" cy="12" r="2.1" />
+          <circle cx="12" cy="16" r="2.1" />
+          <rect x="16" y="14" width="12" height="4.2" rx="2.1" />
+          <circle cx="8" cy="20" r="2.1" />
+          <circle cx="16" cy="20" r="2.1" />
+          <circle cx="24" cy="20" r="2.1" />
+          <circle cx="32" cy="20" r="2.1" />
+          <rect x="10" y="22" width="12" height="4.2" rx="2.1" />
+          <circle cx="28" cy="24" r="2.1" />
+          <circle cx="8" cy="28" r="2.1" />
+          <circle cx="16" cy="28" r="2.1" />
+          <rect x="20" y="26" width="12" height="4.2" rx="2.1" />
+          <circle cx="12" cy="32" r="2.1" />
+          <circle cx="24" cy="32" r="2.1" />
+        </g>
+      </svg>
+      {unread ? <i /> : null}
+    </span>
+  );
+}
+
+function stableHue(value: string): number {
+  let hash = 0;
+  for (const character of value) hash = (hash * 31 + character.charCodeAt(0)) | 0;
+  return Math.abs(hash) % 360;
+}
+
+function relativeSessionTime(value: string): string {
+  const timestamp = new Date(value).valueOf();
+  if (!Number.isFinite(timestamp)) return "";
+  const minutes = Math.floor(Math.max(0, Date.now() - timestamp) / 60_000);
+  if (minutes < 1) return "now";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(timestamp);
+}
+
 function addSession(agents: ChatAgent[], agentId: string, session: ChatSession): ChatAgent[] {
   return agents.map((agent) =>
     agent.id === agentId
@@ -939,26 +1015,10 @@ function addSession(agents: ChatAgent[], agentId: string, session: ChatSession):
   );
 }
 
-function updateSession(agents: ChatAgent[], sessionId: string, updated: ChatSession): ChatAgent[] {
-  return agents.map((agent) => ({
-    ...agent,
-    sessions: {
-      ...agent.sessions,
-      items: agent.sessions.items.map((session) =>
-        session.id === sessionId ? { ...session, ...updated } : session,
-      ),
-    },
-  }));
-}
-
 function uniqueMessages(messages: ChatMessage[]): ChatMessage[] {
   return [...new Map(messages.map((message) => [message.id, message])).values()].sort(
     (left, right) => Date.parse(left.created_at) - Date.parse(right.created_at),
   );
-}
-
-function uniqueSessions(sessions: ChatSession[]): ChatSession[] {
-  return [...new Map(sessions.map((session) => [session.id, session])).values()];
 }
 
 function uniqueAgents(agents: ChatAgent[]): ChatAgent[] {
@@ -1311,6 +1371,41 @@ function unknownText(value: unknown): string {
 function messageText(message: ChatMessage): string {
   if (message.text) return message.text;
   return (message.parts ?? []).map((part) => part.text || "").join("");
+}
+
+function ComputerIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16">
+      <rect x="2.25" y="2.75" width="11.5" height="8.5" rx="1.5" />
+      <path d="M5.25 13.25h5.5M8 11.25v2" />
+    </svg>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16">
+      <circle cx="3.25" cy="8" r="1" />
+      <circle cx="8" cy="8" r="1" />
+      <circle cx="12.75" cy="8" r="1" />
+    </svg>
+  );
+}
+
+function ReplyIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16">
+      <path d="m6.75 4-4 4 4 4M3.25 8h5.5c2.25 0 3.75 1.2 4 3.5" />
+    </svg>
+  );
+}
+
+function SendIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16">
+      <path d="M8 12.5v-9M4.5 7 8 3.5 11.5 7" />
+    </svg>
+  );
 }
 
 function formatTime(value: string): string {

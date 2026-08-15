@@ -6,6 +6,7 @@ import {
   type SetStateAction,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -37,6 +38,7 @@ import {
 } from "../chat-api.js";
 import { MessageContent } from "../message-content.js";
 import { AgentWorkspacePanel } from "../agent-workspace-panel.js";
+import { useWorkspaceLayout } from "../use-workspace-layout.js";
 
 interface PendingFile {
   id: string;
@@ -77,6 +79,8 @@ export function OpenBotApp() {
   const [streamStatus, setStreamStatus] = useState("Disconnected");
   const [turnStatus, setTurnStatus] = useState("");
   const [search, setSearch] = useState("");
+  const [showSorters, setShowSorters] = useState(false);
+  const [composerFocused, setComposerFocused] = useState(false);
   const [agentSort, setAgentSort] = useState<AgentSortOrder>("updated_at");
   const [sessionSort, setSessionSort] = useState<SessionSortOrder>("updated_at");
   const [renaming, setRenaming] = useState(false);
@@ -85,15 +89,26 @@ export function OpenBotApp() {
   const refreshTimerRef = useRef<number | undefined>(undefined);
   const conversationRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const composerInputRef = useRef<HTMLTextAreaElement>(null);
   const scrollSnapshotsRef = useRef<Record<string, number>>(readScrollSnapshots());
   const restoredSessionRef = useRef("");
   const stickToBottomRef = useRef(true);
   const previousMessageIdRef = useRef("");
   const [showScrollLatest, setShowScrollLatest] = useState(false);
+  const layout = useWorkspaceLayout();
 
   const selectedAgent = agents.find((agent) => agent.id === agentId);
   const selectedSession = selectedAgent?.sessions.items.find((item) => item.id === sessionId);
   const hasContent = Boolean(draft.trim() || files.length);
+  const composerExpanded =
+    composerFocused || draft.includes("\n") || draft.length > 80 || files.length > 0;
+
+  useLayoutEffect(() => {
+    const input = composerInputRef.current;
+    if (!input) return;
+    input.style.height = "0px";
+    input.style.height = `${Math.min(200, Math.max(44, input.scrollHeight))}px`;
+  }, [draft]);
 
   const refreshSidebar = useCallback(
     async (query = search) => {
@@ -153,7 +168,9 @@ export function OpenBotApp() {
               }
               window.clearTimeout(refreshTimerRef.current);
               refreshTimerRef.current = window.setTimeout(() => {
-                void refreshMessages(id).catch((reason: unknown) => setError(errorMessage(reason)));
+                void refreshMessages(id, true).catch((reason: unknown) =>
+                  setError(errorMessage(reason)),
+                );
               }, 80);
             });
           } catch (reason) {
@@ -462,15 +479,43 @@ export function OpenBotApp() {
   }
 
   return (
-    <main className="workspace-shell rich-chat">
+    <main
+      className={`workspace-shell rich-chat ${layout.sidebarCollapsed ? "sidebar-collapsed" : ""} ${layout.workspaceOpen ? "workspace-open" : "workspace-closed"}`}
+      style={layout.style}
+    >
       <aside className="rail">
-        <div className="brand">
-          <span>✣</span>
-          <strong>OpenBot</strong>
+        <div className="sidebar-titlebar">
+          <div className="brand">
+            <span>✣</span>
+            <strong>OpenBot</strong>
+          </div>
+          <div className="sidebar-actions">
+            <button
+              aria-label={layout.sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-pressed={layout.sidebarCollapsed}
+              onClick={layout.toggleSidebar}
+              title={`${layout.sidebarCollapsed ? "Expand" : "Collapse"} sidebar (Ctrl+B)`}
+            >
+              {layout.sidebarCollapsed ? "›" : "‹"}
+            </button>
+            <button
+              aria-label="Sort conversations"
+              aria-expanded={showSorters}
+              onClick={() => setShowSorters((visible) => !visible)}
+              title="Sort conversations"
+            >
+              ↕
+            </button>
+            <button
+              aria-label="Start a new chat"
+              disabled={!agentId}
+              onClick={() => startNewChat()}
+              title="New chat"
+            >
+              +
+            </button>
+          </div>
         </div>
-        <button className="new-chat" disabled={!agentId} onClick={() => startNewChat()}>
-          <span>+</span> New chat
-        </button>
         <label className="chat-search">
           <span>⌕</span>
           <input
@@ -480,7 +525,7 @@ export function OpenBotApp() {
             onChange={(event) => setSearch(event.target.value)}
           />
         </label>
-        <div className="chat-sorters">
+        <div className={showSorters ? "chat-sorters open" : "chat-sorters"}>
           <label>
             Agents
             <select
@@ -506,7 +551,7 @@ export function OpenBotApp() {
           </label>
         </div>
         <nav className="agent-navigation">
-          <p>Agents</p>
+          <p>Recent</p>
           {loading ? <p className="agent-status">Loading agents…</p> : null}
           {!loading && agents.length === 0 ? (
             <p className="agent-status">No agents are available.</p>
@@ -550,8 +595,20 @@ export function OpenBotApp() {
           ) : null}
         </nav>
         <div className="rail-footer">
-          <span className={`status-dot ${streamStatus.toLowerCase()}`} /> {streamStatus}
+          <span className="footer-avatar">O</span>
+          <span>
+            <strong>OpenBot</strong>
+            <small>
+              <i className={`status-dot ${streamStatus.toLowerCase()}`} /> {streamStatus}
+            </small>
+          </span>
         </div>
+        <div
+          aria-label="Resize sidebar"
+          className="sidebar-resize-handle"
+          onPointerDown={layout.beginSidebarResize}
+          role="separator"
+        />
       </aside>
 
       <section className="chat-pane">
@@ -574,6 +631,15 @@ export function OpenBotApp() {
           </div>
           <div className="chat-actions">
             {turnStatus ? <span>{turnStatus}</span> : null}
+            <button
+              aria-expanded={layout.workspaceOpen}
+              aria-label="Toggle Computer pane"
+              className={layout.workspaceOpen ? "active" : ""}
+              onClick={layout.toggleWorkspace}
+              title="Toggle Computer pane (Ctrl+Alt+B)"
+            >
+              Computer
+            </button>
             {sessionId ? (
               <>
                 <button
@@ -665,7 +731,7 @@ export function OpenBotApp() {
         ) : null}
 
         <form
-          className={`composer ${dragging ? "dragging" : ""}`}
+          className={`composer ${dragging ? "dragging" : ""} ${composerExpanded ? "expanded" : ""}`}
           onSubmit={(event) => void send(event)}
           onDragEnter={(event) => dragState(event, true)}
           onDragOver={(event) => dragState(event, true)}
@@ -707,9 +773,12 @@ export function OpenBotApp() {
           <textarea
             aria-label="Message"
             disabled={!agentId}
+            ref={composerInputRef}
             placeholder={agentId ? "Message your agent…" : "No agent is available."}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
+            onBlur={() => setComposerFocused(false)}
+            onFocus={() => setComposerFocused(true)}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
                 event.preventDefault();
@@ -769,6 +838,9 @@ export function OpenBotApp() {
         agentId={agentId}
         agentName={selectedAgent?.display_name || "Agent"}
         activityCount={activity.length}
+        open={layout.workspaceOpen}
+        onClose={layout.toggleWorkspace}
+        onResize={layout.beginWorkspaceResize}
         activity={
           <>
             {queuedTurns.length ? (

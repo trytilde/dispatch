@@ -324,6 +324,21 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await expect(page.getByText("Replying to Hello World")).toBeVisible();
   await page.getByLabel("Cancel reply").click();
   await expect(page.getByText("Agent Turn Status").first()).toBeVisible();
+  await page.getByLabel("Agent message").first().hover();
+  await page.getByLabel("More message actions").first().click();
+  await page.getByRole("menuitem", { name: "Start a thread" }).click();
+  const exchange = page.getByRole("dialog", { name: "Agent exchange" });
+  await expect(exchange).toBeVisible();
+  await expect(
+    exchange.getByRole("paragraph").filter({ hasText: "Ready when you are." }),
+  ).toBeVisible();
+  await expect(exchange.getByText("Replying to Hello World")).toBeVisible();
+  await expect(exchange.locator(".thread-overlay-sheet")).toHaveCSS(
+    "animation-timing-function",
+    "linear(0 0%, 0.01588 2%, 0.05618 4%, 0.11201 6%, 0.1768 8%, 0.2458 10%, 0.31562 12%, 0.38392 14%, 0.44914 16%, 0.51029 18%, 0.56683 20%, 0.61852 22%, 0.66534 24%, 0.70743 26%, 0.74501 28%, 0.77838 30%, 0.80788 32%, 0.83383 34%, 0.85658 36%, 0.87645 38%, 0.89376 40%, 0.92183 44%, 0.94282 48%, 0.95838 52%, 0.96984 56%, 0.97823 60%, 0.98435 64%, 0.98878 68%, 0.99198 72%, 0.99594 80%, 0.99829 90%, 1 100%)",
+  );
+  await page.keyboard.press("Escape");
+  await expect(exchange).toHaveCount(0);
 });
 
 test("queues another turn while the agent is busy", async ({ page }) => {

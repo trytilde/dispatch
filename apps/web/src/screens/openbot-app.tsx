@@ -45,6 +45,7 @@ import {
   MessageContent,
   ScrollToLatestButton,
   ThinkingIndicator,
+  ThreadOverlay,
   WorkspaceSidebar,
   WorkspaceShell,
   useWorkspaceLayout,
@@ -95,6 +96,7 @@ export function OpenBotApp() {
   const [sessionSort] = useState<SessionSortOrder>("updated_at");
   const [messageMenuId, setMessageMenuId] = useState("");
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+  const [threadRootId, setThreadRootId] = useState("");
   const observerRef = useRef<AbortController | undefined>(undefined);
   const refreshTimerRef = useRef<number | undefined>(undefined);
   const conversationRef = useRef<HTMLDivElement>(null);
@@ -253,6 +255,7 @@ export function OpenBotApp() {
     () => messages.filter((message) => !queuedMessageIds.has(message.id)),
     [messages, queuedMessageIds],
   );
+  const threadRoot = visibleMessages.find((message) => message.id === threadRootId);
 
   const filteredAgents = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -267,6 +270,8 @@ export function OpenBotApp() {
     setSessionId(nextSession.id);
     setMessages([]);
     setFiles([]);
+    setReplyingTo(null);
+    setThreadRootId("");
     setError("");
     setActivity([]);
     setQueuedTurns([]);
@@ -297,6 +302,8 @@ export function OpenBotApp() {
     setSessionId("");
     setMessages([]);
     setFiles([]);
+    setReplyingTo(null);
+    setThreadRootId("");
     setActivity([]);
     setQueuedTurns([]);
     setTurnStatus("");
@@ -334,6 +341,7 @@ export function OpenBotApp() {
       }
       setDraft("");
       setReplyingTo(null);
+      setThreadRootId("");
       setFiles([]);
 
       const attachmentIds: string[] = [];
@@ -468,6 +476,51 @@ export function OpenBotApp() {
     setSearch("");
   }
 
+  const composer = (
+    <ChatComposer
+      agentAvailable={Boolean(agentId)}
+      busy={agentBusy}
+      submitting={submitting}
+      dragging={dragging}
+      expanded={composerExpanded}
+      draft={draft}
+      error={error}
+      reply={
+        replyingTo
+          ? {
+              label: `Replying to ${replyingTo.role === "user" ? "yourself" : selectedAgent?.display_name || "agent"}`,
+              text: messageText(replyingTo) || "Message",
+            }
+          : undefined
+      }
+      attachments={files.map((pending) => ({
+        id: pending.id,
+        name: pending.file.name,
+        size: pending.file.size,
+        progress: pending.progress,
+        status: pending.status,
+        error: pending.error,
+      }))}
+      inputRef={composerInputRef}
+      fileInputRef={fileInputRef}
+      onSubmit={(event) => void send(event)}
+      onDraftChange={setDraft}
+      onFocus={() => setComposerFocused(true)}
+      onBlur={() => setComposerFocused(false)}
+      onDragStateChange={setDragging}
+      onFilesAdded={addFiles}
+      onRemoveAttachment={(id) => {
+        const pending = files.find((candidate) => candidate.id === id);
+        if (pending) void removeFile(pending);
+      }}
+      onCancelReply={() => {
+        setReplyingTo(null);
+        setThreadRootId("");
+      }}
+      onStop={() => void stop()}
+    />
+  );
+
   return (
     <WorkspaceShell
       sidebarCollapsed={layout.sidebarCollapsed}
@@ -542,7 +595,8 @@ export function OpenBotApp() {
                       setMessageMenuId((current) => (current === message.id ? "" : message.id));
                     }}
                     onStartThread={() => {
-                      setDraft(`Start a thread about: ${messageText(message)}`);
+                      setThreadRootId(message.id);
+                      setReplyingTo(message);
                       setMessageMenuId("");
                       composerInputRef.current?.focus();
                     }}
@@ -568,46 +622,27 @@ export function OpenBotApp() {
           )}
         </ConversationSurface>
         {showScrollLatest ? <ScrollToLatestButton onClick={scrollToLatest} /> : null}
-
-        <ChatComposer
-          agentAvailable={Boolean(agentId)}
-          busy={agentBusy}
-          submitting={submitting}
-          dragging={dragging}
-          expanded={composerExpanded}
-          draft={draft}
-          error={error}
-          reply={
-            replyingTo
-              ? {
-                  label: `Replying to ${replyingTo.role === "user" ? "yourself" : selectedAgent?.display_name || "agent"}`,
-                  text: messageText(replyingTo) || "Message",
-                }
-              : undefined
-          }
-          attachments={files.map((pending) => ({
-            id: pending.id,
-            name: pending.file.name,
-            size: pending.file.size,
-            progress: pending.progress,
-            status: pending.status,
-            error: pending.error,
-          }))}
-          inputRef={composerInputRef}
-          fileInputRef={fileInputRef}
-          onSubmit={(event) => void send(event)}
-          onDraftChange={setDraft}
-          onFocus={() => setComposerFocused(true)}
-          onBlur={() => setComposerFocused(false)}
-          onDragStateChange={setDragging}
-          onFilesAdded={addFiles}
-          onRemoveAttachment={(id) => {
-            const pending = files.find((candidate) => candidate.id === id);
-            if (pending) void removeFile(pending);
+        {threadRoot ? null : composer}
+        <ThreadOverlay
+          footer={composer}
+          onClose={() => {
+            setThreadRootId("");
+            setReplyingTo(null);
           }}
-          onCancelReply={() => setReplyingTo(null)}
-          onStop={() => void stop()}
-        />
+          open={Boolean(threadRoot)}
+        >
+          {threadRoot ? (
+            <div className="thread-root-group">
+              <ConversationMessage role={threadRoot.role} createdAt={threadRoot.created_at}>
+                <MessageContent
+                  message={threadRoot}
+                  resolveAttachmentUrl={getAttachmentDownloadUrl}
+                  rewriteUrl={rewriteTildeUrl}
+                />
+              </ConversationMessage>
+            </div>
+          ) : null}
+        </ThreadOverlay>
       </ChatPane>
 
       <AgentWorkspacePanel

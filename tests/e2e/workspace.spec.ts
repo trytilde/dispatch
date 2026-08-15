@@ -103,6 +103,13 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
                 ],
               },
             },
+            {
+              id: "researcher",
+              display_name: "Researcher",
+              provider_id: "chatkit.http-vercel-ai-sdk",
+              status: "enabled",
+              sessions: { items: [] },
+            },
           ],
         },
       });
@@ -233,26 +240,29 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   });
 
   await page.goto("/");
-  await expect(page.locator(".agent-row")).toHaveCount(1);
+  await expect(page.locator(".agent-row")).toHaveCount(2);
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(252, 252, 252)");
   await expect(page.locator(".rail")).toHaveCSS("background-color", "rgb(247, 247, 247)");
-  await expect(page.locator(".agent-row")).toHaveCSS("height", "54px");
-  await expect(page.locator(".agent-row")).toHaveCSS("border-radius", "10px");
-  await expect(page.locator(".agent-row .avatar")).toHaveCSS("width", "36px");
-  await expect(page.locator(".agent-row .avatar img")).toHaveAttribute("src", /avatars\/.+\.svg/);
+  await expect(page.locator(".agent-row").first()).toHaveCSS("height", "54px");
+  await expect(page.locator(".agent-row").first()).toHaveCSS("border-radius", "10px");
+  await expect(page.locator(".agent-row .avatar").first()).toHaveCSS("width", "36px");
+  await expect(page.locator(".agent-row .avatar img").first()).toHaveAttribute(
+    "src",
+    /avatars\/.+\.svg/,
+  );
   await expect(page.locator(".workspace-shell")).toHaveCSS(
     "transition-timing-function",
     "cubic-bezier(0.22, 1, 0.36, 1)",
   );
   await page.keyboard.press("Control+b");
   await expect(page.locator(".rail")).toHaveCSS("width", "88px");
-  await expect(page.locator(".agent-row")).toHaveCSS("width", "54px");
-  await expect(page.locator(".agent-row-body")).toBeHidden();
+  await expect(page.locator(".agent-row").first()).toHaveCSS("width", "54px");
+  await expect(page.locator(".agent-row-body").first()).toBeHidden();
   await expect(page.getByRole("button", { name: "Search", exact: true })).toBeHidden();
   await expect(page.locator(".rail-footer")).toHaveCSS("width", "44px");
   await page.keyboard.press("Control+b");
   await expect(page.locator(".rail")).toHaveCSS("width", "280px");
-  await expect(page.locator(".agent-row-body")).toBeVisible();
+  await expect(page.locator(".agent-row-body").first()).toBeVisible();
   await expect(page.getByText("Working session")).toHaveCount(0);
   await expect(page.getByText("Ready when you are.")).toBeVisible();
   await expect(page.locator(".message.assistant .message-bubble").first()).toHaveCSS(
@@ -281,6 +291,10 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await expect(
     page.getByTitle("Hello World Computer").contentFrame().getByText("Agent desktop"),
   ).toBeVisible();
+  const monitorStrip = page.getByRole("group", { name: "Computer screens" });
+  await expect(monitorStrip).toBeVisible();
+  await expect(monitorStrip).toHaveCSS("height", "122px");
+  await expect(monitorStrip.getByRole("button", { name: "Switch to Researcher" })).toBeVisible();
   await page.getByRole("button", { name: "Enter full screen" }).click();
   await expect(page.locator(".agent-workspace-pane")).toHaveClass(/fullscreen/);
   await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "1280px");

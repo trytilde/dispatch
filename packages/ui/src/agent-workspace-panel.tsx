@@ -1,5 +1,6 @@
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useState } from "react";
 import { ComputerStagePlaceholder } from "./computer-stage.js";
+import { type ComputerMonitor, ComputerMonitorStrip } from "./computer-components.js";
 
 export interface AgentWorkspacePanelProps {
   agentId: string;
@@ -9,6 +10,8 @@ export interface AgentWorkspacePanelProps {
   open: boolean;
   onClose: () => void;
   onResize: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  monitors?: readonly ComputerMonitor[];
+  onSelectMonitor?: (monitorId: string) => void;
 }
 
 export function AgentWorkspacePanel({
@@ -19,6 +22,8 @@ export function AgentWorkspacePanel({
   open,
   onClose,
   onResize,
+  monitors = [],
+  onSelectMonitor,
 }: AgentWorkspacePanelProps) {
   const [view, setView] = useState<"computer" | "activity">("computer");
   const [controlling, setControlling] = useState(false);
@@ -163,6 +168,13 @@ export function AgentWorkspacePanel({
               <span>Computer preview</span>
               <strong>Click to take over</strong>
             </button>
+          ) : null}
+          {previewReady && onSelectMonitor ? (
+            <ComputerMonitorStrip
+              activeMonitorId={agentId}
+              monitors={monitors}
+              onSelect={onSelectMonitor}
+            />
           ) : null}
         </div>
       ) : (

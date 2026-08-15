@@ -48,8 +48,38 @@ test("loads the bare workspace without setup", async ({ page }) => {
   await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "360px");
   await expect(page.getByLabel("Setup code")).toHaveCount(0);
 
+  await page.setViewportSize({ width: 960, height: 720 });
+  await expect(page.locator(".rail")).toHaveCSS("width", "88px");
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("display", "grid");
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "360px");
+  await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 960);
+
+  await page.setViewportSize({ width: 820, height: 720 });
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("position", "fixed");
+  await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 820);
+
   await page.goto("/api/setup/unlock");
   await expect(page.getByRole("heading", { name: "What should OpenBot do?" })).toBeVisible();
+});
+
+test("keeps the chat composition inside a mobile viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+
+  await expect(page.locator(".rail")).toBeHidden();
+  const chat = await page.locator(".chat-pane").boundingBox();
+  const conversation = await page.locator(".conversation").boundingBox();
+  const composer = await page.locator(".composer").boundingBox();
+  if (!chat || !conversation || !composer)
+    throw new Error("Mobile chat composition is not visible");
+
+  expect(chat.x).toBe(0);
+  expect(chat.width).toBe(390);
+  expect(conversation.x).toBeGreaterThanOrEqual(0);
+  expect(conversation.x + conversation.width).toBeLessThanOrEqual(390);
+  expect(composer.x).toBeGreaterThanOrEqual(0);
+  expect(composer.x + composer.width).toBeLessThanOrEqual(390);
+  await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 390);
 });
 
 test("streams rich messages and uploads a file through Tilde ChatKit", async ({ page }) => {
@@ -412,6 +442,16 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   );
   await page.keyboard.press("Escape");
   await expect(exchange).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Toggle Computer pane" }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const selector of [".message-list", ".reasoning-part", ".connection-card", ".composer"]) {
+    const bounds = await page.locator(selector).first().boundingBox();
+    if (!bounds) throw new Error(`${selector} is not visible in the mobile chat`);
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+  }
+  await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 390);
 });
 
 test("queues another turn while the agent is busy", async ({ page }) => {

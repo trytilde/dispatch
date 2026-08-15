@@ -10,7 +10,9 @@ The package root exports the complete workspace surface:
   `AgentSearchDialog`, `WorkspaceAccount`, and `useWorkspaceLayout`.
 - Chat: `ChatHeader`, `ChatPane`, `ChatComposer`, `ConversationSurface`,
   `ConversationMessage`, `EmptyConversation`, `MessageContent`,
-  `ScrollToLatestButton`, and `ThinkingIndicator`.
+  `ScrollToLatestButton`, `ThinkingIndicator`, `ChatFindBar`, transcript
+  loading and error states, unread and new-message markers, message delivery
+  notices, and system-event primitives.
 - Rich content: `MarkdownText`, `JsonBlock`, `ReasoningCard`, `ToolCallCard`,
   `ConnectionCard`, `FileCard`, `FileViewer`, and `MediaViewer`.
 - Agent activity: `AgentActivity`, `ActivityQueue`, `ActivityTimeline`,
@@ -31,3 +33,16 @@ The package root exports the complete workspace surface:
 `@tryopenbot/ui/openbot-ui.css` exports the complete OpenBot workspace palette,
 geometry, responsive layout, component states, and motion system. Applications
 should consume the package stylesheet instead of maintaining local overrides.
+
+## Storybook
+
+Run the package-owned component catalog from the repository root:
+
+```bash
+pnpm --filter @tryopenbot/ui storybook
+```
+
+Build its static output with `pnpm --filter @tryopenbot/ui storybook:build`.
+The stories cover every public visual component that can run in isolation,
+including responsive compositions and loading, error, permission, reconnect,
+and deployment lifecycle states.

@@ -46,6 +46,8 @@
     "check": "vp check",
     "lint": "vp lint",
     "prepack": "pnpm build",
+    "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build",
     "test": "vp test run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
@@ -53,7 +55,13 @@
     "react": "19.1.2"
   },
   "devDependencies": {
+    "@storybook/react-vite": "10.5.0",
+    "@tailwindcss/vite": "4.3.3",
     "@types/react": "19.1.12",
+    "@types/react-dom": "19.1.9",
+    "react-dom": "19.1.2",
+    "storybook": "10.5.0",
+    "tailwindcss": "4.3.3",
     "typescript": "5.9.2",
     "vite": "catalog:",
     "vite-plus": "catalog:"

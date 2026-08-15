@@ -213,6 +213,16 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
 
   await page.goto("/");
   await expect(page.locator(".agent-row")).toHaveCount(1);
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(252, 252, 252)");
+  await expect(page.locator(".rail")).toHaveCSS("background-color", "rgb(247, 247, 247)");
+  await expect(page.locator(".agent-row")).toHaveCSS("height", "54px");
+  await expect(page.locator(".agent-row")).toHaveCSS("border-radius", "10px");
+  await expect(page.locator(".agent-row .avatar")).toHaveCSS("width", "36px");
+  await expect(page.locator(".agent-row .avatar img")).toHaveAttribute("src", /avatars\/.+\.svg/);
+  await expect(page.locator(".workspace-shell")).toHaveCSS(
+    "transition-timing-function",
+    "cubic-bezier(0.22, 1, 0.36, 1)",
+  );
   await expect(page.getByText("Working session")).toHaveCount(0);
   await expect(page.getByText("Ready when you are.")).toBeVisible();
   await page.getByRole("button", { name: "Toggle Computer pane" }).click();

@@ -21,4 +21,4 @@
 "@tryopenbot/web": minor
 ---
 
-Add the complete reusable OpenBot workspace component system, exact light palette and motion tokens, continuous chat composition, rich message content, activity surface, and Computer pane to `@tryopenbot/ui`.
+Add the complete reusable OpenBot workspace component system, exact light palette, motion curves, agent identity artwork, continuous chat composition, rich message content, activity surface, and Computer pane to `@tryopenbot/ui`.

@@ -2218,6 +2218,41 @@ h1 {
   --ob-ease-out-strong: cubic-bezier(0.165, 0.84, 0.44, 1);
   --ob-ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
   --ob-ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ob-ease-layout: cubic-bezier(0.22, 1, 0.36, 1);
+  --ob-ease-padding: linear(
+    0,
+    0.01588 2%,
+    0.05618 4%,
+    0.11201 6%,
+    0.1768 8%,
+    0.2458 10%,
+    0.31562 12%,
+    0.38392 14%,
+    0.44914 16%,
+    0.51029 18%,
+    0.56683 20%,
+    0.61852 22%,
+    0.66534 24%,
+    0.70743 26%,
+    0.74501 28%,
+    0.77838 30%,
+    0.80788 32%,
+    0.83383 34%,
+    0.85658 36%,
+    0.87645 38%,
+    0.89376 40%,
+    0.92183 44%,
+    0.94282 48%,
+    0.95838 52%,
+    0.96984 56%,
+    0.97823 60%,
+    0.98435 64%,
+    0.98878 68%,
+    0.99198 72%,
+    0.99594 80%,
+    0.99829 90%,
+    1 100%
+  );
   --ob-radius-xs: 2px;
   --ob-radius-sm: 4px;
   --ob-radius-base: 6px;
@@ -2258,7 +2293,7 @@ body {
     var(--sidebar-width, 280px) minmax(424px, 1fr)
     var(--workspace-width, 0px);
   background: var(--page);
-  transition: grid-template-columns 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: grid-template-columns var(--ob-duration-slow) var(--ob-ease-layout);
 }
 
 body.resizing-workspace,
@@ -2359,7 +2394,7 @@ body.resizing-workspace .rich-chat.workspace-shell {
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.1s ease;
+  transition: background-color var(--ob-duration-fast) var(--ob-ease-default);
 }
 
 .rich-chat .chat-search:hover,
@@ -2454,7 +2489,7 @@ body.resizing-workspace .rich-chat.workspace-shell {
   min-height: 54px;
   padding: 9px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2462,7 +2497,11 @@ body.resizing-workspace .rich-chat.workspace-shell {
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.1s ease;
+  transition:
+    transform var(--ob-duration-slow) var(--ob-ease-layout),
+    width var(--ob-duration-slow) var(--ob-ease-layout),
+    padding var(--ob-duration-slow) var(--ob-ease-layout),
+    background-color var(--ob-duration-fast) var(--ob-ease-default);
 }
 
 .rich-chat .agent-row:hover,
@@ -2483,10 +2522,31 @@ body.resizing-workspace .rich-chat.workspace-shell {
   box-shadow: inset 0 0 0 0.5px #14141412;
 }
 
-.rich-chat .avatar > svg {
+.rich-chat .agent-row .avatar::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
+  content: "";
+  pointer-events: none;
+  transition: background-color var(--ob-duration-fast) var(--ob-ease-default);
+}
+
+.rich-chat .agent-row:hover .avatar::after {
+  background: var(--ob-fill-ghost-hover);
+}
+
+.rich-chat .agent-row.active .avatar::after {
+  background: var(--ob-fill-ghost-selected);
+}
+
+.rich-chat .avatar > svg,
+.rich-chat .avatar > img {
   width: 100%;
   height: 100%;
   display: block;
+  pointer-events: none;
+  user-select: none;
 }
 
 .sidebar-search-overlay {
@@ -2618,6 +2678,7 @@ body.resizing-workspace .rich-chat.workspace-shell {
 
 .rich-chat .agent-row .avatar > i {
   position: absolute;
+  z-index: 1;
   right: 1px;
   bottom: 1px;
   width: 8px;

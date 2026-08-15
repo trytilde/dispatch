@@ -666,10 +666,6 @@ export function OpenBotApp() {
           title: agent.display_name,
           previewUrl: `/api/computer/${encodeURIComponent(agent.id)}/preview`,
         }))}
-        onSelectMonitor={(id) => {
-          const agent = agents.find((candidate) => candidate.id === id);
-          if (agent) selectAgent(agent);
-        }}
         activity={
           <AgentActivity
             queue={queuedTurns.map((turn) => ({ id: turn.id, text: queuedTurnText(turn) }))}

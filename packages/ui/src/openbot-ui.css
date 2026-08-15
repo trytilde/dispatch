@@ -3335,6 +3335,182 @@ body.resizing-workspace .workspace-resize-handle::after {
   font-weight: 540;
 }
 
+.computer-monitor-strip {
+  position: absolute;
+  z-index: 6;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 122px;
+  padding: 12px 12px 8px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(transparent, #050505cc 32%, #050505);
+  pointer-events: none;
+}
+
+.computer-monitor-thumb,
+.computer-monitor-more > summary {
+  min-width: 0;
+  max-width: 160px;
+  flex: 1 1 160px;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #fcfcfc99;
+  background: transparent;
+  font-family: inherit;
+  appearance: none;
+  cursor: pointer;
+  outline: 0 solid transparent;
+  pointer-events: auto;
+  transition:
+    color var(--ob-duration-fast) var(--ob-ease-default),
+    transform var(--ob-duration-fast) var(--ob-ease-default);
+}
+
+.computer-monitor-thumb:hover,
+.computer-monitor-thumb[aria-current="true"],
+.computer-monitor-more > summary:hover {
+  color: #fcfcfc;
+  transform: translateY(-2px);
+}
+
+.computer-monitor-thumb:focus-visible,
+.computer-monitor-more > summary:focus-visible {
+  border-radius: var(--ob-radius-lg);
+  outline-width: 2px;
+  outline-color: var(--ob-border-focus);
+  outline-offset: 2px;
+}
+
+.computer-monitor-preview,
+.computer-monitor-more-preview {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--ob-radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 10;
+  color: #fcfcfc66;
+  background: #141414;
+  box-shadow: inset 0 0 0 0.5px #fcfcfc1a;
+}
+
+.computer-monitor-preview iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #141414;
+  pointer-events: none;
+}
+
+.computer-monitor-preview > span {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  box-shadow: inset 0 0 0 1.5px transparent;
+  transition: box-shadow var(--ob-duration-fast) var(--ob-ease-default);
+}
+
+.computer-monitor-thumb[aria-current="true"] .computer-monitor-preview > span {
+  box-shadow: inset 0 0 0 1.5px #fcfcfc;
+}
+
+.computer-monitor-caption {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.computer-monitor-caption > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.computer-monitor-caption > i,
+.computer-monitor-more [role="menu"] i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--ob-fill-warning);
+  box-shadow: 0 0 0 2px #050505;
+}
+
+.computer-monitor-more {
+  position: relative;
+  min-width: 0;
+  max-width: 160px;
+  flex: 1 1 160px;
+  pointer-events: auto;
+}
+
+.computer-monitor-more > summary {
+  max-width: none;
+  list-style: none;
+}
+
+.computer-monitor-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.computer-monitor-more-preview {
+  font-size: 24px;
+}
+
+.computer-monitor-more [role="menu"] {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: 240px;
+  max-height: 320px;
+  padding: 4px;
+  overflow-y: auto;
+  border: 0.5px solid var(--ob-border-default);
+  border-radius: var(--ob-radius-lg);
+  display: grid;
+  background: color-mix(in srgb, var(--ob-bg-elevated) 96%, transparent);
+  box-shadow: 0 10px 28px var(--ob-shadow-popover-key);
+  backdrop-filter: blur(16px);
+}
+
+.computer-monitor-more [role="menu"] button {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--ob-radius-base);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ob-text-primary);
+  background: transparent;
+  font-size: 11px;
+  text-align: left;
+}
+
+.computer-monitor-more [role="menu"] button:hover {
+  background: var(--ob-fill-secondary);
+}
+
 .activity-surface {
   min-height: 0;
   overflow: auto;

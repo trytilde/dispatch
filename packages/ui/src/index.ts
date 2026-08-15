@@ -41,6 +41,8 @@ export {
   type ConnectionView,
   FileCard,
   type FileCardProps,
+  FileViewer,
+  type FileViewerProps,
   JsonBlock,
   MarkdownText,
   ReasoningCard,

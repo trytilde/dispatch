@@ -1,6 +1,10 @@
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useState } from "react";
 import { ComputerStagePlaceholder } from "./computer-stage.js";
-import { type ComputerMonitor, ComputerMonitorStrip } from "./computer-components.js";
+import {
+  type ComputerMonitor,
+  ComputerMonitorStrip,
+  ComputerReconnectBanner,
+} from "./computer-components.js";
 
 export interface AgentWorkspacePanelProps {
   agentId: string;
@@ -133,6 +137,7 @@ export function AgentWorkspacePanel({
         <div className="activity-surface">{activity}</div>
       ) : agentId ? (
         <div className={controlling ? "computer-surface controlling" : "computer-surface"}>
+          <ComputerReconnectBanner variant={previewFailed ? "network" : null} />
           <div className="computer-status">
             <span className={previewReady ? "ready" : ""} />
             <strong>{previewAgentName}</strong>
@@ -148,9 +153,23 @@ export function AgentWorkspacePanel({
               setPreviewReady(false);
               setPreviewFailed(true);
             }}
-            onLoad={() => {
-              setPreviewFailed(false);
-              setPreviewReady(true);
+            onLoad={(event) => {
+              let failed = false;
+              try {
+                const document = event.currentTarget.contentDocument;
+                const location = event.currentTarget.contentWindow?.location.href ?? "";
+                const responseText = document?.body?.textContent?.trim() ?? "";
+                failed =
+                  !document?.body ||
+                  document.contentType !== "text/html" ||
+                  Boolean(document.querySelector("[data-openbot-preview-error]")) ||
+                  /^\{\s*"error"\s*:/.test(responseText) ||
+                  location.startsWith("chrome-error:");
+              } catch {
+                failed = true;
+              }
+              setPreviewFailed(failed);
+              setPreviewReady(!failed);
             }}
           />
           {!previewReady || previewFailed ? (

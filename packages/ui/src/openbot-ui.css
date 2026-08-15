@@ -3335,6 +3335,75 @@ body.resizing-workspace .workspace-resize-handle::after {
   font-weight: 540;
 }
 
+.computer-reconnect-banner-layer {
+  position: fixed;
+  z-index: 3100;
+  top: 12px;
+  right: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.computer-progress-banner {
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 0.5px solid var(--ob-border-default);
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ob-text-primary);
+  background: var(--ob-bg-elevated);
+  box-shadow: 0 10px 20px -3px var(--ob-shadow-popover-key);
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+  animation: computer-banner-in var(--ob-duration-slow) var(--ob-ease-out-quint) both;
+}
+
+.computer-progress-banner > span:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.computer-progress-banner strong {
+  font-size: 13px;
+  font-weight: 540;
+  line-height: 17px;
+}
+
+.computer-progress-banner small {
+  color: var(--ob-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.computer-progress-spinner {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--ob-border-default);
+  border-top-color: var(--ob-text-primary);
+  border-radius: 50%;
+  animation: computer-banner-spin 0.8s linear infinite;
+}
+
+@keyframes computer-banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+@keyframes computer-banner-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
 .computer-monitor-strip {
   position: absolute;
   z-index: 6;
@@ -4467,6 +4536,48 @@ body.resizing-workspace .workspace-resize-handle::after {
   justify-content: flex-end;
   gap: 8px;
   background: var(--ob-bg-subtle);
+}
+
+.dialog-actions button {
+  min-width: 76px;
+  height: 32px;
+  padding: 0 12px;
+  border: 0.5px solid var(--ob-border-default);
+  border-radius: var(--ob-radius-lg);
+  color: var(--ob-text-primary);
+  background: var(--ob-bg-elevated);
+  box-shadow: 0 1px 2px var(--ob-shadow-control);
+  font-size: 11px;
+  font-weight: 520;
+  cursor: pointer;
+  transition:
+    background-color var(--ob-duration-fast) var(--ob-ease-default),
+    transform var(--ob-duration-fast) var(--ob-ease-default);
+}
+
+.dialog-actions button:hover:not(:disabled) {
+  background: var(--ob-fill-secondary-solid-hover);
+}
+
+.dialog-actions button.primary {
+  border-color: transparent;
+  color: var(--ob-text-on-primary);
+  background: var(--ob-fill-primary);
+}
+
+.dialog-actions button.primary:hover:not(:disabled) {
+  background: var(--ob-fill-primary-hover);
+}
+
+.dialog-actions button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.dialog-actions button:disabled {
+  color: var(--ob-text-disabled);
+  background: var(--ob-fill-secondary-disabled);
+  box-shadow: none;
+  cursor: default;
 }
 
 .permission-card {

@@ -55,6 +55,7 @@ test("loads the bare workspace without setup", async ({ page }) => {
 test("streams rich messages and uploads a file through Tilde ChatKit", async ({ page }) => {
   const now = new Date().toISOString();
   let releaseComputerPreview = () => {};
+  let computerPreviewUnavailable = true;
   const computerPreviewReady = new Promise<void>((resolve) => {
     releaseComputerPreview = resolve;
   });
@@ -72,6 +73,10 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
 
   await page.route("**/api/computer/**", async (route) => {
     await computerPreviewReady;
+    if (computerPreviewUnavailable) {
+      await route.fulfill({ json: { error: "Computer preview is unavailable" }, status: 503 });
+      return;
+    }
     await route.fulfill({ contentType: "text/html", body: "<main>Agent desktop</main>" });
   });
 
@@ -287,6 +292,12 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
     "1.4s",
   );
   releaseComputerPreview();
+  const reconnectBanner = page.getByRole("status", { name: "Reconnecting" });
+  await expect(reconnectBanner).toBeVisible();
+  await expect(reconnectBanner).toHaveCSS("border-radius", "10px");
+  computerPreviewUnavailable = false;
+  await page.getByRole("button", { name: "Retry" }).click();
+  await expect(reconnectBanner).toHaveCount(0);
   await expect(page.getByTitle("Hello World Computer")).toBeVisible();
   await expect(
     page.getByTitle("Hello World Computer").contentFrame().getByText("Agent desktop"),

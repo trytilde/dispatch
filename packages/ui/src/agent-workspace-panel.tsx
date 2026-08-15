@@ -31,8 +31,15 @@ export function AgentWorkspacePanel({
   const [previewReady, setPreviewReady] = useState(false);
   const [previewFailed, setPreviewFailed] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [activeMonitorId, setActiveMonitorId] = useState(agentId);
+  const activeMonitor = monitors.find((monitor) => monitor.id === activeMonitorId);
+  const previewAgentId = activeMonitor?.id ?? agentId;
+  const previewAgentName = activeMonitor?.title ?? agentName;
+  const previewUrl =
+    activeMonitor?.previewUrl ?? `/api/computer/${encodeURIComponent(agentId)}/preview`;
 
   useEffect(() => {
+    setActiveMonitorId(agentId);
     setControlling(false);
     setPreviewReady(false);
     setPreviewFailed(false);
@@ -128,13 +135,13 @@ export function AgentWorkspacePanel({
         <div className={controlling ? "computer-surface controlling" : "computer-surface"}>
           <div className="computer-status">
             <span className={previewReady ? "ready" : ""} />
-            <strong>{agentName}</strong>
+            <strong>{previewAgentName}</strong>
             <small>{previewReady ? "Preview loaded" : "Connecting to Computer…"}</small>
           </div>
           <iframe
-            key={`${agentId}-${previewKey}`}
-            src={`/api/computer/${encodeURIComponent(agentId)}/preview`}
-            title={`${agentName} Computer`}
+            key={`${previewAgentId}-${previewKey}`}
+            src={previewUrl}
+            title={`${previewAgentName} Computer`}
             allow="clipboard-read; clipboard-write"
             referrerPolicy="no-referrer"
             onError={() => {
@@ -150,7 +157,9 @@ export function AgentWorkspacePanel({
             <ComputerStagePlaceholder
               busy={!previewFailed}
               message={
-                previewFailed ? `Can't reach ${agentName}'s screen` : "Booting up the computer"
+                previewFailed
+                  ? `Can't reach ${previewAgentName}'s screen`
+                  : "Booting up the computer"
               }
               onRetry={
                 previewFailed
@@ -169,11 +178,18 @@ export function AgentWorkspacePanel({
               <strong>Click to take over</strong>
             </button>
           ) : null}
-          {previewReady && onSelectMonitor ? (
+          {previewReady && monitors.length > 1 ? (
             <ComputerMonitorStrip
-              activeMonitorId={agentId}
+              activeMonitorId={previewAgentId}
               monitors={monitors}
-              onSelect={onSelectMonitor}
+              onSelect={(monitorId) => {
+                setActiveMonitorId(monitorId);
+                setControlling(false);
+                setPreviewReady(false);
+                setPreviewFailed(false);
+                setPreviewKey((value) => value + 1);
+                onSelectMonitor?.(monitorId);
+              }}
             />
           ) : null}
         </div>

@@ -294,7 +294,11 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   const monitorStrip = page.getByRole("group", { name: "Computer screens" });
   await expect(monitorStrip).toBeVisible();
   await expect(monitorStrip).toHaveCSS("height", "122px");
-  await expect(monitorStrip.getByRole("button", { name: "Switch to Researcher" })).toBeVisible();
+  const researcherMonitor = monitorStrip.getByRole("button", { name: "Switch to Researcher" });
+  await expect(researcherMonitor).toBeVisible();
+  await researcherMonitor.click();
+  await expect(page.getByTitle("Researcher Computer")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hello World" })).toBeVisible();
   await page.getByRole("button", { name: "Enter full screen" }).click();
   await expect(page.locator(".agent-workspace-pane")).toHaveClass(/fullscreen/);
   await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "1280px");

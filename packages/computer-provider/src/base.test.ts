@@ -23,7 +23,11 @@ import {
   scopeComputerExecRequest,
   type ComputerImageDeploymentConfig,
 } from "./base/index.js";
-import { MicrosandboxComputerProvider } from "./microsandbox/index.js";
+import {
+  configuredImageReference,
+  MicrosandboxComputerProvider,
+  publishedHostPort,
+} from "./microsandbox/index.js";
 import { VercelSandboxComputerProvider } from "./vercel/index.js";
 
 const execute = promisify(execFile);
@@ -153,6 +157,28 @@ describe("computer-service startup", () => {
       retryComputerServiceStartup(operation, undefined, { attempts: 2, delayMs: 0 }),
     ).resolves.toBe("ready");
     expect(operation).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("Microsandbox port attachment", () => {
+  it("restores persisted host bindings when a new CLI process attaches", () => {
+    const config = {
+      network: {
+        ports: [
+          { hostPort: 6088, guestPort: 6080 },
+          { hostPort: 4118, guestPort: 4101 },
+        ],
+      },
+    };
+
+    expect(publishedHostPort(config, 6080)).toBe(6088);
+    expect(publishedHostPort(config, 4101)).toBe(4118);
+    expect(publishedHostPort(config, 9999)).toBe(0);
+    expect(
+      configuredImageReference({
+        image: { Oci: { reference: "openbot/computer:latest" } },
+      }),
+    ).toBe("openbot/computer:latest");
   });
 });
 

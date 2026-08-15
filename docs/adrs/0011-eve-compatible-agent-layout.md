@@ -1,11 +1,13 @@
 # ADR-0011: Eve-compatible agent layout
 
+> Agent-specific desktop sessions on the shared Computer were refined by ADR-0015.
+
 ## In brief
 
 - Primary agent is `configuration/agent/`; full subagents are `configuration/agent/subagents/<id>/`.
 - Keep Eve-shaped authored slots where useful. No Eve runtime or loader.
 - `agent.ts` default-exports `chatKitEndpoint`. `instructions.ts` feeds its system prompt.
-- One shared computer, filesystem, and process identity. Each populated agent seed gets `/workspace/<id>`.
+- One shared computer, filesystem, and process identity. Each agent gets a desktop session; each populated seed gets `/workspace/<id>`.
 - Seed workspace once. Never overwrite deployed agent files implicitly.
 - Keep Eve's authored `sandbox/` folder and familiar tool names; use computer terminology elsewhere.
 - Scaffold explicit typed Computer tools whose shared implementations live in the non-provider `computer-tools` package.
@@ -67,7 +69,7 @@ every Bash command has one deterministic startup file; that profile may source
 an optional `.bashrc`. The profile contains no secrets and follows the same
 one-time seed semantics as every other authored workspace file.
 
-OpenBot does not reproduce Eve's one-sandbox-per-agent model. One OpenBot Computer, filesystem, and service process identity are shared by all agents. When an agent has authored workspace seed files, deployment creates `/workspace/<id>` and copies them there. Commands and relative file paths default to that directory, while absolute paths can address the wider machine. Agent IDs provide routing context, not filesystem isolation: agents can inspect or modify sibling directories and administer the shared machine subject to the computer process's operating-system privileges.
+OpenBot does not reproduce Eve's one-sandbox-per-agent model. One OpenBot Computer, filesystem, and service process identity are shared by all agents. Computer-service gives each agent its own virtual display and persistent browser profile inside that Computer so concurrent desktop work does not collide visually. When an agent has authored workspace seed files, deployment creates `/workspace/<id>` and copies them there. Commands and relative file paths default to that directory, while absolute paths can address the wider machine. Agent IDs provide routing context, not filesystem, process, or desktop isolation: agents can inspect or modify sibling directories and administer the shared machine subject to the computer process's operating-system privileges.
 
 Files from either agent form's `sandbox/workspace/**` are copied only when the populated agent directory is first seeded. Empty seed trees do not create `/workspace/<id>`. Ordinary later agent deployments detect the marker and leave the persistent directory untouched. Consequently, edits to authored workspace seeds do not appear for already deployed agents; applying them requires a future explicit workspace reconciliation or destructive computer replacement operation.
 
@@ -84,6 +86,8 @@ flowchart LR
   C --> U
   W["agent sandbox/workspace"] --> U["/workspace/id seeded once"]
   U --> S["one shared Computer and filesystem"]
+  E["agent id"] --> D["agent display and browser profile"]
+  D --> S
 ```
 
 ## Consequences
@@ -92,7 +96,7 @@ flowchart LR
 - Each agent remains an independently compiled function entrypoint.
 - Required computer tools are explicit; arbitrary tools and skills remain author-controlled.
 - Persistent agent workspaces are protected from silent seed overwrites.
-- Desktop, compute, process identity, and filesystem access are installation-wide; `/workspace/<id>` is a convention, not a security boundary.
+- Compute, process identity, and filesystem access are installation-wide; agent desktops and `/workspace/<id>` are routing conventions, not security boundaries.
 - The Eve-compatible authored folder and default tools retain Eve names; runtime and API language says `computer`.
 - Fork owners can change future agent defaults without modifying the CLI package.
 
@@ -111,3 +115,4 @@ flowchart LR
 - 2026-08-14T10:28:18+02:00: Moved reusable Computer AI tools to `@tryopenbot/computer-tools`, instrumentation helpers to `@tryopenbot/configuration/instrumentation`, and prohibited provider imports from authored agents; agent integrations now use their vendor SDKs directly.
 - 2026-08-14T10:55:00+02:00: Made `new-agent` invoke the same idempotent development lifecycle as `dev` after filesystem scaffolding; the Tilde agent provider, rather than the CLI, owns endpoint reconciliation and local tunneling.
 - 2026-08-14T15:27:17+02:00: Made `configuration/agent/` the full primary agent and `configuration/agent/subagents/<id>/` the canonical home for equally complete additional agents. Discovery and builds reject deeper nesting.
+- 2026-08-15T13:25:19+02:00: Added one persistent virtual display and browser profile per agent inside the shared Computer; display routing does not add sandbox or operating-system isolation.

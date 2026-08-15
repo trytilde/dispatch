@@ -262,11 +262,17 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
   }
 
   async screenshot(id: string, context: ComputerCallContext): Promise<Uint8Array> {
+    if (!context.agentId)
+      throw new ComputerProviderError(
+        "invalid_configuration",
+        "agentId is required for screenshots",
+      );
+    const desktop = await this.ensureAgentDesktop(id, context.agentId, context);
     const result = await this.exec(
       id,
       {
         command: "import",
-        args: ["-display", ":1", "-window", "root", "/tmp/openbot-screenshot.png"],
+        args: ["-display", desktop.display, "-window", "root", "/tmp/openbot-screenshot.png"],
       },
       context,
     );
@@ -284,9 +290,16 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
   }
 
   async input(id: string, input: ComputerInput, context: ComputerCallContext): Promise<void> {
+    if (!context.agentId)
+      throw new ComputerProviderError("invalid_configuration", "agentId is required for input");
+    const desktop = await this.ensureAgentDesktop(id, context.agentId, context);
     const result = await this.exec(
       id,
-      { command: "xdotool", args: inputArguments(input), environment: { DISPLAY: ":1" } },
+      {
+        command: "xdotool",
+        args: inputArguments(input),
+        environment: { DISPLAY: desktop.display },
+      },
       context,
     );
     if (result.exitCode !== 0)
@@ -302,7 +315,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
     const url = new URL("/vnc.html", sandbox.domain(6080));
     url.searchParams.set("autoconnect", "1");
     url.searchParams.set("resize", "remote");
-    url.searchParams.set("token", scopedCapability("vnc", id));
+    url.searchParams.set("token", scopedCapability("vnc", id, context.agentId));
     return { url, expiresAt: sandbox.expiresAt ?? new Date(Date.now() + 45 * 60 * 1000) };
   }
 
@@ -333,13 +346,12 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
 
 function computerEnvironment(id: string, spec: ComputerSpec): Record<string, string> {
   return {
-    CUA_DRIVER_SOCKET: "/tmp/openbot-cua-driver.sock",
     DISPLAY: ":1",
     COMPUTER_SERVICE_API_KEY: computerServiceApiKey(),
+    COMPUTER_ID: id,
     COMPUTER_EXPOSED_PORTS: "6080,4101",
     COMPUTER_SERVICE_PORT: "4101",
     COMPUTER_WORKSPACE: "/workspace",
-    VNC_CAPABILITY: scopedCapability("vnc", id),
     ...spec.environment,
   };
 }

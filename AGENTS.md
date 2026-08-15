@@ -108,6 +108,7 @@ pnpm --filter openbot test
 - Ordinary agent Computers must not receive control-plane credentials. The trusted development sandbox is the explicit exception: deployment refreshes its complete `configuration/.env`, `.sops.yaml`, and encrypted secrets, plus a user-readable-only age identity.
 - Preserve capability checks in `apps/computer-service` and provider implementations.
 - Execute agent computer-tool requests through `apps/computer-service`; validate `agent_id` there and map it to the registered Linux user and private `/workspace` mount.
+- Keep one Computer while giving each agent a computer-service-owned virtual display and browser profile. Display routing is not process, filesystem, network, or authorization isolation. Owner preview stays behind the narrow control-service preview route.
 - Treat browser profiles, screenshots, and sandbox files as sensitive user data.
 
 ### Fork files

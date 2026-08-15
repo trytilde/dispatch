@@ -1,7 +1,10 @@
 import { createApp } from {{{CONTROL_SOURCE}}};
 import configuration from {{{CONFIGURATION_SOURCE}}};
 
-const app = createApp({ chatProvider: configuration.providers.chat });
+const app = createApp({
+  chatProvider: configuration.providers.chat,
+  computerProvider: configuration.providers.computer,
+});
 
 export default { fetch: app.fetch };
 export const maxDuration = 300;

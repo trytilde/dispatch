@@ -38,6 +38,7 @@
     "@connectrpc/connect": "2.1.2",
     "@hono/node-server": "1.19.1",
     "@tryopenbot/chat-provider": "workspace:*",
+    "@tryopenbot/computer-provider": "workspace:*",
     "@tryopenbot/control-service-proto": "workspace:*",
     "hono": "4.13.1"
   },

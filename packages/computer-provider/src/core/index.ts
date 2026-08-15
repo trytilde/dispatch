@@ -126,6 +126,7 @@ export interface PublishedComputerImage extends BuiltComputerImage {
 }
 
 export interface ComputerProvider extends DeployableProvider {
+  previewAgentDesktop(agentId: string, context: ComputerCallContext): Promise<ComputerVncEndpoint>;
   deployAgentWorkspaces(
     request: DeployAgentWorkspacesRequest,
     context: DeploymentContext,

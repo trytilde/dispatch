@@ -183,6 +183,9 @@ importers:
       '@tryopenbot/chat-provider':
         specifier: workspace:*
         version: link:../../packages/chat-provider
+      '@tryopenbot/computer-provider':
+        specifier: workspace:*
+        version: link:../../packages/computer-provider
       '@tryopenbot/control-service-proto':
         specifier: workspace:*
         version: link:../../packages/control-service-proto

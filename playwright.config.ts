@@ -9,20 +9,25 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  webServer: {
-    command: "pnpm dev",
-    env: {
-      ...process.env,
-      NO_DESKTOP: "1",
-      AGENT_HELLO_WORLD_API_KEY: "e2e-agent-api-key",
-      AGENT_HELLO_WORLD_WEBHOOK_SIGNING_KEY: "e2e-webhook-signing-key",
-      AI_GATEWAY_API_KEY: "e2e-ai-gateway-api-key",
-      TILDE_ORG_ID: "e2e-org",
-      TILDE_TEAM_ID: "e2e-team",
+  webServer: [
+    {
+      command:
+        'pnpm --filter @tryopenbot/control-service exec node --conditions=development --import tsx --input-type=module -e \'import { serve } from "@hono/node-server"; import { app } from "./src/index.ts"; serve({ fetch: app.fetch, hostname: "127.0.0.1", port: 4100 });\'',
+      env: {
+        ...process.env,
+        TILDE_ORG_ID: "e2e-org",
+        TILDE_TEAM_ID: "e2e-team",
+      },
+      url: "http://127.0.0.1:4100/healthz",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
     },
-    url: "http://127.0.0.1:4173/healthz",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+    {
+      command: "pnpm --filter @tryopenbot/web dev",
+      url: "http://127.0.0.1:4173/",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  ],
   projects: [{ name: "chromium", use: { browserName: "chromium" } }],
 });

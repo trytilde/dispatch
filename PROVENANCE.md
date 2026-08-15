@@ -21,9 +21,6 @@ Vercel skill package was copied verbatim.
 
 ## Runtime artifact pins
 
-- Cua Driver `0.19.3`, release tag `cua-driver-rs-v0.19.3`. The official
-  installer supports `CUA_DRIVER_RS_VERSION`; its installer SHA-256 when
-  inspected was `52293f8683c6c41ef8df0bb17907f3bd9266314e04f7b0c8f3c4576e7ba139f7`.
 - Google Chrome stable `151.0.7922.137-1` for Linux amd64, package SHA-256
   `e6dabf044cf9cd0279cfe86efa431682c18bfc06d06339ce055aaa87ae871727`.
   Linux arm64 guests use Debian's Chromium because Google does not distribute

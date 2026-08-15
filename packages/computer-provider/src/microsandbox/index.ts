@@ -181,10 +181,19 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
   }
 
   async screenshot(id: string, context: ComputerCallContext): Promise<Uint8Array> {
+    if (!context.agentId)
+      throw new ComputerProviderError(
+        "invalid_configuration",
+        "agentId is required for screenshots",
+      );
+    const desktop = await this.ensureAgentDesktop(id, context.agentId, context);
     const screenshotPath = "/tmp/openbot-tool-screenshot.png";
     const result = await this.exec(
       id,
-      { command: "import", args: ["-display", ":1", "-window", "root", screenshotPath] },
+      {
+        command: "import",
+        args: ["-display", desktop.display, "-window", "root", screenshotPath],
+      },
       { ...context, agentId: undefined },
     );
     if (result.exitCode !== 0)
@@ -196,9 +205,16 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
   }
 
   async input(id: string, input: ComputerInput, context: ComputerCallContext): Promise<void> {
+    if (!context.agentId)
+      throw new ComputerProviderError("invalid_configuration", "agentId is required for input");
+    const desktop = await this.ensureAgentDesktop(id, context.agentId, context);
     const result = await this.exec(
       id,
-      { command: "xdotool", args: inputArguments(input), environment: { DISPLAY: ":1" } },
+      {
+        command: "xdotool",
+        args: inputArguments(input),
+        environment: { DISPLAY: desktop.display },
+      },
       context,
     );
     if (result.exitCode !== 0)
@@ -215,7 +231,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
     const url = new URL(`http://127.0.0.1:${port}/vnc.html`);
     url.searchParams.set("autoconnect", "1");
     url.searchParams.set("resize", "remote");
-    url.searchParams.set("token", scopedCapability("vnc", id));
+    url.searchParams.set("token", scopedCapability("vnc", id, context.agentId));
     return { url, expiresAt: new Date(Date.now() + 86_400_000) };
   }
 
@@ -260,13 +276,12 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
         mount.namedWith("openbot-computer", "ensure-exists", "dir", undefined, 8192),
       )
       .envs({
-        CUA_DRIVER_SOCKET: "/tmp/openbot-cua-driver.sock",
         DISPLAY: ":1",
         COMPUTER_SERVICE_API_KEY: computerServiceApiKey(),
+        COMPUTER_ID: id,
         COMPUTER_EXPOSED_PORTS: "6080,4101",
         COMPUTER_SERVICE_PORT: "4101",
         COMPUTER_WORKSPACE: "/workspace",
-        VNC_CAPABILITY: scopedCapability("vnc", id),
         ...spec.environment,
       })
       .detached(true)

@@ -10,6 +10,8 @@ export default defineConfig({
   server: {
     proxy: {
       "/healthz": controlOrigin,
+      "/api/chat": controlOrigin,
+      "/api/computer": controlOrigin,
       "/rpc": controlOrigin,
     },
   },

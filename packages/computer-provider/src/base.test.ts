@@ -63,6 +63,19 @@ class TestComputerProvider extends BaseComputerProvider {
   protected async computerServiceUrl() {
     return "https://computer.test/rpc";
   }
+  readonly ensureDesktop = vi.fn(
+    async (_computerId: string, _agentId: string, _context: ComputerCallContext) => ({
+      display: ":10",
+      vncPort: 5910,
+    }),
+  );
+  protected override ensureAgentDesktop(
+    computerId: string,
+    agentId: string,
+    context: ComputerCallContext,
+  ) {
+    return this.ensureDesktop(computerId, agentId, context);
+  }
   constructor(
     imageDeployment: ComputerImageDeploymentConfig = {
       repository: "registry.test/openbot-computer",
@@ -175,6 +188,7 @@ describe("agent workspace deployment", () => {
       expect.any(Uint8Array),
       expect.any(Object),
     );
+    expect(provider.ensureDesktop).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -208,11 +222,16 @@ describe("computer image lifecycle", () => {
     const deploy = vi.fn(async () => ({ outputs: { reference: "local/image" } }));
     const deployAgentWorkspaces = vi.fn(async () => ({}));
     const deployDevelopmentSandbox = vi.fn(async () => ({}));
+    const previewAgentDesktop = vi.fn(async () => ({
+      url: new URL("https://computer.test/vnc"),
+      expiresAt: new Date(1),
+    }));
     const developmentProvider: ComputerProvider = {
       buildable: { check, build },
       deployable: { plan, deploy },
       deployAgentWorkspaces,
       deployDevelopmentSandbox,
+      previewAgentDesktop,
     };
     const provider = new VercelSandboxComputerProvider({ developmentProvider });
     const context = {

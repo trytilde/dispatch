@@ -77,13 +77,13 @@ Work: <specific remaining behavior and its acceptance proof>
 ```
 
 <FOLLOW UP>
-Owner: control service and web workspace
-Trigger: when the owner-facing desktop preview becomes a product requirement
-Work: design the narrow preview-only transport without exposing general computer lifecycle, file, process, input, provider URL, or credential methods to the renderer; prove the chosen route on web and Electron
-</FOLLOW UP>
-
-<FOLLOW UP>
 Owner: production deployment orchestrator
 Trigger: when computer-provider replaces the legacy production sandbox adapter
 Work: persist the computer-provider build lifecycle's source digest and immutable image reference in redacted deployment state, and prove a second unchanged deployment skips both image build and publication
+</FOLLOW UP>
+
+<FOLLOW UP>
+Owner: control service and web workspace
+Trigger: when OpenBot supports a second chat backend or Tilde publishes a stable browser transport
+Work: replace the temporary Tilde-specific Hono reverse proxy and frontend client with an authenticated provider-neutral streaming chat transport without flattening attachments, UI message parts, turn status, session events, or cancellation; prove equivalent local and deployed chat behavior
 </FOLLOW UP>

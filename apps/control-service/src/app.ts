@@ -8,6 +8,9 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
 import type { ChatProvider } from "@tryopenbot/chat-provider";
+import type { ComputerProvider } from "@tryopenbot/computer-provider";
+import { registerTildeChatProxy, type TildeChatProxyOptions } from "./chat-proxy.js";
+import { registerComputerPreview } from "./computer-preview.js";
 import { registerControlServices } from "./control.js";
 const sourceWebRoot = fileURLToPath(new URL("../../web/dist", import.meta.url));
 const workingDirectoryWebRoot = resolve(process.cwd(), "apps/web/dist");
@@ -17,6 +20,8 @@ const defaultWebRoot =
 export interface AppOptions {
   webRoot?: string;
   chatProvider?: ChatProvider;
+  computerProvider?: ComputerProvider;
+  tildeChatProxy?: TildeChatProxyOptions;
 }
 
 export function createApp(options: AppOptions = {}): Hono {
@@ -33,6 +38,8 @@ export function createApp(options: AppOptions = {}): Hono {
 
   app.use("*", secureHeaders());
   app.get("/healthz", (context) => context.json({ ok: true, service: "openbot" }));
+  registerComputerPreview(app, options.computerProvider);
+  registerTildeChatProxy(app, options.tildeChatProxy);
   app.all("/rpc/*", async (context) => {
     const handler = controlHandlers.get(new URL(context.req.url).pathname);
     return handler

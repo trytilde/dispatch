@@ -20,7 +20,13 @@ export async function runDevelopmentServer(): Promise<void> {
   const configuration = await loadDevelopmentConfiguration(environment);
   const combined = new Hono();
   combined.route("/", await createAgentServiceApp(repositoryRoot, { health: false }));
-  combined.route("/", createApp({ chatProvider: configuration.providers.chat }));
+  combined.route(
+    "/",
+    createApp({
+      chatProvider: configuration.providers.chat,
+      computerProvider: configuration.providers.computer,
+    }),
+  );
   await new Promise<void>((resolvePromise, reject) => {
     const server = serve({ fetch: combined.fetch, port, hostname: "127.0.0.1" }, () => {
       console.log(`OpenBot listening at http://127.0.0.1:${port}`);

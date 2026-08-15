@@ -3018,6 +3018,82 @@ body.resizing-workspace .rich-chat.workspace-shell {
   }
 }
 
+.computer-stage-placeholder {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  max-width: 100%;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ob-text-secondary);
+  background: var(--ob-bg-base);
+  text-align: center;
+}
+
+.computer-stage-placeholder > span:first-child {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.computer-stage-progress {
+  position: relative;
+  width: 237px;
+  max-width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--ob-radius-full);
+  color: var(--ob-text-primary);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.computer-stage-progress > span {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  border-radius: inherit;
+  background: currentColor;
+}
+
+.computer-stage-progress > .indeterminate {
+  width: 30%;
+  animation: computer-stage-progress 1.4s ease-in-out infinite;
+}
+
+.computer-stage-placeholder > small {
+  color: var(--ob-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.computer-stage-retry {
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--ob-radius-full);
+  color: var(--ob-text-primary);
+  background: var(--ob-fill-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.computer-stage-retry:hover {
+  background: var(--ob-fill-secondary-hover);
+}
+
+@keyframes computer-stage-progress {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(340%);
+  }
+}
+
 .sidebar-resize-handle,
 .workspace-resize-handle {
   position: absolute;

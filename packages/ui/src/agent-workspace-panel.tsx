@@ -1,4 +1,5 @@
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useState } from "react";
+import { ComputerStagePlaceholder } from "./computer-stage.js";
 
 export interface AgentWorkspacePanelProps {
   agentId: string;
@@ -23,11 +24,13 @@ export function AgentWorkspacePanel({
   const [controlling, setControlling] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
   const [previewReady, setPreviewReady] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
     setControlling(false);
     setPreviewReady(false);
+    setPreviewFailed(false);
     setPreviewKey((value) => value + 1);
   }, [agentId]);
 
@@ -75,6 +78,7 @@ export function AgentWorkspacePanel({
               title="Reload computer preview"
               onClick={() => {
                 setPreviewReady(false);
+                setPreviewFailed(false);
                 setPreviewKey((value) => value + 1);
               }}
             >
@@ -128,9 +132,33 @@ export function AgentWorkspacePanel({
             title={`${agentName} Computer`}
             allow="clipboard-read; clipboard-write"
             referrerPolicy="no-referrer"
-            onLoad={() => setPreviewReady(true)}
+            onError={() => {
+              setPreviewReady(false);
+              setPreviewFailed(true);
+            }}
+            onLoad={() => {
+              setPreviewFailed(false);
+              setPreviewReady(true);
+            }}
           />
-          {!controlling ? (
+          {!previewReady || previewFailed ? (
+            <ComputerStagePlaceholder
+              busy={!previewFailed}
+              message={
+                previewFailed ? `Can't reach ${agentName}'s screen` : "Booting up the computer"
+              }
+              onRetry={
+                previewFailed
+                  ? () => {
+                      setPreviewFailed(false);
+                      setPreviewReady(false);
+                      setPreviewKey((value) => value + 1);
+                    }
+                  : undefined
+              }
+            />
+          ) : null}
+          {!controlling && previewReady ? (
             <button className="computer-shield" onClick={() => setControlling(true)}>
               <span>Computer preview</span>
               <strong>Click to take over</strong>

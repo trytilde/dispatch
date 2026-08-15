@@ -77,10 +77,10 @@ export interface ConversationMessageProps {
   continuedNext?: boolean;
   children: ReactNode;
   menuOpen?: boolean;
-  onReply: () => void;
-  onToggleMenu: () => void;
-  onStartThread: () => void;
-  onCopy: () => void;
+  onReply?: () => void;
+  onToggleMenu?: () => void;
+  onStartThread?: () => void;
+  onCopy?: () => void;
 }
 
 export function ConversationMessage({
@@ -104,24 +104,34 @@ export function ConversationMessage({
       <div className="message-footer">
         <time dateTime={createdAt}>{formatTime(createdAt)}</time>
       </div>
-      <div className="message-actions">
-        <button aria-label="Reply" onClick={onReply}>
-          <ReplyIcon />
-        </button>
-        <button aria-label="More message actions" onClick={onToggleMenu}>
-          <MoreIcon />
-        </button>
-        {menuOpen ? (
-          <div className="message-menu" role="menu">
-            <button role="menuitem" onClick={onStartThread}>
-              Start a thread
+      {onReply || onToggleMenu ? (
+        <div className="message-actions">
+          {onReply ? (
+            <button aria-label="Reply" onClick={onReply}>
+              <ReplyIcon />
             </button>
-            <button role="menuitem" onClick={onCopy}>
-              Copy
+          ) : null}
+          {onToggleMenu ? (
+            <button aria-label="More message actions" onClick={onToggleMenu}>
+              <MoreIcon />
             </button>
-          </div>
-        ) : null}
-      </div>
+          ) : null}
+          {menuOpen ? (
+            <div className="message-menu" role="menu">
+              {onStartThread ? (
+                <button role="menuitem" onClick={onStartThread}>
+                  Start a thread
+                </button>
+              ) : null}
+              {onCopy ? (
+                <button role="menuitem" onClick={onCopy}>
+                  Copy
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </article>
   );
 }

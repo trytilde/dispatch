@@ -81,3 +81,12 @@ export {
   type ActivityQueueItem,
   type ActivityTimelineItem,
 } from "./agent-activity.js";
+export {
+  DialogSurface,
+  type DialogSurfaceProps,
+  type PermissionAction,
+  PermissionRequestCard,
+  type PermissionRequestCardProps,
+  ThreadOverlay,
+  type ThreadOverlayProps,
+} from "./overlay-components.js";

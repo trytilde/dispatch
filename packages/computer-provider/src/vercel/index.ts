@@ -68,6 +68,12 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
     return context.devMode ? this.#developmentProvider : undefined;
   }
 
+  override async previewAgentDesktop(agentId: string, context: ComputerCallContext) {
+    if (context.devMode)
+      return await this.#developmentProvider.previewAgentDesktop(agentId, context);
+    return await super.previewAgentDesktop(agentId, context);
+  }
+
   protected async imageRepository(
     context: DeploymentContext,
     phase: "build" | "plan" | "deploy",

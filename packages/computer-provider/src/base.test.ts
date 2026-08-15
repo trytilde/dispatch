@@ -290,6 +290,10 @@ describe("computer image lifecycle", () => {
     await provider.deployable.deploy(context);
     await provider.deployAgentWorkspaces({ computerId: "computer", workspaces: [] }, context);
     await provider.deployDevelopmentSandbox({ computerId: "development" }, context);
+    await provider.previewAgentDesktop("hello-world", {
+      requestId: "preview",
+      devMode: true,
+    });
 
     expect(check).toHaveBeenCalledWith(context);
     expect(build).toHaveBeenCalledWith(context);
@@ -300,6 +304,10 @@ describe("computer image lifecycle", () => {
       context,
     );
     expect(deployDevelopmentSandbox).toHaveBeenCalledWith({ computerId: "development" }, context);
+    expect(previewAgentDesktop).toHaveBeenCalledWith("hello-world", {
+      requestId: "preview",
+      devMode: true,
+    });
   });
 
   it("does not ask for a Vercel repository and describes its managed publish target", async () => {

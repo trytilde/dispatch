@@ -42,6 +42,8 @@ export async function runDevelopment(): Promise<never> {
     infrastructureProgress.fail("OpenBot development infrastructure failed");
     throw error;
   }
+  const publicEnvironment = publicDevelopmentEnvironment(env);
+  await runChecked("pnpm", ["contracts:generate"], env);
   const computerWatcher = await watchDevelopmentComputer({
     repositoryRoot,
     environment: env,
@@ -54,8 +56,6 @@ export async function runDevelopment(): Promise<never> {
       ),
   });
   process.once("exit", () => computerWatcher.close());
-  const publicEnvironment = publicDevelopmentEnvironment(env);
-  await runChecked("pnpm", ["contracts:generate"], env);
 
   const webPort = env.WEB_PORT ?? "4173";
   console.log(`OpenBot web: http://127.0.0.1:${webPort}`);

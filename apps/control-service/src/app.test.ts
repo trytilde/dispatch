@@ -43,6 +43,8 @@ describe("bare OpenBot server", () => {
     }));
     const computerApp = createApp({
       computerProvider: { previewAgentDesktop } as unknown as ComputerProvider,
+      devMode: true,
+      environment: { COMPUTER_ID: "computer-one" },
     });
     const response = await computerApp.request(
       "https://openbot.test/api/computer/hello-world/preview",
@@ -53,7 +55,11 @@ describe("bare OpenBot server", () => {
     expect(response.headers.get("referrer-policy")).toBe("no-referrer");
     expect(previewAgentDesktop).toHaveBeenCalledWith(
       "hello-world",
-      expect.objectContaining({ requestId: expect.any(String) }),
+      expect.objectContaining({
+        requestId: expect.any(String),
+        devMode: true,
+        environment: { COMPUTER_ID: "computer-one" },
+      }),
     );
 
     const invalid = await computerApp.request("https://openbot.test/api/computer/../preview");

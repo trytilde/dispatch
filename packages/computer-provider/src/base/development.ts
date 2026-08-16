@@ -26,10 +26,14 @@ export async function developmentSandboxSourceFiles(
     },
   );
   const paths = stdout.split("\0").filter(Boolean).filter(isSafeDevelopmentSourcePath).sort();
-  return Promise.all(
+  const files = await Promise.all(
     paths.map(async (path) => {
       const source = resolve(repositoryRoot, path);
-      const metadata = await lstat(source);
+      const metadata = await lstat(source).catch((error: NodeJS.ErrnoException) => {
+        if (error.code === "ENOENT") return undefined;
+        throw error;
+      });
+      if (!metadata) return undefined;
       if (!metadata.isFile())
         throw new Error(`Development sandbox source must be a regular file: ${path}`);
       return {
@@ -39,6 +43,7 @@ export async function developmentSandboxSourceFiles(
       };
     }),
   );
+  return files.filter((file) => file !== undefined);
 }
 
 /** Files refreshed on every trusted-sandbox deployment, including ignored local configuration. */

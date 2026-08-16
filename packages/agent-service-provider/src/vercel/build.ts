@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, rm } from "node:fs/promises";
 import { relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { build } from "tsdown";
 import { materializeFileTemplate } from "@tryopenbot/utilities";
 import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
 import { bundleOptions } from "../build.js";
@@ -30,6 +29,7 @@ export const vercelProjectTemplate = fileURLToPath(
 export async function buildVercelAgentService(
   context: DeploymentContext,
 ): Promise<DeploymentResult> {
+  const { build } = await import("tsdown");
   const agents = await discoverAgents(context.repositoryRoot);
   const root = resolve(context.repositoryRoot, agentVercelArtifact);
   const output = resolve(root, ".vercel/output");

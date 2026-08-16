@@ -86,6 +86,31 @@ describe("agent resource lifecycle", () => {
     ).toBe("[1/3] Deploying hello-world agent");
   });
 
+  it("uses an explicitly routed agent service origin", async () => {
+    const baseUrl = vi.fn(() => new URL("http://127.0.0.1:4100"));
+    const deploy = vi.fn(async (context) => {
+      expect(context.agentServiceOrigin).toBe("https://local.trytilde-sb.com");
+    });
+
+    await reconcileAgentResources({
+      repositoryRoot: "/repository",
+      environment: {},
+      devMode: true,
+      agentServiceOrigin: "https://local.trytilde-sb.com/",
+      providers: {
+        skills: {} as SkillProvider,
+        tools: {} as ToolProvider,
+        agent: {
+          deployable: { plan: async () => ({ summary: "agent" }), deploy },
+        } as AgentProvider,
+        agentService: { baseUrl } as unknown as AgentServiceProvider,
+      },
+    });
+
+    expect(deploy).toHaveBeenCalledOnce();
+    expect(baseUrl).not.toHaveBeenCalled();
+  });
+
   it("attributes an agent reconciliation failure to its provider implementation", async () => {
     class VercelToolProvider {
       readonly deployable = {

@@ -42,6 +42,10 @@ function printJson(value: unknown): void {
 }
 
 async function runLoggedCli(): Promise<void> {
+  if (isHelpInvocation(process.argv.slice(2))) {
+    await main();
+    return;
+  }
   const secrets = sensitiveEnvironmentValues(process.env);
   const log = await createCliRunLog({ redact: (value) => redact(value, secrets) });
   const restoreConsole = log.installConsoleCapture();
@@ -72,6 +76,11 @@ async function runLoggedCli(): Promise<void> {
     restoreConsole();
     log.close();
   }
+}
+
+function isHelpInvocation(argv: readonly string[]): boolean {
+  const values = argv.filter((value) => value !== "--");
+  return values[0] === "help" || values.includes("--help") || values.includes("-h");
 }
 
 function referenceUnexpectedExit(log: CliRunLog): void {

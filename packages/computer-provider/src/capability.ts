@@ -9,7 +9,10 @@ export function computerServiceApiKey(value = process.env.COMPUTER_SERVICE_API_K
 export function scopedCapability(
   scope: "vnc",
   computerId: string,
+  agentId?: string,
   secret = computerServiceApiKey(),
 ): string {
-  return createHmac("sha256", secret).update(`openbot:${scope}:${computerId}`).digest("base64url");
+  return createHmac("sha256", secret)
+    .update(`openbot:${scope}:${computerId}:${agentId ?? "shared"}`)
+    .digest("base64url");
 }

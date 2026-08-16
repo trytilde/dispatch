@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -14,13 +15,19 @@ import type {
 } from "./core/index.js";
 import { DeploymentOutputs } from "@tryopenbot/runtime-provider";
 import { computerImageAssets } from "./base/assets.js";
+import { developmentSandboxSourceFiles } from "./base/development.js";
 import {
   BaseComputerProvider,
   computerWorkspacePath,
+  retryComputerServiceStartup,
   scopeComputerExecRequest,
   type ComputerImageDeploymentConfig,
 } from "./base/index.js";
-import { MicrosandboxComputerProvider } from "./microsandbox/index.js";
+import {
+  configuredImageReference,
+  MicrosandboxComputerProvider,
+  publishedHostPort,
+} from "./microsandbox/index.js";
 import { VercelSandboxComputerProvider } from "./vercel/index.js";
 
 const execute = promisify(execFile);
@@ -61,6 +68,19 @@ class TestComputerProvider extends BaseComputerProvider {
   protected readonly deployedImageEnvironmentVariable = "TEST_COMPUTER_IMAGE";
   protected async computerServiceUrl() {
     return "https://computer.test/rpc";
+  }
+  readonly ensureDesktop = vi.fn(
+    async (_computerId: string, _agentId: string, _context: ComputerCallContext) => ({
+      display: ":10",
+      vncPort: 5910,
+    }),
+  );
+  protected override ensureAgentDesktop(
+    computerId: string,
+    agentId: string,
+    context: ComputerCallContext,
+  ) {
+    return this.ensureDesktop(computerId, agentId, context);
   }
   constructor(
     imageDeployment: ComputerImageDeploymentConfig = {
@@ -126,6 +146,42 @@ describe("computerWorkspacePath", () => {
   });
 });
 
+describe("computer-service startup", () => {
+  it("retries a socket hang-up reported as an aborted Connect request", async () => {
+    const operation = vi
+      .fn<() => Promise<string>>()
+      .mockRejectedValueOnce(new ConnectError("socket hang up", Code.Aborted))
+      .mockResolvedValue("ready");
+
+    await expect(
+      retryComputerServiceStartup(operation, undefined, { attempts: 2, delayMs: 0 }),
+    ).resolves.toBe("ready");
+    expect(operation).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("Microsandbox port attachment", () => {
+  it("restores persisted host bindings when a new CLI process attaches", () => {
+    const config = {
+      network: {
+        ports: [
+          { hostPort: 6088, guestPort: 6080 },
+          { hostPort: 4118, guestPort: 4101 },
+        ],
+      },
+    };
+
+    expect(publishedHostPort(config, 6080)).toBe(6088);
+    expect(publishedHostPort(config, 4101)).toBe(4118);
+    expect(publishedHostPort(config, 9999)).toBe(0);
+    expect(
+      configuredImageReference({
+        image: { Oci: { reference: "openbot/computer:latest" } },
+      }),
+    ).toBe("openbot/computer:latest");
+  });
+});
+
 describe("agent workspace deployment", () => {
   it("creates only populated seed directories under /workspace/<agent-id>", async () => {
     const provider = new TestComputerProvider();
@@ -174,6 +230,29 @@ describe("agent workspace deployment", () => {
       expect.any(Uint8Array),
       expect.any(Object),
     );
+    expect(provider.ensureDesktop).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("development sandbox source", () => {
+  it("skips tracked files that are absent from the working tree", async () => {
+    const repositoryRoot = await mkdtemp(join(tmpdir(), "openbot-computer-source-"));
+    try {
+      await execute("git", ["init"], { cwd: repositoryRoot });
+      await writeFile(join(repositoryRoot, "present.txt"), "present");
+      await writeFile(join(repositoryRoot, "absent.txt"), "absent");
+      await execute("git", ["add", "present.txt", "absent.txt"], { cwd: repositoryRoot });
+      await rm(join(repositoryRoot, "absent.txt"));
+
+      await expect(developmentSandboxSourceFiles(repositoryRoot)).resolves.toEqual([
+        {
+          path: "openbot/present.txt",
+          content: new TextEncoder().encode("present"),
+        },
+      ]);
+    } finally {
+      await rm(repositoryRoot, { recursive: true, force: true });
+    }
   });
 });
 
@@ -185,11 +264,16 @@ describe("computer image lifecycle", () => {
     const deploy = vi.fn(async () => ({ outputs: { reference: "local/image" } }));
     const deployAgentWorkspaces = vi.fn(async () => ({}));
     const deployDevelopmentSandbox = vi.fn(async () => ({}));
+    const previewAgentDesktop = vi.fn(async () => ({
+      url: new URL("https://computer.test/vnc"),
+      expiresAt: new Date(1),
+    }));
     const developmentProvider: ComputerProvider = {
       buildable: { check, build },
       deployable: { plan, deploy },
       deployAgentWorkspaces,
       deployDevelopmentSandbox,
+      previewAgentDesktop,
     };
     const provider = new VercelSandboxComputerProvider({ developmentProvider });
     const context = {
@@ -206,6 +290,10 @@ describe("computer image lifecycle", () => {
     await provider.deployable.deploy(context);
     await provider.deployAgentWorkspaces({ computerId: "computer", workspaces: [] }, context);
     await provider.deployDevelopmentSandbox({ computerId: "development" }, context);
+    await provider.previewAgentDesktop("hello-world", {
+      requestId: "preview",
+      devMode: true,
+    });
 
     expect(check).toHaveBeenCalledWith(context);
     expect(build).toHaveBeenCalledWith(context);
@@ -216,6 +304,10 @@ describe("computer image lifecycle", () => {
       context,
     );
     expect(deployDevelopmentSandbox).toHaveBeenCalledWith({ computerId: "development" }, context);
+    expect(previewAgentDesktop).toHaveBeenCalledWith("hello-world", {
+      requestId: "preview",
+      devMode: true,
+    });
   });
 
   it("does not ask for a Vercel repository and describes its managed publish target", async () => {

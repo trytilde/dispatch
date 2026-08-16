@@ -10,6 +10,7 @@ export default defineConfig({
   sourcemap: true,
   deps: {
     alwaysBundle: [
+      /@bufbuild\/protobuf/,
       /@connectrpc\//,
       /@tryopenbot\/computer-service-proto/,
       /@tryopenbot\/utilities/,

@@ -56,6 +56,8 @@ export interface ProviderInitializationQuestion {
   id: string;
   prompt: string;
   description?: string;
+  /** Value offered when the repository has not persisted an answer yet. */
+  defaultValue?: string;
   input: "text" | "secret" | "select";
   required?: boolean;
   choices?: readonly { value: string; label: string; description?: string }[];
@@ -171,6 +173,8 @@ export interface DeploymentContext {
   devMode: boolean;
   repositoryRoot: string;
   environment: NodeJS.ProcessEnv;
+  /** Values loaded from repository configuration, excluding the inherited host environment. */
+  configuration?: NodeJS.ProcessEnv;
   persistence?: DeploymentPersistence;
   inputs: DeploymentOutputs;
   agentId?: string;
@@ -196,6 +200,7 @@ export async function persistEnvironment(
   if (context.environment[name] !== value)
     await (context.persistence ?? noPersistence).setEnvironment(name, value, description);
   context.environment[name] = value;
+  if (context.configuration) context.configuration[name] = value;
 }
 
 export async function persistSecret(
@@ -209,6 +214,7 @@ export async function persistSecret(
   if (context.environment[name] !== value)
     await (context.persistence ?? noPersistence).setSecret(name, value, description);
   context.environment[name] = value;
+  if (context.configuration) context.configuration[name] = value;
 }
 
 export async function unsetEnvironment(context: DeploymentContext, name: string): Promise<void> {
@@ -216,6 +222,7 @@ export async function unsetEnvironment(context: DeploymentContext, name: string)
   if (context.environment[name] !== undefined)
     await (context.persistence ?? noPersistence).unsetEnvironment(name);
   delete context.environment[name];
+  if (context.configuration) delete context.configuration[name];
 }
 
 export async function unsetSecret(context: DeploymentContext, name: string): Promise<void> {
@@ -223,6 +230,7 @@ export async function unsetSecret(context: DeploymentContext, name: string): Pro
   if (context.environment[name] !== undefined)
     await (context.persistence ?? noPersistence).unsetSecret(name);
   delete context.environment[name];
+  if (context.configuration) delete context.configuration[name];
 }
 
 function validateEnvironmentName(name: string): void {
@@ -301,6 +309,7 @@ export interface DeploymentRunOptions {
   dryRun: boolean;
   repositoryRoot: string;
   environment?: NodeJS.ProcessEnv;
+  configuration?: NodeJS.ProcessEnv;
   persistence?: DeploymentPersistence;
   initialInputs?: DeploymentResult;
   report?: DeploymentReporter;
@@ -319,6 +328,7 @@ export async function buildProviders(
     devMode: options.devMode,
     repositoryRoot: options.repositoryRoot,
     environment: options.environment ?? process.env,
+    configuration: options.configuration,
     persistence: options.persistence ?? noPersistence,
     inputs,
     report,
@@ -370,6 +380,7 @@ export async function deployProviders(
     devMode: options.devMode,
     repositoryRoot: options.repositoryRoot,
     environment: options.environment ?? process.env,
+    configuration: options.configuration,
     persistence: options.persistence ?? noPersistence,
     inputs,
     report,

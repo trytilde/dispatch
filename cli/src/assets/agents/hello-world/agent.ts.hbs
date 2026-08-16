@@ -1,6 +1,7 @@
 import {
   chatKitEndpoint,
   convertToAiSdkMessages,
+  createChatKitAttachmentFilePartHandler,
   createClient,
   createMCPClient,
 } from "@trytilde/harness-sdk-vercel-ai-node";
@@ -63,6 +64,18 @@ function assertToolSet(tools: Record<string, unknown>): asserts tools is ToolSet
       throw new TypeError(`MCP tool ${name} is not a Vercel AI SDK tool`);
 }
 
+function fetchAttachment(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+  const url = new URL(input instanceof Request ? input.url : input.toString(), client.config.baseUrl);
+  if (url.origin === new URL(client.config.baseUrl).origin) return fetch(input, init);
+
+  const headers = new Headers(init?.headers);
+  headers.delete("authorization");
+  headers.delete("x-api-key");
+  headers.delete("x-tilde-org-id");
+  headers.delete("x-tilde-team-id");
+  return fetch(input, { ...init, headers });
+}
+
 export default chatKitEndpoint({
   client,
   webhookSigningKey: process.env.AGENT_{{AGENT_ENV_PREFIX}}_WEBHOOK_SIGNING_KEY!,
@@ -72,6 +85,11 @@ export default chatKitEndpoint({
     const messages = await convertToAiSdkMessages({
       messages: [...history.items, ...context.messages],
       chatkit: context.chatkit,
+      onUnprocessed: {
+        fileUpload: createChatKitAttachmentFilePartHandler(client, context, {
+          fetch: fetchAttachment,
+        }),
+      },
     });
     const result = streamText({
       abortSignal: request.signal,

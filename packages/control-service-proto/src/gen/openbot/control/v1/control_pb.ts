@@ -2,12 +2,251 @@
 // @generated from file openbot/control/v1/control.proto (package openbot.control.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file openbot/control/v1/control.proto.
  */
 export const file_openbot_control_v1_control: GenFile = /*@__PURE__*/
-  fileDesc("CiBvcGVuYm90L2NvbnRyb2wvdjEvY29udHJvbC5wcm90bxISb3BlbmJvdC5jb250cm9sLnYxYgZwcm90bzM");
+  fileDesc("CiBvcGVuYm90L2NvbnRyb2wvdjEvY29udHJvbC5wcm90bxISb3BlbmJvdC5jb250cm9sLnYxIhMKEUxpc3RBZ2VudHNSZXF1ZXN0Ij0KCUNoYXRBZ2VudBIKCgJpZBgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSDgoGc3RhdHVzGAMgASgJIkMKEkxpc3RBZ2VudHNSZXNwb25zZRItCgZhZ2VudHMYASADKAsyHS5vcGVuYm90LmNvbnRyb2wudjEuQ2hhdEFnZW50IkYKFENyZWF0ZVNlc3Npb25SZXF1ZXN0EhAKCGFnZW50X2lkGAEgASgJEhIKBXRpdGxlGAIgASgJSACIAQFCCAoGX3RpdGxlIkkKC0NoYXRTZXNzaW9uEgoKAmlkGAEgASgJEhAKCGFnZW50X2lkGAIgASgJEhIKBXRpdGxlGAMgASgJSACIAQFCCAoGX3RpdGxlIikKE0xpc3RNZXNzYWdlc1JlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCSJIChJTZW5kTWVzc2FnZVJlcXVlc3QSEAoIYWdlbnRfaWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCRIMCgR0ZXh0GAMgASgJIkkKC0NoYXRNZXNzYWdlEgoKAmlkGAEgASgJEhIKCnNlc3Npb25faWQYAiABKAkSDAoEcm9sZRgDIAEoCRIMCgR0ZXh0GAQgASgJIkkKFExpc3RNZXNzYWdlc1Jlc3BvbnNlEjEKCG1lc3NhZ2VzGAEgAygLMh8ub3BlbmJvdC5jb250cm9sLnYxLkNoYXRNZXNzYWdlMo0DCg5Db250cm9sU2VydmljZRJbCgpMaXN0QWdlbnRzEiUub3BlbmJvdC5jb250cm9sLnYxLkxpc3RBZ2VudHNSZXF1ZXN0GiYub3BlbmJvdC5jb250cm9sLnYxLkxpc3RBZ2VudHNSZXNwb25zZRJaCg1DcmVhdGVTZXNzaW9uEigub3BlbmJvdC5jb250cm9sLnYxLkNyZWF0ZVNlc3Npb25SZXF1ZXN0Gh8ub3BlbmJvdC5jb250cm9sLnYxLkNoYXRTZXNzaW9uEmEKDExpc3RNZXNzYWdlcxInLm9wZW5ib3QuY29udHJvbC52MS5MaXN0TWVzc2FnZXNSZXF1ZXN0Gigub3BlbmJvdC5jb250cm9sLnYxLkxpc3RNZXNzYWdlc1Jlc3BvbnNlEl8KC1NlbmRNZXNzYWdlEiYub3BlbmJvdC5jb250cm9sLnYxLlNlbmRNZXNzYWdlUmVxdWVzdBooLm9wZW5ib3QuY29udHJvbC52MS5MaXN0TWVzc2FnZXNSZXNwb25zZWIGcHJvdG8z");
+
+/**
+ * @generated from message openbot.control.v1.ListAgentsRequest
+ */
+export type ListAgentsRequest = Message<"openbot.control.v1.ListAgentsRequest"> & {
+};
+
+/**
+ * Describes the message openbot.control.v1.ListAgentsRequest.
+ * Use `create(ListAgentsRequestSchema)` to create a new message.
+ */
+export const ListAgentsRequestSchema: GenMessage<ListAgentsRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 0);
+
+/**
+ * @generated from message openbot.control.v1.ChatAgent
+ */
+export type ChatAgent = Message<"openbot.control.v1.ChatAgent"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string display_name = 2;
+   */
+  displayName: string;
+
+  /**
+   * @generated from field: string status = 3;
+   */
+  status: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.ChatAgent.
+ * Use `create(ChatAgentSchema)` to create a new message.
+ */
+export const ChatAgentSchema: GenMessage<ChatAgent> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 1);
+
+/**
+ * @generated from message openbot.control.v1.ListAgentsResponse
+ */
+export type ListAgentsResponse = Message<"openbot.control.v1.ListAgentsResponse"> & {
+  /**
+   * @generated from field: repeated openbot.control.v1.ChatAgent agents = 1;
+   */
+  agents: ChatAgent[];
+};
+
+/**
+ * Describes the message openbot.control.v1.ListAgentsResponse.
+ * Use `create(ListAgentsResponseSchema)` to create a new message.
+ */
+export const ListAgentsResponseSchema: GenMessage<ListAgentsResponse> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 2);
+
+/**
+ * @generated from message openbot.control.v1.CreateSessionRequest
+ */
+export type CreateSessionRequest = Message<"openbot.control.v1.CreateSessionRequest"> & {
+  /**
+   * @generated from field: string agent_id = 1;
+   */
+  agentId: string;
+
+  /**
+   * @generated from field: optional string title = 2;
+   */
+  title?: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.CreateSessionRequest.
+ * Use `create(CreateSessionRequestSchema)` to create a new message.
+ */
+export const CreateSessionRequestSchema: GenMessage<CreateSessionRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 3);
+
+/**
+ * @generated from message openbot.control.v1.ChatSession
+ */
+export type ChatSession = Message<"openbot.control.v1.ChatSession"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string agent_id = 2;
+   */
+  agentId: string;
+
+  /**
+   * @generated from field: optional string title = 3;
+   */
+  title?: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.ChatSession.
+ * Use `create(ChatSessionSchema)` to create a new message.
+ */
+export const ChatSessionSchema: GenMessage<ChatSession> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 4);
+
+/**
+ * @generated from message openbot.control.v1.ListMessagesRequest
+ */
+export type ListMessagesRequest = Message<"openbot.control.v1.ListMessagesRequest"> & {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.ListMessagesRequest.
+ * Use `create(ListMessagesRequestSchema)` to create a new message.
+ */
+export const ListMessagesRequestSchema: GenMessage<ListMessagesRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 5);
+
+/**
+ * @generated from message openbot.control.v1.SendMessageRequest
+ */
+export type SendMessageRequest = Message<"openbot.control.v1.SendMessageRequest"> & {
+  /**
+   * @generated from field: string agent_id = 1;
+   */
+  agentId: string;
+
+  /**
+   * @generated from field: string session_id = 2;
+   */
+  sessionId: string;
+
+  /**
+   * @generated from field: string text = 3;
+   */
+  text: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.SendMessageRequest.
+ * Use `create(SendMessageRequestSchema)` to create a new message.
+ */
+export const SendMessageRequestSchema: GenMessage<SendMessageRequest> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 6);
+
+/**
+ * @generated from message openbot.control.v1.ChatMessage
+ */
+export type ChatMessage = Message<"openbot.control.v1.ChatMessage"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string session_id = 2;
+   */
+  sessionId: string;
+
+  /**
+   * @generated from field: string role = 3;
+   */
+  role: string;
+
+  /**
+   * @generated from field: string text = 4;
+   */
+  text: string;
+};
+
+/**
+ * Describes the message openbot.control.v1.ChatMessage.
+ * Use `create(ChatMessageSchema)` to create a new message.
+ */
+export const ChatMessageSchema: GenMessage<ChatMessage> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 7);
+
+/**
+ * @generated from message openbot.control.v1.ListMessagesResponse
+ */
+export type ListMessagesResponse = Message<"openbot.control.v1.ListMessagesResponse"> & {
+  /**
+   * @generated from field: repeated openbot.control.v1.ChatMessage messages = 1;
+   */
+  messages: ChatMessage[];
+};
+
+/**
+ * Describes the message openbot.control.v1.ListMessagesResponse.
+ * Use `create(ListMessagesResponseSchema)` to create a new message.
+ */
+export const ListMessagesResponseSchema: GenMessage<ListMessagesResponse> = /*@__PURE__*/
+  messageDesc(file_openbot_control_v1_control, 8);
+
+/**
+ * @generated from service openbot.control.v1.ControlService
+ */
+export const ControlService: GenService<{
+  /**
+   * @generated from rpc openbot.control.v1.ControlService.ListAgents
+   */
+  listAgents: {
+    methodKind: "unary";
+    input: typeof ListAgentsRequestSchema;
+    output: typeof ListAgentsResponseSchema;
+  },
+  /**
+   * @generated from rpc openbot.control.v1.ControlService.CreateSession
+   */
+  createSession: {
+    methodKind: "unary";
+    input: typeof CreateSessionRequestSchema;
+    output: typeof ChatSessionSchema;
+  },
+  /**
+   * @generated from rpc openbot.control.v1.ControlService.ListMessages
+   */
+  listMessages: {
+    methodKind: "unary";
+    input: typeof ListMessagesRequestSchema;
+    output: typeof ListMessagesResponseSchema;
+  },
+  /**
+   * @generated from rpc openbot.control.v1.ControlService.SendMessage
+   */
+  sendMessage: {
+    methodKind: "unary";
+    input: typeof SendMessageRequestSchema;
+    output: typeof ListMessagesResponseSchema;
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_openbot_control_v1_control, 0);
 

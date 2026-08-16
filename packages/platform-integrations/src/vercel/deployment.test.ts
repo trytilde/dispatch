@@ -49,6 +49,13 @@ describe("Vercel deployment helpers", () => {
       devMode: false,
       repositoryRoot: "/repo",
       environment: {
+        HOME: "/root",
+        PUBLIC_ORIGIN: "https://openbot.test",
+        API_KEY: "private",
+        VERCEL_TOKEN: "deployment-only",
+        SOPS_AGE_KEY: "sandbox-only",
+      },
+      configuration: {
         PUBLIC_ORIGIN: "https://openbot.test",
         API_KEY: "private",
         VERCEL_TOKEN: "deployment-only",
@@ -57,38 +64,28 @@ describe("Vercel deployment helpers", () => {
       inputs,
       report: () => undefined,
     };
-    const run = vi.fn<VercelCommandRunner["run"]>(async () => ({ stdout: "", stderr: "" }));
+    const request = vi.fn<typeof fetch>(async () => new Response(null, { status: 200 }));
 
-    await installVercelEnvironment({ run }, context, "openbot");
+    await installVercelEnvironment(context, "openbot", request);
 
-    expect(run.mock.calls.map((call) => call[1])).toEqual([
-      [
-        "exec",
-        "vercel",
-        "env",
-        "add",
-        "PUBLIC_ORIGIN",
-        "production",
-        "--force",
-        "--yes",
-        "--sensitive",
-        "--project",
-        "openbot",
-      ],
-      [
-        "exec",
-        "vercel",
-        "env",
-        "add",
-        "API_KEY",
-        "production",
-        "--force",
-        "--yes",
-        "--sensitive",
-        "--project",
-        "openbot",
-      ],
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(
+      request.mock.calls.map((call) => {
+        const body = call[1]?.body;
+        if (typeof body !== "string") throw new Error("expected a JSON request body");
+        return JSON.parse(body);
+      }),
+    ).toEqual([
+      {
+        type: "sensitive",
+        key: "PUBLIC_ORIGIN",
+        value: "https://openbot.test",
+        target: ["production"],
+      },
+      { type: "sensitive", key: "API_KEY", value: "private", target: ["production"] },
     ]);
-    expect(run.mock.calls[1]?.[2].input).toBe("private");
+    expect(request.mock.calls[0]?.[0]).toEqual(
+      new URL("https://api.vercel.com/v10/projects/openbot/env?upsert=true"),
+    );
   });
 });

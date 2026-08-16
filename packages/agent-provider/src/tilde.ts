@@ -8,7 +8,9 @@ import {
 import {
   chatkitDeleteAgent,
   chatkitGetAgent,
+  chatkitListChatProviders,
   chatkitRegisterHttpVercelAiSdkAgent,
+  chatkitRegisterVercelUiChatProvider,
   chatkitSetAgentStatus,
   chatkitUpdateAgent,
   createTildeApiClient,
@@ -21,6 +23,7 @@ import { AgentProviderError } from "./core.js";
 export interface TildeAgentProviderConfig extends TildePlatformConfig {}
 
 type JsonRecord = Record<string, unknown>;
+const missionControlChannelId = "openbot-mission-control";
 
 interface AgentResource {
   id: string;
@@ -73,6 +76,7 @@ export class TildeAgentProvider implements AgentProvider {
       summary: `Reconcile authored agent ${agent.id} with Tilde`,
       steps: [
         "Create missing ChatKit agents",
+        "Create the shared OpenBot Mission Control chat channel when missing",
         "Reconcile Vercel AI SDK endpoint URLs and enabled status",
         context.devMode
           ? "Enable Tilde local-runtime tunneling"
@@ -115,7 +119,7 @@ export class TildeAgentProvider implements AgentProvider {
           body: {
             id: slug,
             display_name: displayName,
-            endpoint_url: endpointValue(endpointUrl, localRunningEndpoint),
+            endpoint_url: endpointValue(endpointUrl),
             local_running_endpoint: localRunningEndpoint,
             streaming: true,
             timeout_ms: 300_000,
@@ -130,7 +134,7 @@ export class TildeAgentProvider implements AgentProvider {
       };
     } else if (
       agent.displayName !== displayName ||
-      agent.endpointUrl !== endpointValue(endpointUrl, localRunningEndpoint) ||
+      agent.endpointUrl !== endpointValue(endpointUrl) ||
       agent.localRunningEndpoint !== localRunningEndpoint ||
       !agent.streaming ||
       agent.timeoutMs !== 300_000
@@ -142,7 +146,7 @@ export class TildeAgentProvider implements AgentProvider {
             path: { team_id: this.#teamId, agent_id: slug },
             body: {
               display_name: displayName,
-              endpoint_url: endpointValue(endpointUrl, localRunningEndpoint),
+              endpoint_url: endpointValue(endpointUrl),
               local_running_endpoint: localRunningEndpoint,
               streaming: true,
               timeout_ms: 300_000,
@@ -165,6 +169,7 @@ export class TildeAgentProvider implements AgentProvider {
         )) as JsonRecord,
       );
     }
+    await this.#ensureMissionControlChannel(agent.id);
     await persistEnvironment(
       context,
       `${prefix}_AGENT_ID`,
@@ -191,6 +196,36 @@ export class TildeAgentProvider implements AgentProvider {
         `Tilde webhook signing key for ${slug}.`,
       );
     }
+  }
+
+  async #ensureMissionControlChannel(defaultAgentId: string): Promise<void> {
+    let nextPageToken: string | undefined;
+    do {
+      const response = await this.#generated("list Mission Control chat channels", (signal) =>
+        chatkitListChatProviders({
+          client: this.#api,
+          path: { team_id: this.#teamId },
+          query: { page_size: 100, next_page_token: nextPageToken },
+          signal,
+        }),
+      );
+      const page = response as { items?: JsonRecord[]; next_page_token?: string | null };
+      if (page.items?.some((channel) => channel.id === missionControlChannelId)) return;
+      nextPageToken = page.next_page_token ?? undefined;
+    } while (nextPageToken);
+
+    await this.#generated("create the OpenBot Mission Control chat channel", (signal) =>
+      chatkitRegisterVercelUiChatProvider({
+        client: this.#api,
+        path: { team_id: this.#teamId },
+        body: {
+          id: missionControlChannelId,
+          display_name: "OpenBot Mission Control",
+          default_agent_inbox_id: defaultAgentId,
+        },
+        signal,
+      }),
+    );
   }
 
   async #getAgentOrUndefined(id: string): Promise<AgentResource | undefined> {
@@ -287,10 +322,8 @@ function requireAgent(context: DeploymentContext): { id: string; path: string } 
   return { id: context.agentId, path: context.agentPath };
 }
 
-function endpointValue(endpointUrl: URL, localRunningEndpoint: boolean): string {
-  return localRunningEndpoint
-    ? `${endpointUrl.pathname}${endpointUrl.search}`
-    : endpointUrl.toString();
+function endpointValue(endpointUrl: URL): string {
+  return endpointUrl.toString();
 }
 
 function agentResource(value: JsonRecord): AgentResource {

@@ -74,6 +74,7 @@ describe("runtime provider lifecycle", () => {
 
   it("persists environment and secrets through the mutable context", async () => {
     const environment: NodeJS.ProcessEnv = {};
+    const configuration: NodeJS.ProcessEnv = {};
     const persistence = {
       setEnvironment: vi.fn(async () => undefined),
       setSecret: vi.fn(async () => undefined),
@@ -84,6 +85,7 @@ describe("runtime provider lifecycle", () => {
       devMode: true,
       repositoryRoot: "/repository",
       environment,
+      configuration,
       persistence,
       inputs: new DeploymentOutputs(),
       report: () => undefined,
@@ -91,9 +93,11 @@ describe("runtime provider lifecycle", () => {
     await persistEnvironment(context, "AGENT_ID", "agent", "Agent ID");
     await persistSecret(context, "AGENT_KEY", "private", "Agent key");
     expect(environment).toEqual({ AGENT_ID: "agent", AGENT_KEY: "private" });
+    expect(configuration).toEqual({ AGENT_ID: "agent", AGENT_KEY: "private" });
     await unsetEnvironment(context, "AGENT_ID");
     await unsetSecret(context, "AGENT_KEY");
     expect(environment).toEqual({});
+    expect(configuration).toEqual({});
     expect(persistence.setEnvironment).toHaveBeenCalledWith("AGENT_ID", "agent", "Agent ID");
     expect(persistence.setSecret).toHaveBeenCalledWith("AGENT_KEY", "private", "Agent key");
   });

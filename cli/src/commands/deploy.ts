@@ -76,6 +76,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
   const configuration = await loadRepositoryConfiguration();
   const agentService = configuration.providers.agentService;
   const controlService = configuration.providers.controlService;
+  const auth = configuration.providers.auth;
   const computer = configuration.providers.computer;
   const deployAgents = options.service === "all" || options.service === "agents";
   const computerId = deploymentConfiguration.environment.COMPUTER_ID?.trim() || "openbot-computer";
@@ -153,6 +154,16 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
           },
         ]
       : []),
+    ...(options.service === "all" || options.service === "control"
+      ? [
+          {
+            id: "auth",
+            implementation: auth,
+            providerType: "Auth Provider",
+            provider: auth,
+          },
+        ]
+      : []),
   ];
   const persistence = repositoryDeploymentPersistence({
     repositoryRoot,
@@ -163,6 +174,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
     dryRun: options.dryRun,
     repositoryRoot,
     environment: deploymentConfiguration.environment,
+    configuration: deploymentConfiguration.configuration,
     persistence,
     report,
   } as const;
@@ -175,6 +187,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
     await reconcileAgentResources({
       repositoryRoot,
       environment: deploymentConfiguration.environment,
+      configuration: deploymentConfiguration.configuration,
       providers: configuration.providers,
       devMode: false,
       report,

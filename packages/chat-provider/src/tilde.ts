@@ -14,8 +14,8 @@ import type {
 import { ChatProviderError, pageSize, providerSignal } from "./core.js";
 import { TildePlatform, type TildePlatformConfig } from "@tryopenbot/platform-integrations";
 import {
-  tildeErrorMessage,
   tildeErrorStatus,
+  tildeHttpErrorMessage,
 } from "@tryopenbot/platform-integrations/tilde/errors";
 import {
   omitUndefinedProperties,
@@ -55,6 +55,7 @@ export class TildeChatProvider implements ChatProvider {
       baseUrl: config.baseUrl,
       apiKey: config.apiKey,
       orgId: config.orgId,
+      throwOnError: false,
     });
     this.#teamId = config.teamId;
   }
@@ -267,7 +268,9 @@ export class TildeChatProvider implements ChatProvider {
       const result = await operation(providerSignal(context));
       if (result.error !== undefined) {
         throw Object.assign(
-          new Error(tildeErrorMessage(result.error, "Tilde API request failed")),
+          new Error(
+            tildeHttpErrorMessage(result.error, result.response, "Tilde API request failed"),
+          ),
           { response: result.response },
         );
       }
@@ -399,6 +402,7 @@ function messageRole(value: unknown): ChatMessage["role"] {
 function chatErrorCode(status: number | undefined): ChatProviderError["code"] {
   switch (status) {
     case 400:
+    case 422:
       return "invalid_request";
     case 404:
       return "not_found";

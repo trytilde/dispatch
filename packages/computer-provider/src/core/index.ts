@@ -10,6 +10,10 @@ export type ComputerState = "creating" | "running" | "sleeping" | "failed";
 
 export interface ComputerCallContext {
   requestId: string;
+  /** Routes runtime calls through the provider's development implementation when available. */
+  devMode?: boolean;
+  /** Provider credentials available to lifecycle calls; ordinary runtime calls use process.env. */
+  environment?: NodeJS.ProcessEnv;
   agentId?: string;
   signal?: AbortSignal;
   deadline?: Date;
@@ -124,6 +128,7 @@ export interface PublishedComputerImage extends BuiltComputerImage {
 }
 
 export interface ComputerProvider extends DeployableProvider {
+  previewAgentDesktop(agentId: string, context: ComputerCallContext): Promise<ComputerVncEndpoint>;
   deployAgentWorkspaces(
     request: DeployAgentWorkspacesRequest,
     context: DeploymentContext,

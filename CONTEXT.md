@@ -16,6 +16,16 @@ _Avoid_: Tilde workspace
 The person responsible for configuring and operating an **OpenBot Installation**.
 _Avoid_: admin, user, or customer when ownership is meant
 
+**Installation Resource**:
+The OAuth protected-resource identity assigned to one **OpenBot Installation**. Its exact URI is
+the required access-token audience for that installation.
+_Avoid_: client ID or scope when the protected installation is meant
+
+**Owner Principal**:
+The verified subject, **Installation Resource**, client, scopes, roles, and entitlements available
+to an owner-facing control handler after authentication and authorization.
+_Avoid_: treating a decoded token or session cookie alone as authorization
+
 **Tilde Organization**:
 The Tilde ownership and billing boundary selected during setup.
 
@@ -43,7 +53,11 @@ _Avoid_: credentials, runtime state
 
 ## Relationships
 
-- An **Owner** opens an **OpenBot Installation** without a pairing-code gate.
+- An **Owner** authenticates through OIDC without a pairing-code gate.
+- Each **OpenBot Installation** has one **Installation Resource** and accepts only access tokens
+  with that exact audience.
+- Tilde login may provide SSO across installations, but each installation keeps independent access
+  tokens and host-only cookies.
 - An **OpenBot Installation** presents one **OpenBot Workspace**.
 - An **OpenBot Installation** connects to one **Tilde Organization** and **Tilde Team**.
 - A **Tilde Team** owns one or more **Tilde Agents** and their **ChatKit Sessions**.
@@ -77,13 +91,13 @@ Work: <specific remaining behavior and its acceptance proof>
 ```
 
 <FOLLOW UP>
-Owner: control service and web workspace
-Trigger: when the owner-facing desktop preview becomes a product requirement
-Work: design the narrow preview-only transport without exposing general computer lifecycle, file, process, input, provider URL, or credential methods to the renderer; prove the chosen route on web and Electron
-</FOLLOW UP>
-
-<FOLLOW UP>
 Owner: production deployment orchestrator
 Trigger: when computer-provider replaces the legacy production sandbox adapter
 Work: persist the computer-provider build lifecycle's source digest and immutable image reference in redacted deployment state, and prove a second unchanged deployment skips both image build and publication
+</FOLLOW UP>
+
+<FOLLOW UP>
+Owner: control service and web workspace
+Trigger: when OpenBot supports a second chat backend or Tilde publishes a stable browser transport
+Work: replace the temporary Tilde-specific Hono reverse proxy and frontend client with an authenticated provider-neutral streaming chat transport without flattening attachments, UI message parts, turn status, session events, or cancellation; prove equivalent local and deployed chat behavior
 </FOLLOW UP>

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { AgentProvider } from "@tryopenbot/agent-provider";
+import type { AuthProvider } from "@tryopenbot/auth-provider";
 import type { AgentServiceProvider } from "@tryopenbot/agent-service-provider";
 import type { ChatProvider } from "@tryopenbot/chat-provider";
 import type { ComputerProvider } from "@tryopenbot/computer-provider";
@@ -14,6 +15,7 @@ export interface ProviderPluginManifest {
 }
 
 export interface OpenBotProviders {
+  auth: AuthProvider;
   controlService: ControlServiceProvider;
   agentService: AgentServiceProvider;
   chat: ChatProvider;

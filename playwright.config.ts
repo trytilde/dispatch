@@ -1,28 +1,40 @@
 import { defineConfig } from "@playwright/test";
 
+const controlPort = 14_100;
+const webPort = 14_173;
+const webOrigin = `http://127.0.0.1:${webPort}`;
+
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 45_000,
   expect: { timeout: 8_000 },
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: webOrigin,
+    extraHTTPHeaders: { authorization: "Bearer e2e-owner" },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  webServer: {
-    command: "pnpm dev",
-    env: {
-      ...process.env,
-      NO_DESKTOP: "1",
-      AGENT_HELLO_WORLD_API_KEY: "e2e-agent-api-key",
-      AGENT_HELLO_WORLD_WEBHOOK_SIGNING_KEY: "e2e-webhook-signing-key",
-      AI_GATEWAY_API_KEY: "e2e-ai-gateway-api-key",
-      TILDE_ORG_ID: "e2e-org",
-      TILDE_TEAM_ID: "e2e-team",
+  webServer: [
+    {
+      command:
+        "pnpm --filter @tryopenbot/control-service exec node --conditions=development --import tsx test/e2e-server.ts",
+      env: {
+        ...process.env,
+        TILDE_ORG_ID: "e2e-org",
+        TILDE_TEAM_ID: "e2e-team",
+        OPENBOT_E2E_CONTROL_PORT: String(controlPort),
+      },
+      url: `http://127.0.0.1:${controlPort}/healthz`,
+      reuseExistingServer: false,
+      timeout: 120_000,
     },
-    url: "http://127.0.0.1:4173/healthz",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+    {
+      command: `pnpm --filter @tryopenbot/web exec vp dev --host 127.0.0.1 --port ${webPort}`,
+      env: { ...process.env, OPENBOT_CONTROL_PORT: String(controlPort) },
+      url: `${webOrigin}/`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ],
   projects: [{ name: "chromium", use: { browserName: "chromium" } }],
 });

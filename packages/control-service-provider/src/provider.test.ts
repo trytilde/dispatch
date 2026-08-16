@@ -32,13 +32,18 @@ describe("control service providers", () => {
     const root = await temporaryRoot();
     await mkdir(join(root, "apps/web/dist"), { recursive: true });
     await mkdir(join(root, "apps/control-service/src"), { recursive: true });
+    await mkdir(join(root, "configuration"), { recursive: true });
     await writeFile(
       join(root, "apps/web/dist/index.html"),
       "<!doctype html><title>OpenBot</title>",
     );
     await writeFile(
       join(root, "apps/control-service/src/app.ts"),
-      "export default { fetch: () => Response.json({ service: 'openbot-control' }) };\n",
+      "export function createApp() { return { fetch: () => Response.json({ service: 'openbot-control' }) }; }\n",
+    );
+    await writeFile(
+      join(root, "configuration/index.ts"),
+      `import { VercelControlServiceProvider } from ${JSON.stringify(join(process.cwd(), "src/index.ts"))};\nexport default { providers: { chat: {}, controlService: new VercelControlServiceProvider() } };\n`,
     );
     const run = vi.fn<CommandRunner["run"]>(async () => ({ stdout: "", stderr: "" }));
     const result = await buildVercelControlService(
@@ -56,9 +61,12 @@ describe("control service providers", () => {
     expect(
       JSON.parse(await readFile(join(artifact!, ".vercel/output/config.json"), "utf8")),
     ).toMatchObject({ version: 3 });
-    expect(
-      await readFile(join(artifact!, ".vercel/output/functions/control.func/index.mjs"), "utf8"),
-    ).toContain("openbot-control");
+    const functionSource = await readFile(
+      join(artifact!, ".vercel/output/functions/control.func/index.mjs"),
+      "utf8",
+    );
+    expect(functionSource).toContain("openbot-control");
+    expect(functionSource).not.toContain("Cannot find native binding");
     expect(await readFile(join(artifact!, ".vercel/output/static/index.html"), "utf8")).toContain(
       "OpenBot",
     );
@@ -127,7 +135,10 @@ describe("control service providers", () => {
         devMode: false,
         dryRun: false,
         repositoryRoot: root,
-        environment: { VERCEL_CONTROL_PROJECT: "openbot-control" },
+        environment: {
+          VERCEL_CONTROL_PROJECT: "openbot-control",
+          VERCEL_TOKEN: "deployment-token",
+        },
         initialInputs: { outputs: { "control-service.artifact": artifact } },
       },
     );

@@ -10,6 +10,7 @@ import {
   LocalAgentServiceProvider,
   VercelAgentServiceProvider,
 } from "@tryopenbot/agent-service-provider";
+import { TildeAuthProvider } from "@tryopenbot/auth-provider";
 import type {
   OpenBotConfiguration,
   SopsOwnerIdentityConfiguration,
@@ -527,14 +528,19 @@ export async function loadDeploymentConfiguration(
     prompts?: InitializationPrompts;
     userConfigurationPath?: string;
   } = {},
-): Promise<{ environment: NodeJS.ProcessEnv }> {
+): Promise<{ environment: NodeJS.ProcessEnv; configuration: NodeJS.ProcessEnv }> {
   const runner = options.runner ?? processCommandRunner;
   const configurationDirectory = resolve(repositoryRoot, "configuration");
   const environmentPath = resolve(configurationDirectory, ".env");
   const secretsPath = resolve(configurationDirectory, "secrets.enc.yaml");
   const staticEnvironment = await readEnvironmentFile(environmentPath);
-  if (!(await exists(secretsPath)))
-    return { environment: { ...(options.environment ?? process.env), ...staticEnvironment } };
+  if (!(await exists(secretsPath))) {
+    const configuration = { ...staticEnvironment };
+    return {
+      environment: { ...(options.environment ?? process.env), ...configuration },
+      configuration,
+    };
+  }
 
   const commandEnvironment = await sopsCommandEnvironment(repositoryRoot, runner, {
     environment: options.environment ?? process.env,
@@ -552,13 +558,16 @@ export async function loadDeploymentConfiguration(
   );
   const document = parseYaml(decrypted.stdout) as unknown;
   const parsed = parseSecretsDocument(document);
-  const deploymentEnvironment = {
-    ...(options.environment ?? process.env),
+  const configuration = {
     ...staticEnvironment,
     ...parsed.secrets,
+  };
+  const deploymentEnvironment = {
+    ...(options.environment ?? process.env),
+    ...configuration,
     [SANDBOX_SOPS_AGE_KEY]: parsed.sandboxAgeIdentity,
   };
-  return { environment: deploymentEnvironment };
+  return { environment: deploymentEnvironment, configuration };
 }
 
 export async function setEncryptedSecret(
@@ -584,32 +593,25 @@ export async function setEncryptedSecret(
     prompts: options.prompts,
     userConfigurationPath: options.userConfigurationPath,
   });
-  const help = await runner.run("sops", ["set", "--help"], {
-    cwd: repositoryRoot,
-    environment,
-  });
-  if (!help.stdout.includes("--value-stdin") && !help.stderr.includes("--value-stdin")) {
-    throw new Error(
-      "The installed SOPS does not support secure stdin values; install a current SOPS release",
-    );
-  }
-  await runner.run(
+  const secretsPath = resolve(repositoryRoot, "configuration/secrets.enc.yaml");
+  const decrypted = await runner.run(
     "sops",
-    [
-      "set",
-      "--value-stdin",
-      resolve(repositoryRoot, "configuration/secrets.enc.yaml"),
-      `[${JSON.stringify(repositorySecretName(name))}]`,
-    ],
+    ["decrypt", "--input-type", "yaml", "--output-type", "yaml", secretsPath],
     {
       cwd: repositoryRoot,
       environment,
-      input: JSON.stringify({
-        description,
-        value,
-      }),
     },
   );
+  const values = parseDescribedSecretsDocument(parseYaml(decrypted.stdout) as unknown);
+  values[repositorySecretName(name)] = { description, value };
+  const encrypted = await encryptSecretsDocument(
+    runner,
+    repositoryRoot,
+    await readSopsCreationRule(repositoryRoot),
+    environment,
+    values,
+  );
+  await writeFileAtomically(secretsPath, await renderDocument(encrypted), 0o600);
 }
 
 export async function setEnvironmentValue(
@@ -774,18 +776,19 @@ async function askProviderQuestion(
     throw new Error(`Invalid provider initialization destination: ${question.destination.key}`);
   if (question.input === "select" && !question.choices?.length)
     throw new Error(`Select question ${question.id} must define choices`);
+  const offeredValue = initialValue ?? question.defaultValue;
   const value =
     question.input === "select"
       ? await prompts.select(question.prompt, question.choices ?? [], {
           id: question.id,
-          initialValue,
+          initialValue: offeredValue,
         })
       : await prompts.input(question.prompt, {
           id: question.id,
           description: question.description,
           secret: question.input === "secret",
           required: question.required,
-          initialValue,
+          initialValue: offeredValue,
         });
   if (value && question.validation && !new RegExp(question.validation.pattern).test(value))
     throw new Error(question.validation.message);
@@ -1040,12 +1043,13 @@ async function sopsCommandEnvironment(
     userConfigurationPath?: string;
   },
 ): Promise<NodeJS.ProcessEnv> {
-  if (
+  const hasAgeIdentity = Boolean(
     options.environment.SOPS_AGE_KEY ||
     options.environment.SOPS_AGE_KEY_FILE ||
-    options.environment.SOPS_AGE_KEY_CMD
-  )
-    return { ...options.environment };
+    options.environment.SOPS_AGE_KEY_CMD,
+  );
+  const creationRule = await readSopsCreationRule(repositoryRoot);
+  if (hasAgeIdentity && !creationRule.kms) return { ...options.environment };
   const metadata = await loadStoredOwnerMetadata(
     repositoryRoot,
     options.environment,
@@ -1182,10 +1186,14 @@ async function awsProfileEnvironment(
 
   const commandEnvironment: NodeJS.ProcessEnv = {
     ...environment,
-    AWS_PROFILE: profile,
     AWS_ACCESS_KEY_ID: values.AccessKeyId,
     AWS_SECRET_ACCESS_KEY: values.SecretAccessKey,
   };
+  // Static credentials must be the only selected AWS source. Some AWS SDKs,
+  // including the version embedded in older SOPS releases, prefer a named SSO
+  // profile even when fresher exported credentials are present.
+  delete commandEnvironment.AWS_PROFILE;
+  delete commandEnvironment.AWS_DEFAULT_PROFILE;
   delete commandEnvironment.AWS_SESSION_TOKEN;
   delete commandEnvironment.AWS_SECURITY_TOKEN;
   if (typeof values.SessionToken === "string")
@@ -1334,6 +1342,7 @@ function applicationInitializationProviders(
 ): InitializableProvider[] {
   return [
     ...runtimeProviders,
+    new TildeAuthProvider(tildePlatform),
     {
       platforms: [tildePlatform],
       initialization: tildeToolProviderInitialization,
@@ -1399,6 +1408,7 @@ function uniqueInitializationQuestions(
 
 function configuredProviders(configuration: OpenBotConfiguration): InitializableProvider[] {
   const providers: Array<InitializableProvider | undefined> = [
+    configuration.providers.auth,
     configuration.providers.controlService,
     configuration.providers.agentService,
     configuration.providers.chat,

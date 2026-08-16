@@ -41,36 +41,38 @@ export async function ensureVercelProject(
 }
 
 export async function installVercelEnvironment(
-  runner: VercelCommandRunner,
   context: DeploymentContext,
   project: string,
+  request: typeof fetch = fetch,
 ): Promise<void> {
   const variables = new Map(
-    Object.entries(context.environment).flatMap(([name, value]) =>
+    Object.entries(context.configuration ?? context.environment).flatMap(([name, value]) =>
       value === undefined || isControlPlaneCredential(name)
         ? []
         : [[name, { value, sensitive: true }] as const],
     ),
   );
-  for (const [name, variable] of variables)
-    await runner.run(
-      "pnpm",
-      [
-        "exec",
-        "vercel",
-        "env",
-        "add",
-        name,
-        "production",
-        "--force",
-        "--yes",
-        variable.sensitive ? "--sensitive" : "--no-sensitive",
-        "--project",
-        project,
-        ...vercelScopeArguments(context.environment),
-      ],
-      { cwd: context.repositoryRoot, environment: context.environment, input: variable.value },
-    );
+  const token = context.environment.VERCEL_TOKEN?.trim();
+  if (!token) throw new Error("VERCEL_TOKEN is required to install Vercel environment variables");
+  const url = new URL(
+    `https://api.vercel.com/v10/projects/${encodeURIComponent(project)}/env?upsert=true`,
+  );
+  const teamId = context.environment.VERCEL_TEAM_ID?.trim();
+  if (teamId) url.searchParams.set("teamId", teamId);
+  for (const [name, variable] of variables) {
+    const response = await request(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: variable.sensitive ? "sensitive" : "encrypted",
+        key: name,
+        value: variable.value,
+        target: ["production"],
+      }),
+    });
+    if (!response.ok)
+      throw new Error(`Could not install Vercel environment variable ${name} (${response.status})`);
+  }
 }
 
 function isControlPlaneCredential(name: string): boolean {

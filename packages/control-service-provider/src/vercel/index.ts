@@ -99,7 +99,7 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
     const project = requiredVercelProject(context.environment, "VERCEL_CONTROL_PROJECT");
     const root = context.inputs.require("control-service.artifact");
     await materializeFileTemplate(vercelProjectTemplate, resolve(root, "vercel.json"));
-    await installVercelEnvironment(this.#runner, context, project);
+    await installVercelEnvironment(context, project, this.#request);
     const args = [
       "exec",
       "vercel",
@@ -119,10 +119,22 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
       environment: context.environment,
     });
     const url = vercelDeploymentUrl(`${result.stdout}\n${result.stderr}`);
-    const response = await this.#request(`${url}/healthz`, { signal: AbortSignal.timeout(30_000) });
-    if (!response.ok || ((await response.json()) as { ok?: unknown }).ok !== true)
-      throw new Error("Control service health smoke failed");
+    const healthUrl = `${url}/healthz`;
+    const response = await this.#request(healthUrl, { signal: AbortSignal.timeout(30_000) });
+    const body = await response.text();
+    if (!response.ok || !healthyResponse(body))
+      throw new Error(
+        `Control service health smoke failed: ${healthUrl} returned ${response.status}${body ? `: ${body.slice(0, 500)}` : ""}`,
+      );
     return { outputs: { "control-service.deployment-url": url, "runtime.deployment-url": url } };
+  }
+}
+
+function healthyResponse(body: string): boolean {
+  try {
+    return (JSON.parse(body) as { ok?: unknown }).ok === true;
+  } catch {
+    return false;
   }
 }
 

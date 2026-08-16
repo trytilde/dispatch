@@ -167,7 +167,7 @@ describe("agent service artifacts", () => {
       devMode: false,
       dryRun: false,
       repositoryRoot: root,
-      environment: { VERCEL_AGENT_PROJECT: "openbot-agents" },
+      environment: { VERCEL_AGENT_PROJECT: "openbot-agents", VERCEL_TOKEN: "deployment-token" },
       initialInputs: {
         outputs: { "agent-service.artifact": artifact, "agent-service.count": "0" },
       },

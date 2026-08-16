@@ -76,6 +76,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
   const configuration = await loadRepositoryConfiguration();
   const agentService = configuration.providers.agentService;
   const controlService = configuration.providers.controlService;
+  const auth = configuration.providers.auth;
   const computer = configuration.providers.computer;
   const deployAgents = options.service === "all" || options.service === "agents";
   const computerId = deploymentConfiguration.environment.COMPUTER_ID?.trim() || "openbot-computer";
@@ -150,6 +151,16 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
             implementation: controlService,
             providerType: "Control Service Provider",
             provider: { buildable: controlService, deployable: controlService },
+          },
+        ]
+      : []),
+    ...(options.service === "all" || options.service === "control"
+      ? [
+          {
+            id: "auth",
+            implementation: auth,
+            providerType: "Auth Provider",
+            provider: auth,
           },
         ]
       : []),

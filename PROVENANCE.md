@@ -10,6 +10,11 @@ revisions on 2026-08-12:
 - `trytilde/harness-sdk` at `2f5070d`
 - `trytilde/examples` at `9d73adf`
 
+The public `trytilde/agent` authentication architecture was inspected at
+`242cc8b` on 2026-08-15. ADR-0016 uses its public deployment-registration,
+PKCE, cookie/bearer, and audience-validation behavior as an architectural
+reference; no implementation was copied.
+
 These repositories remain references, not vendored source. Their public API
 contracts must be reverified before changing pinned Tilde dependencies.
 
@@ -18,6 +23,16 @@ The repo-native `.agents/skills/tilde/SKILL.md` is copied verbatim from
 was synthesized from OpenBot's own deployment code and Vercel's public Agent
 Resources and product documentation as inspected on 2026-08-12. No upstream
 Vercel skill package was copied verbatim.
+
+## Clean-room behavioral references
+
+Grok Bot 0.16.0 recovered source was inspected locally on 2026-08-15 solely to
+derive high-level authentication requirements for ADR-0016: system-browser
+sign-in, main-process credential ownership, bounded renderer status, and
+account binding for durable installation data. No recovered source, private
+identifier, prompt, comment, or prose was copied into OpenBot. The inspected
+recovery manifest has SHA-256
+`8b26c94e76576c1709fc39ca33807bfabb5cac3c9b77398f956038e3a1263199`.
 
 ## Runtime artifact pins
 

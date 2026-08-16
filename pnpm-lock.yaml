@@ -180,6 +180,9 @@ importers:
       '@hono/node-server':
         specifier: 1.19.1
         version: 1.19.1(hono@4.13.1)
+      '@tryopenbot/auth-provider':
+        specifier: workspace:*
+        version: link:../../packages/auth-provider
       '@tryopenbot/chat-provider':
         specifier: workspace:*
         version: link:../../packages/chat-provider
@@ -296,6 +299,9 @@ importers:
       '@tryopenbot/agent-service-provider':
         specifier: workspace:*
         version: link:../packages/agent-service-provider
+      '@tryopenbot/auth-provider':
+        specifier: workspace:*
+        version: link:../packages/auth-provider
       '@tryopenbot/chat-provider':
         specifier: workspace:*
         version: link:../packages/chat-provider
@@ -447,6 +453,25 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
+  packages/auth-provider:
+    dependencies:
+      '@tryopenbot/platform-integrations':
+        specifier: workspace:*
+        version: link:../platform-integrations
+      '@tryopenbot/runtime-provider':
+        specifier: workspace:*
+        version: link:../runtime-provider
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
+
   packages/chat-provider:
     dependencies:
       '@tryopenbot/platform-integrations':
@@ -579,6 +604,9 @@ importers:
       '@tryopenbot/agent-service-provider':
         specifier: workspace:*
         version: link:../agent-service-provider
+      '@tryopenbot/auth-provider':
+        specifier: workspace:*
+        version: link:../auth-provider
       '@tryopenbot/chat-provider':
         specifier: workspace:*
         version: link:../chat-provider

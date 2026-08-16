@@ -49,6 +49,12 @@ export async function reconcileDevelopmentInfrastructure(
         deployable: options.providers.controlService,
       },
     },
+    {
+      id: "auth",
+      implementation: options.providers.auth,
+      providerType: "Auth Provider",
+      provider: options.providers.auth,
+    },
   ]);
 }
 

@@ -10,6 +10,7 @@ import {
   LocalAgentServiceProvider,
   VercelAgentServiceProvider,
 } from "@tryopenbot/agent-service-provider";
+import { TildeAuthProvider } from "@tryopenbot/auth-provider";
 import type {
   OpenBotConfiguration,
   SopsOwnerIdentityConfiguration,
@@ -1341,6 +1342,7 @@ function applicationInitializationProviders(
 ): InitializableProvider[] {
   return [
     ...runtimeProviders,
+    new TildeAuthProvider(tildePlatform),
     {
       platforms: [tildePlatform],
       initialization: tildeToolProviderInitialization,
@@ -1406,6 +1408,7 @@ function uniqueInitializationQuestions(
 
 function configuredProviders(configuration: OpenBotConfiguration): InitializableProvider[] {
   const providers: Array<InitializableProvider | undefined> = [
+    configuration.providers.auth,
     configuration.providers.controlService,
     configuration.providers.agentService,
     configuration.providers.chat,

@@ -1,5 +1,17 @@
 import { expect, test } from "@playwright/test";
 
+test("requires a Tilde owner session", async ({ browser }) => {
+  const context = await browser.newContext({
+    baseURL: "http://127.0.0.1:14173",
+    extraHTTPHeaders: { authorization: "" },
+  });
+  const page = await context.newPage();
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Sign in to OpenBot" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue with Tilde" })).toBeVisible();
+  await context.close();
+});
+
 test("loads the bare workspace without setup", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "What should OpenBot do?" })).toBeVisible();

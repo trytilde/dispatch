@@ -13,6 +13,7 @@ const controlServiceProvider = {} as ControlServiceProvider;
 const domainProvider = {};
 const configuration = Configuration({
   providers: {
+    auth: domainProvider as OpenBotProviders["auth"],
     controlService: controlServiceProvider,
     agentService: agentServiceProvider,
     chat: domainProvider as OpenBotProviders["chat"],

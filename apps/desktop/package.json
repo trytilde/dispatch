@@ -43,6 +43,14 @@
   "build": {
     "appId": "dev.openbot.desktop",
     "productName": "OpenBot",
+    "protocols": [
+      {
+        "name": "OpenBot",
+        "schemes": [
+          "openbot"
+        ]
+      }
+    ],
     "executableName": "openbot",
     "icon": "build/icon.png",
     "directories": {

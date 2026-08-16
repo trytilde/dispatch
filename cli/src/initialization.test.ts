@@ -306,6 +306,7 @@ describe("OpenBot initialization", () => {
       "tilde-secret",
       "tilde-org",
       "tilde-team",
+      "OpenBot",
       "",
       "OpenBot agents",
     ];
@@ -331,15 +332,27 @@ describe("OpenBot initialization", () => {
     await initializeOpenBot({
       repositoryRoot,
       prompts,
-      request: async () =>
-        Response.json({ apiKey: { id: "key_123" }, apiKeyString: "gateway-private" }),
+      request: async (input) =>
+        (input instanceof Request ? input.url : input instanceof URL ? input.href : input).includes(
+          "/identity/openbot/deployments",
+        )
+          ? Response.json({
+              client_id: "openbot-client",
+              audience: "urn:tilde:openbot:openbot-client",
+              issuer: "https://tilde-org.api.trytilde.ai/api/v1/team/tilde-team/identity/oauth",
+              scope: "openid profile email offline_access openbot:control",
+              authorization_endpoint: "https://api.trytilde.ai/api/v1/identity/oauth/authorize",
+              token_endpoint: "https://api.trytilde.ai/api/v1/identity/oauth/token",
+              jwks_uri: "https://api.trytilde.ai/api/v1/identity/.well-known/jwks.json",
+            })
+          : Response.json({ apiKey: { id: "key_123" }, apiKeyString: "gateway-private" }),
       runner,
       userConfigurationPath: testUserConfigurationPath(repositoryRoot),
     });
 
     expect(calls.at(-1)).toMatchObject({ command: "vp", args: ["install"] });
 
-    expect(promptInput).toHaveBeenCalledTimes(11);
+    expect(promptInput).toHaveBeenCalledTimes(12);
     const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
     expect(environment).not.toContain("RUNTIME_PROVIDER");
     expect(environment).toContain('VERCEL_CONTROL_PROJECT="openbot-control"');
@@ -509,6 +522,7 @@ export default {
         ["tilde-api-key", undefined],
         ["tilde-org-id", "stored-org"],
         ["tilde-team-id", undefined],
+        ["openbot-deployment-name", "OpenBot"],
         ["tilde-base-url", "https://api.trytilde.ai"],
       ]),
     );

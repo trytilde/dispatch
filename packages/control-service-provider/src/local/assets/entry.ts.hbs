@@ -10,6 +10,7 @@ if (!Number.isSafeInteger(port) || port < 1 || port > 65_535) {
 serve({
   fetch: createApp({
     chatProvider: configuration.providers.chat,
+    authProvider: configuration.providers.auth,
     computerProvider: configuration.providers.computer,
   }).fetch,
   port,

@@ -132,12 +132,24 @@ export function OpenBotApp() {
 
   const refreshSidebar = useCallback(async () => {
     const response = await getSidebar("", agentSort, sessionSort);
-    setAgents(response.items);
+    const hydratedAgents = await Promise.all(
+      response.items.map(async (agent) => {
+        const latestSession = agent.sessions.items[0];
+        if (!latestSession) return agent;
+        try {
+          const page = await getMessages(latestSession.id);
+          return { ...agent, last_message_preview: latestMessagePreview(page.items) };
+        } catch {
+          return agent;
+        }
+      }),
+    );
+    setAgents(hydratedAgents);
     setNextAgentToken(response.next_page_token);
     setAgentId((current) =>
-      response.items.some((agent) => agent.id === current)
+      hydratedAgents.some((agent) => agent.id === current)
         ? current
-        : (response.items[0]?.id ?? ""),
+        : (hydratedAgents[0]?.id ?? ""),
     );
   }, [agentSort, sessionSort]);
 
@@ -548,8 +560,11 @@ export function OpenBotApp() {
         agents={filteredAgents.map((agent) => ({
           id: agent.id,
           name: agent.display_name,
-          status: agent.status || "Ready",
-          updatedAt: agent.sessions.items[0]?.updated_at,
+          lastMessage:
+            agent.id === agentId
+              ? latestMessagePreview(messages)
+              : agent.last_message_preview || "",
+          updatedAt: agent.last_user_message_at || agent.sessions.items[0]?.updated_at,
           unread: agent.sessions.items.some((item) => item.unread),
         }))}
         selectedAgentId={agentId}
@@ -833,6 +848,30 @@ function uniqueMessages(messages: ChatMessage[]): ChatMessage[] {
   return [...new Map(messages.map((message) => [message.id, message])).values()].sort(
     (left, right) => Date.parse(left.created_at) - Date.parse(right.created_at),
   );
+}
+
+function latestMessagePreview(messages: readonly ChatMessage[]): string {
+  const latest = [...messages]
+    .filter((message) => message.type !== "signal")
+    .sort((left, right) => Date.parse(left.created_at) - Date.parse(right.created_at))
+    .at(-1);
+  if (!latest) return "";
+  const message =
+    latest.parts
+      ?.filter((part) => part.type === "text")
+      .map((part) => part.text || "")
+      .join(" ") ||
+    latest.text ||
+    latest.summary ||
+    "";
+  const text = message
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[*_~`>#]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (text) return text;
+  const attachment = latest.parts?.find((part) => part.type === "file" || part.type === "image");
+  return attachment?.filename ? `Sent ${attachment.filename}` : "";
 }
 
 function uniqueAgents(agents: ChatAgent[]): ChatAgent[] {

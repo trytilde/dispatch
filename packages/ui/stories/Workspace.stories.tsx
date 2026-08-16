@@ -35,9 +35,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 const noop = () => undefined;
 const agents = [
-  { id: "hello-world", name: "Hello World", status: "Working", unread: true },
-  { id: "research", name: "Research", status: "Ready" },
-  { id: "writer", name: "Writer", status: "Waiting" },
+  { id: "hello-world", name: "Hello World", lastMessage: "Ready when you are.", unread: true },
+  { id: "research", name: "Research", lastMessage: "I found three useful sources." },
+  { id: "writer", name: "Writer", lastMessage: "The draft is ready to review." },
 ] as const;
 
 export const AgentAvatars: Story = {

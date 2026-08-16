@@ -282,9 +282,26 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await expect(page.locator(".agent-row").first()).toHaveCSS("height", "54px");
   await expect(page.locator(".agent-row").first()).toHaveCSS("border-radius", "10px");
   await expect(page.locator(".agent-row .avatar").first()).toHaveCSS("width", "36px");
-  await expect(page.locator(".agent-row .avatar img").first()).toHaveAttribute(
-    "src",
-    /avatars\/.+\.svg/,
+  await expect(page.locator(".agent-row .agent-avatar-mark").first()).toBeVisible();
+  await expect(page.locator(".agent-row").first()).toHaveAttribute("aria-current", "page");
+  await expect(page.locator(".agent-row").first()).toContainText("Streaming preview");
+  await expect(page.locator(".agent-row").first()).not.toContainText("enabled");
+  await expect(page.getByRole("button", { name: "Search", exact: true })).toHaveCSS(
+    "font-size",
+    "14px",
+  );
+  await expect(page.getByRole("button", { name: "Search", exact: true })).toHaveCSS(
+    "line-height",
+    "20px",
+  );
+  await page.locator(".agent-row").nth(1).hover();
+  await expect(page.locator(".agent-row").nth(1)).toHaveCSS(
+    "background-color",
+    "rgba(119, 119, 119, 0.17)",
+  );
+  await expect(page.locator(".agent-row").nth(1).locator(".agent-avatar-face")).not.toHaveCSS(
+    "transform",
+    "none",
   );
   const accountButton = page.getByRole("button", { name: "Open account menu for Daniel Adams" });
   await expect(accountButton).toBeVisible();
@@ -390,8 +407,12 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
     "rgb(252, 252, 252)",
   );
   await expect(page.locator(".queue-panel")).toHaveCSS("background-color", "rgb(252, 252, 252)");
-  await expect(page.getByText("Streaming preview")).toBeVisible();
-  await expect(page.getByText("Streaming preview", { exact: true })).toHaveCount(1);
+  await expect(
+    page.locator(".message-list").getByText("Streaming preview", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".message-list").getByText("Streaming preview", { exact: true }),
+  ).toHaveCount(1);
   await expect(page.getByText("Queued follow-up")).toBeVisible();
   await expect(page.getByRole("button", { name: "Run now" })).toBeVisible();
   await page.getByRole("button", { name: "Edit" }).click();
@@ -407,7 +428,9 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await page.getByRole("textbox", { name: "Message", exact: true }).fill("Read this file");
   await page.getByLabel("Send message").click();
 
-  await expect(page.getByText("The file is clear and complete.")).toBeVisible();
+  await expect(
+    page.locator(".message-list").getByText("The file is clear and complete.", { exact: true }),
+  ).toBeVisible();
   await expect(page.locator(".message.user .message-bubble")).toHaveCSS(
     "background-color",
     "rgb(7, 7, 7)",

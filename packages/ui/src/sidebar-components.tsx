@@ -5,7 +5,7 @@ import { SearchIcon } from "./workspace-icons.js";
 export interface SidebarAgent {
   id: string;
   name: string;
-  status: string;
+  lastMessage?: string;
   updatedAt?: string;
   unread?: boolean;
 }
@@ -20,6 +20,8 @@ export function AgentListItem({ agent, selected, onSelect }: AgentListItemProps)
   return (
     <button
       className={selected ? "agent-row active" : "agent-row"}
+      aria-current={selected ? "page" : undefined}
+      data-unread={agent.unread || undefined}
       onClick={() => onSelect(agent.id)}
       title={agent.name}
       type="button"
@@ -32,7 +34,7 @@ export function AgentListItem({ agent, selected, onSelect }: AgentListItemProps)
             <time dateTime={agent.updatedAt}>{relativeTime(agent.updatedAt)}</time>
           ) : null}
         </span>
-        <small>{agent.status || "Ready"}</small>
+        {agent.lastMessage ? <small>{agent.lastMessage}</small> : null}
       </span>
     </button>
   );
@@ -90,7 +92,7 @@ export function AgentSearchDialog({
               <AgentAvatar id={agent.id} />
               <span>
                 <strong>{agent.name}</strong>
-                <small>{agent.status || "Ready"}</small>
+                {agent.lastMessage ? <small>{agent.lastMessage}</small> : null}
               </span>
             </button>
           ))}
@@ -200,14 +202,20 @@ function AccountMenuIcon({ name }: { name: (typeof accountMenuItems)[number]["ic
 }
 
 function relativeTime(value: string): string {
-  const timestamp = new Date(value).valueOf();
-  if (!Number.isFinite(timestamp)) return "";
-  const minutes = Math.floor(Math.max(0, Date.now() - timestamp) / 60_000);
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(timestamp);
+  const date = new Date(value);
+  if (!Number.isFinite(date.valueOf())) return "";
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).valueOf();
+  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).valueOf();
+  const daysAgo = Math.floor((today - day) / 86_400_000);
+  if (daysAgo <= 0) {
+    return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(date);
+  }
+  if (daysAgo === 1) return "Yesterday";
+  if (daysAgo < 7) return new Intl.DateTimeFormat(undefined, { weekday: "long" }).format(date);
+  return new Intl.DateTimeFormat(undefined, {
+    month: "numeric",
+    day: "numeric",
+    ...(date.getFullYear() === now.getFullYear() ? {} : { year: "2-digit" }),
+  }).format(date);
 }

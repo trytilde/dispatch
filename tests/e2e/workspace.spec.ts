@@ -84,6 +84,7 @@ test("keeps the chat composition inside a mobile viewport", async ({ page }) => 
 
 test("streams rich messages and uploads a file through Tilde ChatKit", async ({ page }) => {
   const now = new Date().toISOString();
+  let computerPreviewRequests = 0;
   let releaseComputerPreview = () => {};
   let computerPreviewUnavailable = true;
   const computerPreviewReady = new Promise<void>((resolve) => {
@@ -102,6 +103,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   ];
 
   await page.route("**/api/computer/**", async (route) => {
+    computerPreviewRequests += 1;
     await computerPreviewReady;
     if (computerPreviewUnavailable) {
       await route.fulfill({ json: { error: "Computer preview is unavailable" }, status: 503 });
@@ -134,7 +136,13 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
               status: "enabled",
               sessions: {
                 items: [
-                  { id: "session-one", title: "Working session", created_at: now, updated_at: now },
+                  {
+                    id: "session-one",
+                    title: "Working session",
+                    created_at: now,
+                    updated_at: now,
+                    unread: true,
+                  },
                 ],
               },
             },
@@ -277,12 +285,24 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
 
   await page.goto("/");
   await expect(page.locator(".agent-row")).toHaveCount(2);
+  await expect(page.locator(".agent-workspace-pane iframe")).toHaveCount(0);
+  expect(computerPreviewRequests).toBe(0);
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(252, 252, 252)");
   await expect(page.locator(".rail")).toHaveCSS("background-color", "rgb(247, 247, 247)");
   await expect(page.locator(".agent-row").first()).toHaveCSS("height", "54px");
   await expect(page.locator(".agent-row").first()).toHaveCSS("border-radius", "10px");
   await expect(page.locator(".agent-row .avatar").first()).toHaveCSS("width", "36px");
   await expect(page.locator(".agent-row .agent-avatar-mark").first()).toBeVisible();
+  await expect(page.locator(".agent-row .avatar").first()).toHaveAttribute(
+    "data-avatar-shape",
+    "teardrop",
+  );
+  await expect(page.locator(".agent-row .agent-avatar-body").first()).toHaveCSS(
+    "fill",
+    "rgb(0, 201, 114)",
+  );
+  await expect(page.locator(".agent-row .avatar").first()).toHaveCSS("border-radius", "0px");
+  await expect(page.locator(".agent-row .avatar").first()).toHaveCSS("box-shadow", "none");
   await expect(page.locator(".agent-row").first()).toHaveAttribute("aria-current", "page");
   await expect(page.locator(".agent-row").first()).toContainText("Streaming preview");
   await expect(page.locator(".agent-row").first()).not.toContainText("enabled");
@@ -294,14 +314,19 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
     "line-height",
     "20px",
   );
+  await expect(page.locator(".agent-row strong").first()).toHaveCSS("font-size", "14px");
+  await expect(page.locator(".agent-row strong").first()).toHaveCSS("line-height", "20px");
+  await expect(page.locator(".agent-row small").first()).toHaveCSS("font-size", "13px");
+  await expect(page.locator(".agent-row small").first()).toHaveCSS("line-height", "18px");
+  await expect(page.locator(".agent-row").first().locator(".agent-row-marker")).toBeVisible();
+  await expect(page.locator(".agent-row").first().locator(".agent-row-marker > i")).toHaveCSS(
+    "background-color",
+    "rgb(16, 132, 254)",
+  );
   await page.locator(".agent-row").nth(1).hover();
   await expect(page.locator(".agent-row").nth(1)).toHaveCSS(
     "background-color",
-    "rgba(119, 119, 119, 0.17)",
-  );
-  await expect(page.locator(".agent-row").nth(1).locator(".agent-avatar-face")).not.toHaveCSS(
-    "transform",
-    "none",
+    "rgba(119, 119, 119, 0.09)",
   );
   const accountButton = page.getByRole("button", { name: "Open account menu for Daniel Adams" });
   await expect(accountButton).toBeVisible();
@@ -365,6 +390,8 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await expect(page.locator(".composer")).toHaveCSS("background-color", "rgb(247, 247, 247)");
   await expect(page.locator(".composer")).toHaveCSS("border-radius", "16px");
   await page.getByRole("button", { name: "Toggle Computer pane" }).click();
+  await expect(page.locator(".agent-workspace-pane iframe")).toHaveCount(1);
+  await expect.poll(() => computerPreviewRequests).toBe(1);
   await expect(page.locator(".agent-workspace-pane")).toHaveCSS(
     "transition-duration",
     "0.24s, 0.09s, 0.2s, 0s",

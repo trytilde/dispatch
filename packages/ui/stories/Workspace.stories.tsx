@@ -44,7 +44,7 @@ export const AgentAvatars: Story = {
   render: () => (
     <div style={{ display: "flex", gap: 12 }}>
       {agents.map((agent) => (
-        <AgentAvatar id={agent.id} key={agent.id} unread={"unread" in agent && agent.unread} />
+        <AgentAvatar id={agent.id} key={agent.id} />
       ))}
     </div>
   ),
@@ -54,6 +54,7 @@ export const AgentListItemState: Story = {
   render: () => (
     <div style={{ width: 280 }}>
       <AgentListItem agent={agents[0]} onSelect={noop} selected />
+      <AgentListItem agent={agents[1]} onSelect={noop} selected={false} />
     </div>
   ),
 };

@@ -47,7 +47,6 @@ export function AgentWorkspacePanel({
     setControlling(false);
     setPreviewReady(false);
     setPreviewFailed(false);
-    setPreviewKey((value) => value + 1);
   }, [agentId]);
 
   useEffect(() => {
@@ -135,7 +134,7 @@ export function AgentWorkspacePanel({
 
       {view === "activity" ? (
         <div className="activity-surface">{activity}</div>
-      ) : agentId ? (
+      ) : agentId && (open || fullscreen) ? (
         <div className={controlling ? "computer-surface controlling" : "computer-surface"}>
           <ComputerReconnectBanner variant={previewFailed ? "network" : null} />
           <div className="computer-status">
@@ -212,13 +211,13 @@ export function AgentWorkspacePanel({
             />
           ) : null}
         </div>
-      ) : (
+      ) : !agentId ? (
         <div className="computer-empty">
           <span>⌁</span>
           <h3>No agent selected</h3>
           <p>Select an agent to open its Computer.</p>
         </div>
-      )}
+      ) : null}
     </section>
   );
 }

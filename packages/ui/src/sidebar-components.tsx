@@ -21,13 +21,14 @@ export function AgentListItem({ agent, selected, onSelect }: AgentListItemProps)
     <button
       className={selected ? "agent-row active" : "agent-row"}
       aria-current={selected ? "page" : undefined}
+      data-selected={selected || undefined}
       data-unread={agent.unread || undefined}
       onClick={() => onSelect(agent.id)}
       title={agent.name}
       type="button"
     >
-      <AgentAvatar id={agent.id} unread={agent.unread} />
-      <span className="agent-row-body">
+      <AgentAvatar id={agent.id} />
+      <span className={agent.unread ? "agent-row-body has-marker" : "agent-row-body"}>
         <span className="agent-row-title">
           <strong>{agent.name}</strong>
           {agent.updatedAt ? (
@@ -36,6 +37,11 @@ export function AgentListItem({ agent, selected, onSelect }: AgentListItemProps)
         </span>
         {agent.lastMessage ? <small>{agent.lastMessage}</small> : null}
       </span>
+      {agent.unread ? (
+        <span aria-label="Unread activity" className="agent-row-marker" role="status">
+          <i />
+        </span>
+      ) : null}
     </button>
   );
 }

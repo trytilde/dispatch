@@ -650,6 +650,7 @@ export async function retryComputerServiceStartup<T>(
     try {
       return await operation();
     } catch (error) {
+      if (signal?.aborted) throw error;
       const failure = ConnectError.from(error);
       const retryable = [Code.Aborted, Code.Unavailable, Code.Unknown].includes(failure.code);
       if (attempt >= attempts || !retryable) throw error;

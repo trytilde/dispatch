@@ -7,14 +7,11 @@
 "@tryopenbot/configuration": minor
 "@tryopenbot/inference-provider": minor
 "@tryopenbot/platform-integrations": minor
-"@tryopenbot/control-service-proto": minor
 "@tryopenbot/desktop": minor
 "@tryopenbot/control-service-provider": minor
 "@tryopenbot/agent-service-provider": minor
 "@tryopenbot/runtime-provider": minor
 "@tryopenbot/control-service": minor
-"@tryopenbot/skills-provider": minor
-"@tryopenbot/tools-provider": minor
 "@tryopenbot/ui": minor
 "@tryopenbot/web": minor
 ---

@@ -3,7 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { TildeAgentProvider } from "./tilde.js";
+import { TildeAgentProvider } from "./index.js";
+import { TildeSkillReconciler } from "./skills.js";
+import { TildeToolReconciler } from "./tools.js";
 
 const config = {
   apiKey: "secret",
@@ -24,6 +26,8 @@ describe("TildeAgentProvider", () => {
   });
 
   it("idempotently reconciles one agent and persists its credentials", async () => {
+    const skills = vi.spyOn(TildeSkillReconciler.prototype, "deploy").mockResolvedValue();
+    const tools = vi.spyOn(TildeToolReconciler.prototype, "deploy").mockResolvedValue();
     const context = await agentContext("scout");
     let created = false;
     let channelCreated = false;
@@ -95,9 +99,13 @@ describe("TildeAgentProvider", () => {
     });
     expect(requests.filter((request) => request.method === "POST")).toHaveLength(2);
     expect(requests.filter((request) => request.method === "PATCH")).toHaveLength(0);
+    expect(skills).toHaveBeenCalledTimes(2);
+    expect(tools).toHaveBeenCalledTimes(2);
   });
 
   it("reports the Tilde operation, agent, API detail, and HTTP status", async () => {
+    vi.spyOn(TildeSkillReconciler.prototype, "deploy").mockResolvedValue();
+    vi.spyOn(TildeToolReconciler.prototype, "deploy").mockResolvedValue();
     const context = await agentContext("scout");
     vi.stubGlobal(
       "fetch",

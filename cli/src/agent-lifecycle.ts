@@ -9,8 +9,6 @@ import {
   type DeployableProvider,
   runProviderLifecycleHook,
 } from "@tryopenbot/runtime-provider";
-import type { SkillProvider } from "@tryopenbot/skills-provider";
-import type { ToolProvider } from "@tryopenbot/tools-provider";
 import {
   setEncryptedSecret,
   setEnvironmentValue,
@@ -25,8 +23,6 @@ export interface ReconcileAgentResourcesOptions {
   providers: {
     agent: AgentProvider;
     agentService: AgentServiceProvider;
-    skills: SkillProvider;
-    tools: ToolProvider;
   };
   devMode: boolean;
   agentServiceOrigin?: string;
@@ -37,7 +33,7 @@ export interface ReconcileAgentResourcesOptions {
   report?: DeploymentReporter;
 }
 
-/** Run each authored agent through skills, tools, then agent provider lifecycles. */
+/** Run each authored agent through its aggregate external-resource lifecycle. */
 export async function reconcileAgentResources(
   options: ReconcileAgentResourcesOptions,
 ): Promise<void> {
@@ -76,23 +72,14 @@ export async function reconcileAgentResources(
       agentServiceOrigin,
       platformIds: [
         ...new Set(
-          [
-            options.providers.agentService,
-            options.providers.agent,
-            options.providers.skills,
-            options.providers.tools,
-          ].flatMap((provider) => provider.platforms?.map((platform) => platform.id) ?? []),
+          [options.providers.agentService, options.providers.agent].flatMap(
+            (provider) => provider.platforms?.map((platform) => platform.id) ?? [],
+          ),
         ),
       ],
       report,
     };
-    for (const [providerId, provider] of [
-      ["skills", options.providers.skills],
-      ["tools", options.providers.tools],
-      ["agent", options.providers.agent],
-    ] as const) {
-      await runAgentProvider(providerId, provider, context);
-    }
+    await runAgentProvider("agent", options.providers.agent, context);
     report({ event: "agent.reconcile.complete", details: progress });
   }
 }
@@ -102,12 +89,7 @@ async function runAgentProvider(
   provider: DeployableProvider,
   context: DeploymentContext,
 ): Promise<void> {
-  const providerType =
-    providerId === "skills"
-      ? "Skills Provider"
-      : providerId === "tools"
-        ? "Tools Provider"
-        : "Agent Provider";
+  const providerType = "Agent Provider";
   context.report({
     event: "agent.provider.started",
     details: { providerId, agentId: context.agentId },

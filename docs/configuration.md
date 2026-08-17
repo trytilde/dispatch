@@ -20,13 +20,10 @@ OpenBot never loads root `.env`, `.env.local`, or a root SOPS document. Fork-own
 import { Configuration } from "@tryopenbot/configuration";
 import { TildeAgentProvider } from "@tryopenbot/agent-provider";
 import { VercelAgentServiceProvider } from "@tryopenbot/agent-service-provider";
-import { TildeChatProvider } from "@tryopenbot/chat-provider";
 import { VercelControlServiceProvider } from "@tryopenbot/control-service-provider";
 import { VercelSandboxComputerProvider } from "@tryopenbot/computer-provider";
 import { VercelInferenceProvider } from "@tryopenbot/inference-provider";
 import { TildePlatform, VercelPlatform } from "@tryopenbot/platform-integrations";
-import { TildeSkillProvider } from "@tryopenbot/skills-provider";
-import { TildeToolProvider } from "@tryopenbot/tools-provider";
 
 const tilde = new TildePlatform({
   apiKey: process.env.TILDE_API_KEY!,
@@ -40,12 +37,9 @@ export default Configuration({
   providers: {
     controlService: new VercelControlServiceProvider({ platform: vercel }),
     agentService: new VercelAgentServiceProvider({ platform: vercel }),
-    chat: new TildeChatProvider(tilde),
     agent: new TildeAgentProvider(tilde),
     computer: new VercelSandboxComputerProvider({ platform: vercel }),
     inference: new VercelInferenceProvider(vercel),
-    skills: new TildeSkillProvider(tilde),
-    tools: new TildeToolProvider({ platform: tilde }),
   },
 });
 ```

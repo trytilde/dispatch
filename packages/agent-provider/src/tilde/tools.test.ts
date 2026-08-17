@@ -1,18 +1,11 @@
 import { createClient } from "@trytilde/harness-sdk";
 import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { TildeToolProvider } from "./tilde.js";
+import { TildeToolReconciler } from "./tools.js";
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe("TildeToolProvider", () => {
-  it("depends on shared Tilde setup", () => {
-    const client = createClient({ teamId: "team-one", apiKey: "secret" });
-    const provider = new TildeToolProvider({ client });
-    expect(provider.platforms.map(({ id }) => id)).toEqual(["tilde"]);
-    expect(provider.initialization.questions).toEqual([]);
-  });
-
+describe("TildeToolReconciler", () => {
   it("creates a missing agent MCP server", async () => {
     const client = createClient({ teamId: "team-one", apiKey: "secret" });
     vi.spyOn(client.mcp, "getServer").mockRejectedValue({ status: 404 });
@@ -24,7 +17,7 @@ describe("TildeToolProvider", () => {
       tools: [],
       url: "https://tilde.test/mcp",
     });
-    const provider = new TildeToolProvider({ client });
+    const provider = new TildeToolReconciler({ client });
     await expect(
       provider.ensureServer(
         { id: "openbot-scout", name: "OpenBot scout", dynamicToolDiscovery: true },
@@ -123,9 +116,9 @@ describe("TildeToolProvider", () => {
       platformIds: ["tilde"],
       report: () => undefined,
     };
-    const provider = new TildeToolProvider({ client });
-    await provider.deployable.deploy(context);
-    await provider.deployable.deploy(context);
+    const provider = new TildeToolReconciler({ client });
+    await provider.deploy(context);
+    await provider.deploy(context);
     expect(mutations).toEqual(["create-toolkit", "enable-toolkit-tool"]);
     expect(context.environment).toMatchObject({
       AGENT_SCOUT_MCP_SERVER_ID: "openbot-scout",
@@ -221,9 +214,9 @@ describe("TildeToolProvider", () => {
       platformIds: ["tilde", "vercel"],
       report: () => undefined,
     };
-    const provider = new TildeToolProvider({ client });
-    await provider.deployable.deploy(context);
-    await provider.deployable.deploy(context);
+    const provider = new TildeToolReconciler({ client });
+    await provider.deploy(context);
+    await provider.deploy(context);
     expect(mutations).toEqual([
       "encrypt-vercel-token",
       "create-vercel-credential",

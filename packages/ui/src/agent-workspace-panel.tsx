@@ -1,6 +1,12 @@
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useState } from "react";
+import { ComputerStagePlaceholder } from "./computer-stage.js";
+import {
+  type ComputerMonitor,
+  ComputerMonitorStrip,
+  ComputerReconnectBanner,
+} from "./computer-components.js";
 
-interface AgentWorkspacePanelProps {
+export interface AgentWorkspacePanelProps {
   agentId: string;
   agentName: string;
   activityCount: number;
@@ -8,6 +14,8 @@ interface AgentWorkspacePanelProps {
   open: boolean;
   onClose: () => void;
   onResize: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  monitors?: readonly ComputerMonitor[];
+  onSelectMonitor?: (monitorId: string) => void;
 }
 
 export function AgentWorkspacePanel({
@@ -18,17 +26,27 @@ export function AgentWorkspacePanel({
   open,
   onClose,
   onResize,
+  monitors = [],
+  onSelectMonitor,
 }: AgentWorkspacePanelProps) {
   const [view, setView] = useState<"computer" | "activity">("computer");
   const [controlling, setControlling] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
   const [previewReady, setPreviewReady] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [activeMonitorId, setActiveMonitorId] = useState(agentId);
+  const activeMonitor = monitors.find((monitor) => monitor.id === activeMonitorId);
+  const previewAgentId = activeMonitor?.id ?? agentId;
+  const previewAgentName = activeMonitor?.title ?? agentName;
+  const previewUrl =
+    activeMonitor?.previewUrl ?? `/api/computer/${encodeURIComponent(agentId)}/preview`;
 
   useEffect(() => {
+    setActiveMonitorId(agentId);
     setControlling(false);
     setPreviewReady(false);
-    setPreviewKey((value) => value + 1);
+    setPreviewFailed(false);
   }, [agentId]);
 
   useEffect(() => {
@@ -75,6 +93,7 @@ export function AgentWorkspacePanel({
               title="Reload computer preview"
               onClick={() => {
                 setPreviewReady(false);
+                setPreviewFailed(false);
                 setPreviewKey((value) => value + 1);
               }}
             >
@@ -115,35 +134,90 @@ export function AgentWorkspacePanel({
 
       {view === "activity" ? (
         <div className="activity-surface">{activity}</div>
-      ) : agentId ? (
+      ) : agentId && (open || fullscreen) ? (
         <div className={controlling ? "computer-surface controlling" : "computer-surface"}>
+          <ComputerReconnectBanner variant={previewFailed ? "network" : null} />
           <div className="computer-status">
             <span className={previewReady ? "ready" : ""} />
-            <strong>{agentName}</strong>
+            <strong>{previewAgentName}</strong>
             <small>{previewReady ? "Preview loaded" : "Connecting to Computer…"}</small>
           </div>
           <iframe
-            key={`${agentId}-${previewKey}`}
-            src={`/api/computer/${encodeURIComponent(agentId)}/preview`}
-            title={`${agentName} Computer`}
+            key={`${previewAgentId}-${previewKey}`}
+            src={previewUrl}
+            title={`${previewAgentName} Computer`}
             allow="clipboard-read; clipboard-write"
             referrerPolicy="no-referrer"
-            onLoad={() => setPreviewReady(true)}
+            onError={() => {
+              setPreviewReady(false);
+              setPreviewFailed(true);
+            }}
+            onLoad={(event) => {
+              let failed = false;
+              try {
+                const document = event.currentTarget.contentDocument;
+                const location = event.currentTarget.contentWindow?.location.href ?? "";
+                const responseText = document?.body?.textContent?.trim() ?? "";
+                failed =
+                  !document?.body ||
+                  document.contentType !== "text/html" ||
+                  Boolean(document.querySelector("[data-openbot-preview-error]")) ||
+                  /^\{\s*"error"\s*:/.test(responseText) ||
+                  location.startsWith("chrome-error:");
+              } catch {
+                failed = true;
+              }
+              setPreviewFailed(failed);
+              setPreviewReady(!failed);
+            }}
           />
-          {!controlling ? (
+          {!previewReady || previewFailed ? (
+            <ComputerStagePlaceholder
+              busy={!previewFailed}
+              message={
+                previewFailed
+                  ? `Can't reach ${previewAgentName}'s screen`
+                  : "Booting up the computer"
+              }
+              onRetry={
+                previewFailed
+                  ? () => {
+                      setPreviewFailed(false);
+                      setPreviewReady(false);
+                      setPreviewKey((value) => value + 1);
+                    }
+                  : undefined
+              }
+            />
+          ) : null}
+          {!controlling && previewReady ? (
             <button className="computer-shield" onClick={() => setControlling(true)}>
               <span>Computer preview</span>
               <strong>Click to take over</strong>
             </button>
           ) : null}
+          {previewReady && monitors.length > 1 ? (
+            <ComputerMonitorStrip
+              activeMonitorId={previewAgentId}
+              monitors={monitors}
+              onSelect={(monitorId) => {
+                setActiveMonitorId(monitorId);
+                setControlling(false);
+                setPreviewReady(false);
+                setPreviewFailed(false);
+                setPreviewKey((value) => value + 1);
+                onSelectMonitor?.(monitorId);
+              }}
+            />
+          ) : null}
         </div>
-      ) : (
+      ) : !agentId ? (
         <div className="computer-empty">
           <span>⌁</span>
           <h3>No agent selected</h3>
           <p>Select an agent to open its Computer.</p>
         </div>
-      )}
+      ) : null}
     </section>
   );
 }

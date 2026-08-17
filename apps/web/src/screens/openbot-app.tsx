@@ -1,7 +1,5 @@
 import {
-  type ChangeEvent,
   type Dispatch,
-  type DragEvent,
   type FormEvent,
   type SetStateAction,
   useCallback,
@@ -21,6 +19,7 @@ import {
   createSession,
   deleteAttachment,
   deleteQueuedTurn,
+  getAttachmentDownloadUrl,
   getMessages,
   getQueuedTurns,
   getSidebar,
@@ -28,14 +27,33 @@ import {
   observeSession,
   type QueuedTurn,
   reorderQueuedTurn,
+  rewriteTildeUrl,
   sendMessage,
   type SessionSortOrder,
   steerQueuedTurn,
   uploadAttachment,
 } from "../chat-api.js";
-import { MessageContent } from "../message-content.js";
-import { AgentWorkspacePanel } from "../agent-workspace-panel.js";
-import { useWorkspaceLayout } from "../use-workspace-layout.js";
+import {
+  type AsyncTask,
+  AsyncTasksPanel,
+  AgentWorkspacePanel,
+  AgentActivity,
+  ChatComposer,
+  ChatHeader,
+  ChatPane,
+  ConversationSurface,
+  ConversationMessage,
+  type ConversationOutlineItem,
+  ConversationOutlinePanel,
+  EmptyConversation,
+  MessageContent,
+  ScrollToLatestButton,
+  ThinkingIndicator,
+  ThreadOverlay,
+  WorkspaceSidebar,
+  WorkspaceShell,
+  useWorkspaceLayout,
+} from "@tryopenbot/ui";
 
 interface PendingFile {
   id: string;
@@ -82,6 +100,9 @@ export function OpenBotApp() {
   const [sessionSort] = useState<SessionSortOrder>("updated_at");
   const [messageMenuId, setMessageMenuId] = useState("");
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+  const [threadRootId, setThreadRootId] = useState("");
+  const [conversationOutlineOpen, setConversationOutlineOpen] = useState(false);
+  const [asyncTasksOpen, setAsyncTasksOpen] = useState(false);
   const observerRef = useRef<AbortController | undefined>(undefined);
   const refreshTimerRef = useRef<number | undefined>(undefined);
   const conversationRef = useRef<HTMLDivElement>(null);
@@ -96,6 +117,8 @@ export function OpenBotApp() {
   const layout = useWorkspaceLayout();
 
   const selectedAgent = agents.find((agent) => agent.id === agentId);
+  const conversationOutlineItems = useMemo(() => outlineItems(messages), [messages]);
+  const asyncTasks = useMemo(() => activeAsyncTasks(activity), [activity]);
   const hasContent = Boolean(draft.trim() || files.length);
   const composerExpanded =
     composerFocused || draft.includes("\n") || draft.length > 80 || files.length > 0;
@@ -109,12 +132,24 @@ export function OpenBotApp() {
 
   const refreshSidebar = useCallback(async () => {
     const response = await getSidebar("", agentSort, sessionSort);
-    setAgents(response.items);
+    const hydratedAgents = await Promise.all(
+      response.items.map(async (agent) => {
+        const latestSession = agent.sessions.items[0];
+        if (!latestSession) return agent;
+        try {
+          const page = await getMessages(latestSession.id);
+          return { ...agent, last_message_preview: latestMessagePreview(page.items) };
+        } catch {
+          return agent;
+        }
+      }),
+    );
+    setAgents(hydratedAgents);
     setNextAgentToken(response.next_page_token);
     setAgentId((current) =>
-      response.items.some((agent) => agent.id === current)
+      hydratedAgents.some((agent) => agent.id === current)
         ? current
-        : (response.items[0]?.id ?? ""),
+        : (hydratedAgents[0]?.id ?? ""),
     );
   }, [agentSort, sessionSort]);
 
@@ -137,6 +172,7 @@ export function OpenBotApp() {
     (id: string) => {
       observerRef.current?.abort();
       const controller = new AbortController();
+      const seenEventIds = new Set<string>();
       observerRef.current = controller;
       setStreamStatus("Connecting");
 
@@ -145,6 +181,14 @@ export function OpenBotApp() {
           try {
             setStreamStatus("Live");
             await observeSession(id, controller.signal, (event) => {
+              if (event.id && seenEventIds.has(event.id)) return;
+              if (event.id) {
+                seenEventIds.add(event.id);
+                if (seenEventIds.size > 1_000) {
+                  const oldest = seenEventIds.values().next().value;
+                  if (oldest) seenEventIds.delete(oldest);
+                }
+              }
               setActivity((current) =>
                 [{ ...event, receivedAt: new Date() }, ...current].slice(0, 60),
               );
@@ -240,6 +284,7 @@ export function OpenBotApp() {
     () => messages.filter((message) => !queuedMessageIds.has(message.id)),
     [messages, queuedMessageIds],
   );
+  const threadRoot = visibleMessages.find((message) => message.id === threadRootId);
 
   const filteredAgents = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -254,6 +299,8 @@ export function OpenBotApp() {
     setSessionId(nextSession.id);
     setMessages([]);
     setFiles([]);
+    setReplyingTo(null);
+    setThreadRootId("");
     setError("");
     setActivity([]);
     setQueuedTurns([]);
@@ -284,6 +331,8 @@ export function OpenBotApp() {
     setSessionId("");
     setMessages([]);
     setFiles([]);
+    setReplyingTo(null);
+    setThreadRootId("");
     setActivity([]);
     setQueuedTurns([]);
     setTurnStatus("");
@@ -321,6 +370,7 @@ export function OpenBotApp() {
       }
       setDraft("");
       setReplyingTo(null);
+      setThreadRootId("");
       setFiles([]);
 
       const attachmentIds: string[] = [];
@@ -455,184 +505,103 @@ export function OpenBotApp() {
     setSearch("");
   }
 
+  const composer = (
+    <ChatComposer
+      agentAvailable={Boolean(agentId)}
+      busy={agentBusy}
+      submitting={submitting}
+      dragging={dragging}
+      expanded={composerExpanded}
+      draft={draft}
+      error={error}
+      reply={
+        replyingTo
+          ? {
+              label: `Replying to ${replyingTo.role === "user" ? "yourself" : selectedAgent?.display_name || "agent"}`,
+              text: messageText(replyingTo) || "Message",
+            }
+          : undefined
+      }
+      attachments={files.map((pending) => ({
+        id: pending.id,
+        name: pending.file.name,
+        size: pending.file.size,
+        progress: pending.progress,
+        status: pending.status,
+        error: pending.error,
+      }))}
+      inputRef={composerInputRef}
+      fileInputRef={fileInputRef}
+      onSubmit={(event) => void send(event)}
+      onDraftChange={setDraft}
+      onFocus={() => setComposerFocused(true)}
+      onBlur={() => setComposerFocused(false)}
+      onDragStateChange={setDragging}
+      onFilesAdded={addFiles}
+      onRemoveAttachment={(id) => {
+        const pending = files.find((candidate) => candidate.id === id);
+        if (pending) void removeFile(pending);
+      }}
+      onCancelReply={() => {
+        setReplyingTo(null);
+        setThreadRootId("");
+      }}
+      onStop={() => void stop()}
+    />
+  );
+
   return (
-    <main
-      className={`workspace-shell rich-chat ${layout.sidebarCollapsed ? "sidebar-collapsed" : ""} ${layout.workspaceOpen ? "workspace-open" : "workspace-closed"}`}
+    <WorkspaceShell
+      sidebarCollapsed={layout.sidebarCollapsed}
+      computerOpen={layout.workspaceOpen}
       style={layout.style}
     >
-      <aside className="rail">
-        <div className="sidebar-titlebar" />
-        <button
-          aria-label="Search"
-          className="chat-search"
-          onClick={openSearch}
-          onKeyDown={(event) => {
-            if (
-              !event.defaultPrevented &&
-              event.key.length === 1 &&
-              event.key !== " " &&
-              !event.metaKey &&
-              !event.ctrlKey &&
-              !event.altKey
-            ) {
-              event.preventDefault();
-              openSearch();
-            }
-          }}
-          type="button"
-        >
-          <span>
-            <SearchIcon />
-            Search
-          </span>
-        </button>
-        <nav className="agent-navigation">
-          {loading ? <p className="agent-status">Loading agents…</p> : null}
-          {!loading && agents.length === 0 ? (
-            <p className="agent-status">No agents are available.</p>
-          ) : null}
-          {filteredAgents.map((agent) => (
-            <button
-              className={agent.id === agentId ? "agent-row active" : "agent-row"}
-              key={agent.id}
-              onClick={() => selectAgent(agent)}
-              title={agent.display_name}
-            >
-              <AgentAvatar
-                agent={agent}
-                unread={agent.sessions.items.some((item) => item.unread)}
-              />
-              <span className="agent-row-body">
-                <span className="agent-row-title">
-                  <strong>{agent.display_name}</strong>
-                  {agent.sessions.items[0] ? (
-                    <time dateTime={agent.sessions.items[0].updated_at}>
-                      {relativeSessionTime(agent.sessions.items[0].updated_at)}
-                    </time>
-                  ) : null}
-                </span>
-                <small>{agent.status || "Ready"}</small>
-              </span>
-            </button>
-          ))}
-          {nextAgentToken && !search ? (
-            <button className="load-more-agents" onClick={() => void loadMoreAgents()}>
-              Show more agents
-            </button>
-          ) : null}
-        </nav>
-        <button className="rail-footer" type="button">
-          <span className="footer-avatar">O</span>
-          <span>
-            <strong>OpenBot</strong>
-            <small>
-              <i className={`status-dot ${streamStatus.toLowerCase()}`} /> {streamStatus}
-            </small>
-          </span>
-        </button>
-        <div
-          aria-label="Resize sidebar"
-          className="sidebar-resize-handle"
-          onPointerDown={layout.beginSidebarResize}
-          role="separator"
+      <WorkspaceSidebar
+        agents={filteredAgents.map((agent) => ({
+          id: agent.id,
+          name: agent.display_name,
+          lastMessage:
+            agent.id === agentId
+              ? latestMessagePreview(messages)
+              : agent.last_message_preview || "",
+          updatedAt: agent.last_user_message_at || agent.sessions.items[0]?.updated_at,
+          unread: agent.sessions.items.some((item) => item.unread),
+        }))}
+        selectedAgentId={agentId}
+        loading={loading}
+        hasMore={Boolean(nextAgentToken)}
+        searchOpen={searchOpen}
+        searchValue={search}
+        onSearchChange={setSearch}
+        onSearchOpen={openSearch}
+        onSearchClose={closeSearch}
+        onSelectAgent={(id) => {
+          const agent = agents.find((candidate) => candidate.id === id);
+          if (agent) selectAgent(agent);
+        }}
+        onLoadMore={() => void loadMoreAgents()}
+        onResize={layout.beginSidebarResize}
+      />
+
+      <ChatPane>
+        <ChatHeader
+          agentId={selectedAgent?.id}
+          agentName={selectedAgent?.display_name || "OpenBot"}
+          status={turnStatus || (streamStatus === "Live" ? "Online" : selectedAgent?.status)}
+          computerOpen={layout.workspaceOpen}
+          onToggleComputer={layout.toggleWorkspace}
+          conversationOutlineOpen={conversationOutlineOpen}
+          asyncTasksOpen={asyncTasksOpen}
+          onToggleConversationOutline={() => setConversationOutlineOpen((value) => !value)}
+          onToggleAsyncTasks={() => setAsyncTasksOpen((value) => !value)}
         />
-      </aside>
 
-      {searchOpen ? (
-        <div className="sidebar-search-overlay" onMouseDown={closeSearch} role="presentation">
-          <section
-            aria-label="Search agents"
-            aria-modal="true"
-            className="sidebar-search-dialog"
-            onKeyDown={(event) => {
-              if (event.key === "Escape") closeSearch();
-            }}
-            onMouseDown={(event) => event.stopPropagation()}
-            role="dialog"
-          >
-            <label>
-              <SearchIcon />
-              <input
-                aria-label="Search agents"
-                autoFocus
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search agents"
-                value={search}
-              />
-            </label>
-            <div className="sidebar-search-results">
-              {filteredAgents.map((agent) => (
-                <button
-                  key={agent.id}
-                  onClick={() => {
-                    closeSearch();
-                    selectAgent(agent);
-                  }}
-                  type="button"
-                >
-                  <AgentAvatar agent={agent} />
-                  <span>
-                    <strong>{agent.display_name}</strong>
-                    <small>{agent.status || "Ready"}</small>
-                  </span>
-                </button>
-              ))}
-              {!loading && filteredAgents.length === 0 ? <p>No agents found</p> : null}
-            </div>
-          </section>
-        </div>
-      ) : null}
-
-      <section className="chat-pane">
-        <header className="chat-header">
-          <div className="chat-identity">
-            {selectedAgent ? (
-              <AgentAvatar agent={selectedAgent} />
-            ) : (
-              <span className="agent-avatar">O</span>
-            )}
-            <div className="chat-title">
-              <h2>{selectedAgent?.display_name || "OpenBot"}</h2>
-              <span>
-                {turnStatus || (streamStatus === "Live" ? "Online" : selectedAgent?.status)}
-              </span>
-            </div>
-          </div>
-          <div className="chat-actions">
-            <button
-              aria-expanded={layout.workspaceOpen}
-              aria-label="Toggle Computer pane"
-              className={layout.workspaceOpen ? "active" : ""}
-              onClick={layout.toggleWorkspace}
-              title="Toggle Computer pane (Ctrl+Alt+B)"
-            >
-              <ComputerIcon />
-            </button>
-          </div>
-        </header>
-
-        <div
-          className="conversation"
-          aria-live="polite"
-          ref={conversationRef}
-          onScroll={handleConversationScroll}
-        >
+        <ConversationSurface scrollRef={conversationRef} onScroll={handleConversationScroll}>
           {loadingMessages ? (
             <div className="conversation-loading">Loading conversation…</div>
           ) : null}
           {!loadingMessages && messages.length === 0 ? (
-            <div className="empty-chat">
-              <div className="openbot-glyph">✣</div>
-              <h1>What should OpenBot do?</h1>
-              <p>Message an agent. It can use tools, skills, files, and its Computer.</p>
-              <div className="suggestions">
-                {suggestions.map((suggestion) => (
-                  <button key={suggestion} onClick={() => setDraft(suggestion)}>
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <EmptyConversation suggestions={suggestions} onSelectSuggestion={setDraft} />
           ) : (
             <div className="message-list">
               {nextMessageToken ? (
@@ -646,194 +615,70 @@ export function OpenBotApp() {
                 const continuedPrevious = previous?.role === message.role;
                 const continuedNext = next?.role === message.role;
                 return (
-                  <article
-                    aria-label={message.role === "user" ? "Your message" : "Agent message"}
-                    className={`message ${message.role} ${continuedPrevious ? "continued-previous" : "group-start"} ${continuedNext ? "continued-next" : ""}`}
+                  <ConversationMessage
                     key={message.id}
+                    role={message.role}
+                    createdAt={message.created_at}
+                    continuedPrevious={continuedPrevious}
+                    continuedNext={continuedNext}
+                    menuOpen={messageMenuId === message.id}
+                    onReply={() => {
+                      setReplyingTo(message);
+                      composerInputRef.current?.focus();
+                    }}
+                    onToggleMenu={() => {
+                      setMessageMenuId((current) => (current === message.id ? "" : message.id));
+                    }}
+                    onStartThread={() => {
+                      setThreadRootId(message.id);
+                      setReplyingTo(message);
+                      setMessageMenuId("");
+                      composerInputRef.current?.focus();
+                    }}
+                    onCopy={() => {
+                      void navigator.clipboard.writeText(messageText(message));
+                      setMessageMenuId("");
+                    }}
                   >
-                    <div className="message-bubble">
-                      <MessageContent message={message} />
-                    </div>
-                    <div className="message-footer">
-                      <time dateTime={message.created_at}>{formatTime(message.created_at)}</time>
-                    </div>
-                    <div className="message-actions">
-                      <button
-                        aria-label="Reply"
-                        onClick={() => {
-                          setReplyingTo(message);
-                          composerInputRef.current?.focus();
-                        }}
-                      >
-                        <ReplyIcon />
-                      </button>
-                      <button
-                        aria-label="More message actions"
-                        onClick={() => {
-                          setMessageMenuId((current) => (current === message.id ? "" : message.id));
-                        }}
-                      >
-                        <MoreIcon />
-                      </button>
-                      {messageMenuId === message.id ? (
-                        <div className="message-menu" role="menu">
-                          <button
-                            role="menuitem"
-                            onClick={() => {
-                              setDraft(`Start a thread about: ${messageText(message)}`);
-                              setMessageMenuId("");
-                              composerInputRef.current?.focus();
-                            }}
-                          >
-                            Start a thread
-                          </button>
-                          <button
-                            role="menuitem"
-                            onClick={() => {
-                              void navigator.clipboard.writeText(messageText(message));
-                              setMessageMenuId("");
-                            }}
-                          >
-                            Copy
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
-                  </article>
+                    <MessageContent
+                      message={message}
+                      resolveAttachmentUrl={getAttachmentDownloadUrl}
+                      rewriteUrl={rewriteTildeUrl}
+                    />
+                  </ConversationMessage>
                 );
               })}
               {agentBusy ? (
-                <div className="thinking-inline">
-                  <span /> {turnStatus || `${selectedAgent?.display_name || "Agent"} is working…`}
-                </div>
+                <ThinkingIndicator>
+                  {turnStatus || `${selectedAgent?.display_name || "Agent"} is working…`}
+                </ThinkingIndicator>
               ) : null}
             </div>
           )}
-        </div>
-        {showScrollLatest ? (
-          <button className="scroll-latest" onClick={scrollToLatest} aria-label="Scroll to latest">
-            ↓
-          </button>
-        ) : null}
-
-        <form
-          className={`composer ${dragging ? "dragging" : ""} ${composerExpanded ? "expanded" : ""}`}
-          onSubmit={(event) => void send(event)}
-          onDragEnter={(event) => dragState(event, true)}
-          onDragOver={(event) => dragState(event, true)}
-          onDragLeave={(event) => dragState(event, false)}
-          onDrop={(event) => {
-            event.preventDefault();
-            setDragging(false);
-            addFiles(event.dataTransfer.files);
+        </ConversationSurface>
+        {showScrollLatest ? <ScrollToLatestButton onClick={scrollToLatest} /> : null}
+        {threadRoot ? null : composer}
+        <ThreadOverlay
+          footer={composer}
+          onClose={() => {
+            setThreadRootId("");
+            setReplyingTo(null);
           }}
+          open={Boolean(threadRoot)}
         >
-          {replyingTo ? (
-            <div className="reply-preview">
-              <ReplyIcon />
-              <span>
-                <strong>
-                  Replying to{" "}
-                  {replyingTo.role === "user" ? "yourself" : selectedAgent?.display_name || "agent"}
-                </strong>
-                <small>{messageText(replyingTo) || "Message"}</small>
-              </span>
-              <button aria-label="Cancel reply" onClick={() => setReplyingTo(null)} type="button">
-                ×
-              </button>
+          {threadRoot ? (
+            <div className="thread-root-group">
+              <ConversationMessage role={threadRoot.role} createdAt={threadRoot.created_at}>
+                <MessageContent
+                  message={threadRoot}
+                  resolveAttachmentUrl={getAttachmentDownloadUrl}
+                  rewriteUrl={rewriteTildeUrl}
+                />
+              </ConversationMessage>
             </div>
           ) : null}
-          {files.length ? (
-            <div className="attachment-tray">
-              {files.map((pending) => (
-                <div className={`pending-file ${pending.status}`} key={pending.id}>
-                  <span className="file-icon">↗</span>
-                  <span>
-                    <strong>{pending.file.name}</strong>
-                    <small>
-                      {pending.status === "uploading"
-                        ? `${Math.round(pending.progress * 100)}%`
-                        : pending.error || formatBytes(pending.file.size)}
-                    </small>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => void removeFile(pending)}
-                    aria-label="Remove file"
-                  >
-                    ×
-                  </button>
-                  {pending.status === "uploading" ? (
-                    <i style={{ width: `${pending.progress * 100}%` }} />
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          ) : null}
-          {dragging ? <div className="drop-overlay">Drop files to attach</div> : null}
-          <textarea
-            aria-label="Message"
-            disabled={!agentId}
-            ref={composerInputRef}
-            placeholder={agentId ? "Ask anything, or drop a file." : "No agent is available."}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onBlur={() => setComposerFocused(false)}
-            onFocus={() => setComposerFocused(true)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-                event.preventDefault();
-                event.currentTarget.form?.requestSubmit();
-              }
-            }}
-          />
-          <div className="composer-toolbar">
-            <div>
-              <input
-                hidden
-                multiple
-                ref={fileInputRef}
-                type="file"
-                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                  if (event.target.files) addFiles(event.target.files);
-                  event.target.value = "";
-                }}
-              />
-              <button
-                className="attach-button"
-                type="button"
-                disabled={!agentId || submitting}
-                onClick={() => fileInputRef.current?.click()}
-                aria-label="Attach files"
-                title="Attach files"
-              >
-                <PlusIcon />
-              </button>
-              <span className={error ? "error" : ""}>
-                {error || "Shift + Enter for a new line"}
-              </span>
-            </div>
-            <div className="composer-actions">
-              {agentBusy ? (
-                <button
-                  className="stop-button"
-                  type="button"
-                  onClick={() => void stop()}
-                  aria-label="Stop"
-                >
-                  ■
-                </button>
-              ) : null}
-              <button
-                aria-label={agentBusy ? "Queue message" : "Send message"}
-                disabled={!agentId || !hasContent || submitting}
-              >
-                <SendIcon />
-              </button>
-            </div>
-          </div>
-        </form>
-      </section>
+        </ThreadOverlay>
+      </ChatPane>
 
       <AgentWorkspacePanel
         agentId={agentId}
@@ -842,169 +687,64 @@ export function OpenBotApp() {
         open={layout.workspaceOpen}
         onClose={layout.toggleWorkspace}
         onResize={layout.beginWorkspaceResize}
+        monitors={agents.map((agent) => ({
+          id: agent.id,
+          title: agent.display_name,
+          previewUrl: `/api/computer/${encodeURIComponent(agent.id)}/preview`,
+        }))}
         activity={
-          <>
-            {queuedTurns.length ? (
-              <section className="queue-panel">
-                <header>
-                  <strong>Queued turns</strong>
-                  <span>{queuedTurns.length}</span>
-                </header>
-                {queuedTurns.map((turn, index) => (
-                  <article key={turn.id}>
-                    <span>{index + 1}</span>
-                    <p>{queuedTurnText(turn)}</p>
-                    <div>
-                      <button
-                        disabled={index === 0}
-                        onClick={() =>
-                          void mutateQueue(() =>
-                            reorderQueuedTurn(turn.id, turn.queue_position - 1),
-                          )
-                        }
-                        title="Move earlier"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        disabled={index === queuedTurns.length - 1}
-                        onClick={() =>
-                          void mutateQueue(() =>
-                            reorderQueuedTurn(turn.id, turn.queue_position + 1),
-                          )
-                        }
-                        title="Move later"
-                      >
-                        ↓
-                      </button>
-                      <button onClick={() => void mutateQueue(() => steerQueuedTurn(turn.id))}>
-                        Run now
-                      </button>
-                      <button onClick={() => void editQueuedTurn(turn)}>Edit</button>
-                      <button onClick={() => void mutateQueue(() => deleteQueuedTurn(turn.id))}>
-                        Remove
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </section>
-            ) : null}
-            {activity.length === 0 ? (
-              <div className="activity-empty">
-                <span>⌁</span>
-                <h3>Agent activity</h3>
-                <p>Tool calls, turn status, child agents, and streaming events appear here.</p>
-              </div>
-            ) : (
-              <ol className="event-list">
-                {activity.map((event, index) => (
-                  <li key={`${event.id || event.receivedAt.valueOf()}-${index}`}>
-                    <span className="event-dot" />
-                    <div>
-                      <strong>{humanEventName(event.type)}</strong>
-                      <time>
-                        {event.receivedAt.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit",
-                        })}
-                      </time>
-                      <EventSummary value={event.data} />
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </>
+          <AgentActivity
+            queue={queuedTurns.map((turn) => ({ id: turn.id, text: queuedTurnText(turn) }))}
+            events={activity.map((event, index) => ({
+              id: `${event.id || event.receivedAt.valueOf()}-${index}`,
+              name: humanEventName(event.type),
+              timestamp: event.receivedAt.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              }),
+              summary: eventSummary(event.data),
+            }))}
+            onMoveEarlier={(id) => {
+              const turn = queuedTurns.find((candidate) => candidate.id === id);
+              if (turn) void mutateQueue(() => reorderQueuedTurn(id, turn.queue_position - 1));
+            }}
+            onMoveLater={(id) => {
+              const turn = queuedTurns.find((candidate) => candidate.id === id);
+              if (turn) void mutateQueue(() => reorderQueuedTurn(id, turn.queue_position + 1));
+            }}
+            onRunNow={(id) => void mutateQueue(() => steerQueuedTurn(id))}
+            onEdit={(id) => {
+              const turn = queuedTurns.find((candidate) => candidate.id === id);
+              if (turn) void editQueuedTurn(turn);
+            }}
+            onRemove={(id) => void mutateQueue(() => deleteQueuedTurn(id))}
+          />
         }
       />
-    </main>
+      {conversationOutlineOpen ? (
+        <ConversationOutlinePanel
+          agentName={selectedAgent?.display_name || "Conversation"}
+          onClose={() => setConversationOutlineOpen(false)}
+          tabs={[
+            {
+              id: agentId || "conversation",
+              label: selectedAgent?.display_name || "Conversation",
+              status: agentBusy ? "running" : "done",
+              items: conversationOutlineItems,
+            },
+          ]}
+        />
+      ) : null}
+      {asyncTasksOpen ? (
+        <AsyncTasksPanel
+          agentName={selectedAgent?.display_name || "Agent"}
+          onClose={() => setAsyncTasksOpen(false)}
+          tasks={asyncTasks}
+        />
+      ) : null}
+    </WorkspaceShell>
   );
-
-  function dragState(event: DragEvent, active: boolean): void {
-    event.preventDefault();
-    setDragging(active);
-  }
-}
-
-function EventSummary({ value }: { value: unknown }) {
-  const summary = eventSummary(value);
-  return summary ? <p>{summary}</p> : null;
-}
-
-function PlusIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16">
-      <path d="M8 3.25v9.5M3.25 8h9.5" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16">
-      <circle cx="7" cy="7" r="4.25" />
-      <path d="m10.25 10.25 3 3" />
-    </svg>
-  );
-}
-
-function AgentAvatar({ agent, unread = false }: { agent: ChatAgent; unread?: boolean }) {
-  const palettes = [
-    { surface: "#204f7c", mark: "#159efa" },
-    { surface: "#315e45", mark: "#33c276" },
-    { surface: "#743927", mark: "#ff6333" },
-  ];
-  const palette = palettes[stableHue(agent.id) % palettes.length] ?? palettes[0];
-  return (
-    <span aria-hidden="true" className="avatar">
-      <svg viewBox="0 0 40 40">
-        <rect width="40" height="40" rx="9.5" fill={palette?.surface} />
-        <g fill={palette?.mark}>
-          <circle cx="12" cy="8" r="2.1" />
-          <circle cx="20" cy="8" r="2.1" />
-          <circle cx="28" cy="8" r="2.1" />
-          <circle cx="8" cy="12" r="2.1" />
-          <rect x="12" y="10" width="8" height="4.2" rx="2.1" />
-          <circle cx="24" cy="12" r="2.1" />
-          <circle cx="32" cy="12" r="2.1" />
-          <circle cx="12" cy="16" r="2.1" />
-          <rect x="16" y="14" width="12" height="4.2" rx="2.1" />
-          <circle cx="8" cy="20" r="2.1" />
-          <circle cx="16" cy="20" r="2.1" />
-          <circle cx="24" cy="20" r="2.1" />
-          <circle cx="32" cy="20" r="2.1" />
-          <rect x="10" y="22" width="12" height="4.2" rx="2.1" />
-          <circle cx="28" cy="24" r="2.1" />
-          <circle cx="8" cy="28" r="2.1" />
-          <circle cx="16" cy="28" r="2.1" />
-          <rect x="20" y="26" width="12" height="4.2" rx="2.1" />
-          <circle cx="12" cy="32" r="2.1" />
-          <circle cx="24" cy="32" r="2.1" />
-        </g>
-      </svg>
-      {unread ? <i /> : null}
-    </span>
-  );
-}
-
-function stableHue(value: string): number {
-  let hash = 0;
-  for (const character of value) hash = (hash * 31 + character.charCodeAt(0)) | 0;
-  return Math.abs(hash) % 360;
-}
-
-function relativeSessionTime(value: string): string {
-  const timestamp = new Date(value).valueOf();
-  if (!Number.isFinite(timestamp)) return "";
-  const minutes = Math.floor(Math.max(0, Date.now() - timestamp) / 60_000);
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(timestamp);
 }
 
 function addSession(agents: ChatAgent[], agentId: string, session: ChatSession): ChatAgent[] {
@@ -1015,10 +755,123 @@ function addSession(agents: ChatAgent[], agentId: string, session: ChatSession):
   );
 }
 
+function outlineItems(messages: readonly ChatMessage[]): ConversationOutlineItem[] {
+  const items: ConversationOutlineItem[] = [];
+  for (const message of messages) {
+    if (message.role === "user") {
+      const text = messageText(message).trim();
+      if (text) items.push({ id: `${message.id}:user`, kind: "user", text });
+      continue;
+    }
+    const parts = message.parts ?? [];
+    if (parts.length === 0) {
+      const text = messageText(message).trim();
+      if (text) items.push({ id: `${message.id}:assistant`, kind: "assistant-text", text });
+      continue;
+    }
+    for (const [index, part] of parts.entries()) {
+      const id = `${message.id}:${index}`;
+      if (part.type === "reasoning") {
+        const text = part.text?.trim();
+        if (text) items.push({ id, kind: "thinking", text });
+        continue;
+      }
+      if (part.type === "tool" || part.type.startsWith("tool-")) {
+        const state = part.state?.toLowerCase() ?? "";
+        const status = state.includes("error")
+          ? "failed"
+          : state.includes("output") || state.includes("complete")
+            ? "completed"
+            : "pending";
+        items.push({
+          id,
+          kind: "tool-call",
+          name: part.tool_name || part.toolName || part.type.replace(/^tool-/, "") || "Tool",
+          status,
+          summary: compactOutlineSummary(part),
+        });
+        continue;
+      }
+      if (part.type === "text" && part.text?.trim()) {
+        items.push({ id, kind: "assistant-text", text: part.text.trim() });
+      }
+    }
+  }
+  return items;
+}
+
+function compactOutlineSummary(part: ChatPart): string {
+  if (part.error_text || part.errorText) return part.error_text || part.errorText || "";
+  const value = part.output ?? part.input;
+  if (typeof value === "string") return value;
+  if (value === undefined) return "";
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return "Unserializable tool value";
+  }
+}
+
+function activeAsyncTasks(events: readonly ActivityEvent[]): AsyncTask[] {
+  const tasks = new Map<string, AsyncTask>();
+  for (const event of [...events].reverse()) {
+    const name = eventName(event);
+    const kind = name.includes("subagent")
+      ? "subagent"
+      : name.includes("shell")
+        ? "shell"
+        : name.includes("cloud.agent") || name.includes("cloud-agent")
+          ? "cloud-agent"
+          : undefined;
+    if (!kind) continue;
+    const data = record(event.data);
+    const id =
+      firstString(data, "id", "task_id", "taskId", "subagent_id", "subagentId") || event.id;
+    if (!id) continue;
+    const status = firstString(data, "status", "state").toLowerCase();
+    if (/^(done|complete|completed|failed|error|aborted|cancelled|canceled)$/.test(status)) {
+      tasks.delete(id);
+      continue;
+    }
+    tasks.set(id, {
+      id,
+      kind,
+      label: firstString(data, "label", "title", "name", "agent_name") || humanEventName(name),
+      detail: eventSummary(data),
+      startedAtMs: event.receivedAt.valueOf(),
+    });
+  }
+  return [...tasks.values()];
+}
+
 function uniqueMessages(messages: ChatMessage[]): ChatMessage[] {
   return [...new Map(messages.map((message) => [message.id, message])).values()].sort(
     (left, right) => Date.parse(left.created_at) - Date.parse(right.created_at),
   );
+}
+
+function latestMessagePreview(messages: readonly ChatMessage[]): string {
+  const latest = [...messages]
+    .filter((message) => message.type !== "signal")
+    .sort((left, right) => Date.parse(left.created_at) - Date.parse(right.created_at))
+    .at(-1);
+  if (!latest) return "";
+  const message =
+    latest.parts
+      ?.filter((part) => part.type === "text")
+      .map((part) => part.text || "")
+      .join(" ") ||
+    latest.text ||
+    latest.summary ||
+    "";
+  const text = message
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[*_~`>#]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (text) return text;
+  const attachment = latest.parts?.find((part) => part.type === "file" || part.type === "image");
+  return attachment?.filename ? `Sent ${attachment.filename}` : "";
 }
 
 function uniqueAgents(agents: ChatAgent[]): ChatAgent[] {
@@ -1371,54 +1224,6 @@ function unknownText(value: unknown): string {
 function messageText(message: ChatMessage): string {
   if (message.text) return message.text;
   return (message.parts ?? []).map((part) => part.text || "").join("");
-}
-
-function ComputerIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16">
-      <rect x="2.25" y="2.75" width="11.5" height="8.5" rx="1.5" />
-      <path d="M5.25 13.25h5.5M8 11.25v2" />
-    </svg>
-  );
-}
-
-function MoreIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16">
-      <circle cx="3.25" cy="8" r="1" />
-      <circle cx="8" cy="8" r="1" />
-      <circle cx="12.75" cy="8" r="1" />
-    </svg>
-  );
-}
-
-function ReplyIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16">
-      <path d="m6.75 4-4 4 4 4M3.25 8h5.5c2.25 0 3.75 1.2 4 3.5" />
-    </svg>
-  );
-}
-
-function SendIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16">
-      <path d="M8 12.5v-9M4.5 7 8 3.5 11.5 7" />
-    </svg>
-  );
-}
-
-function formatTime(value: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.valueOf())
-    ? ""
-    : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-
-function formatBytes(value: number): string {
-  if (value < 1024) return `${value} B`;
-  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function humanEventName(value: string): string {

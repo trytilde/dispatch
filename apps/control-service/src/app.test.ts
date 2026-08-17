@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { Code, ConnectError } from "@connectrpc/connect";
 import type { ChatProvider } from "@tryopenbot/chat-provider";
 import type { ComputerProvider } from "@tryopenbot/computer-provider";
 import { app, createApp } from "./app.js";
@@ -64,6 +65,27 @@ describe("bare OpenBot server", () => {
 
     const invalid = await computerApp.request("https://openbot.test/api/computer/../preview");
     expect(invalid.status).not.toBe(307);
+  });
+
+  it("does not surface an aborted computer preview request as a server error", async () => {
+    const controller = new AbortController();
+    const previewAgentDesktop = vi.fn(async () => {
+      throw new ConnectError("aborted", Code.Canceled);
+    });
+    const computerApp = createApp({
+      computerProvider: { previewAgentDesktop } as unknown as ComputerProvider,
+      devMode: true,
+      environment: { COMPUTER_ID: "computer-one" },
+    });
+    controller.abort();
+
+    const response = await computerApp.request(
+      "https://openbot.test/api/computer/hello-world/preview",
+      { signal: controller.signal },
+    );
+
+    expect(response.status).toBe(499);
+    expect(previewAgentDesktop).toHaveBeenCalledTimes(1);
   });
 
   it("proxies the configured Tilde ChatKit subtree without exposing credentials", async () => {

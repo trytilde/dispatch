@@ -17,6 +17,8 @@ export interface ChatAgent {
   display_name: string;
   provider_id: string;
   status: string;
+  last_message_preview?: string | null;
+  last_user_message_at?: string | null;
   sessions: Page<ChatSession>;
 }
 

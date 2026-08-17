@@ -29,6 +29,7 @@ export function registerComputerPreview(
       response.headers.set("referrer-policy", "no-referrer");
       return response;
     } catch (error) {
+      if (context.req.raw.signal.aborted) return new Response(null, { status: 499 });
       if (!(error instanceof ComputerProviderError)) throw error;
       return context.json(
         { error: error.message },

@@ -158,6 +158,18 @@ describe("computer-service startup", () => {
     ).resolves.toBe("ready");
     expect(operation).toHaveBeenCalledTimes(2);
   });
+
+  it("does not retry a caller-aborted request", async () => {
+    const controller = new AbortController();
+    const failure = new ConnectError("socket hang up", Code.Aborted);
+    const operation = vi.fn<() => Promise<string>>().mockRejectedValue(failure);
+    controller.abort();
+
+    await expect(
+      retryComputerServiceStartup(operation, controller.signal, { attempts: 2, delayMs: 0 }),
+    ).rejects.toBe(failure);
+    expect(operation).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("Microsandbox port attachment", () => {

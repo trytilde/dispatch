@@ -62,3 +62,4 @@ flowchart LR
 - 2026-08-13T16:09:00+02:00: Reconciled this artifact decision with ADR-0004: Vite+ replaces Turbo for orchestration while `tsgo` and tsdown/Rolldown remain the service artifact compiler path.
 - 2026-08-13T16:27:00+02:00: Split agent-runtime provider construction from the full composition module so independently bundled agent entrypoints cannot retain control/agent deployment compilers or their native bindings.
 - 2026-08-14T17:18:21+02:00: Made development run provider checks without service artifact deployment, retained one control/agent HMR process, and added a separate watched Microsandbox image rebuild/restart loop.
+- 2026-08-16T15:08:39+02:00: Routed `/api/*` to the deployed control Function so the same Tilde REST/SSE bridge is available in Vercel, local production, development, and packaged desktop runs; removed the obsolete owner `/rpc` route.

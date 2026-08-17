@@ -13,7 +13,6 @@ export default defineConfig({
       "/api/chat": controlOrigin,
       "/api/computer": controlOrigin,
       "/auth": controlOrigin,
-      "/rpc": controlOrigin,
     },
   },
   build: { target: "es2024" },

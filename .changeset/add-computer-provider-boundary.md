@@ -4,7 +4,6 @@
 "@tryopenbot/computer-service": minor
 "@tryopenbot/computer-service-proto": minor
 "@tryopenbot/configuration": minor
-"@tryopenbot/control-service-proto": minor
 "@tryopenbot/desktop": minor
 "@tryopenbot/control-service": minor
 "@tryopenbot/ui": minor

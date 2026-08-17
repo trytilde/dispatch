@@ -14,7 +14,7 @@ OpenBot is a TypeScript monorepo for a local or Vercel-hosted agent workspace. I
 
 - Node.js 24, pnpm 10, TypeScript ESM, strict mode.
 - Use repository-pinned tools through `pnpm`; do not install global substitutes.
-- Do not hand-edit generated files under `packages/control-service-proto/src/gen/`, `packages/computer-service-proto/src/gen/`, or `apps/web/src/routeTree.gen.ts`.
+- Do not hand-edit generated files under `packages/computer-service-proto/src/gen/` or `apps/web/src/routeTree.gen.ts`.
 
 ```bash
 pnpm install
@@ -37,13 +37,11 @@ pnpm --filter openbot test
 ## Repository map
 
 - `cli`: React Ink repository CLI; command entrypoints live under `cli/src/commands/`, while shared process, environment, initialization, and UI helpers remain at `cli/src/`.
-- `apps/web`: React 19, Vite, TanStack Router, Connect clients.
-- `apps/control-service`: Hono HTTP routes, ConnectRPC services, and the local control-service entrypoint.
+- `apps/web`: React 19, Vite, TanStack Router, and a direct Tilde ChatKit REST/SSE client through the same-origin bridge.
+- `apps/control-service`: Hono HTTP routes, the allowlisted Tilde ChatKit REST/SSE bridge, and the local control-service entrypoint.
 - `apps/desktop`: Electron main/preload shell and packaged local server.
 - `apps/computer-service`: API-key-protected ConnectRPC service inside computers.
-- `packages/control-service-proto`: browser/Electron control protobuf and generated Connect types.
-- `packages/chat-provider`: control-facing agent, session, and message operations plus the Tilde implementation.
-- `packages/agent-provider`: external agent-endpoint provisioning and reconciliation lifecycles.
+- `packages/agent-provider`: aggregate external agent, authored-skill, registry, MCP, and tool-resource reconciliation lifecycle.
 - `packages/inference-provider`: inference-account initialization and credential provisioning; never an authored-agent model factory.
 - `packages/computer-tools`: typed Vercel AI SDK tools that call computer-service; this is a runtime utility, not a provider.
 - `packages/configuration`: typed contract for the fork-owned composition root.
@@ -59,16 +57,17 @@ pnpm --filter openbot test
 
 ### API and contracts
 
-- Prefer ConnectRPC for authenticated control-plane operations.
+- Preserve Tilde's native REST/SSE shapes for owner chat through the allowlisted same-origin bridge.
 - Keep Hono routes for protocol-native HTTP surfaces: setup unlock, ChatKit compatibility, signed Tilde callbacks/tools, and health.
-- Edit `packages/control-service-proto/proto/openbot/control/v1/control.proto` for control RPCs and `packages/computer-service-proto/proto/openbot/computer/v1/computer.proto` for the internal computer API, then run `pnpm contracts:generate`.
+- Edit `packages/computer-service-proto/proto/openbot/computer/v1/computer.proto` for the internal Computer API, then run `pnpm contracts:generate`.
 - Keep handlers thin: validate input, authorize, call the owning provider/store, map to protobuf or HTTP response.
 - Preserve Web-standard `Request`/`Response` behavior so the same server works locally and in Vercel Functions.
 - Preserve raw request bodies and webhook verification on signed Tilde routes.
 
 ### Providers
 
-- Providers exist only for control-service data operations, initialization and external provisioning, or check/build/deploy lifecycles. Remove interface methods without one of those consumers; do not preserve speculative generic APIs.
+- Providers exist only for initialization and external provisioning or check/build/deploy lifecycles. Remove interface methods without one of those consumers; do not preserve speculative generic APIs.
+- The Agent Provider owns the complete external footprint of each authored agent. Keep skills, registries, MCP servers, and external tool reconciliation as cohesive internal modules rather than separately configured provider roles.
 - Code under `configuration/agent/`, including its `subagents/`, must not import provider packages or provider composition. Integrate model, tool, prompt, and vendor SDK behavior directly in the authored agent; Composio and other direct integrations do not require a provider abstraction.
 - Providers must not expose model factories, prompt injection, AI SDK tool registration, or arbitrary vendor-specific convenience functions for authored agents. Put non-provider runtime utilities in a purpose-specific package such as `computer-tools`.
 - Inference providers may provision gateway accounts and credentials, but authored agents still import AI SDK providers directly.

@@ -1,10 +1,10 @@
-# ADR-0014: Owner chat through the control service
+# ADR-0014: Owner chat through a Tilde REST and SSE bridge
 
 ## In brief
 
-- Web and desktop chat through ConnectRPC on the control service.
-- Control handlers delegate conversation ownership to the configured Chat Provider.
-- Local HMR and deployed control artifacts load the same fork-owned provider composition.
+- Web and desktop preserve Tilde ChatKit's native REST and SSE contracts.
+- The control service exposes an allowlisted same-origin bridge and injects server credentials.
+- No Chat Provider or owner-facing protobuf contract is retained.
 - Agent execution remains behind the independently deployed agent endpoint.
 
 ## Context
@@ -15,30 +15,29 @@ installation could provision an agent without letting its owner converse with it
 
 ## Decision
 
-`ControlService` exposes narrow RPCs to list agents, create a session, list messages, and send a
-message. The control service maps these operations to `ChatProvider`; it does not persist a second
-copy of conversation state. The browser calls the same-origin `/rpc` namespace, so Vite's local
-proxy, the packaged desktop proxy, and the deployed Vercel control Function share one contract.
+The browser calls same-origin `/api/chat/*` routes using Tilde's resource shapes directly. Hono maps only the ChatKit team subtree, the configured organization/team root attachment subtree, and validated signed attachment uploads. It forwards raw request bodies and response streams, removes browser-supplied credentials and hop-by-hop headers, injects the configured Tilde credentials, disables caching, and preserves upstream status codes and content types.
 
-Both local development and generated control-service deployment entries construct the Hono app
-with `configuration.providers.chat`. Agent responses still execute through the provider-managed
-agent endpoint, whether that endpoint is a development tunnel or the deployed agent service.
+The bridge does not accept tenant overrides and cannot proxy arbitrary Tilde control-plane APIs. Tilde remains authoritative for agents, sessions, messages, attachments, queues, events, and interruption. OpenBot keeps no duplicate conversation contract or state. Local Vite, packaged desktop, local production, and the Vercel control Function all route the same `/api/*` surface to Hono.
+
+Agent responses still execute through the Agent Provider-managed endpoint, whether that endpoint is a development tunnel or the deployed agent service.
 
 ```mermaid
 flowchart LR
-  O["Owner in web or desktop"] --> C["ControlService chat RPC"]
-  C --> P["Configured Chat Provider"]
-  P --> T["Tilde ChatKit session"]
+  O["Owner in web or desktop"] --> C["Same-origin REST and SSE bridge"]
+  C --> T["Tilde ChatKit API"]
   T --> A["Local tunnel or deployed agent endpoint"]
   A --> T
-  T --> P
-  P --> C
+  T --> C
   C --> O
 ```
 
 ## Consequences
 
 - Conversation state remains authoritative in the Tilde Team.
-- Control deployments must bundle the fork-owned configuration composition.
-- Provider failures cross the control boundary as Connect error codes.
-- Streaming and richer ChatKit parts can extend this contract without exposing provider APIs to the browser.
+- Control deployments route `/api/*` to the Hono Function and keep credentials server-side.
+- Tilde status codes, JSON bodies, attachment bytes, and SSE frames cross without an OpenBot projection layer.
+- The bridge is intentionally Tilde-specific; a second chat backend requires a new product decision rather than a generic provider contract in advance.
+
+## Updates
+
+- 2026-08-16T15:08:39+02:00: Replaced the initial ConnectRPC and Chat Provider projection with the allowlisted Tilde REST/SSE bridge, removed `control-service-proto`, and made the browser's existing ChatKit client the sole owner-chat contract.

@@ -3,8 +3,9 @@
 ## In brief
 
 - Name application packages after the service they own.
-- `apps/control-service` owns the owner-facing Hono and Connect service.
+- `apps/control-service` owns the owner-facing Hono HTTP service.
 - `apps/computer-service` is the only API running inside an OpenBot Computer.
+- Keep ConnectRPC for the generated, API-key-protected Computer contract.
 - Remove the legacy `box-host` package and `BoxService` protocol.
 - Keep Vercel-specific control adapters in `control-service-provider`, not the portable application or repository root.
 
@@ -34,6 +35,8 @@ service in a multi-stage container build; providers never copy a host-built
 `dist` file into the image. Remove the obsolete legacy contracts package after
 the remaining consumers use `computer-service-proto`.
 
+This ConnectRPC boundary is intentionally independent from the owner-facing control transport. Computer service implements execution, files, lifecycle bundles, screenshots, input, desktop allocation, and bidirectional VNC tunnelling; it is not a proxy over an existing REST API. Its generated contract remains shared by Computer providers and authored-agent Computer tools. Replacing it with handwritten REST would move rather than remove its schema, binary, streaming, cancellation, and error semantics.
+
 Computer-service also owns the idempotent per-agent desktop registry. It routes
 screenshot, input, and VNC streams by agent ID to separate displays inside the
 same Computer; the agent ID does not create a security boundary.
@@ -59,3 +62,4 @@ flowchart LR
 - 2026-08-13T12:09:51+02:00: Removed the obsolete legacy contracts package after `computer-service-proto` became the only computer RPC contract.
 - 2026-08-13T17:33:29+02:00: Renamed the private workspace package scope from `@openbot` to `@tryopenbot` while retaining the `openbot` CLI command.
 - 2026-08-15T13:25:19+02:00: Made computer-service the owner of per-agent display reconciliation and capability-routed VNC streams inside the one shared Computer.
+- 2026-08-16T15:08:39+02:00: Retained ConnectRPC exclusively for the internal Computer API while removing owner-facing ConnectRPC from control-service. Frontend code never calls Computer service directly.

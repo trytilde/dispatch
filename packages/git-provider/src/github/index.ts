@@ -5,6 +5,7 @@ import { tildeErrorMessage } from "@tryopenbot/platform-integrations/tilde/error
 import type {
   DeploymentContext,
   DeploymentPlan,
+  DeploymentReporter,
   ProviderInitialization,
   ProviderInitializationContext,
 } from "@tryopenbot/runtime-provider";
@@ -69,16 +70,49 @@ export class GitHubGitProvider implements GitProvider {
     this.platforms = [platform];
   }
 
-  /** Derive the fork repository from the checkout's origin remote instead of asking again. */
+  /**
+   * Derive the fork repository from the checkout's origin remote instead of asking again, then
+   * start GitHub App provisioning so the owner can authorize while still at the terminal.
+   * Deployment remains the idempotent finisher for skipped or incomplete authorizations.
+   */
   async initialize(context: ProviderInitializationContext): Promise<void> {
-    if (context.environment[githubRepositoryEnvironmentName]?.trim()) return;
-    const repository = await originGitHubRepository(context.repositoryRoot);
-    if (!repository) return;
-    await context.setEnvironment(
-      githubRepositoryEnvironmentName,
-      repository,
-      "GitHub repository (owner/name) holding this OpenBot fork.",
-    );
+    if (!context.environment[githubRepositoryEnvironmentName]?.trim()) {
+      const repository = await originGitHubRepository(context.repositoryRoot);
+      if (repository)
+        await context.setEnvironment(
+          githubRepositoryEnvironmentName,
+          repository,
+          "GitHub repository (owner/name) holding this OpenBot fork.",
+        );
+    }
+    const report = context.report ?? (() => undefined);
+    const connection = tildeConnectionFromEnvironment(context.environment);
+    if (!connection) return;
+    try {
+      const api = createTildeApiClient({
+        ...connection,
+        throwOnError: true,
+        ...(context.request ? { fetch: context.request } : {}),
+      });
+      const group = await ensureGitHubAppProvisioning({
+        api,
+        teamId: connection.teamId,
+        environment: context.environment,
+        report,
+      });
+      if (group)
+        await context.setEnvironment(
+          githubToolGroupEnvironmentName,
+          group.id,
+          "Tilde GitHub tool group instance ID.",
+        );
+    } catch (error) {
+      // GitHub provisioning is finished by the deployment lifecycle; never fail init on it.
+      report({
+        event: "git.github.initialize.skipped",
+        details: { reason: tildeErrorMessage(error, "unknown error") },
+      });
+    }
   }
 
   async #plan(_context: DeploymentContext): Promise<DeploymentPlan> {
@@ -97,11 +131,12 @@ export class GitHubGitProvider implements GitProvider {
     const api = this.#api();
     const teamId = this.platform.connection().teamId;
     try {
-      let group = await findGitHubToolGroup(api, teamId);
-      if (!group) {
-        await this.#provisionGitHubApp(context, api, teamId);
-        group = await findGitHubToolGroup(api, teamId);
-      }
+      let group = await ensureGitHubAppProvisioning({
+        api,
+        teamId,
+        environment: context.environment,
+        report: context.report,
+      });
       if (!group) {
         context.report({
           event: "git.github.pending",
@@ -115,10 +150,7 @@ export class GitHubGitProvider implements GitProvider {
         group.id,
         "Tilde GitHub tool group instance ID.",
       );
-      if (!group.resource_server_credential_id) {
-        await this.#startAuthorization(context, api, teamId, group);
-        group = await findGitHubToolGroup(api, teamId);
-      }
+      if (!group.resource_server_credential_id) group = await findGitHubToolGroup(api, teamId);
       const credentialId = group?.resource_server_credential_id;
       if (!credentialId) {
         context.report({
@@ -160,45 +192,6 @@ export class GitHubGitProvider implements GitProvider {
       if (error instanceof GitProviderError) throw error;
       throw gitError("reconcile GitHub access", error);
     }
-  }
-
-  async #provisionGitHubApp(
-    context: DeploymentContext,
-    api: TildeApi,
-    teamId: string,
-  ): Promise<void> {
-    const deploymentName = context.environment.OPENBOT_DEPLOYMENT_NAME?.trim() || "OpenBot";
-    const { data } = await autoProvisionToolGroupInstance({
-      client: api,
-      path: {
-        team_id: teamId,
-        tool_group_source_type_id: githubToolGroupSourceTypeId,
-        credential_source_type_id: githubCredentialSourceTypeId,
-      },
-      body: {
-        app_display_name: `${deploymentName} GitHub`,
-        provider_id: githubProviderProvisionerId,
-        public_base_url: this.platform.connection().baseUrl,
-      },
-      throwOnError: true,
-    });
-    reportProvisioningAction(context, data.provider_provisioning_response.next_action);
-    if (data.broker_response) reportBrokerAction(context, data.broker_response);
-  }
-
-  async #startAuthorization(
-    context: DeploymentContext,
-    api: TildeApi,
-    teamId: string,
-    group: ToolGroupInstanceSerialized,
-  ): Promise<void> {
-    const { data } = await startUserCredentialBrokering({
-      client: api,
-      path: { team_id: teamId, credential_source_type_id: githubCredentialSourceTypeId },
-      body: { owner_id: group.id, owner_type: "tool_group_instance" },
-      throwOnError: true,
-    });
-    reportBrokerAction(context, data);
   }
 
   async #reconcileProfile(
@@ -246,6 +239,79 @@ export class GitHubGitProvider implements GitProvider {
 
 type TildeApi = ReturnType<typeof createTildeApiClient>;
 
+interface GitHubProvisioningRequest {
+  api: TildeApi;
+  teamId: string;
+  environment: NodeJS.ProcessEnv;
+  report: DeploymentReporter;
+}
+
+/**
+ * Find the brokered GitHub tool group, provisioning the GitHub App and surfacing the pending
+ * authorization action when needed. Shared by initialization and the deployment lifecycle.
+ */
+async function ensureGitHubAppProvisioning(
+  request: GitHubProvisioningRequest,
+): Promise<ToolGroupInstanceSerialized | undefined> {
+  let group = await findGitHubToolGroup(request.api, request.teamId);
+  if (!group) {
+    await provisionGitHubApp(request);
+    group = await findGitHubToolGroup(request.api, request.teamId);
+  } else if (!group.resource_server_credential_id) {
+    await startAuthorization(request, group);
+  }
+  return group;
+}
+
+async function provisionGitHubApp(request: GitHubProvisioningRequest): Promise<void> {
+  const deploymentName = request.environment.OPENBOT_DEPLOYMENT_NAME?.trim() || "OpenBot";
+  const { data } = await autoProvisionToolGroupInstance({
+    client: request.api,
+    path: {
+      team_id: request.teamId,
+      tool_group_source_type_id: githubToolGroupSourceTypeId,
+      credential_source_type_id: githubCredentialSourceTypeId,
+    },
+    body: {
+      app_display_name: `${deploymentName} GitHub`,
+      provider_id: githubProviderProvisionerId,
+      public_base_url: request.environment.TILDE_BASE_URL?.trim() || "https://api.trytilde.ai",
+    },
+    throwOnError: true,
+  });
+  reportProvisioningAction(request.report, data.provider_provisioning_response.next_action);
+  if (data.broker_response) reportBrokerAction(request.report, data.broker_response);
+}
+
+async function startAuthorization(
+  request: GitHubProvisioningRequest,
+  group: ToolGroupInstanceSerialized,
+): Promise<void> {
+  const { data } = await startUserCredentialBrokering({
+    client: request.api,
+    path: { team_id: request.teamId, credential_source_type_id: githubCredentialSourceTypeId },
+    body: { owner_id: group.id, owner_type: "tool_group_instance" },
+    throwOnError: true,
+  });
+  reportBrokerAction(request.report, data);
+}
+
+/** Tilde connection values collected by the shared platform's initialization questions. */
+function tildeConnectionFromEnvironment(
+  environment: NodeJS.ProcessEnv,
+): { baseUrl: string; apiKey: string; orgId: string; teamId: string } | undefined {
+  const apiKey = environment.TILDE_API_KEY?.trim();
+  const orgId = environment.TILDE_ORG_ID?.trim();
+  const teamId = environment.TILDE_TEAM_ID?.trim();
+  if (!apiKey || !orgId || !teamId) return undefined;
+  return {
+    baseUrl: environment.TILDE_BASE_URL?.trim() || "https://api.trytilde.ai",
+    apiKey,
+    orgId,
+    teamId,
+  };
+}
+
 async function findGitHubToolGroup(
   api: TildeApi,
   teamId: string,
@@ -277,31 +343,31 @@ async function listProfiles(
 }
 
 function reportProvisioningAction(
-  context: DeploymentContext,
+  report: DeploymentReporter,
   action: ProviderProvisioningNextAction,
 ): void {
   if (action.type === "redirect")
-    context.report({ event: "git.github.authorization.required", details: { url: action.url } });
+    report({ event: "git.github.authorization.required", details: { url: action.url } });
   else if (action.type === "render_instructions")
-    context.report({
+    report({
       event: "git.github.authorization.required",
       details: { instructions: action.markdown },
     });
   else if (action.type === "render_form_post")
-    context.report({
+    report({
       event: "git.github.authorization.required",
       details: { url: action.action_url },
     });
 }
 
 function reportBrokerAction(
-  context: DeploymentContext,
+  report: DeploymentReporter,
   response: UserCredentialBrokeringResponse,
 ): void {
   if (response.type !== "broker_state") return;
   const action = response.action;
   if (typeof action === "object" && "Redirect" in action)
-    context.report({
+    report({
       event: "git.github.authorization.required",
       details: { url: action.Redirect.url },
     });

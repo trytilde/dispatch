@@ -1380,6 +1380,7 @@ async function runInitializationProvisioning(
     repositoryRoot,
     environment,
     request: values.request,
+    report: reportInitializationEvent,
     async setEnvironment(name, value, description) {
       (values.environmentUpdates ?? values.environmentValues)[name] = { description, value };
       environment[name] = value;
@@ -1389,6 +1390,29 @@ async function runInitializationProvisioning(
       environment[name] = value;
     },
   });
+}
+
+/** Surface provider provisioning events, such as a pending authorization URL, to the owner. */
+function reportInitializationEvent({
+  event,
+  details = {},
+}: {
+  event: string;
+  details?: Readonly<Record<string, unknown>>;
+}): void {
+  if (event === "git.github.authorization.required") {
+    const url = typeof details.url === "string" ? details.url : undefined;
+    const instructions = typeof details.instructions === "string" ? details.instructions : "";
+    process.stdout.write(
+      `\nGitHub authorization required. Complete the GitHub App installation${
+        url ? `:\n  ${url}` : "."
+      }\n${instructions ? `${instructions}\n` : ""}The next openbot dev or deploy run finishes GitHub setup afterward.\n`,
+    );
+    return;
+  }
+  process.stdout.write(
+    `${event}${Object.keys(details).length ? ` ${JSON.stringify(details)}` : ""}\n`,
+  );
 }
 
 function uniqueInitializationQuestions(

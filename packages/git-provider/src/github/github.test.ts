@@ -74,6 +74,67 @@ describe("GitHubGitProvider", () => {
     expect(environment.GIT_GITHUB_REPOSITORY).toBe("acme/pinned");
   });
 
+  it("starts GitHub App provisioning during initialization and never fails init", async () => {
+    const mutations: string[] = [];
+    const events: string[] = [];
+    let provisioned = false;
+    const stubFetch = async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(input, init);
+      const path = new URL(request.url).pathname;
+      if (request.method === "GET" && path.endsWith("/mcp/tool-group"))
+        return Response.json({ items: provisioned ? [githubGroup()] : [] });
+      if (request.method === "POST" && path.endsWith("/auto-provision")) {
+        mutations.push("auto-provision");
+        provisioned = true;
+        return Response.json({
+          provider_provisioning_response: {
+            next_action: { type: "redirect", url: "https://github.test/install" },
+          },
+          tool_group_instance: githubGroup(),
+        });
+      }
+      if (request.method === "POST" && path.endsWith("/user-credential/broker"))
+        return Response.json({
+          type: "broker_state",
+          action: { Redirect: { url: "https://github.test/install" } },
+          id: "broker-one",
+          owner_id: "github-group",
+          owner_type: "tool_group_instance",
+        });
+      throw new Error(`Unexpected request: ${request.method} ${path}`);
+    };
+    const environment: NodeJS.ProcessEnv = {
+      GIT_GITHUB_REPOSITORY: "acme/our-openbot",
+      TILDE_API_KEY: "secret",
+      TILDE_ORG_ID: "org-one",
+      TILDE_TEAM_ID: "team-one",
+      TILDE_BASE_URL: "https://tilde.test",
+    };
+    const context = {
+      repositoryRoot: "/repo",
+      environment,
+      request: stubFetch as typeof fetch,
+      report: ({ event }: { event: string }) => void events.push(event),
+      async setEnvironment(name: string, value: string) {
+        environment[name] = value;
+      },
+      async setSecret() {},
+    };
+    const provider = new GitHubGitProvider(platform());
+    await provider.initialize(context);
+    expect(mutations).toEqual(["auto-provision"]);
+    expect(events).toContain("git.github.authorization.required");
+    expect(environment.GIT_GITHUB_TOOL_GROUP_ID).toBe("github-group");
+
+    // A Tilde outage or unexpected response degrades to a skipped event, never a failed init.
+    const failing = {
+      ...context,
+      request: (async () => Response.json({ unexpected: true })) as typeof fetch,
+      environment: { ...environment, GIT_GITHUB_TOOL_GROUP_ID: undefined },
+    };
+    await expect(provider.initialize(failing)).resolves.toBeUndefined();
+  });
+
   it("provisions the GitHub App and surfaces the authorization action while pending", async () => {
     const mutations: string[] = [];
     let provisioned = false;
@@ -110,11 +171,14 @@ describe("GitHubGitProvider", () => {
     const context = deploymentContext();
     const provider = new GitHubGitProvider(platform());
     await provider.deployable.deploy(context);
-    expect(mutations).toEqual(["auto-provision", "broker"]);
+    expect(mutations).toEqual(["auto-provision"]);
     expect(context.events).toContain("git.github.authorization.required");
     expect(context.events).toContain("git.github.pending");
     expect(context.environment.GIT_GITHUB_TOOL_GROUP_ID).toBe("github-group");
     expect(context.environment.GIT_GITHUB_REST_PROXY_PROFILE_ID).toBeUndefined();
+    // A later run with the group still unconnected restarts brokering for a fresh action URL.
+    await provider.deployable.deploy(context);
+    expect(mutations).toEqual(["auto-provision", "broker"]);
   });
 
   it("idempotently reconciles reverse-proxy profiles once the credential is connected", async () => {

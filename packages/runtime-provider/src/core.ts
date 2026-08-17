@@ -83,6 +83,8 @@ export interface ProviderInitializationContext {
   repositoryRoot: string;
   environment: NodeJS.ProcessEnv;
   request?: typeof fetch;
+  /** Owner-visible progress and pending-action events, such as an authorization URL. */
+  report?: DeploymentReporter;
   setEnvironment(name: string, value: string, description: string): Promise<void>;
   setSecret(name: string, value: string, description: string): Promise<void>;
 }

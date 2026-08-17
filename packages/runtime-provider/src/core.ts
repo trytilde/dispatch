@@ -179,6 +179,8 @@ export interface DeploymentContext {
   inputs: DeploymentOutputs;
   agentId?: string;
   agentPath?: string;
+  /** Whether the agent under reconciliation is the primary agent or a subagent. */
+  agentKind?: "primary" | "subagent";
   agentServiceOrigin?: string;
   /** External platforms selected by the repository composition for this lifecycle. */
   platformIds?: readonly string[];
@@ -463,6 +465,7 @@ function providerTypeName(id: string): string {
     computer: "Computer Provider",
     "control-service": "Control Service Provider",
     "development-sandbox": "Computer Provider",
+    git: "Git Provider",
     skills: "Skills Provider",
     tools: "Tools Provider",
   };

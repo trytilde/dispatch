@@ -1,7 +1,7 @@
 import { watch, type FSWatcher } from "node:fs";
 import { stat } from "node:fs/promises";
 import type { OpenBotConfiguration } from "@tryopenbot/configuration";
-import { discoverAgentWorkspaces } from "@tryopenbot/agent-service-provider";
+import { discoverAgentWorkspaces, primaryAgentId } from "@tryopenbot/agent-service-provider";
 import {
   buildProviders,
   deployProviders,
@@ -11,7 +11,10 @@ import {
   type DeploymentParticipant,
   type DeploymentReporter,
 } from "@tryopenbot/runtime-provider";
-import { repositoryDeploymentPersistence } from "./agent-lifecycle.js";
+import {
+  persistPrimaryAgentSandboxUrl,
+  repositoryDeploymentPersistence,
+} from "./agent-lifecycle.js";
 
 export interface DevelopmentLifecycleOptions {
   repositoryRoot: string;
@@ -29,7 +32,45 @@ export async function reconcileDevelopmentInfrastructure(
   options: DevelopmentLifecycleOptions,
 ): Promise<void> {
   await reconcileParticipants(options, [
+    ...(options.providers.git
+      ? [
+          {
+            id: "git",
+            implementation: options.providers.git,
+            providerType: "Git Provider",
+            provider: options.providers.git,
+          },
+        ]
+      : []),
     { id: "computer", provider: options.providers.computer },
+    {
+      id: "development-sandbox",
+      role: "sandbox",
+      implementation: options.providers.computer,
+      providerType: "Computer Provider",
+      provider: {
+        deployable: {
+          plan: async () => ({
+            summary: "Seed or resume the trusted OpenBot development sandbox",
+            steps: [
+              "Preserve its mutable source tree and git remotes",
+              "Install the aggregate deployment environment and SOPS identity",
+              "Prepare the primary agent workspace",
+            ],
+          }),
+          deploy: async (context: DeploymentContext) => {
+            const computerId =
+              options.environment.DEVELOPMENT_SANDBOX_ID?.trim() || "openbot-development";
+            const result = await options.providers.computer.deployDevelopmentSandbox(
+              { computerId, agentWorkspaceIds: [primaryAgentId] },
+              context,
+            );
+            await persistPrimaryAgentSandboxUrl(context);
+            return result;
+          },
+        },
+      },
+    },
     {
       id: "agent-service",
       implementation: options.providers.agentService,

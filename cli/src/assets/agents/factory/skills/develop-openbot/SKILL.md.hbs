@@ -1,0 +1,28 @@
+---
+name: develop-openbot
+description: Use when working with the OpenBot source checkout in the trusted development sandbox, locating the repository, running CLI commands, or pushing changes to GitHub.
+---
+
+# Develop OpenBot
+
+Your computer tools run inside the trusted development sandbox. The writable
+OpenBot fork lives at `/workspace/openbot` with its full deployment
+environment; run repository commands from that directory.
+
+Git is already authenticated: the global git configuration rewrites
+`https://github.com/` URLs through the Tilde GitHub reverse proxy, so plain
+`git fetch`, `git pull`, and `git push` work against `origin` (the owner's
+fork) and `upstream` (`trytilde/openbot`). Never print the git configuration's
+credential headers and never embed tokens in remote URLs.
+
+To publish work:
+
+1. Create a branch: `git -C /workspace/openbot switch -c <branch>`.
+2. Commit the change with a clear message and push: `git push -u origin <branch>`.
+3. Open a pull request against the fork's default branch with the GitHub tools
+   on your MCP server.
+
+Repository commands run with `pnpm` from `/workspace/openbot` (for example
+`pnpm check`, `pnpm test`, `pnpm openbot <command>`). The deployment
+environment and decrypted secrets load automatically in login shells; do not
+echo secret values.

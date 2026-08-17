@@ -27,6 +27,7 @@ import {
   type InitializableProvider,
   type ProviderInitializationQuestion,
 } from "@tryopenbot/runtime-provider";
+import { GitHubGitProvider } from "@tryopenbot/git-provider";
 import { VercelInferenceProvider } from "@tryopenbot/inference-provider";
 import { tildePlatform } from "@tryopenbot/platform-integrations";
 import {
@@ -263,9 +264,9 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
     description: "Age identity used by the trusted deployment sandbox to decrypt secrets.",
     value: sandboxIdentity.identity,
   };
-  environmentValues.AGENT_HELLO_WORLD_NAME = {
-    description: "Display name for the hello-world agent.",
-    value: "Hello World",
+  environmentValues.AGENT_FACTORY_NAME = {
+    description: "Display name for the factory agent.",
+    value: "Factory",
   };
 
   const ownerAge = owner.creationRule.age;
@@ -314,7 +315,7 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
     configurationAssets.instrumentation,
   );
   await scaffoldAgentTemplates(options.repositoryRoot);
-  await scaffoldPrimaryAgent(options.repositoryRoot, "Hello World", { existing: "preserve" });
+  await scaffoldPrimaryAgent(options.repositoryRoot, "Factory", { existing: "preserve" });
   await rm(configurationIgnorePath, { force: true });
   await runner.run("vp", ["install"], { cwd: options.repositoryRoot });
 }
@@ -408,7 +409,7 @@ async function reconfigureOpenBot(
   await reconcileEnvironmentFile(paths.environmentPath, environmentValues, removedEnvironmentNames);
   await writeFileAtomically(paths.secretsPath, await renderDocument(encrypted), 0o600);
   await scaffoldAgentTemplates(options.repositoryRoot);
-  await scaffoldPrimaryAgent(options.repositoryRoot, "Hello World", { existing: "preserve" });
+  await scaffoldPrimaryAgent(options.repositoryRoot, "Factory", { existing: "preserve" });
   await runner.run("vp", ["install"], { cwd: options.repositoryRoot });
 }
 
@@ -1348,6 +1349,7 @@ function applicationInitializationProviders(
       initialization: tildeAgentProviderInitialization,
     },
     new VercelInferenceProvider(),
+    new GitHubGitProvider(tildePlatform),
   ];
 }
 
@@ -1414,6 +1416,7 @@ function configuredProviders(configuration: OpenBotConfiguration): Initializable
     configuration.providers.agent,
     configuration.providers.computer,
     configuration.providers.inference,
+    configuration.providers.git,
   ];
   return providers.filter((provider): provider is InitializableProvider => provider !== undefined);
 }

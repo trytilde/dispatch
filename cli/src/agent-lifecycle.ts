@@ -1,7 +1,12 @@
 import type { AgentProvider } from "@tryopenbot/agent-provider";
-import { discoverAgents, type AgentServiceProvider } from "@tryopenbot/agent-service-provider";
+import {
+  discoverAgents,
+  primaryAgentId,
+  type AgentServiceProvider,
+} from "@tryopenbot/agent-service-provider";
 import {
   DeploymentOutputs,
+  persistEnvironment,
   type DeploymentContext,
   type DeploymentEvent,
   type DeploymentPersistence,
@@ -15,6 +20,19 @@ import {
   unsetEncryptedSecret,
   unsetEnvironmentValue,
 } from "./initialization.js";
+
+/** Point the primary agent's computer tools at the trusted development sandbox. */
+export async function persistPrimaryAgentSandboxUrl(context: DeploymentContext): Promise<void> {
+  const serviceUrl = context.environment.DEVELOPMENT_SANDBOX_SERVICE_URL?.trim();
+  if (!serviceUrl) return;
+  const prefix = `AGENT_${primaryAgentId.replaceAll("-", "_").toUpperCase()}`;
+  await persistEnvironment(
+    context,
+    `${prefix}_COMPUTER_SERVICE_URL`,
+    serviceUrl,
+    `Computer service URL used by the ${primaryAgentId} agent's tools.`,
+  );
+}
 
 export interface ReconcileAgentResourcesOptions {
   repositoryRoot: string;
@@ -69,6 +87,7 @@ export async function reconcileAgentResources(
       persistence,
       agentId: source.slug,
       agentPath: source.directory,
+      agentKind: source.kind,
       agentServiceOrigin,
       platformIds: [
         ...new Set(

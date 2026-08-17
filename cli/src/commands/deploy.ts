@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import arg from "arg";
 import type { OpenBotConfiguration } from "@tryopenbot/configuration";
-import { discoverAgentWorkspaces } from "@tryopenbot/agent-service-provider";
+import { discoverAgentWorkspaces, primaryAgentId } from "@tryopenbot/agent-service-provider";
 import {
   buildProviders,
   deployProviders,
@@ -9,7 +9,11 @@ import {
   type DeploymentEvent,
   type DeploymentParticipant,
 } from "@tryopenbot/runtime-provider";
-import { reconcileAgentResources, repositoryDeploymentPersistence } from "../agent-lifecycle.js";
+import {
+  persistPrimaryAgentSandboxUrl,
+  reconcileAgentResources,
+  repositoryDeploymentPersistence,
+} from "../agent-lifecycle.js";
 import { loadDeploymentConfiguration } from "../initialization.js";
 import { loadConfigurationModule } from "../configuration-loader.js";
 import { repositoryRoot } from "../paths.js";
@@ -82,7 +86,18 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
   const computerId = deploymentConfiguration.environment.COMPUTER_ID?.trim() || "openbot-computer";
   const developmentSandboxId =
     deploymentConfiguration.environment.DEVELOPMENT_SANDBOX_ID?.trim() || "openbot-development";
+  const git = configuration.providers.git;
   const participants: DeploymentParticipant[] = [
+    ...(deployAgents && git
+      ? [
+          {
+            id: "git",
+            implementation: git,
+            providerType: "Git Provider",
+            provider: git,
+          },
+        ]
+      : []),
     ...(options.service === "all" && computer ? [{ id: "computer", provider: computer }] : []),
     ...(deployAgents && computer
       ? [
@@ -136,8 +151,14 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
                     "Verify in-sandbox decryption",
                   ],
                 }),
-                deploy: async (context: DeploymentContext) =>
-                  computer.deployDevelopmentSandbox({ computerId: developmentSandboxId }, context),
+                deploy: async (context: DeploymentContext) => {
+                  const result = await computer.deployDevelopmentSandbox(
+                    { computerId: developmentSandboxId, agentWorkspaceIds: [primaryAgentId] },
+                    context,
+                  );
+                  await persistPrimaryAgentSandboxUrl(context);
+                  return result;
+                },
               },
             },
           },

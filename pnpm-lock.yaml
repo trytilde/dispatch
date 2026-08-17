@@ -373,6 +373,9 @@ importers:
       '@tryopenbot/control-service-provider':
         specifier: workspace:*
         version: link:../packages/control-service-provider
+      '@tryopenbot/git-provider':
+        specifier: workspace:*
+        version: link:../packages/git-provider
       '@tryopenbot/inference-provider':
         specifier: workspace:*
         version: link:../packages/inference-provider
@@ -660,6 +663,9 @@ importers:
       '@tryopenbot/control-service-provider':
         specifier: workspace:*
         version: link:../control-service-provider
+      '@tryopenbot/git-provider':
+        specifier: workspace:*
+        version: link:../git-provider
       '@tryopenbot/inference-provider':
         specifier: workspace:*
         version: link:../inference-provider
@@ -707,6 +713,31 @@ importers:
       vitest:
         specifier: 4.1.10
         version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))
+
+  packages/git-provider:
+    dependencies:
+      '@tryopenbot/platform-integrations':
+        specifier: workspace:*
+        version: link:../platform-integrations
+      '@tryopenbot/runtime-provider':
+        specifier: workspace:*
+        version: link:../runtime-provider
+      '@trytilde/api-client':
+        specifier: github:trytilde/harness-sdk#c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d&path:packages/api-client
+        version: https://codeload.github.com/trytilde/harness-sdk/tar.gz/c9b64d691486e6d57ff69cd0eb0214ceb6d1c13d#path:packages/api-client(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0)
+      '@trytilde/harness-sdk':
+        specifier: 0.1.2
+        version: 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(tsx@4.21.0)(yaml@2.9.0)
+    devDependencies:
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0))
 
   packages/inference-provider:
     dependencies:

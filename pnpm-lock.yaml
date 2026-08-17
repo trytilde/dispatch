@@ -59,6 +59,9 @@ importers:
       '@tryopenbot/control-service-provider':
         specifier: workspace:*
         version: link:packages/control-service-provider
+      '@tryopenbot/git-provider':
+        specifier: workspace:*
+        version: link:packages/git-provider
       '@tryopenbot/inference-provider':
         specifier: workspace:*
         version: link:packages/inference-provider

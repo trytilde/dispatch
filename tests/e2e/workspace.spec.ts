@@ -625,11 +625,8 @@ test("queues another turn while the agent is busy", async ({ page }) => {
   await expect(page.getByRole("dialog", { name: "Search agents" })).toHaveCount(0);
 });
 
-test("keeps the server healthy and control namespace empty", async ({ request }) => {
+test("keeps the server healthy", async ({ request }) => {
   const health = await request.get("/healthz");
   expect(health.ok()).toBeTruthy();
   await expect(health.json()).resolves.toEqual({ ok: true, service: "openbot" });
-
-  const rpc = await request.post("/rpc/openbot.control.v1.ControlService/Unknown");
-  expect(rpc.status()).toBe(404);
 });

@@ -17,8 +17,12 @@ import {
   InboxStatus,
   type TildeApiClient,
 } from "@trytilde/harness-sdk/api";
-import type { AgentProvider } from "./core.js";
-import { AgentProviderError } from "./core.js";
+import type { AgentProvider } from "../core.js";
+import { AgentProviderError } from "../core.js";
+import { TildeSkillReconciler } from "./skills.js";
+import { TildeToolReconciler, tildeAgentProviderInitialization } from "./tools.js";
+
+export { tildeAgentProviderInitialization } from "./tools.js";
 
 export interface TildeAgentProviderConfig extends TildePlatformConfig {}
 
@@ -40,6 +44,7 @@ interface AgentResource {
 export class TildeAgentProvider implements AgentProvider {
   readonly platform: TildePlatform;
   readonly platforms: readonly TildePlatform[];
+  readonly initialization = tildeAgentProviderInitialization;
   readonly buildable = {
     check: async (context: DeploymentContext) => {
       requireAgent(context);
@@ -52,6 +57,8 @@ export class TildeAgentProvider implements AgentProvider {
   };
   readonly #api: TildeApiClient;
   readonly #teamId: string;
+  readonly #skills: TildeSkillReconciler;
+  readonly #tools: TildeToolReconciler;
 
   constructor(platformOrConfig: TildePlatform | TildeAgentProviderConfig) {
     this.platform =
@@ -68,6 +75,8 @@ export class TildeAgentProvider implements AgentProvider {
       throwOnError: false,
     });
     this.#teamId = config.teamId;
+    this.#skills = new TildeSkillReconciler(this.platform);
+    this.#tools = new TildeToolReconciler({ platform: this.platform });
   }
 
   async #plan(context: DeploymentContext): Promise<DeploymentPlan> {
@@ -78,6 +87,8 @@ export class TildeAgentProvider implements AgentProvider {
         "Create missing ChatKit agents",
         "Create the shared OpenBot Mission Control chat channel when missing",
         "Reconcile Vercel AI SDK endpoint URLs and enabled status",
+        "Synchronize authored skills and exact registry membership",
+        "Reconcile dynamic MCP, Tilde control-plane, and deployment-platform tools",
         context.devMode
           ? "Enable Tilde local-runtime tunneling"
           : "Use the deployed public agent-service URL",
@@ -196,6 +207,8 @@ export class TildeAgentProvider implements AgentProvider {
         `Tilde webhook signing key for ${slug}.`,
       );
     }
+    await this.#skills.deploy(context);
+    await this.#tools.deploy(context);
   }
 
   async #ensureMissionControlChannel(defaultAgentId: string): Promise<void> {

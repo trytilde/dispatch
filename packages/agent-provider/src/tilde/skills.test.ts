@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { TildeSkillProvider } from "./tilde.js";
+import { TildeSkillReconciler } from "./skills.js";
 
 const config = {
   apiKey: "secret",
@@ -26,11 +26,7 @@ const registry = {
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe("TildeSkillProvider", () => {
-  it("depends on shared Tilde setup", () => {
-    expect(new TildeSkillProvider(config).platforms.map(({ id }) => id)).toEqual(["tilde"]);
-  });
-
+describe("TildeSkillReconciler", () => {
   it("lists and provisions registries through the typed API", async () => {
     vi.stubGlobal(
       "fetch",
@@ -41,7 +37,7 @@ describe("TildeSkillProvider", () => {
           : Response.json(registry);
       }),
     );
-    const provider = new TildeSkillProvider(config);
+    const provider = new TildeSkillReconciler(config);
     await expect(
       provider.listRegistries({ namePrefix: "OpenBot" }, context),
     ).resolves.toMatchObject([{ id: "registry-one" }]);
@@ -56,7 +52,7 @@ describe("TildeSkillProvider", () => {
   });
 
   it("idempotently syncs authored skills and exact registry membership", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-skills-provider-"));
+    const root = await mkdtemp(join(tmpdir(), "openbot-agent-skills-"));
     const agentPath = join(root, "configuration", "agent");
     await mkdir(join(agentPath, "skills", "hello"), { recursive: true });
     await writeFile(
@@ -127,10 +123,10 @@ describe("TildeSkillProvider", () => {
       agentPath,
       report: () => undefined,
     };
-    const provider = new TildeSkillProvider(config);
+    const provider = new TildeSkillReconciler(config);
     try {
-      await provider.deployable.deploy(context);
-      await provider.deployable.deploy(context);
+      await provider.deploy(context);
+      await provider.deploy(context);
       expect(mutations).toEqual(["create-registry", "create-skill", "update-registry"]);
       expect(context.environment.AGENT_HELLO_WORLD_SKILL_REGISTRY_ID).toBe("registry-one");
       expect(remoteSkills[0]).toMatchObject({

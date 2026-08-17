@@ -27,43 +27,27 @@ import type {
   ListSkillRegistriesRequest,
   RegisterSkillsRequest,
   SkillRegistry,
-  SkillProvider,
-  SkillsProviderCallContext,
-} from "./core.js";
+  SkillReconciliationContext,
+} from "./skills-types.js";
 import { persistEnvironment, type DeploymentContext } from "@tryopenbot/runtime-provider";
-import { providerSignal, SkillsProviderError } from "./core.js";
+import { AgentProviderError } from "../core.js";
+import { reconciliationSignal } from "./skills-types.js";
 
-export interface TildeSkillProviderConfig extends TildePlatformConfig {}
+export interface TildeSkillReconcilerConfig extends TildePlatformConfig {}
 
-export class TildeSkillProvider implements SkillProvider {
-  readonly platform: TildePlatform;
-  readonly platforms: readonly TildePlatform[];
+export class TildeSkillReconciler {
   readonly #config: TildePlatformConfig;
-  readonly buildable = {
-    check: async (context: DeploymentContext) => {
-      requireAgent(context);
-    },
-    build: async (_context: DeploymentContext) => undefined,
-  };
-  readonly deployable = {
-    plan: async (context: DeploymentContext) => ({
-      summary: `Reconcile the Tilde skill registry for ${requireAgent(context).id}`,
-    }),
-    deploy: async (context: DeploymentContext) => this.#deploy(context),
-  };
-
-  constructor(platformOrConfig: TildePlatform | TildeSkillProviderConfig) {
-    this.platform =
+  constructor(platformOrConfig: TildePlatform | TildeSkillReconcilerConfig) {
+    const platform =
       platformOrConfig instanceof TildePlatform
         ? platformOrConfig
         : new TildePlatform(platformOrConfig);
-    this.platforms = [this.platform];
-    this.#config = this.platform.connection();
+    this.#config = platform.connection();
   }
 
   async listRegistries(
     request: ListSkillRegistriesRequest,
-    context: SkillsProviderCallContext,
+    context: SkillReconciliationContext,
   ): Promise<readonly SkillRegistry[]> {
     return this.#run(async () => {
       const { data } = await listSkillRegistries({
@@ -79,7 +63,7 @@ export class TildeSkillProvider implements SkillProvider {
     });
   }
 
-  async getRegistry(id: string, context: SkillsProviderCallContext): Promise<SkillRegistry> {
+  async getRegistry(id: string, context: SkillReconciliationContext): Promise<SkillRegistry> {
     return this.#run(async () => {
       const { data } = await getSkillRegistry({
         client: this.#api(context),
@@ -92,7 +76,7 @@ export class TildeSkillProvider implements SkillProvider {
 
   async registerSkills(
     request: RegisterSkillsRequest,
-    context: SkillsProviderCallContext,
+    context: SkillReconciliationContext,
   ): Promise<SkillRegistry> {
     return this.#run(async () => {
       const body = {
@@ -117,7 +101,7 @@ export class TildeSkillProvider implements SkillProvider {
     });
   }
 
-  async #deploy(context: DeploymentContext): Promise<void> {
+  async deploy(context: DeploymentContext): Promise<void> {
     return this.#run(() => this.#deployResources(context));
   }
 
@@ -131,7 +115,7 @@ export class TildeSkillProvider implements SkillProvider {
       try {
         registry = await this.getRegistry(configuredId, call);
       } catch (error) {
-        if (!(error instanceof SkillsProviderError) || error.code !== "not_found") throw error;
+        if (!(error instanceof AgentProviderError) || error.code !== "not_found") throw error;
       }
     }
     const name = `OpenBot ${id}`;
@@ -231,7 +215,7 @@ export class TildeSkillProvider implements SkillProvider {
     return { skillIds: ids.sort(), staleSkillIds };
   }
 
-  async #listAllSkills(context: SkillsProviderCallContext): Promise<TildeSkill[]> {
+  async #listAllSkills(context: SkillReconciliationContext): Promise<TildeSkill[]> {
     const items: TildeSkill[] = [];
     let nextPageToken: string | undefined;
     do {
@@ -247,7 +231,7 @@ export class TildeSkillProvider implements SkillProvider {
     return items;
   }
 
-  async #getRegistryRecord(id: string, context: SkillsProviderCallContext) {
+  async #getRegistryRecord(id: string, context: SkillReconciliationContext) {
     return this.#run(async () => {
       const { data } = await getSkillRegistry({
         client: this.#api(context),
@@ -258,13 +242,13 @@ export class TildeSkillProvider implements SkillProvider {
     });
   }
 
-  #api(context: SkillsProviderCallContext) {
+  #api(context: SkillReconciliationContext) {
     return createTildeApiClient({
       apiKey: this.#config.apiKey,
       orgId: this.#config.orgId,
       baseUrl: this.#config.baseUrl ?? "https://api.trytilde.ai",
       headers: { "x-api-key": this.#config.apiKey },
-      fetch: tildeFetch(providerSignal(context)),
+      fetch: tildeFetch(reconciliationSignal(context)),
       throwOnError: true,
     });
   }
@@ -273,9 +257,9 @@ export class TildeSkillProvider implements SkillProvider {
     try {
       return await operation();
     } catch (error) {
-      if (error instanceof SkillsProviderError) throw error;
+      if (error instanceof AgentProviderError) throw error;
       const status = tildeErrorStatus(error);
-      throw new SkillsProviderError(
+      throw new AgentProviderError(
         status === 404
           ? "not_found"
           : status === 401 || status === 403
@@ -350,9 +334,9 @@ function sameStrings(left: readonly string[], right: readonly string[]): boolean
 
 function requireAgent(context: DeploymentContext): { id: string; path: string } {
   if (!context.agentId || !context.agentPath)
-    throw new SkillsProviderError(
+    throw new AgentProviderError(
       "invalid_configuration",
-      "The skills lifecycle requires an agent ID and absolute path",
+      "The agent resource lifecycle requires an agent ID and absolute path",
     );
   return { id: context.agentId, path: context.agentPath };
 }

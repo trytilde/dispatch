@@ -23,7 +23,6 @@ export async function runDevelopmentServer(): Promise<void> {
   combined.route(
     "/",
     createApp({
-      chatProvider: configuration.providers.chat,
       authProvider: configuration.providers.auth,
       computerProvider: configuration.providers.computer,
       devMode: true,

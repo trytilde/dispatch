@@ -43,11 +43,11 @@ describe("owner authentication", () => {
   it("protects control routes and accepts an installation-scoped bearer token", async () => {
     const provider = stubProvider();
     const app = createApp({ authProvider: provider, webRoot: "/missing" });
-    expect((await app.request("/rpc/missing")).status).toBe(401);
-    const authorized = await app.request("/rpc/missing", {
+    expect((await app.request("/api/computer/missing/preview")).status).toBe(401);
+    const authorized = await app.request("/api/computer/missing/preview", {
       headers: { authorization: "Bearer valid-token" },
     });
-    expect(authorized.status).toBe(404);
+    expect(authorized.status).toBe(503);
     expect(provider.verify).toHaveBeenCalledWith("valid-token");
   });
 
@@ -68,13 +68,13 @@ describe("owner authentication", () => {
 
   it("requires a matching origin for unsafe cookie-authenticated requests", async () => {
     const app = createApp({ authProvider: stubProvider(), webRoot: "/missing" });
-    const rejected = await app.request("https://openbot.test/rpc/missing", {
+    const rejected = await app.request("https://openbot.test/api/computer/missing/preview", {
       method: "POST",
       headers: { cookie: "openbot_access=valid-token" },
     });
     expect(rejected.status).toBe(403);
 
-    const accepted = await app.request("https://openbot.test/rpc/missing", {
+    const accepted = await app.request("https://openbot.test/api/computer/missing/preview", {
       method: "POST",
       headers: {
         cookie: "openbot_access=valid-token",
@@ -83,7 +83,7 @@ describe("owner authentication", () => {
     });
     expect(accepted.status).toBe(404);
 
-    const bearer = await app.request("https://openbot.test/rpc/missing", {
+    const bearer = await app.request("https://openbot.test/api/computer/missing/preview", {
       method: "POST",
       headers: { authorization: "Bearer valid-token" },
     });

@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
-const controlPort = 14_100;
-const webPort = 14_173;
+const controlPort = Number.parseInt(process.env.PLAYWRIGHT_CONTROL_PORT ?? "14100", 10);
+const webPort = Number.parseInt(process.env.PLAYWRIGHT_WEB_PORT ?? "14173", 10);
 const webOrigin = `http://127.0.0.1:${webPort}`;
 
 export default defineConfig({

@@ -1,8 +1,6 @@
 import type { AgentProvider } from "@tryopenbot/agent-provider";
 import type { AgentServiceProvider } from "@tryopenbot/agent-service-provider";
 import type { DeployableProvider } from "@tryopenbot/runtime-provider";
-import type { SkillProvider } from "@tryopenbot/skills-provider";
-import type { ToolProvider } from "@tryopenbot/tools-provider";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { formatAgentLifecycleProgress, reconcileAgentResources } from "./agent-lifecycle.js";
 
@@ -19,7 +17,7 @@ vi.mock("@tryopenbot/agent-service-provider", async (importOriginal) => ({
 }));
 
 describe("agent resource lifecycle", () => {
-  it("runs check, build, and deploy per agent in skills, tools, agent order", async () => {
+  it("runs the aggregate agent-resource lifecycle once per agent", async () => {
     const calls: string[] = [];
     const provider = (id: string): DeployableProvider => ({
       buildable: {
@@ -48,8 +46,6 @@ describe("agent resource lifecycle", () => {
       environment: {},
       devMode: true,
       providers: {
-        skills: provider("skills") as SkillProvider,
-        tools: provider("tools") as ToolProvider,
         agent: provider("agent") as AgentProvider,
         agentService: {
           baseUrl: vi.fn(() => new URL("http://127.0.0.1:4100")),
@@ -58,17 +54,7 @@ describe("agent resource lifecycle", () => {
       },
     });
 
-    expect(calls).toEqual([
-      "skills.check",
-      "skills.build",
-      "skills.deploy",
-      "tools.check",
-      "tools.build",
-      "tools.deploy",
-      "agent.check",
-      "agent.build",
-      "agent.deploy",
-    ]);
+    expect(calls).toEqual(["agent.check", "agent.build", "agent.deploy"]);
   });
 
   it("formats concise per-agent progress", () => {
@@ -98,8 +84,6 @@ describe("agent resource lifecycle", () => {
       devMode: true,
       agentServiceOrigin: "https://local.trytilde-sb.com/",
       providers: {
-        skills: {} as SkillProvider,
-        tools: {} as ToolProvider,
         agent: {
           deployable: { plan: async () => ({ summary: "agent" }), deploy },
         } as AgentProvider,
@@ -112,9 +96,9 @@ describe("agent resource lifecycle", () => {
   });
 
   it("attributes an agent reconciliation failure to its provider implementation", async () => {
-    class VercelToolProvider {
+    class TildeAgentProvider {
       readonly deployable = {
-        plan: async () => ({ summary: "tools" }),
+        plan: async () => ({ summary: "agent resources" }),
         deploy: async () => {
           throw new Error("authentication error: Invalid API key");
         },
@@ -127,16 +111,14 @@ describe("agent resource lifecycle", () => {
         environment: {},
         devMode: true,
         providers: {
-          skills: {} as SkillProvider,
-          tools: new VercelToolProvider() as ToolProvider,
-          agent: {} as AgentProvider,
+          agent: new TildeAgentProvider() as AgentProvider,
           agentService: {
             baseUrl: () => new URL("http://127.0.0.1:4100"),
           } as unknown as AgentServiceProvider,
         },
       }),
     ).rejects.toThrow(
-      "authentication error: Invalid API key (occurred in the Vercel implementation of the Tools Provider)",
+      "authentication error: Invalid API key (occurred in the Tilde implementation of the Agent Provider)",
     );
   });
 });

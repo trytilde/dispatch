@@ -134,7 +134,6 @@ describe("OpenBot initialization", () => {
       const configuration = await readFile(join(repositoryRoot, "configuration/index.ts"), "utf8");
       expect(configuration).toContain("providers: {");
       expect(configuration).toContain("controlService: new LocalControlServiceProvider()");
-      expect(configuration).toContain("chat: new TildeChatProvider(tilde)");
       expect(configuration).toContain("agent: new TildeAgentProvider(tilde)");
       expect(configuration).toContain("inference: new VercelInferenceProvider(vercel)");
       expect(configuration).not.toContain("inferenceModel");
@@ -460,11 +459,8 @@ export default {
   providers: {
     controlService: {},
     agentService: {},
-    chat: {},
     agent: new TildeAgentProvider(),
     computer: {},
-    skills: {},
-    tools: {},
   },
 };
 `,

@@ -11,6 +11,7 @@ import {
   VercelAgentServiceProvider,
 } from "@tryopenbot/agent-service-provider";
 import { TildeAuthProvider } from "@tryopenbot/auth-provider";
+import { tildeAgentProviderInitialization } from "@tryopenbot/agent-provider";
 import type {
   OpenBotConfiguration,
   SopsOwnerIdentityConfiguration,
@@ -28,7 +29,6 @@ import {
 } from "@tryopenbot/runtime-provider";
 import { VercelInferenceProvider } from "@tryopenbot/inference-provider";
 import { tildePlatform } from "@tryopenbot/platform-integrations";
-import { tildeToolProviderInitialization } from "@tryopenbot/tools-provider";
 import {
   LocalControlServiceProvider,
   VercelControlServiceProvider,
@@ -1345,7 +1345,7 @@ function applicationInitializationProviders(
     new TildeAuthProvider(tildePlatform),
     {
       platforms: [tildePlatform],
-      initialization: tildeToolProviderInitialization,
+      initialization: tildeAgentProviderInitialization,
     },
     new VercelInferenceProvider(),
   ];
@@ -1411,12 +1411,9 @@ function configuredProviders(configuration: OpenBotConfiguration): Initializable
     configuration.providers.auth,
     configuration.providers.controlService,
     configuration.providers.agentService,
-    configuration.providers.chat,
     configuration.providers.agent,
     configuration.providers.computer,
     configuration.providers.inference,
-    configuration.providers.skills,
-    configuration.providers.tools,
   ];
   return providers.filter((provider): provider is InitializableProvider => provider !== undefined);
 }
@@ -1438,14 +1435,7 @@ function compatibleInitializationProvider(provider: InitializableProvider): Init
     case "VercelSandboxComputerProvider":
       return new VercelSandboxComputerProvider();
     case "TildeAgentProvider":
-    case "TildeChatProvider":
-    case "TildeSkillProvider":
       return { platforms: [tildePlatform] };
-    case "TildeToolProvider":
-      return {
-        platforms: [tildePlatform],
-        initialization: tildeToolProviderInitialization,
-      };
     default:
       return provider;
   }

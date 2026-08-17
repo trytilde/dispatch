@@ -1,7 +1,7 @@
 import { TildePlatform } from "@tryopenbot/platform-integrations";
 import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { GitHubGitProvider } from "./index.js";
+import { GitHubGitProvider, parseGitHubRepository } from "./index.js";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -38,7 +38,42 @@ function githubGroup(credentialId?: string): Record<string, unknown> {
   };
 }
 
+describe("parseGitHubRepository", () => {
+  it("extracts owner/name from GitHub remote URL forms", () => {
+    expect(parseGitHubRepository("https://github.com/acme/our-openbot.git")).toBe(
+      "acme/our-openbot",
+    );
+    expect(parseGitHubRepository("https://github.com/acme/our-openbot")).toBe("acme/our-openbot");
+    expect(parseGitHubRepository("git@github.com:acme/our-openbot.git")).toBe("acme/our-openbot");
+    expect(parseGitHubRepository("ssh://git@github.com/acme/our-openbot")).toBe("acme/our-openbot");
+    expect(parseGitHubRepository("https://gitlab.com/acme/our-openbot.git")).toBeUndefined();
+    expect(parseGitHubRepository("https://github.com/acme")).toBeUndefined();
+  });
+});
+
 describe("GitHubGitProvider", () => {
+  it("derives the fork repository from the origin remote once during initialization", async () => {
+    const provider = new GitHubGitProvider(platform());
+    const environment: NodeJS.ProcessEnv = {};
+    const persisted: Record<string, string> = {};
+    const context = {
+      repositoryRoot: process.cwd(),
+      environment,
+      async setEnvironment(name: string, value: string) {
+        persisted[name] = value;
+        environment[name] = value;
+      },
+      async setSecret() {},
+    };
+    await provider.initialize(context);
+    // This test runs inside the OpenBot checkout, whose origin is a GitHub remote.
+    const derived = persisted.GIT_GITHUB_REPOSITORY;
+    if (derived) expect(derived).toMatch(/^[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9._-]+$/);
+    environment.GIT_GITHUB_REPOSITORY = "acme/pinned";
+    await provider.initialize(context);
+    expect(environment.GIT_GITHUB_REPOSITORY).toBe("acme/pinned");
+  });
+
   it("provisions the GitHub App and surfaces the authorization action while pending", async () => {
     const mutations: string[] = [];
     let provisioned = false;

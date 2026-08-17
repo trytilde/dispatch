@@ -1,9 +1,12 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { TildePlatform } from "@tryopenbot/platform-integrations";
 import { tildeErrorMessage } from "@tryopenbot/platform-integrations/tilde/errors";
 import type {
   DeploymentContext,
   DeploymentPlan,
   ProviderInitialization,
+  ProviderInitializationContext,
 } from "@tryopenbot/runtime-provider";
 import { persistEnvironment } from "@tryopenbot/runtime-provider";
 import {
@@ -40,20 +43,7 @@ export const gitHubGitProviderInitialization: ProviderInitialization = {
   id: "github-git",
   label: "GitHub",
   description: "Connect the GitHub repository that holds this OpenBot fork.",
-  questions: [
-    {
-      id: "github-repository",
-      prompt: "GitHub repository (owner/name)",
-      description: "Fork or mirror of trytilde/openbot that this installation commits to.",
-      input: "text",
-      required: true,
-      destination: { kind: "environment", key: githubRepositoryEnvironmentName },
-      validation: {
-        pattern: "^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?/[A-Za-z0-9._-]+$",
-        message: "Use the owner/name form, such as acme/openbot.",
-      },
-    },
-  ],
+  questions: [],
 };
 
 /**
@@ -77,6 +67,18 @@ export class GitHubGitProvider implements GitProvider {
   constructor(platform: TildePlatform) {
     this.platform = platform;
     this.platforms = [platform];
+  }
+
+  /** Derive the fork repository from the checkout's origin remote instead of asking again. */
+  async initialize(context: ProviderInitializationContext): Promise<void> {
+    if (context.environment[githubRepositoryEnvironmentName]?.trim()) return;
+    const repository = await originGitHubRepository(context.repositoryRoot);
+    if (!repository) return;
+    await context.setEnvironment(
+      githubRepositoryEnvironmentName,
+      repository,
+      "GitHub repository (owner/name) holding this OpenBot fork.",
+    );
   }
 
   async #plan(_context: DeploymentContext): Promise<DeploymentPlan> {
@@ -303,6 +305,30 @@ function reportBrokerAction(
       event: "git.github.authorization.required",
       details: { url: action.Redirect.url },
     });
+}
+
+const runGit = promisify(execFile);
+
+async function originGitHubRepository(repositoryRoot: string): Promise<string | undefined> {
+  let url: string;
+  try {
+    const { stdout } = await runGit("git", ["-C", repositoryRoot, "remote", "get-url", "origin"], {
+      encoding: "utf8",
+    });
+    url = stdout.trim();
+  } catch {
+    return undefined;
+  }
+  return parseGitHubRepository(url);
+}
+
+/** Extract owner/name from a GitHub HTTPS or SSH remote URL; undefined for other hosts. */
+export function parseGitHubRepository(url: string): string | undefined {
+  const match =
+    /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\/[A-Za-z0-9._-]+?)(?:\.git)?\/?$/.exec(
+      url.trim(),
+    );
+  return match?.[1];
 }
 
 function gitError(operation: string, error: unknown): GitProviderError {

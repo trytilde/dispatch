@@ -170,46 +170,72 @@ describe("GitHubGitProvider", () => {
     expect(mutations).toEqual(["auto-provision", "provisioning-start"]);
   });
 
-  it("materializes the GitHub App Manifest form post as an auto-submitting page", async () => {
-    const { mkdtemp, readFile } = await import("node:fs/promises");
-    const { tmpdir } = await import("node:os");
-    const { join } = await import("node:path");
-    const repositoryRoot = await mkdtemp(join(tmpdir(), "openbot-git-provider-"));
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-        const request = input instanceof Request ? input : new Request(input, init);
-        const path = new URL(request.url).pathname;
-        if (request.method === "GET" && path.endsWith("/mcp/tool-group"))
-          return Response.json({ items: [githubGroup()] });
-        if (request.method === "POST" && path.endsWith("/credential/provider-provisioning/start"))
-          return Response.json({
-            next_action: {
-              type: "render_form_post",
-              action_url: "https://github.test/settings/apps/new?state=state-one",
-              fields: { manifest: { name: "OpenBot GitHub", url: "https://tilde.test" } },
-            },
-            state_id: "state-one",
-          });
-        throw new Error(`Unexpected request: ${request.method} ${path}`);
-      }),
-    );
-    const details: Record<string, unknown>[] = [];
-    const context = {
-      ...deploymentContext(),
-      repositoryRoot,
-      report: ({ event, details: eventDetails }: { event: string; details?: object }) => {
-        if (event === "git.github.authorization.required") details.push({ ...eventDetails });
-      },
+  it("serves the manifest form locally and polls until authorization completes", async () => {
+    let pageFetched = false;
+    const events: { event: string; details?: Record<string, unknown> }[] = [];
+    const stubRequest = (async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(input, init);
+      const path = new URL(request.url).pathname;
+      if (request.method === "GET" && path.endsWith("/mcp/tool-group"))
+        return Response.json({
+          items: [githubGroup(pageFetched ? "credential-github" : undefined)],
+        });
+      if (request.method === "POST" && path.endsWith("/credential/provider-provisioning/start"))
+        return Response.json({
+          next_action: {
+            type: "render_form_post",
+            action_url: "https://github.com/settings/apps/new?state=state-one",
+            fields: { manifest: { name: "Acme OpenBot", url: "https://tilde.test" } },
+          },
+          state_id: "state-one",
+        });
+      throw new Error(`Unexpected request: ${request.method} ${path}`);
+    }) as typeof fetch;
+    const environment: NodeJS.ProcessEnv = {
+      GIT_GITHUB_REPOSITORY: "acme/our-openbot",
+      GIT_GITHUB_APP_NAME: "Acme OpenBot",
+      GIT_GITHUB_APP_ORGANIZATION: "acme-org",
+      TILDE_API_KEY: "secret",
+      TILDE_ORG_ID: "org-one",
+      TILDE_TEAM_ID: "team-one",
+      TILDE_BASE_URL: "https://tilde.test",
     };
-    const provider = new GitHubGitProvider(platform());
-    await provider.deployable.deploy(context);
-    const formPath = details[0]?.formPath as string;
-    expect(formPath).toContain(".openbot-deploy");
-    const page = await readFile(formPath, "utf8");
-    expect(page).toContain('action="https://github.test/settings/apps/new?state=state-one"');
-    expect(page).toContain("&quot;OpenBot GitHub&quot;");
+    const context = {
+      repositoryRoot: "/repo",
+      environment,
+      interactive: true,
+      request: stubRequest,
+      report: ({ event, details }: { event: string; details?: Record<string, unknown> }) => {
+        events.push({ event, ...(details ? { details } : {}) });
+      },
+      async setEnvironment(name: string, value: string) {
+        environment[name] = value;
+      },
+      async setSecret() {},
+    };
+    const provider = new GitHubGitProvider(platform(), {
+      pollIntervalMs: 10,
+      authorizationTimeoutMs: 5_000,
+    });
+    const initialized = provider.initialize(context);
+    const localUrl = await vi.waitFor(() => {
+      const required = events.find((entry) => entry.event === "git.github.authorization.required");
+      const url = required?.details?.url;
+      if (typeof url !== "string") throw new Error("authorization URL not reported yet");
+      return url;
+    });
+    expect(localUrl).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/$/);
+    const page = await (await fetch(localUrl)).text();
+    expect(page).toContain(
+      'action="https://github.com/organizations/acme-org/settings/apps/new?state=state-one"',
+    );
+    expect(page).toContain("&quot;Acme OpenBot&quot;");
     expect(page).toContain("document.forms[0].submit()");
+    pageFetched = true;
+    await initialized;
+    expect(events.map((entry) => entry.event)).toContain("git.github.authorized");
+    expect(environment.GIT_GITHUB_TOOL_GROUP_ID).toBe("github-group");
+    await expect(fetch(localUrl)).rejects.toThrow();
   });
 
   it("idempotently reconciles reverse-proxy profiles once the credential is connected", async () => {

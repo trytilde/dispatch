@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { createServer } from "node:http";
+import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
 import { TildePlatform } from "@tryopenbot/platform-integrations";
 import { tildeErrorMessage } from "@tryopenbot/platform-integrations/tilde/errors";
@@ -28,6 +28,8 @@ import type { GitProvider } from "../core.js";
 import { GitProviderError } from "../core.js";
 
 export const githubRepositoryEnvironmentName = "GIT_GITHUB_REPOSITORY";
+export const githubAppNameEnvironmentName = "GIT_GITHUB_APP_NAME";
+export const githubAppOrganizationEnvironmentName = "GIT_GITHUB_APP_ORGANIZATION";
 export const githubCredentialEnvironmentName = "GIT_GITHUB_CREDENTIAL_ID";
 export const githubToolGroupEnvironmentName = "GIT_GITHUB_TOOL_GROUP_ID";
 export const githubRestProxyEnvironmentName = "GIT_GITHUB_REST_PROXY_PROFILE_ID";
@@ -45,7 +47,26 @@ export const gitHubGitProviderInitialization: ProviderInitialization = {
   id: "github-git",
   label: "GitHub",
   description: "Connect the GitHub repository that holds this OpenBot fork.",
-  questions: [],
+  questions: [
+    {
+      id: "github-app-name",
+      prompt: "GitHub App name",
+      description:
+        "Name of the GitHub App created for this installation. GitHub App names are globally unique, so include something identifying; GitHub lets you adjust it on the creation page.",
+      defaultValue: "OpenBot",
+      input: "text",
+      required: true,
+      destination: { kind: "environment", key: githubAppNameEnvironmentName },
+    },
+    {
+      id: "github-app-organization",
+      prompt: "GitHub organization for the App (blank for your personal account)",
+      description:
+        "GitHub organization that will own and install the App. Leave blank to create it on the authorizing user's account.",
+      input: "text",
+      destination: { kind: "environment", key: githubAppOrganizationEnvironmentName },
+    },
+  ],
 };
 
 /**
@@ -65,10 +86,17 @@ export class GitHubGitProvider implements GitProvider {
     plan: (context: DeploymentContext) => this.#plan(context),
     deploy: (context: DeploymentContext) => this.#deploy(context),
   };
+  readonly #pollIntervalMs: number;
+  readonly #authorizationTimeoutMs: number;
 
-  constructor(platform: TildePlatform) {
+  constructor(
+    platform: TildePlatform,
+    options: { pollIntervalMs?: number; authorizationTimeoutMs?: number } = {},
+  ) {
     this.platform = platform;
     this.platforms = [platform];
+    this.#pollIntervalMs = options.pollIntervalMs ?? 5_000;
+    this.#authorizationTimeoutMs = options.authorizationTimeoutMs ?? 600_000;
   }
 
   /**
@@ -95,25 +123,75 @@ export class GitHubGitProvider implements GitProvider {
         throwOnError: true,
         ...(context.request ? { fetch: context.request } : {}),
       });
-      const group = await ensureGitHubAppProvisioning({
+      const request: GitHubProvisioningRequest = {
         api,
         teamId: connection.teamId,
-        repositoryRoot: context.repositoryRoot,
         environment: context.environment,
         report,
-      });
+        interactive: context.interactive === true,
+        actions: [],
+      };
+      let group = await ensureGitHubAppProvisioning(request);
       if (group)
         await context.setEnvironment(
           githubToolGroupEnvironmentName,
           group.id,
           "Tilde GitHub tool group instance ID.",
         );
+      const action = request.actions.at(-1);
+      if (group && !group.resource_server_credential_id && request.interactive && action) {
+        group = await this.#interactiveAuthorization(request, action);
+        if (group?.resource_server_credential_id)
+          report({ event: "git.github.authorized", details: { toolGroupId: group.id } });
+        else
+          report({
+            event: "git.github.pending",
+            details: { reason: "GitHub authorization has not completed yet" },
+          });
+      }
     } catch (error) {
       // GitHub provisioning is finished by the deployment lifecycle; never fail init on it.
       report({
         event: "git.github.initialize.skipped",
         details: { reason: tildeErrorMessage(error, "unknown error") },
       });
+    }
+  }
+
+  /** Serve the authorization action locally and poll until the credential connects. */
+  async #interactiveAuthorization(
+    request: GitHubProvisioningRequest,
+    action: ProviderProvisioningNextAction,
+  ): Promise<ToolGroupInstanceSerialized | undefined> {
+    let close: (() => void) | undefined;
+    let url: string | undefined;
+    if (action.type === "redirect") {
+      url = action.url;
+    } else if (action.type === "render_form_post") {
+      const page = authorizationFormPage(
+        organizationActionUrl(action.action_url, request.environment),
+        action.fields,
+      );
+      const served = await serveAuthorizationPage(page);
+      close = served.close;
+      url = served.url;
+    }
+    if (!url) return undefined;
+    request.report({ event: "git.github.authorization.required", details: { url } });
+    request.report({
+      event: "git.github.authorization.waiting",
+      details: { timeoutMs: this.#authorizationTimeoutMs },
+    });
+    try {
+      const deadline = Date.now() + this.#authorizationTimeoutMs;
+      while (Date.now() < deadline) {
+        await delay(this.#pollIntervalMs);
+        const group = await findGitHubToolGroup(request.api, request.teamId);
+        if (group?.resource_server_credential_id) return group;
+      }
+      return undefined;
+    } finally {
+      close?.();
     }
   }
 
@@ -136,9 +214,10 @@ export class GitHubGitProvider implements GitProvider {
       let group = await ensureGitHubAppProvisioning({
         api,
         teamId,
-        repositoryRoot: context.repositoryRoot,
         environment: context.environment,
         report: context.report,
+        interactive: false,
+        actions: [],
       });
       if (!group) {
         context.report({
@@ -245,9 +324,12 @@ type TildeApi = ReturnType<typeof createTildeApiClient>;
 interface GitHubProvisioningRequest {
   api: TildeApi;
   teamId: string;
-  repositoryRoot: string;
   environment: NodeJS.ProcessEnv;
   report: DeploymentReporter;
+  /** When an owner is present, pending actions are handled locally instead of only reported. */
+  interactive: boolean;
+  /** Pending authorization actions captured for interactive handling. */
+  actions: ProviderProvisioningNextAction[];
 }
 
 /**
@@ -307,7 +389,23 @@ async function resumeGitHubAppProvisioning(
 }
 
 function githubAppDisplayName(environment: NodeJS.ProcessEnv): string {
+  const configured = environment[githubAppNameEnvironmentName]?.trim();
+  if (configured) return configured;
   return `${environment.OPENBOT_DEPLOYMENT_NAME?.trim() || "OpenBot"} GitHub`;
+}
+
+/** GitHub's manifest flow targets an organization through its dedicated creation URL. */
+export function organizationActionUrl(actionUrl: string, environment: NodeJS.ProcessEnv): string {
+  const organization = environment[githubAppOrganizationEnvironmentName]?.trim();
+  if (!organization) return actionUrl;
+  try {
+    const url = new URL(actionUrl);
+    if (url.hostname !== "github.com" || url.pathname !== "/settings/apps/new") return actionUrl;
+    url.pathname = `/organizations/${organization}/settings/apps/new`;
+    return url.toString();
+  } catch {
+    return actionUrl;
+  }
 }
 
 function tildePublicBaseUrl(environment: NodeJS.ProcessEnv): string {
@@ -364,6 +462,8 @@ async function surfaceProvisioningAction(
   request: GitHubProvisioningRequest,
   action: ProviderProvisioningNextAction,
 ): Promise<void> {
+  request.actions.push(action);
+  if (request.interactive && action.type !== "render_instructions") return;
   if (action.type === "redirect") {
     request.report({ event: "git.github.authorization.required", details: { url: action.url } });
   } else if (action.type === "render_instructions") {
@@ -372,26 +472,19 @@ async function surfaceProvisioningAction(
       details: { instructions: action.markdown },
     });
   } else if (action.type === "render_form_post") {
-    // The GitHub App Manifest flow is a browser form POST; materialize an auto-submitting page.
-    const path = await writeAuthorizationFormPage(
-      request.repositoryRoot,
-      action.action_url,
-      action.fields,
-    );
+    // A browser form POST cannot be followed from a log line; point the owner at init.
     request.report({
       event: "git.github.authorization.required",
-      details: { formPath: path, url: action.action_url },
+      details: {
+        url: action.action_url,
+        hint: "Run openbot init in an interactive terminal to complete the GitHub App authorization.",
+      },
     });
   }
 }
 
-async function writeAuthorizationFormPage(
-  repositoryRoot: string,
-  actionUrl: string,
-  fields: unknown,
-): Promise<string> {
-  const directory = resolve(repositoryRoot, ".openbot-deploy");
-  const path = resolve(directory, "github-app-authorization.html");
+/** Auto-submitting page for GitHub's App Manifest form POST. */
+export function authorizationFormPage(actionUrl: string, fields: unknown): string {
   const entries = Object.entries((fields ?? {}) as Record<string, unknown>);
   const inputs = entries
     .map(([name, value]) => {
@@ -399,7 +492,7 @@ async function writeAuthorizationFormPage(
       return `    <input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(serialized)}" />`;
     })
     .join("\n");
-  const page = [
+  return [
     "<!doctype html>",
     '<meta charset="utf-8" />',
     "<title>Authorize the OpenBot GitHub App</title>",
@@ -412,9 +505,29 @@ async function writeAuthorizationFormPage(
     "</body>",
     "",
   ].join("\n");
-  await mkdir(directory, { recursive: true });
-  await writeFile(path, page, { mode: 0o600 });
-  return path;
+}
+
+/** Serve one authorization page on an ephemeral loopback port. */
+async function serveAuthorizationPage(page: string): Promise<{ url: string; close: () => void }> {
+  const server = createServer((incoming, response) => {
+    if ((incoming.url ?? "/") === "/") {
+      response.writeHead(200, {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "no-store",
+      });
+      response.end(page);
+      return;
+    }
+    response.writeHead(404);
+    response.end();
+  });
+  await new Promise<void>((resolveListen, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolveListen);
+  });
+  const address = server.address();
+  const port = typeof address === "object" && address ? address.port : 0;
+  return { url: `http://127.0.0.1:${port}/`, close: () => void server.close() };
 }
 
 function escapeHtml(value: string): string {

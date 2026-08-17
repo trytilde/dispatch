@@ -351,7 +351,7 @@ describe("OpenBot initialization", () => {
 
     expect(calls.at(-1)).toMatchObject({ command: "vp", args: ["install"] });
 
-    expect(promptInput).toHaveBeenCalledTimes(12);
+    expect(promptInput).toHaveBeenCalledTimes(14);
     const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
     expect(environment).not.toContain("RUNTIME_PROVIDER");
     expect(environment).toContain('VERCEL_CONTROL_PROJECT="openbot-control"');

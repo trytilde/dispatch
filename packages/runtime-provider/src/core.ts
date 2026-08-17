@@ -83,6 +83,8 @@ export interface ProviderInitializationContext {
   repositoryRoot: string;
   environment: NodeJS.ProcessEnv;
   request?: typeof fetch;
+  /** Whether an owner is present at an interactive terminal to complete pending actions. */
+  interactive?: boolean;
   /** Owner-visible progress and pending-action events, such as an authorization URL. */
   report?: DeploymentReporter;
   setEnvironment(name: string, value: string, description: string): Promise<void>;

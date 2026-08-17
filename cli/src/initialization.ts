@@ -253,6 +253,7 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   await runInitializationProvisioning(selectedProviders, options.repositoryRoot, {
     baseEnvironment: options.environment ?? process.env,
     environmentValues,
+    interactive: options.interactive !== false,
     request: options.request,
     secretValues,
   });
@@ -396,6 +397,7 @@ async function reconfigureOpenBot(
     },
     secretValues: state.secretValues,
     environmentUpdates: environmentValues,
+    interactive: options.interactive !== false,
     request: options.request,
   });
 
@@ -1362,6 +1364,7 @@ async function runInitializationProvisioning(
     secretValues: Record<string, DescribedValue>;
     environmentUpdates?: Record<string, DescribedValue>;
     request?: typeof fetch;
+    interactive?: boolean;
   },
 ): Promise<void> {
   const environment = {
@@ -1380,6 +1383,7 @@ async function runInitializationProvisioning(
     repositoryRoot,
     environment,
     request: values.request,
+    interactive: values.interactive === true,
     report: reportInitializationEvent,
     async setEnvironment(name, value, description) {
       (values.environmentUpdates ?? values.environmentValues)[name] = { description, value };
@@ -1402,18 +1406,23 @@ function reportInitializationEvent({
 }): void {
   if (event === "git.github.authorization.required") {
     const url = typeof details.url === "string" ? details.url : undefined;
-    const formPath = typeof details.formPath === "string" ? details.formPath : undefined;
+    const hint = typeof details.hint === "string" ? details.hint : "";
     const instructions = typeof details.instructions === "string" ? details.instructions : "";
-    const action = formPath
-      ? `:\n  Open this page in your browser to create and install the GitHub App:\n  ${formPath}`
-      : url
-        ? `:\n  ${url}`
-        : ".";
     process.stdout.write(
-      `\nGitHub authorization required${action}\n${
-        instructions ? `${instructions}\n` : ""
-      }The next openbot dev or deploy run finishes GitHub setup afterward.\n`,
+      `\nGitHub authorization required. Open this link to create and install the GitHub App:\n${
+        url ? `  ${url}\n` : ""
+      }${instructions ? `${instructions}\n` : ""}${hint ? `${hint}\n` : ""}`,
     );
+    return;
+  }
+  if (event === "git.github.authorization.waiting") {
+    process.stdout.write(
+      "Waiting for the GitHub App authorization to complete… (Ctrl+C to skip; openbot dev or deploy resumes it)\n",
+    );
+    return;
+  }
+  if (event === "git.github.authorized") {
+    process.stdout.write("GitHub App connected.\n");
     return;
   }
   process.stdout.write(

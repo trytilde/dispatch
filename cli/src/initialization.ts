@@ -37,11 +37,6 @@ import {
 import { materializeFileTemplate, renderFileTemplatePath } from "@tryopenbot/utilities";
 import { scaffoldAgentTemplates, scaffoldPrimaryAgent } from "./agent-scaffold.js";
 import { loadConfigurationModule } from "./configuration-loader.js";
-import {
-  createGitHubAuthorizationPanel,
-  openInBrowser,
-  type GitHubAuthorizationPanelController,
-} from "./ui.js";
 
 export const SANDBOX_SOPS_AGE_KEY = "SOPS_AGE_KEY";
 const COMPUTER_SERVICE_SECRET = "COMPUTER_SERVICE_API_KEY";
@@ -111,7 +106,14 @@ export interface InitializationOptions {
   interactive?: boolean;
   userConfigurationPath?: string;
   request?: typeof fetch;
+  /** Renders provider provisioning events; defaults to plain standard output lines. */
+  report?: InitializationEventReporter;
 }
+
+export type InitializationEventReporter = (event: {
+  event: string;
+  details?: Readonly<Record<string, unknown>>;
+}) => void;
 
 interface AgeIdentity {
   recipient: string;
@@ -259,6 +261,7 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
     baseEnvironment: options.environment ?? process.env,
     environmentValues,
     interactive: options.interactive !== false,
+    report: options.report,
     request: options.request,
     secretValues,
   });
@@ -403,6 +406,7 @@ async function reconfigureOpenBot(
     secretValues: state.secretValues,
     environmentUpdates: environmentValues,
     interactive: options.interactive !== false,
+    report: options.report,
     request: options.request,
   });
 
@@ -1370,6 +1374,7 @@ async function runInitializationProvisioning(
     environmentUpdates?: Record<string, DescribedValue>;
     request?: typeof fetch;
     interactive?: boolean;
+    report?: InitializationEventReporter;
   },
 ): Promise<void> {
   const environment = {
@@ -1389,7 +1394,7 @@ async function runInitializationProvisioning(
     environment,
     request: values.request,
     interactive: values.interactive === true,
-    report: reportInitializationEvent,
+    report: values.report ?? plainInitializationReporter,
     async setEnvironment(name, value, description) {
       (values.environmentUpdates ?? values.environmentValues)[name] = { description, value };
       environment[name] = value;
@@ -1401,10 +1406,8 @@ async function runInitializationProvisioning(
   });
 }
 
-let githubAuthorizationPanel: GitHubAuthorizationPanelController | undefined;
-
-/** Surface provider provisioning events, such as a pending authorization URL, to the owner. */
-function reportInitializationEvent({
+/** Plain standard-output rendering of provider provisioning events. */
+export function plainInitializationReporter({
   event,
   details = {},
 }: {
@@ -1415,12 +1418,6 @@ function reportInitializationEvent({
     const url = typeof details.url === "string" ? details.url : undefined;
     const hint = typeof details.hint === "string" ? details.hint : "";
     const instructions = typeof details.instructions === "string" ? details.instructions : "";
-    if (url && !hint && !instructions) {
-      githubAuthorizationPanel?.close();
-      githubAuthorizationPanel = createGitHubAuthorizationPanel(url);
-      openInBrowser(url);
-      return;
-    }
     process.stdout.write(
       `\nGitHub authorization required. Open this link to create and install the GitHub App:\n${
         url ? `  ${url}\n` : ""
@@ -1429,33 +1426,12 @@ function reportInitializationEvent({
     return;
   }
   if (event === "git.github.authorization.waiting") {
-    // The authorization panel already renders the waiting state.
-    if (!githubAuthorizationPanel)
-      process.stdout.write("Waiting for the GitHub App authorization to complete…\n");
+    process.stdout.write("Waiting for the GitHub App authorization to complete…\n");
     return;
   }
   if (event === "git.github.authorized") {
-    if (githubAuthorizationPanel) {
-      githubAuthorizationPanel.succeed();
-      githubAuthorizationPanel = undefined;
-      return;
-    }
     process.stdout.write("GitHub App connected.\n");
     return;
-  }
-  if (event === "git.github.pending" && githubAuthorizationPanel) {
-    const reason = typeof details.reason === "string" ? details.reason : undefined;
-    githubAuthorizationPanel.timeout(
-      reason
-        ? `${reason}; openbot dev or deploy resumes authorization.`
-        : "Authorization not completed yet; openbot dev or deploy resumes it.",
-    );
-    githubAuthorizationPanel = undefined;
-    return;
-  }
-  if (event === "git.github.initialize.skipped" && githubAuthorizationPanel) {
-    githubAuthorizationPanel.close();
-    githubAuthorizationPanel = undefined;
   }
   process.stdout.write(
     `${event}${Object.keys(details).length ? ` ${JSON.stringify(details)}` : ""}\n`,

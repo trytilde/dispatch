@@ -25,9 +25,12 @@ Prompt each sub-agent with a separate technical brief (file paths, coupling deta
 - Agent 1: "Minimize the interface — aim for 1–3 entry points max. Maximise leverage per entry point."
 - Agent 2: "Maximise flexibility — support many use cases and extension."
 - Agent 3: "Optimise for the most common caller — make the default case trivial."
+- Agent 3b (client-facing modules): "Design from the Expo and React Native caller first, then show the web caller falls out of it."
 - Agent 4 (if applicable): "Design around ports & adapters for cross-seam dependencies."
 
 Include both [LANGUAGE.md](LANGUAGE.md) vocabulary and CONTEXT.md vocabulary in the brief so each sub-agent names things consistently with the architecture language and the project's domain language.
+
+When the module is consumed by an owner client, state in the brief that three clients consume it — `apps/web` (React DOM), `apps/mobile` (Expo and React Native), and `apps/desktop` (Electron) — and that the interface lives in `packages/client-runtime` with no React, DOM, Expo, React Native, Electron, or Node import. Require every candidate to show the Expo caller alongside the web caller. An interface that reads well only from a DOM component is not a viable candidate here.
 
 Each sub-agent outputs:
 

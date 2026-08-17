@@ -31,6 +31,7 @@ Look for:
 
 - Connect or Hono handlers owning provider or domain logic.
 - UI code branching on provider-specific behavior.
+- renderer-local wire types, fetch/SSE parsing, or remote snapshots that belong in `packages/client-runtime`; and runtime code holding presentation-only state that belongs in a component.
 - duplicated local and Vercel runtime decisions.
 - database state that belongs to Tilde, environment storage, or a sandbox.
 - provider interfaces shaped around one implementation.

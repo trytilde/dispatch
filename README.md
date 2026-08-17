@@ -81,6 +81,8 @@ The production build stages the web app in the control provider's `.vercel/outpu
 - `packages/control-service-provider` owns local and Vercel control/web builds and deployment.
 - `packages/agent-service-provider` owns Eve-compatible agent-directory discovery, instrumentation startup, concurrent per-agent Vercel bundles, the local agent server, and deployment.
 - `apps/web` owns the workspace, agent selection, conversation composer, and frontend routes.
+- `apps/mobile` owns the Expo and React Native owner surface for authentication, sidebar navigation, and regular chat, built on BNA UI components copied into `apps/mobile/src/components/ui`.
+- `packages/client-runtime` owns grouped UI contracts, Tilde REST/SSE parsing, live-event reducers, and shared Zustand vanilla state without platform APIs. Every major UX surface and state interaction goes through it; renderers keep only presentation-only state.
 - `apps/control-service` owns the portable Hono application, built web UI fallback, `/healthz`, the allowlisted Tilde ChatKit REST/SSE bridge under `/api/chat/*`, and the local control-service entrypoint.
 - `packages/computer-service-proto` owns the API-key-protected internal computer API.
 - No control database is retained while the reset application has no persisted control state.

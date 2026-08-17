@@ -16,11 +16,8 @@ const configuration = Configuration({
     auth: domainProvider as OpenBotProviders["auth"],
     controlService: controlServiceProvider,
     agentService: agentServiceProvider,
-    chat: domainProvider as OpenBotProviders["chat"],
     agent: domainProvider as OpenBotProviders["agent"],
     computer: domainProvider as OpenBotProviders["computer"],
-    skills: domainProvider as OpenBotProviders["skills"],
-    tools: domainProvider as OpenBotProviders["tools"],
   },
 });
 
@@ -32,8 +29,7 @@ describe("repository configuration", () => {
     }));
   it("hashes files deterministically", () =>
     expect(repositoryDigest({ b: "2", a: "1" })).toBe(repositoryDigest({ a: "1", b: "2" })));
-  it("keeps chat and lifecycle providers distinct", () => {
-    expect(configuration.providers.chat).toBe(domainProvider);
+  it("keeps the agent lifecycle provider explicit", () => {
     expect(configuration.providers.agent).toBe(domainProvider);
   });
   it("types user-local SOPS lookup configuration separately", () => {

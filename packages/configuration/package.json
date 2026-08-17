@@ -43,13 +43,10 @@
     "@tryopenbot/agent-provider": "workspace:*",
     "@tryopenbot/agent-service-provider": "workspace:*",
     "@tryopenbot/auth-provider": "workspace:*",
-    "@tryopenbot/chat-provider": "workspace:*",
     "@tryopenbot/computer-provider": "workspace:*",
     "@tryopenbot/control-service-provider": "workspace:*",
     "@tryopenbot/inference-provider": "workspace:*",
-    "@tryopenbot/runtime-provider": "workspace:*",
-    "@tryopenbot/skills-provider": "workspace:*",
-    "@tryopenbot/tools-provider": "workspace:*"
+    "@tryopenbot/runtime-provider": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

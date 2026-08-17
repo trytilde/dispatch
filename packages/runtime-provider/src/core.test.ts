@@ -44,7 +44,7 @@ describe("runtime provider lifecycle", () => {
   });
 
   it("attributes initialization failures to the concrete provider", async () => {
-    class TildeToolProvider {
+    class TildeAgentProvider {
       readonly initialization = { id: "tilde-tools", label: "Tilde tools", questions: [] };
       async initialize() {
         throw new Error("Invalid API key");
@@ -52,14 +52,14 @@ describe("runtime provider lifecycle", () => {
     }
 
     await expect(
-      initializeProviders([new TildeToolProvider()], {
+      initializeProviders([new TildeAgentProvider()], {
         repositoryRoot: "/repository",
         environment: {},
         setEnvironment: async () => undefined,
         setSecret: async () => undefined,
       }),
     ).rejects.toThrow(
-      "Invalid API key (occurred in the Tilde implementation of the Tools Provider)",
+      "Invalid API key (occurred in the Tilde implementation of the Agent Provider)",
     );
   });
 

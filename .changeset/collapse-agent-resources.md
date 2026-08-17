@@ -17,4 +17,4 @@
 "@tryopenbot/web": minor
 ---
 
-Reconcile authored agents, skills, tools, services, and Computers through idempotent provider lifecycles in development and deployment.
+Collapse Tilde agent, skill, registry, MCP, and tool reconciliation into one `AgentProvider` lifecycle, and replace the owner-facing Chat Provider and ConnectRPC projection with the native Tilde REST/SSE bridge.

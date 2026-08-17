@@ -3,7 +3,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { Code, ConnectError } from "@connectrpc/connect";
-import type { ChatProvider } from "@tryopenbot/chat-provider";
 import type { ComputerProvider } from "@tryopenbot/computer-provider";
 import { app, createApp } from "./app.js";
 
@@ -20,16 +19,6 @@ describe("bare OpenBot server", () => {
     const response = await app.request("https://openbot.test/healthz");
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, service: "openbot" });
-  });
-
-  it("federates the empty control namespace", async () => {
-    const response = await app.request(
-      "https://openbot.test/rpc/openbot.control.v1.ControlService/Unknown",
-      {
-        method: "POST",
-      },
-    );
-    expect(response.status).toBe(404);
   });
 
   it("does not expose an API namespace", async () => {
@@ -223,42 +212,6 @@ describe("bare OpenBot server", () => {
       { method: "PUT", body: "proof" },
     );
     expect(rejected.status).toBe(400);
-  });
-
-  it("federates chat operations through the configured provider", async () => {
-    const chatProvider = {
-      async listAgents() {
-        return {
-          items: [
-            {
-              id: "hello-world",
-              displayName: "Hello World",
-              providerId: "test",
-              status: "ready",
-              hasUiEndpoint: true,
-              createdAt: new Date(0),
-              updatedAt: new Date(0),
-            },
-          ],
-        };
-      },
-    } as unknown as ChatProvider;
-    const chatApp = createApp({ chatProvider });
-    const response = await chatApp.request(
-      "https://openbot.test/rpc/openbot.control.v1.ControlService/ListAgents",
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "connect-protocol-version": "1",
-        },
-        body: "{}",
-      },
-    );
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
-      agents: [{ id: "hello-world", displayName: "Hello World", status: "ready" }],
-    });
   });
 
   it("serves built web assets and SPA routes when a web root is available", async () => {

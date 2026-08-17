@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { type Client, type McpServer } from "@trytilde/harness-sdk";
-import { TildePlatform, tildePlatform } from "@tryopenbot/platform-integrations";
+import { TildePlatform } from "@tryopenbot/platform-integrations";
 import { tildeErrorMessage } from "@tryopenbot/platform-integrations/tilde/errors";
 import type { ProviderInitialization } from "@tryopenbot/runtime-provider";
 import { persistEnvironment, type DeploymentContext } from "@tryopenbot/runtime-provider";
@@ -24,43 +24,25 @@ import {
 } from "@trytilde/api-client";
 import type {
   EnsureToolServerRequest,
-  ToolProvider,
   ToolServer,
-  ToolsProviderCallContext,
-} from "./core.js";
-import { providerSignal, ToolsProviderError } from "./core.js";
+  ToolReconciliationContext,
+} from "./tools-types.js";
+import { AgentProviderError } from "../core.js";
+import { reconciliationSignal } from "./tools-types.js";
 
-export type TildeToolProviderConfig = { platform: TildePlatform } | { client: Client };
+export type TildeToolReconcilerConfig = { platform: TildePlatform } | { client: Client };
 
-export const tildeToolProviderInitialization: ProviderInitialization = {
-  id: "tilde-tools",
-  label: "Tilde tools",
+export const tildeAgentProviderInitialization: ProviderInitialization = {
+  id: "tilde-agent-resources",
+  label: "Tilde agent resources",
   questions: [],
 };
 
-export class TildeToolProvider implements ToolProvider {
-  readonly platform: TildePlatform;
-  readonly platforms: readonly TildePlatform[];
-  readonly initialization = tildeToolProviderInitialization;
+export class TildeToolReconciler {
   readonly #client: Client;
   readonly #api: ReturnType<typeof createTildeApiClient>;
   readonly #teamId: string;
-  readonly buildable = {
-    check: async (context: DeploymentContext) => {
-      requireAgent(context);
-    },
-    build: async (_context: DeploymentContext) => undefined,
-  };
-  readonly deployable = {
-    plan: async (context: DeploymentContext) => ({
-      summary: `Reconcile the Tilde MCP server for ${requireAgent(context).id}`,
-    }),
-    deploy: async (context: DeploymentContext) => this.#deploy(context),
-  };
-
-  constructor(config: TildeToolProviderConfig) {
-    this.platform = "platform" in config ? config.platform : tildePlatform;
-    this.platforms = [this.platform];
+  constructor(config: TildeToolReconcilerConfig) {
     this.#client = "platform" in config ? config.platform.client() : config.client;
     const connection = this.#client.config;
     this.#teamId = connection.teamId;
@@ -77,9 +59,9 @@ export class TildeToolProvider implements ToolProvider {
 
   async ensureServer(
     request: EnsureToolServerRequest,
-    context: ToolsProviderCallContext,
+    context: ToolReconciliationContext,
   ): Promise<ToolServer> {
-    providerSignal(context);
+    reconciliationSignal(context);
     const dynamicToolDiscovery = request.dynamicToolDiscovery ?? true;
     try {
       const server = await this.#client.mcp.getServer({ id: request.id });
@@ -108,11 +90,11 @@ export class TildeToolProvider implements ToolProvider {
     }
   }
 
-  async #deploy(context: DeploymentContext): Promise<void> {
+  async deploy(context: DeploymentContext): Promise<void> {
     try {
       await this.#deployResources(context);
     } catch (error) {
-      if (error instanceof ToolsProviderError) throw error;
+      if (error instanceof AgentProviderError) throw error;
       throw toolsError("reconcile Tilde tool resources", error);
     }
   }
@@ -233,7 +215,7 @@ export class TildeToolProvider implements ToolProvider {
   ): Promise<void> {
     const token = context.environment.VERCEL_TOKEN?.trim();
     if (!token)
-      throw new ToolsProviderError(
+      throw new AgentProviderError(
         "invalid_configuration",
         "VERCEL_TOKEN is required to connect the Vercel MCP server",
       );
@@ -377,9 +359,9 @@ function sameVercelServer(
 
 function requireAgent(context: DeploymentContext): { id: string; path: string } {
   if (!context.agentId || !context.agentPath)
-    throw new ToolsProviderError(
+    throw new AgentProviderError(
       "invalid_configuration",
-      "The tools lifecycle requires an agent ID and absolute path",
+      "The agent resource lifecycle requires an agent ID and absolute path",
     );
   return { id: context.agentId, path: context.agentPath };
 }
@@ -397,8 +379,8 @@ function isNotFound(error: unknown): boolean {
   );
 }
 
-function toolsError(operation: string, error: unknown): ToolsProviderError {
-  return new ToolsProviderError(
+function toolsError(operation: string, error: unknown): AgentProviderError {
+  return new AgentProviderError(
     "provider_unavailable",
     `Unable to ${operation} Tilde MCP server: ${tildeErrorMessage(error, "unknown error")}`,
     true,

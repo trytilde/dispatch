@@ -3,7 +3,8 @@
 ## In brief
 
 - Providers serve control APIs, initialization/provisioning, and build/deploy lifecycles.
-- Chat data and agent-resource provisioning are separate domains.
+- Tilde conversation data is consumed through its native REST/SSE API.
+- One agent provider reconciles the complete external footprint of each authored agent.
 - Authored agents import SDKs directly, never provider packages.
 - Remove unused provider methods. No universal provider SDK.
 
@@ -11,7 +12,7 @@
 
 OpenBot originally grouped chat data, external resource provisioning, model selection, prompt injection, tools, skills, and Computer operations behind broad provider contracts. That made providers look like a generic agent plugin system and forced authored agents through abstractions designed for OpenBot's control plane.
 
-The web and desktop need stable control-service operations. Startup and deployment need typed external-resource lifecycles. Authored agents need freedom to use whichever SDKs and services fit their job.
+The web and desktop need access to Tilde-owned conversation state without duplicating Tilde's contract. Startup and deployment need typed external-resource lifecycles. Authored agents need freedom to use whichever SDKs and services fit their job.
 
 ## Decision
 
@@ -24,7 +25,11 @@ A provider operation is valid only when it is consumed by one of these boundarie
 
 Provider contracts live in `src/core.ts` or `src/core/` in the owning domain package. Adapters live beside them. Contracts contain only operations used by those boundaries; speculative and convenience methods are removed.
 
-`chat-provider` owns conversation-facing agent, session, and message operations intended for the control service. `agent-provider` exposes only an idempotent deployment lifecycle; its adapter owns external endpoint lookup, creation, repair, status reconciliation, and removal without leaking vendor CRUD into the CLI. Skills and tools providers provision registries and MCP servers; they do not supply model-facing tools or skill contents at request time. The old model-facing inference-model provider is removed. A narrow `inference-provider` may own initialization and external credential provisioning, but it exposes no model factory and authored agents still import AI SDK providers directly.
+Tilde owns conversation-facing agent, session, message, attachment, queue, and streaming contracts. OpenBot does not project those operations through a Chat Provider or control RPC. The browser uses an allowlisted same-origin REST/SSE bridge that preserves Tilde's request and response shapes while the server supplies team credentials.
+
+`agent-provider` exposes one idempotent deployment lifecycle for the complete external footprint of an authored agent. Its Tilde adapter owns endpoint lookup, creation, repair, status reconciliation, authored-skill synchronization, exact skill-registry membership, dynamic MCP reconciliation, Tilde control-plane tools, and deployment-platform MCP integrations. These are cohesive internal reconcilers, not separately configurable Skills or Tools Providers. The CLI schedules the aggregate lifecycle once per agent and never contains vendor CRUD.
+
+The old model-facing inference-model provider is removed. A narrow `inference-provider` may own initialization and external credential provisioning, but it exposes no model factory and authored agents still import AI SDK providers directly.
 
 Code under `configuration/agent/`, including its `subagents/`, must not import provider packages or `configuration/index.ts`. Agents instantiate model clients, MCP clients, skill clients, Composio, and other SDKs directly. Defaults for future agents live in `configuration/templates/agent/`; existing agents change only through explicit edits.
 
@@ -34,9 +39,10 @@ Shared vendor plumbing used across domains belongs in `platform-integrations`. M
 
 ```mermaid
 flowchart LR
-  UI["Web and desktop"] --> CS["Control service"]
-  CS --> CP["Chat provider"]
-  START["Init, dev, and deploy"] --> AP["Provisioning providers"]
+  UI["Web and desktop"] --> CS["Control REST and SSE bridge"]
+  CS --> CHAT["Tilde ChatKit API"]
+  START["Init, dev, and deploy"] --> AP["Agent provider"]
+  AP --> RES["Agent, skills, tools, and MCP resources"]
   START --> LP["Build and deploy providers"]
   AG["Authored agent"] --> SDK["Direct vendor SDKs"]
   AG --> CT["Computer tools"]
@@ -50,6 +56,7 @@ flowchart LR
 - Adding an agent integration usually changes agent code and its template, not provider interfaces.
 - Shared vendor initialization remains deduplicated without coupling domain providers.
 - Removing a provider operation is expected when no allowed consumer remains.
+- Skills and tools cannot be selected independently from the Tilde agent lifecycle.
 
 ## Updates
 
@@ -61,3 +68,4 @@ flowchart LR
 - 2026-08-14T10:28:18+02:00: Split chat operations from agent provisioning, removed inference and model-facing provider hooks, moved Computer AI tools to a non-provider package, and prohibited provider imports from authored agents.
 - 2026-08-14T10:55:00+02:00: Replaced public agent-resource CRUD with an idempotent `Deployable`; the Tilde adapter now discovers desired agents, reconciles Vercel AI SDK endpoints for development and production, and clears an endpoint before removing a stale managed agent.
 - 2026-08-14T18:40:00+02:00: Removed the Tilde state file from OpenBot's normal lifecycle. Tilde providers now reconcile agents, authored skills, exact registries, dynamic MCP servers, the Tilde control-plane toolkit, and deployment-platform MCP integrations directly through typed APIs. Operators may still use the Tilde CLI manually for one-time team-to-team state migration.
+- 2026-08-16T15:08:39+02:00: Removed Chat, Skills, and Tools Provider packages. Tilde conversation traffic now retains its native REST/SSE contract, while one Agent Provider lifecycle reconciles each authored agent and all of its external skills, tools, and MCP resources.

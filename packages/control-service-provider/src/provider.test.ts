@@ -43,7 +43,7 @@ describe("control service providers", () => {
     );
     await writeFile(
       join(root, "configuration/index.ts"),
-      `import { VercelControlServiceProvider } from ${JSON.stringify(join(process.cwd(), "src/index.ts"))};\nexport default { providers: { chat: {}, controlService: new VercelControlServiceProvider() } };\n`,
+      `import { VercelControlServiceProvider } from ${JSON.stringify(join(process.cwd(), "src/index.ts"))};\nexport default { providers: { controlService: new VercelControlServiceProvider() } };\n`,
     );
     const run = vi.fn<CommandRunner["run"]>(async () => ({ stdout: "", stderr: "" }));
     const result = await buildVercelControlService(
@@ -58,9 +58,14 @@ describe("control service providers", () => {
     );
     const artifact = result.outputs?.["control-service.artifact"];
     expect(artifact).toBe(join(root, ".openbot-deploy/vercel/control"));
-    expect(
-      JSON.parse(await readFile(join(artifact!, ".vercel/output/config.json"), "utf8")),
-    ).toMatchObject({ version: 3 });
+    const outputConfiguration = JSON.parse(
+      await readFile(join(artifact!, ".vercel/output/config.json"), "utf8"),
+    ) as { version: number; routes: Array<{ src?: string; dest?: string }> };
+    expect(outputConfiguration).toMatchObject({ version: 3 });
+    expect(outputConfiguration.routes).toContainEqual({ src: "/api(?:/.*)?", dest: "/control" });
+    expect(outputConfiguration.routes).not.toContainEqual(
+      expect.objectContaining({ src: expect.stringContaining("/rpc") }),
+    );
     const functionSource = await readFile(
       join(artifact!, ".vercel/output/functions/control.func/index.mjs"),
       "utf8",

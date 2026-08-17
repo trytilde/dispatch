@@ -1402,11 +1402,17 @@ function reportInitializationEvent({
 }): void {
   if (event === "git.github.authorization.required") {
     const url = typeof details.url === "string" ? details.url : undefined;
+    const formPath = typeof details.formPath === "string" ? details.formPath : undefined;
     const instructions = typeof details.instructions === "string" ? details.instructions : "";
+    const action = formPath
+      ? `:\n  Open this page in your browser to create and install the GitHub App:\n  ${formPath}`
+      : url
+        ? `:\n  ${url}`
+        : ".";
     process.stdout.write(
-      `\nGitHub authorization required. Complete the GitHub App installation${
-        url ? `:\n  ${url}` : "."
-      }\n${instructions ? `${instructions}\n` : ""}The next openbot dev or deploy run finishes GitHub setup afterward.\n`,
+      `\nGitHub authorization required${action}\n${
+        instructions ? `${instructions}\n` : ""
+      }The next openbot dev or deploy run finishes GitHub setup afterward.\n`,
     );
     return;
   }

@@ -93,14 +93,6 @@ describe("GitHubGitProvider", () => {
           tool_group_instance: githubGroup(),
         });
       }
-      if (request.method === "POST" && path.endsWith("/user-credential/broker"))
-        return Response.json({
-          type: "broker_state",
-          action: { Redirect: { url: "https://github.test/install" } },
-          id: "broker-one",
-          owner_id: "github-group",
-          owner_type: "tool_group_instance",
-        });
       throw new Error(`Unexpected request: ${request.method} ${path}`);
     };
     const environment: NodeJS.ProcessEnv = {
@@ -155,14 +147,11 @@ describe("GitHubGitProvider", () => {
             tool_group_instance: githubGroup(),
           });
         }
-        if (request.method === "POST" && path.endsWith("/user-credential/broker")) {
-          mutations.push("broker");
+        if (request.method === "POST" && path.endsWith("/credential/provider-provisioning/start")) {
+          mutations.push("provisioning-start");
           return Response.json({
-            type: "broker_state",
-            action: { Redirect: { url: "https://github.test/install" } },
-            id: "broker-one",
-            owner_id: "github-group",
-            owner_type: "tool_group_instance",
+            next_action: { type: "redirect", url: "https://github.test/install" },
+            state_id: "state-one",
           });
         }
         throw new Error(`Unexpected request: ${request.method} ${path}`);
@@ -176,9 +165,51 @@ describe("GitHubGitProvider", () => {
     expect(context.events).toContain("git.github.pending");
     expect(context.environment.GIT_GITHUB_TOOL_GROUP_ID).toBe("github-group");
     expect(context.environment.GIT_GITHUB_REST_PROXY_PROFILE_ID).toBeUndefined();
-    // A later run with the group still unconnected restarts brokering for a fresh action URL.
+    // A later run with the group still unconnected restarts provisioning for a fresh action.
     await provider.deployable.deploy(context);
-    expect(mutations).toEqual(["auto-provision", "broker"]);
+    expect(mutations).toEqual(["auto-provision", "provisioning-start"]);
+  });
+
+  it("materializes the GitHub App Manifest form post as an auto-submitting page", async () => {
+    const { mkdtemp, readFile } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const repositoryRoot = await mkdtemp(join(tmpdir(), "openbot-git-provider-"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+        const request = input instanceof Request ? input : new Request(input, init);
+        const path = new URL(request.url).pathname;
+        if (request.method === "GET" && path.endsWith("/mcp/tool-group"))
+          return Response.json({ items: [githubGroup()] });
+        if (request.method === "POST" && path.endsWith("/credential/provider-provisioning/start"))
+          return Response.json({
+            next_action: {
+              type: "render_form_post",
+              action_url: "https://github.test/settings/apps/new?state=state-one",
+              fields: { manifest: { name: "OpenBot GitHub", url: "https://tilde.test" } },
+            },
+            state_id: "state-one",
+          });
+        throw new Error(`Unexpected request: ${request.method} ${path}`);
+      }),
+    );
+    const details: Record<string, unknown>[] = [];
+    const context = {
+      ...deploymentContext(),
+      repositoryRoot,
+      report: ({ event, details: eventDetails }: { event: string; details?: object }) => {
+        if (event === "git.github.authorization.required") details.push({ ...eventDetails });
+      },
+    };
+    const provider = new GitHubGitProvider(platform());
+    await provider.deployable.deploy(context);
+    const formPath = details[0]?.formPath as string;
+    expect(formPath).toContain(".openbot-deploy");
+    const page = await readFile(formPath, "utf8");
+    expect(page).toContain('action="https://github.test/settings/apps/new?state=state-one"');
+    expect(page).toContain("&quot;OpenBot GitHub&quot;");
+    expect(page).toContain("document.forms[0].submit()");
   });
 
   it("idempotently reconciles reverse-proxy profiles once the credential is connected", async () => {

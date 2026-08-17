@@ -1,4 +1,6 @@
 import { execFile } from "node:child_process";
+import { mkdir, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { promisify } from "node:util";
 import { TildePlatform } from "@tryopenbot/platform-integrations";
 import { tildeErrorMessage } from "@tryopenbot/platform-integrations/tilde/errors";
@@ -17,11 +19,10 @@ import {
   reverseProxyCreateProfile,
   reverseProxyListProfiles,
   reverseProxyUpdateProfile,
-  startUserCredentialBrokering,
+  startProviderAppProvisioning,
   type ProviderProvisioningNextAction,
   type ReverseProxyProfile,
   type ToolGroupInstanceSerialized,
-  type UserCredentialBrokeringResponse,
 } from "@trytilde/api-client";
 import type { GitProvider } from "../core.js";
 import { GitProviderError } from "../core.js";
@@ -97,6 +98,7 @@ export class GitHubGitProvider implements GitProvider {
       const group = await ensureGitHubAppProvisioning({
         api,
         teamId: connection.teamId,
+        repositoryRoot: context.repositoryRoot,
         environment: context.environment,
         report,
       });
@@ -134,6 +136,7 @@ export class GitHubGitProvider implements GitProvider {
       let group = await ensureGitHubAppProvisioning({
         api,
         teamId,
+        repositoryRoot: context.repositoryRoot,
         environment: context.environment,
         report: context.report,
       });
@@ -242,6 +245,7 @@ type TildeApi = ReturnType<typeof createTildeApiClient>;
 interface GitHubProvisioningRequest {
   api: TildeApi;
   teamId: string;
+  repositoryRoot: string;
   environment: NodeJS.ProcessEnv;
   report: DeploymentReporter;
 }
@@ -258,13 +262,12 @@ async function ensureGitHubAppProvisioning(
     await provisionGitHubApp(request);
     group = await findGitHubToolGroup(request.api, request.teamId);
   } else if (!group.resource_server_credential_id) {
-    await startAuthorization(request, group);
+    await resumeGitHubAppProvisioning(request, group);
   }
   return group;
 }
 
 async function provisionGitHubApp(request: GitHubProvisioningRequest): Promise<void> {
-  const deploymentName = request.environment.OPENBOT_DEPLOYMENT_NAME?.trim() || "OpenBot";
   const { data } = await autoProvisionToolGroupInstance({
     client: request.api,
     path: {
@@ -273,27 +276,42 @@ async function provisionGitHubApp(request: GitHubProvisioningRequest): Promise<v
       credential_source_type_id: githubCredentialSourceTypeId,
     },
     body: {
-      app_display_name: `${deploymentName} GitHub`,
+      app_display_name: githubAppDisplayName(request.environment),
       provider_id: githubProviderProvisionerId,
-      public_base_url: request.environment.TILDE_BASE_URL?.trim() || "https://api.trytilde.ai",
+      public_base_url: tildePublicBaseUrl(request.environment),
     },
     throwOnError: true,
   });
-  reportProvisioningAction(request.report, data.provider_provisioning_response.next_action);
-  if (data.broker_response) reportBrokerAction(request.report, data.broker_response);
+  await surfaceProvisioningAction(request, data.provider_provisioning_response.next_action);
 }
 
-async function startAuthorization(
+/** The GitHub App Manifest flow resumes with a fresh provisioning session for the same owner. */
+async function resumeGitHubAppProvisioning(
   request: GitHubProvisioningRequest,
   group: ToolGroupInstanceSerialized,
 ): Promise<void> {
-  const { data } = await startUserCredentialBrokering({
+  const { data } = await startProviderAppProvisioning({
     client: request.api,
-    path: { team_id: request.teamId, credential_source_type_id: githubCredentialSourceTypeId },
-    body: { owner_id: group.id, owner_type: "tool_group_instance" },
+    path: { team_id: request.teamId },
+    body: {
+      app_display_name: githubAppDisplayName(request.environment),
+      owner_id: group.id,
+      owner_type: "tool_group_instance",
+      provider_id: githubProviderProvisionerId,
+      target_provider_id: githubToolGroupSourceTypeId,
+      public_base_url: tildePublicBaseUrl(request.environment),
+    },
     throwOnError: true,
   });
-  reportBrokerAction(request.report, data);
+  await surfaceProvisioningAction(request, data.next_action);
+}
+
+function githubAppDisplayName(environment: NodeJS.ProcessEnv): string {
+  return `${environment.OPENBOT_DEPLOYMENT_NAME?.trim() || "OpenBot"} GitHub`;
+}
+
+function tildePublicBaseUrl(environment: NodeJS.ProcessEnv): string {
+  return environment.TILDE_BASE_URL?.trim() || "https://api.trytilde.ai";
 }
 
 /** Tilde connection values collected by the shared platform's initialization questions. */
@@ -342,35 +360,69 @@ async function listProfiles(
   return data.items;
 }
 
-function reportProvisioningAction(
-  report: DeploymentReporter,
+async function surfaceProvisioningAction(
+  request: GitHubProvisioningRequest,
   action: ProviderProvisioningNextAction,
-): void {
-  if (action.type === "redirect")
-    report({ event: "git.github.authorization.required", details: { url: action.url } });
-  else if (action.type === "render_instructions")
-    report({
+): Promise<void> {
+  if (action.type === "redirect") {
+    request.report({ event: "git.github.authorization.required", details: { url: action.url } });
+  } else if (action.type === "render_instructions") {
+    request.report({
       event: "git.github.authorization.required",
       details: { instructions: action.markdown },
     });
-  else if (action.type === "render_form_post")
-    report({
+  } else if (action.type === "render_form_post") {
+    // The GitHub App Manifest flow is a browser form POST; materialize an auto-submitting page.
+    const path = await writeAuthorizationFormPage(
+      request.repositoryRoot,
+      action.action_url,
+      action.fields,
+    );
+    request.report({
       event: "git.github.authorization.required",
-      details: { url: action.action_url },
+      details: { formPath: path, url: action.action_url },
     });
+  }
 }
 
-function reportBrokerAction(
-  report: DeploymentReporter,
-  response: UserCredentialBrokeringResponse,
-): void {
-  if (response.type !== "broker_state") return;
-  const action = response.action;
-  if (typeof action === "object" && "Redirect" in action)
-    report({
-      event: "git.github.authorization.required",
-      details: { url: action.Redirect.url },
-    });
+async function writeAuthorizationFormPage(
+  repositoryRoot: string,
+  actionUrl: string,
+  fields: unknown,
+): Promise<string> {
+  const directory = resolve(repositoryRoot, ".openbot-deploy");
+  const path = resolve(directory, "github-app-authorization.html");
+  const entries = Object.entries((fields ?? {}) as Record<string, unknown>);
+  const inputs = entries
+    .map(([name, value]) => {
+      const serialized = typeof value === "string" ? value : JSON.stringify(value);
+      return `    <input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(serialized)}" />`;
+    })
+    .join("\n");
+  const page = [
+    "<!doctype html>",
+    '<meta charset="utf-8" />',
+    "<title>Authorize the OpenBot GitHub App</title>",
+    '<body onload="document.forms[0].submit()">',
+    "  <p>Redirecting to GitHub to create and install the OpenBot GitHub App…</p>",
+    `  <form method="post" action="${escapeHtml(actionUrl)}">`,
+    inputs,
+    '    <button type="submit">Continue to GitHub</button>',
+    "  </form>",
+    "</body>",
+    "",
+  ].join("\n");
+  await mkdir(directory, { recursive: true });
+  await writeFile(path, page, { mode: 0o600 });
+  return path;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 const runGit = promisify(execFile);

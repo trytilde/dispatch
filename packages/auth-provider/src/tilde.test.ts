@@ -16,6 +16,15 @@ const environment = {
 afterEach(() => vi.useRealTimers());
 
 describe("TildeAuthProvider", () => {
+  it("exposes only public native OAuth configuration", () => {
+    expect(providerWith({ request: fetch, environment }).nativeClientConfiguration()).toEqual({
+      authorizationEndpoint: environment.OPENBOT_OIDC_AUTHORIZATION_ENDPOINT,
+      tokenEndpoint: environment.OPENBOT_OIDC_TOKEN_ENDPOINT,
+      clientId: environment.OPENBOT_OIDC_CLIENT_ID,
+      scope: environment.OPENBOT_OIDC_SCOPE,
+    });
+  });
+
   it("verifies the issuer, audience, authorized party, token type, and scope", async () => {
     const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
     const jwk = publicKey.export({ format: "jwk" });

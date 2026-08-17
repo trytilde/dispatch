@@ -9,6 +9,16 @@ const stateCookie = "openbot_oauth_state";
 const verifierCookie = "openbot_oauth_verifier";
 
 export function registerOwnerAuth(app: Hono, provider: AuthProvider): void {
+  app.get("/auth/native-config", (context) => {
+    const configuration = provider.nativeClientConfiguration();
+    context.header("cache-control", "no-store");
+    return context.json({
+      authorization_endpoint: configuration.authorizationEndpoint,
+      token_endpoint: configuration.tokenEndpoint,
+      client_id: configuration.clientId,
+      scope: configuration.scope,
+    });
+  });
   app.get("/auth/login", (context) => {
     const state = randomBytes(24).toString("base64url");
     const verifier = randomBytes(48).toString("base64url");

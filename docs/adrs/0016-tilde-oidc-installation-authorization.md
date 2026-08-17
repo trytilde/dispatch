@@ -4,7 +4,7 @@
 
 - Tilde Identity default authority. OpenBot installation stays OIDC client and resource server. No per-installation identity provider.
 - One installation, one resource identifier, one access-token audience. Scope says allowed action, never installation identity.
-- Web gets host-only HttpOnly cookies. Electron main gets native PKCE credentials. Renderer gets no token.
+- Web gets host-only HttpOnly cookies. Electron main and mobile get native PKCE credentials. UI gets no token.
 - Central Tilde login gives multi-installation SSO. Installation cookies and access tokens never cross installations.
 - Owner middleware guards owner surfaces. Tilde callbacks, agent endpoints, and Computer credentials stay separate.
 - Cost: Tilde dependency and bounded token-revocation delay. Accepted; BYO OIDC remains possible.
@@ -80,13 +80,27 @@ the control service. The preload bridge exposes only bounded authentication stat
 sign-out commands. The renderer never receives tokens or an unrestricted auth client. OpenBot does
 not rely on the external browser and Electron sharing a cookie jar.
 
+Expo mobile uses the same public-client Authorization Code with PKCE flow and a registered app-scheme
+redirect. It opens the system browser, keeps refresh and access tokens in operating-system-protected
+SecureStore, refreshes before authenticated requests, and supplies only an access-token callback to
+the framework-neutral client runtime. Tokens never enter Zustand state, React component props, logs,
+or AsyncStorage. Mobile and Electron may share server-side OAuth client registration only when that
+registration explicitly allowlists both native redirects.
+
+Mobile selects the installation before authentication. The Owner enters a control-service origin;
+the app verifies its public OpenBot health response and reads the provider-owned public client ID,
+scope, authorization endpoint, and token endpoint from `/auth/native-config`. This route has no
+credentials, tenant overrides, tokens, issuer signing material, or authorization decision. Hosted
+origins and OAuth endpoints require HTTPS. The selected origin and token record are associated, and
+changing origin clears the old installation's native credentials.
+
 The control service installs owner-authentication middleware before every owner-facing RPC and HTTP
 surface, including chat proxying, attachments, and Computer preview. It accepts an Authorization
 bearer before falling back to the access cookie, verifies signature and time claims, and requires the
 configured issuer, installation audience, authorized client, token purpose, subject, installation
 link, and route scope. It then supplies a typed owner principal to handlers and provider calls.
-Static application assets, health, and the narrowly bounded login, callback, session-refresh, and
-logout routes are the only public control surfaces. Installation registration belongs to the Tilde
+Static application assets, health, public native-auth discovery, and the narrowly bounded login,
+callback, session-refresh, and logout routes are the only public control surfaces. Installation registration belongs to the Tilde
 team API and is never exposed by the OpenBot control service.
 
 Owner authentication does not replace other trust boundaries. Signed Tilde callbacks and tools,
@@ -115,6 +129,8 @@ flowchart LR
   I -->|"aud: installation B"| B["OpenBot B control"]
   W["Web"] -->|"host-only cookie"| A
   E["Electron main"] -->|"bearer via loopback proxy"| A
+  M["Expo mobile"] -->|"bearer from SecureStore"| A
+  M -->|"public auth discovery"| A
   A -->|"typed owner principal"| C["Owner RPC and HTTP handlers"]
   I -. "one SSO session, no shared installation token" .-> B
 ```
@@ -125,8 +141,8 @@ flowchart LR
   a URL or presenting a generic scope.
 - Owners can move among installations with Tilde SSO while each installation retains an independent
   cookie, audience, authorization decision, and revocation boundary.
-- Web and Electron share one server authorization policy without forcing native credentials into
-  renderer JavaScript.
+- Web, Electron, and mobile share one server authorization policy without forcing native
+  credentials into renderer or component state.
 - The installation registration lifecycle must reconcile issuer metadata, resource identity,
   redirect URIs, and encrypted client secrets where applicable.
 - Middleware and provider contracts must carry a typed owner principal rather than treating
@@ -142,3 +158,8 @@ flowchart LR
 - [OAuth 2.0 Authorization Framework, RFC 6749](https://www.rfc-editor.org/rfc/rfc6749)
 - [Better Auth Electron integration](https://www.better-auth.com/docs/integrations/electron)
 - [Better Auth OIDC Provider](https://www.better-auth.com/docs/plugins/oidc-provider)
+
+## Updates
+
+- 2026-08-17T18:00:00+02:00: Added Expo mobile PKCE, SecureStore ownership, and the rule that native tokens stay outside shared client and React state.
+- 2026-08-17T19:55:00+02:00: Made control-service selection precede mobile authentication and added provider-owned public PKCE discovery with installation-scoped credential clearing.

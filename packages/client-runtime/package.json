@@ -1,0 +1,117 @@
+{
+  "name": "@tryopenbot/client-runtime",
+  "version": "0.1.0",
+  "description": "Shared OpenBot client contracts, transport, and state runtime",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./contracts/auth": {
+      "types": "./src/contracts/auth.ts",
+      "development": "./src/contracts/auth.ts",
+      "import": "./dist/contracts/auth.js"
+    },
+    "./contracts/attachments": {
+      "types": "./src/contracts/attachments.ts",
+      "development": "./src/contracts/attachments.ts",
+      "import": "./dist/contracts/attachments.js"
+    },
+    "./contracts/events": {
+      "types": "./src/contracts/events.ts",
+      "development": "./src/contracts/events.ts",
+      "import": "./dist/contracts/events.js"
+    },
+    "./contracts/installation": {
+      "types": "./src/contracts/installation.ts",
+      "development": "./src/contracts/installation.ts",
+      "import": "./dist/contracts/installation.js"
+    },
+    "./contracts/messages": {
+      "types": "./src/contracts/messages.ts",
+      "development": "./src/contracts/messages.ts",
+      "import": "./dist/contracts/messages.js"
+    },
+    "./contracts/queue": {
+      "types": "./src/contracts/queue.ts",
+      "development": "./src/contracts/queue.ts",
+      "import": "./dist/contracts/queue.js"
+    },
+    "./contracts/platform": {
+      "types": "./src/contracts/platform.ts",
+      "development": "./src/contracts/platform.ts",
+      "import": "./dist/contracts/platform.js"
+    },
+    "./contracts/sidebar": {
+      "types": "./src/contracts/sidebar.ts",
+      "development": "./src/contracts/sidebar.ts",
+      "import": "./dist/contracts/sidebar.js"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./contracts/auth": {
+        "types": "./dist/contracts/auth.d.ts",
+        "import": "./dist/contracts/auth.js"
+      },
+      "./contracts/attachments": {
+        "types": "./dist/contracts/attachments.d.ts",
+        "import": "./dist/contracts/attachments.js"
+      },
+      "./contracts/events": {
+        "types": "./dist/contracts/events.d.ts",
+        "import": "./dist/contracts/events.js"
+      },
+      "./contracts/installation": {
+        "types": "./dist/contracts/installation.d.ts",
+        "import": "./dist/contracts/installation.js"
+      },
+      "./contracts/messages": {
+        "types": "./dist/contracts/messages.d.ts",
+        "import": "./dist/contracts/messages.js"
+      },
+      "./contracts/queue": {
+        "types": "./dist/contracts/queue.d.ts",
+        "import": "./dist/contracts/queue.js"
+      },
+      "./contracts/platform": {
+        "types": "./dist/contracts/platform.d.ts",
+        "import": "./dist/contracts/platform.js"
+      },
+      "./contracts/sidebar": {
+        "types": "./dist/contracts/sidebar.d.ts",
+        "import": "./dist/contracts/sidebar.js"
+      }
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && tsdown --config ../../tsdown.browser.config.ts",
+    "check": "vp check",
+    "lint": "vp lint",
+    "prepack": "pnpm build",
+    "test": "vp test run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "4.4.3",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "tsdown": "0.22.14",
+    "typescript": "5.9.2",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

@@ -1,13 +1,9 @@
-interface Window {
-  openbotDesktop?: {
-    platform: "mac" | "linux";
-    controlOrigin: string;
-    openExternal(url: string): Promise<void>;
-    authStatus(): Promise<{
-      authenticated: true;
-      user: { subject: string; email?: string };
-    } | null>;
-    signIn(): Promise<void>;
-    signOut(): Promise<void>;
-  };
+import type { DesktopClientBridge } from "@tryopenbot/client-runtime/contracts/platform";
+
+declare global {
+  interface Window {
+    openbotDesktop?: DesktopClientBridge;
+  }
 }
+
+export {};

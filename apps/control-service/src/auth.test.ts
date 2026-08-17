@@ -3,6 +3,20 @@ import type { AuthProvider } from "@tryopenbot/auth-provider";
 import { createApp } from "./app.js";
 
 describe("owner authentication", () => {
+  it("exposes public native OAuth metadata without credentials", async () => {
+    const app = createApp({ authProvider: stubProvider(), webRoot: "/missing" });
+    const response = await app.request("https://openbot.test/auth/native-config");
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    await expect(response.json()).resolves.toEqual({
+      authorization_endpoint: "https://identity.test/authorize",
+      token_endpoint: "https://identity.test/token",
+      client_id: "client-one",
+      scope: "openid offline_access openbot:control",
+    });
+  });
+
   it("completes browser PKCE login and establishes host-only token cookies", async () => {
     const provider = stubProvider();
     const app = createApp({ authProvider: provider, webRoot: "/missing" });
@@ -95,6 +109,12 @@ function stubProvider() {
   return {
     initialization: { id: "test-auth", label: "Test auth", questions: [] },
     deployable: { plan: async () => ({ summary: "test" }), deploy: async () => ({}) },
+    nativeClientConfiguration: () => ({
+      authorizationEndpoint: "https://identity.test/authorize",
+      tokenEndpoint: "https://identity.test/token",
+      clientId: "client-one",
+      scope: "openid offline_access openbot:control",
+    }),
     authorizationUrl: vi.fn(() => new URL("https://identity.test/authorize")),
     exchangeCode: vi.fn(async () => ({
       accessToken: "fresh-token",

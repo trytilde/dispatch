@@ -30,6 +30,9 @@
     "test": "vp test run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@tryopenbot/client-runtime": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "24.3.0",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",

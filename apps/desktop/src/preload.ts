@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
+import type { DesktopClientBridge } from "@tryopenbot/client-runtime/contracts/platform";
 
 const bridge = {
   platform: process.platform === "darwin" ? "mac" : "linux",
@@ -9,6 +10,6 @@ const bridge = {
   authStatus: () => ipcRenderer.invoke("openbot:auth-status"),
   signIn: () => ipcRenderer.invoke("openbot:sign-in"),
   signOut: () => ipcRenderer.invoke("openbot:sign-out"),
-} as const;
+} as const satisfies DesktopClientBridge;
 
 contextBridge.exposeInMainWorld("openbotDesktop", bridge);

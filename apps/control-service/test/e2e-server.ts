@@ -3,6 +3,12 @@ import type { AuthProvider } from "@tryopenbot/auth-provider";
 import { createApp } from "../src/app.js";
 
 const authProvider: AuthProvider = {
+  nativeClientConfiguration: () => ({
+    authorizationEndpoint: "https://identity.test/authorize",
+    tokenEndpoint: "https://identity.test/token",
+    clientId: "e2e-client",
+    scope: "openid openbot:control",
+  }),
   authorizationUrl: () => new URL("https://identity.test/authorize"),
   exchangeCode: async () => {
     throw new Error("OAuth exchange is not used by the browser E2E harness");

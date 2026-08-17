@@ -13,7 +13,15 @@ export interface OAuthTokens {
   expiresIn: number;
 }
 
+export interface NativeAuthConfiguration {
+  authorizationEndpoint: string;
+  tokenEndpoint: string;
+  clientId: string;
+  scope: string;
+}
+
 export interface AuthProvider extends DeployableProvider {
+  nativeClientConfiguration(): NativeAuthConfiguration;
   authorizationUrl(input: { redirectUri: string; state: string; codeChallenge: string }): URL;
   exchangeCode(input: {
     code: string;

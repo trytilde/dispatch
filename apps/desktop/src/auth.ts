@@ -2,6 +2,10 @@ import { createHash, randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { safeStorage, shell } from "electron";
+import {
+  AuthenticatedSessionSchema,
+  type AuthenticatedSession,
+} from "@tryopenbot/client-runtime/contracts/auth";
 
 interface StoredTokens {
   accessToken: string;
@@ -102,7 +106,9 @@ export class DesktopAuth {
     }
   }
 
-  async status(controlOrigin = process.env.CONTROL_ORIGIN || "http://127.0.0.1:4100") {
+  async status(
+    controlOrigin = process.env.CONTROL_ORIGIN || "http://127.0.0.1:4100",
+  ): Promise<AuthenticatedSession | null> {
     const token = await this.accessToken();
     if (!token) return null;
     const response = await fetch(new URL("/auth/session", controlOrigin), {
@@ -114,10 +120,7 @@ export class DesktopAuth {
       return null;
     }
     if (!response.ok) throw new Error(`Authentication check failed (${response.status})`);
-    return (await response.json()) as {
-      authenticated: true;
-      user: { subject: string; email?: string };
-    };
+    return AuthenticatedSessionSchema.parse(await response.json());
   }
 
   async signOut(): Promise<void> {

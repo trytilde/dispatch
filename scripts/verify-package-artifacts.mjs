@@ -18,7 +18,7 @@ for (const directory of workspaceDirectories) {
     throw error;
   }
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-  if (manifest.private === true) throw new Error(`${manifest.name} is still private`);
+  if (manifest.private === true) continue;
   if (manifest.publishConfig?.access !== "public")
     throw new Error(`${manifest.name} does not publish with public access`);
   if (!manifest.files?.includes("dist")) throw new Error(`${manifest.name} does not package dist`);

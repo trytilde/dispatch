@@ -21,7 +21,7 @@ Small providers may remain in `src/<provider>.ts`. Once a provider owns multiple
 For Vercel prebuilt deployments, each service provider owns an `assets/vercel.json.hbs`, Function entrypoints, Function configuration, and Build Output configuration as Handlebars assets. The build emits `.vercel/output/config.json`, which owns prebuilt routing. The deploy lifecycle renders `vercel.json` to that service's artifact root immediately before invoking Vercel. No root `vercel.json` is tracked.
 
 Microsandbox and Vercel Sandbox use the same computer filesystem and startup
-contract, so `computer-provider` owns one shared image under
+contract, so `computer-service-provider` owns one shared image under
 `src/base/assets/`. Its build lifecycle stages only the required workspace
 sources into an ignored Docker context and renders the shared `.hbs` assets
 there. The multi-stage Containerfile compiles
@@ -52,3 +52,4 @@ flowchart LR
 - 2026-08-13T11:12:53+02:00: Standardized generated source, configuration, service, deployment, and provider assets on strict Handlebars templates while keeping runtime persistence and user file bytes byte preserving.
 - 2026-08-13T12:09:51+02:00: Moved file-template helpers into the shared `@openbot/utilities` package so future cross-domain utilities have one neutral home.
 - 2026-08-13T17:33:29+02:00: Renamed the private workspace package scope from `@openbot` to `@tryopenbot`; provider asset ownership and lifecycle boundaries are unchanged.
+- 2026-08-17T20:05:00+02:00: Renamed the Computer lifecycle and image owner to `@tryopenbot/computer-service-provider`; asset ownership and rendering behavior are unchanged.

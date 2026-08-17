@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
 import type { Hono } from "hono";
-import { ComputerProviderError, type ComputerProvider } from "@tryopenbot/computer-provider";
+import {
+  ComputerProviderError,
+  type ComputerProvider,
+} from "@tryopenbot/computer-service-provider";
 
 export interface ComputerPreviewOptions {
   devMode?: boolean;

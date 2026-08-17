@@ -67,7 +67,10 @@ export async function materializeComputerImageContext(
     await cp(resolve(repositoryRoot, path), destination, { recursive: true });
   }
 
-  const assetDestination = resolve(contextDirectory, "packages/computer-provider/src/base/assets");
+  const assetDestination = resolve(
+    contextDirectory,
+    "packages/computer-service-provider/src/base/assets",
+  );
   await mkdir(assetDestination, { recursive: true });
   await Promise.all([
     materializeFileTemplate(

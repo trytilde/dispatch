@@ -63,6 +63,7 @@ describe("control service providers", () => {
     ) as { version: number; routes: Array<{ src?: string; dest?: string }> };
     expect(outputConfiguration).toMatchObject({ version: 3 });
     expect(outputConfiguration.routes).toContainEqual({ src: "/api(?:/.*)?", dest: "/control" });
+    expect(outputConfiguration.routes).toContainEqual({ src: "/auth(?:/.*)?", dest: "/control" });
     expect(outputConfiguration.routes).not.toContainEqual(
       expect.objectContaining({ src: expect.stringContaining("/rpc") }),
     );

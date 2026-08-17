@@ -1,6 +1,9 @@
 import { readFile, readdir } from "node:fs/promises";
 import { relative, resolve } from "node:path";
-import type { ComputerAgentWorkspace, ComputerSeedFile } from "@tryopenbot/computer-provider";
+import type {
+  ComputerAgentWorkspace,
+  ComputerSeedFile,
+} from "@tryopenbot/computer-service-provider";
 import { discoverAgents } from "./discovery.js";
 
 export async function discoverAgentWorkspaces(

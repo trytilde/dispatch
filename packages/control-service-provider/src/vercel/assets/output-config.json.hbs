@@ -3,6 +3,7 @@
   "routes": [
     { "handle": "filesystem" },
     { "src": "/healthz", "dest": "/control" },
+    { "src": "/auth(?:/.*)?", "dest": "/control" },
     { "src": "/api(?:/.*)?", "dest": "/control" },
     { "src": "/.*", "dest": "/index.html" }
   ]

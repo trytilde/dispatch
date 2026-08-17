@@ -33,7 +33,7 @@ The old model-facing inference-model provider is removed. A narrow `inference-pr
 
 Code under `configuration/agent/`, including its `subagents/`, must not import provider packages or `configuration/index.ts`. Agents instantiate model clients, MCP clients, skill clients, Composio, and other SDKs directly. Defaults for future agents live in `configuration/templates/agent/`; existing agents change only through explicit edits.
 
-The standard typed Computer AI tools are a reusable runtime utility in `@tryopenbot/computer-tools`, separate from `computer-provider`. They call the capability-protected Computer service. `computer-provider` retains only provisioning and lifecycle methods in its public contract, while concrete adapters may use internal Computer operations to implement those lifecycles.
+The standard typed Computer AI tools are a reusable runtime utility in `@tryopenbot/computer-tools`, separate from `computer-service-provider`. They call the capability-protected Computer service. `computer-service-provider` retains only provisioning and lifecycle methods in its public contract, while concrete adapters may use internal Computer operations to implement those lifecycles. The provider package does not depend on or re-export `computer-tools`.
 
 Shared vendor plumbing used across domains belongs in `platform-integrations`. Multiple adapters share one concrete platform instance so initialization runs once. Domain mapping and error translation remain in each adapter.
 
@@ -69,3 +69,4 @@ flowchart LR
 - 2026-08-14T10:55:00+02:00: Replaced public agent-resource CRUD with an idempotent `Deployable`; the Tilde adapter now discovers desired agents, reconciles Vercel AI SDK endpoints for development and production, and clears an endpoint before removing a stale managed agent.
 - 2026-08-14T18:40:00+02:00: Removed the Tilde state file from OpenBot's normal lifecycle. Tilde providers now reconcile agents, authored skills, exact registries, dynamic MCP servers, the Tilde control-plane toolkit, and deployment-platform MCP integrations directly through typed APIs. Operators may still use the Tilde CLI manually for one-time team-to-team state migration.
 - 2026-08-16T15:08:39+02:00: Removed Chat, Skills, and Tools Provider packages. Tilde conversation traffic now retains its native REST/SSE contract, while one Agent Provider lifecycle reconciles each authored agent and all of its external skills, tools, and MCP resources.
+- 2026-08-17T20:05:00+02:00: Renamed `@tryopenbot/computer-provider` to `@tryopenbot/computer-service-provider` and removed its `computer-tools` compatibility export and dependency so service lifecycle and agent runtime tools remain separate package boundaries.

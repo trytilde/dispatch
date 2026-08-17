@@ -30,10 +30,10 @@ RUN cp tsdown.node.config.ts packages/utilities/tsdown.image.config.ts \
 # Node 24 is both the service runtime and the base for the shared computer image.
 FROM node:24-bookworm-slim
 
-COPY packages/computer-provider/src/base/assets/bootstrap.sh /opt/openbot/bootstrap.sh
-COPY packages/computer-provider/src/base/assets/development-setup.sh /usr/local/bin/setup-openbot-development
-COPY packages/computer-provider/src/base/assets/development-profile.sh /opt/openbot/development-profile.sh
-COPY packages/computer-provider/src/base/assets/start.sh /usr/local/bin/start-openbot-computer
+COPY packages/computer-service-provider/src/base/assets/bootstrap.sh /opt/openbot/bootstrap.sh
+COPY packages/computer-service-provider/src/base/assets/development-setup.sh /usr/local/bin/setup-openbot-development
+COPY packages/computer-service-provider/src/base/assets/development-profile.sh /opt/openbot/development-profile.sh
+COPY packages/computer-service-provider/src/base/assets/start.sh /usr/local/bin/start-openbot-computer
 
 # Install the desktop stack once while building the shared image.
 RUN chmod 0755 /opt/openbot/bootstrap.sh /opt/openbot/development-profile.sh /usr/local/bin/setup-openbot-development /usr/local/bin/start-openbot-computer \

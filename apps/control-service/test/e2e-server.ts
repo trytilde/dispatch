@@ -9,7 +9,11 @@ const authProvider: AuthProvider = {
     clientId: "e2e-client",
     scope: "openid openbot:control",
   }),
-  authorizationUrl: () => new URL("https://identity.test/authorize"),
+  authorizationUrl: ({ redirectUri }) => {
+    const url = new URL("https://identity.test/authorize");
+    url.searchParams.set("redirect_uri", redirectUri);
+    return url;
+  },
   exchangeCode: async () => {
     throw new Error("OAuth exchange is not used by the browser E2E harness");
   },
@@ -27,7 +31,7 @@ const authProvider: AuthProvider = {
   },
 };
 
-const app = createApp({ authProvider });
+const app = createApp({ authProvider, devMode: true });
 serve({
   fetch: app.fetch,
   hostname: "127.0.0.1",

@@ -5,6 +5,9 @@ The portable Hono control application. It serves health, exposes an allowlisted 
 ## Public API
 
 - `app` is the configured Web-standard Hono application exported for local and provider-generated entrypoints.
+- `createApp(options)` constructs the portable control application with its configured authentication, Computer preview, ChatKit proxy, and web-root behavior.
+- `registerOwnerAuth(app, provider, options)` installs browser PKCE login, callback, session, and logout routes. Development options preserve a validated loopback browser origin through the Vite proxy.
+- `requireOwner(provider, options)` returns the owner-authentication middleware used to protect browser-facing control routes.
 - `registerTildeChatProxy(app, options)` preserves Tilde ChatKit request, response, attachment, and streaming semantics while keeping server credentials out of the browser.
 - `registerComputerPreview(app, provider, options)` exposes the narrow owner preview redirect without making Computer service browser-accessible.
 

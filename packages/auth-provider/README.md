@@ -5,9 +5,9 @@ installation has its own audience and public PKCE client registration.
 
 ## Public API
 
-- `AuthProvider` owns authorization, code exchange, refresh, token verification, and the public
-  native-client configuration exposed by the control service.
-- `NativeAuthConfiguration` contains only the authorization endpoint, token endpoint, public client
-  ID, and requested scope. It never contains tokens, client secrets, or Tilde service credentials.
-- `TildeAuthProvider` registers and reconciles the installation-specific public client and validates
-  audience-restricted owner access tokens.
+- `AuthProvider` defines authorization URL creation, PKCE code exchange, refresh, access-token verification, and the public native-client configuration the control service exposes for an installation.
+- `NativeAuthConfiguration` contains only the authorization endpoint, token endpoint, public client ID, and requested scope. It never contains tokens, client secrets, or Tilde service credentials.
+- `OwnerPrincipal` is the verified owner identity and its groups and scopes.
+- `OAuthTokens` carries the access token, optional refresh token, and expiry returned by an authorization server.
+- `AuthProviderError` classifies invalid configuration, invalid tokens, and failed exchanges at the provider boundary.
+- `TildeAuthProvider` reconciles the installation's Tilde OIDC registration, registers the installation-specific public client, validates audience-restricted owner access tokens, and implements the `AuthProvider` contract. Development reconciliation includes the local Vite callback origins without replacing the deployed callback.

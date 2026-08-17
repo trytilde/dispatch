@@ -30,8 +30,8 @@ export function createApp(options: AppOptions = {}): Hono {
   app.use("*", secureHeaders());
   app.get("/healthz", (context) => context.json({ ok: true, service: "openbot" }));
   if (options.authProvider) {
-    registerOwnerAuth(app, options.authProvider);
-    const middleware = requireOwner(options.authProvider);
+    registerOwnerAuth(app, options.authProvider, options);
+    const middleware = requireOwner(options.authProvider, options);
     app.use("/api/chat/*", middleware);
     app.use("/api/computer/*", middleware);
   }

@@ -107,5 +107,5 @@ Work: persist the computer-service-provider build lifecycle's source digest and 
 <FOLLOW UP>
 Background SDLC automation (ADR-0017): agents or the orchestrator should open pull requests from
 the `openbot/sandbox-edits` branch and merge them once checks pass, completing the automated
-software lifecycle; the orchestrator itself should run supervised inside the development sandbox.
+software lifecycle.
 </FOLLOW UP>

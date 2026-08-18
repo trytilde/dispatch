@@ -43,10 +43,14 @@ lifecycle still exists — but agents should not be the ones driving it.
 - `openbot/sandbox-edits` accumulates automated commits; merging them into the default branch is
   an explicit owner (or agent, on request) action via pull request.
 
+The orchestrator runs supervised inside the development sandbox: the sandbox setup script
+installs a restart-looped supervisor that starts `openbot orchestrate` with the sandbox age
+identity, and the computer image carries the pinned `cloudflared` binary the local-runtime tunnel
+requires.
+
 <FOLLOW UP>
 Automate the rest of the SDLC around the sandbox-edits branch: the orchestrator (or an agent
 acting on owner intent) should open pull requests from `openbot/sandbox-edits`, keep them updated,
 and merge them once checks pass, so the default branch converges with the live tree without manual
-git work. Also supervise `openbot orchestrate` inside the development sandbox (start on sandbox
-boot, restart on crash, reconnect the tunnel) instead of requiring a manual start.
+git work.
 </FOLLOW UP>

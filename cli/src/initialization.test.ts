@@ -697,7 +697,7 @@ export default {
     expect(prompts.select).toHaveBeenCalledTimes(1);
   });
 
-  it("sets and unsets encrypted secrets without putting values in arguments", async () => {
+  it("sets and unsets encrypted secrets by re-using the existing data key", async () => {
     const repositoryRoot = await temporaryRepository();
     await writeFixture(
       repositoryRoot,
@@ -750,15 +750,17 @@ export default {
       environment: { SOPS_AGE_KEY: "owner" },
     });
 
-    const encrypt = calls.find((call) => call.args.includes("encrypt"));
-    expect(parseYaml(encrypt?.input ?? "")).toMatchObject({
-      EXISTING: { description: "Existing secret.", value: "existing-value" },
-      VERCEL_TOKEN: {
-        description: "Vercel deployment credential.",
-        value: "private-value",
-      },
+    // `sops set` re-uses the file's data key so a single recipient can write without KMS access.
+    const set = calls.find((call) => call.args.includes("set"));
+    expect(set).toBeDefined();
+    expect(set?.args.some((argument) => argument.includes('["VERCEL_TOKEN"]'))).toBe(true);
+    expect(
+      JSON.parse(set?.args.find((argument) => argument.startsWith("{")) ?? "{}"),
+    ).toMatchObject({
+      description: "Vercel deployment credential.",
+      value: "private-value",
     });
-    expect(calls.every((call) => !call.args.join(" ").includes("private-value"))).toBe(true);
+    expect(calls.every((call) => !call.args.includes("encrypt"))).toBe(true);
     expect(calls.some((call) => call.args.includes("unset"))).toBe(true);
   });
 

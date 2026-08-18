@@ -615,24 +615,19 @@ export async function setEncryptedSecret(
     userConfigurationPath: options.userConfigurationPath,
   });
   const secretsPath = resolve(repositoryRoot, "configuration/secrets.enc.yaml");
-  const decrypted = await runner.run(
+  // `sops set` re-uses the file's existing data key, so any single recipient (such as the
+  // sandbox age identity) can persist a secret without access to every master key (KMS).
+  // Trade-off: the value appears in the sops process arguments for its brief lifetime.
+  await runner.run(
     "sops",
-    ["decrypt", "--input-type", "yaml", "--output-type", "yaml", secretsPath],
-    {
-      cwd: repositoryRoot,
-      environment,
-    },
+    [
+      "set",
+      secretsPath,
+      `[${JSON.stringify(repositorySecretName(name))}]`,
+      JSON.stringify({ description, value }),
+    ],
+    { cwd: repositoryRoot, environment },
   );
-  const values = parseDescribedSecretsDocument(parseYaml(decrypted.stdout) as unknown);
-  values[repositorySecretName(name)] = { description, value };
-  const encrypted = await encryptSecretsDocument(
-    runner,
-    repositoryRoot,
-    await readSopsCreationRule(repositoryRoot),
-    environment,
-    values,
-  );
-  await writeFileAtomically(secretsPath, await renderDocument(encrypted), 0o600);
 }
 
 export async function setEnvironmentValue(

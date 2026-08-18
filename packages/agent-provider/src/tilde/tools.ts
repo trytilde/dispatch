@@ -129,6 +129,19 @@ export class TildeToolReconciler {
   async #reconcileGitHubTools(context: DeploymentContext): Promise<void> {
     const groupId = context.environment.GIT_GITHUB_TOOL_GROUP_ID?.trim();
     if (!groupId) return;
+    try {
+      await this.#enableGitHubTools(context, groupId);
+    } catch (error) {
+      // A stale or replaced tool group is the git provider's to recreate; report and move on.
+      if (!isNotFound(error)) throw error;
+      context.report({
+        event: "agent.github-tools.skipped",
+        details: { reason: "The GitHub tool group no longer exists", groupId },
+      });
+    }
+  }
+
+  async #enableGitHubTools(context: DeploymentContext, groupId: string): Promise<void> {
     const [{ data: catalog }, { data: enabled }] = await Promise.all([
       listAvailableToolGroups({
         client: this.#api,

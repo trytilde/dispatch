@@ -66,7 +66,7 @@ describe("agent scaffolding", () => {
     expect(instructionsSource).toContain("process.env.AGENT_RESEARCH_ASSISTANT_NAME!");
     expect(instructionsSource).toContain("Your name is ${agentName}.");
     expect(instructionsSource).toContain("Use search_skills");
-    expect(instructionsSource).toContain("dynamic tool discovery");
+    expect(instructionsSource).toContain("ordinary direct tools");
     await expect(access(join(directory, "lib/identity.ts"))).rejects.toMatchObject({
       code: "ENOENT",
     });

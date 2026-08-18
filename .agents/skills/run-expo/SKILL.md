@@ -31,6 +31,8 @@ The SDK itself must already have `platform-tools`, `emulator`, `platforms;androi
 
 Gradle needs a JDK, not a JRE. A JRE-only install fails with `Toolchain installation ... does not provide the required capabilities: [JAVA_COMPILER]` when a native module such as `react-native-svg` requests a Java toolchain; confirm with `javac -version`, not `java -version`.
 
+The Android Gradle Plugin supports Java 17 and 21. A newer JDK — what a plain `brew install openjdk` gives you — fails deep inside a Gradle run rather than at the start, so `mobile doctor` warns about an unsupported major before you spend the build time.
+
 A running Gradle daemon caches the environment it started with, so after changing the toolchain, restart it:
 
 ```bash
@@ -141,7 +143,8 @@ Read colors through `useColor` and never hardcode a value, so every surface reso
 
 - The Android build runs edge-to-edge (`edgeToEdgeEnabled=true` in `android/gradle.properties`), so `adjustResize` does not shrink the window and the keyboard overlays content. Every screen with an input needs the `AvoidKeyboard` spacer; do not assume Android handles it.
 - A running app may not repaint when the OS light/dark setting changes. Relaunch before judging appearance.
-- iOS cannot be built or run on the Linux host. iOS coverage is limited to `expo export`, which validates the bundle only. Any iOS-specific claim requires a Mac with Xcode; say so instead of implying iOS was exercised.
+- iOS cannot be built or run on the Linux host.
+- macOS needs CocoaPods for `expo run:ios`; `mobile doctor` checks for `pod`. iOS coverage is limited to `expo export`, which validates the bundle only. Any iOS-specific claim requires a Mac with Xcode; say so instead of implying iOS was exercised.
 - Real OAuth against a deployed service needs `openbot://auth/callback` registered as a redirect URI.
 
 ## Reporting

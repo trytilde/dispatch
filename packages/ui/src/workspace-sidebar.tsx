@@ -120,7 +120,9 @@ export function WorkspaceSidebar({
               onClick={onCreateAgent}
               type="button"
             >
-              <span aria-hidden className="text-[15px] leading-none">+</span>
+              <span aria-hidden className="text-[15px] leading-none">
+                +
+              </span>
               New agent
             </button>
           </div>

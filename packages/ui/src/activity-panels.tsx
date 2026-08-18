@@ -34,7 +34,7 @@ export function AsyncTasksPanel({
   const panelRef = useRef<HTMLElement>(null);
   const onHeaderPointerDown = useFloatingPanelDrag(panelRef);
   const now = usePanelNow(nowMs);
-  const label = `Async tasks: ${agentName}`;
+  const label = `Background tasks: ${agentName}`;
 
   return (
     <aside aria-label={label} className="async-tasks-panel" ref={panelRef} role="dialog">
@@ -43,7 +43,7 @@ export function AsyncTasksPanel({
         onClose={onClose}
         onPointerDown={onHeaderPointerDown}
         subtitle={agentName}
-        title="Async tasks"
+        title="Background tasks"
       />
       <div className="floating-panel-scroll async-tasks-panel-list">
         <div aria-label={label} className="floating-panel-list" role="list">
@@ -147,7 +147,7 @@ export function ConversationOutlinePanel({
 
   return (
     <aside
-      aria-label={`Full conversation: ${agentName}`}
+      aria-label={`Conversation outline: ${agentName}`}
       className="outline-panel"
       ref={panelRef}
       role="dialog"
@@ -158,7 +158,7 @@ export function ConversationOutlinePanel({
         onPointerDown={onHeaderPointerDown}
         subtitle={agentName}
         subtitleId={titleId}
-        title="Full conversation"
+        title="Conversation outline"
       />
       {tabs.length > 1 ? (
         <OutlineTabs

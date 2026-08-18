@@ -223,15 +223,15 @@ export function DiagramCard({
   const [copied, setCopied] = useState(false);
   return (
     <>
-      <section className="diagram-card ui-code-block" data-state={state}>
-        <div className="diagram-card-actions ui-code-block-copy-overlay">
+      <section className="diagram-card ob-code-block" data-state={state}>
+        <div className="diagram-card-actions ob-code-block-copy-overlay">
           <button aria-label="Expand diagram" onClick={() => setExpanded(true)} type="button">
             ↗
           </button>
           {onCopy ? (
             <button
               aria-label={copied ? "Copied" : "Copy code"}
-              className="ui-code-block-copy"
+              className="ob-code-block-copy"
               onClick={() => {
                 onCopy(source);
                 setCopied(true);
@@ -260,11 +260,11 @@ export function DiagramCard({
 
 function DiagramContent({ state, source, error, children }: DiagramCardProps) {
   if (state === "loading")
-    return <div className="diagram-loading ui-mermaid-diagram">Rendering diagram...</div>;
+    return <div className="diagram-loading ob-mermaid-diagram">Rendering diagram...</div>;
   if (state === "error") {
     return (
-      <div className="diagram-error ui-mermaid-diagram ui-mermaid-diagram__error" role="alert">
-        <strong className="ui-mermaid-diagram__error-header">
+      <div className="diagram-error ob-mermaid-diagram ob-mermaid-diagram__error" role="alert">
+        <strong className="ob-mermaid-diagram__error-header">
           <span aria-hidden="true">⚠</span> Diagram Syntax Error
         </strong>
         <details>
@@ -276,7 +276,7 @@ function DiagramContent({ state, source, error, children }: DiagramCardProps) {
     );
   }
   return (
-    <div className="diagram-content ui-mermaid-diagram ui-mermaid-diagram__content">{children}</div>
+    <div className="diagram-content ob-mermaid-diagram ob-mermaid-diagram__content">{children}</div>
   );
 }
 
@@ -297,7 +297,7 @@ function DiagramModal({ children, onClose }: { children: ReactNode; onClose: () 
 
   return (
     <div aria-label="Diagram" aria-modal="true" className="diagram-modal" role="dialog">
-      <div className="diagram-modal-controls ui-expandable-node__modal-controls">
+      <div className="diagram-modal-controls ob-expandable-node__modal-controls">
         <button
           aria-label="Zoom in"
           onClick={() =>
@@ -322,7 +322,7 @@ function DiagramModal({ children, onClose }: { children: ReactNode; onClose: () 
         </button>
       </div>
       <div
-        className="diagram-modal-viewport ui-expandable-node__modal-viewport"
+        className="diagram-modal-viewport ob-expandable-node__modal-viewport"
         onPointerDown={startDrag}
         onPointerMove={(event) => {
           const drag = dragRef.current;
@@ -344,7 +344,7 @@ function DiagramModal({ children, onClose }: { children: ReactNode; onClose: () 
         }}
       >
         <div
-          className="diagram-modal-content ui-expandable-node__transform-content"
+          className="diagram-modal-content ob-expandable-node__transform-content"
           style={{
             transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
           }}
@@ -403,7 +403,7 @@ export function ComputerHandoffCard({
       </div>
       {waiting ? (
         <button
-          aria-label="Take over the computer"
+          aria-label="Drive the computer yourself"
           className="computer-handoff-frame"
           onClick={onOpen}
           type="button"
@@ -419,13 +419,13 @@ export function ComputerHandoffCard({
         {waiting ? (
           <>
             <button className="primary" onClick={onOpen}>
-              Take over
+              Drive it yourself
             </button>
             <button onClick={onHandBack}>I’m done</button>
             <button
               className="quiet"
               onClick={onDismiss}
-              title="Cancel this request without doing the step; the agent continues without it"
+              title="Skip this step — the agent carries on without it"
             >
               Skip
             </button>

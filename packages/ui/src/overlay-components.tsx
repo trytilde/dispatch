@@ -51,7 +51,7 @@ export function DialogSurface({
   if (!present) return null;
   return (
     <div
-      className="dialog-layer ui-dialog-backdrop"
+      className="dialog-layer ob-dialog-backdrop"
       data-state={closing ? "closing" : "open"}
       onMouseDown={(event) => {
         if (open && event.target === event.currentTarget) onClose?.();
@@ -62,25 +62,25 @@ export function DialogSurface({
         aria-describedby={description ? descriptionId : undefined}
         aria-labelledby={titleId}
         aria-modal="true"
-        className={`dialog-surface ui-dialog ${className}`.trim()}
+        className={`dialog-surface ob-dialog ${className}`.trim()}
         data-state={closing ? "closing" : "open"}
         ref={surfaceRef}
         role="dialog"
         style={{ width }}
         tabIndex={-1}
       >
-        <header className="dialog-header ui-dialog-header">
-          <h2 className="ui-dialog-title" id={titleId}>
+        <header className="dialog-header ob-dialog-header">
+          <h2 className="ob-dialog-title" id={titleId}>
             {title}
           </h2>
           {description ? (
-            <p className="ui-dialog-description" id={descriptionId}>
+            <p className="ob-dialog-description" id={descriptionId}>
               {description}
             </p>
           ) : null}
         </header>
         {children ? <div className="dialog-body">{children}</div> : null}
-        {actions ? <footer className="dialog-actions ui-dialog-footer">{actions}</footer> : null}
+        {actions ? <footer className="dialog-actions ob-dialog-footer">{actions}</footer> : null}
       </div>
     </div>
   );
@@ -299,7 +299,7 @@ export function LocalToolPermissionCard({
     <PermissionRequestCard
       actions={[
         {
-          label: "Always allow",
+          label: "Allow every time",
           onClick: () => onResolve("always"),
           disabled: !enabled || !canAlwaysAllow,
           tooltip: !canAlwaysAllow ? alwaysAllowDisabledReason : undefined,
@@ -312,10 +312,10 @@ export function LocalToolPermissionCard({
         },
         { label: "Never", onClick: () => onResolve("never"), disabled: !enabled },
       ]}
-      ariaLabel="Local tool permission"
+      ariaLabel="Tool permission"
       description={`This applies to ${productName} and every agent. It can always be changed in Settings.`}
       dismissLabel="Deny once"
-      dismissTooltip="Deny once (Esc)"
+      dismissTooltip="Decline (Esc)"
       failureNote={failureNote}
       hideBadge
       leading={<span className="local-tool-permission-warning">!</span>}
@@ -327,7 +327,7 @@ export function LocalToolPermissionCard({
 
 export function LocalToolPermissionDock({ children }: { children: ReactNode }) {
   return (
-    <div aria-label="Local tool permissions" className="local-tool-permission-dock" role="region">
+    <div aria-label="Tool permissions" className="local-tool-permission-dock" role="region">
       {children}
     </div>
   );
@@ -347,7 +347,7 @@ export function ThreadOverlay({
   open,
   children,
   footer,
-  label = "Agent exchange",
+  label = "Agent handoff",
   loadFailed = false,
   onClose,
   onRetry,

@@ -110,7 +110,7 @@ export function AgentWorkspacePanel({
               className={controlling ? "active" : "take-over"}
               onClick={() => setControlling((value) => !value)}
             >
-              {controlling ? "Release" : "Take over"}
+              {controlling ? "Release" : "Drive it yourself"}
             </button>
             <button
               aria-label="Close Computer pane"
@@ -175,9 +175,7 @@ export function AgentWorkspacePanel({
             <ComputerStagePlaceholder
               busy={!previewFailed}
               message={
-                previewFailed
-                  ? `Can't reach ${previewAgentName}'s screen`
-                  : "Booting up the computer"
+                previewFailed ? `Can't reach ${previewAgentName}'s screen` : "Starting the computer"
               }
               onRetry={
                 previewFailed

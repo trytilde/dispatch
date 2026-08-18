@@ -38,7 +38,7 @@ export function AgentListItem({ agent, selected, onSelect }: AgentListItemProps)
         {agent.lastMessage ? <small>{agent.lastMessage}</small> : null}
       </span>
       {agent.unread ? (
-        <span aria-label="Unread activity" className="agent-row-marker" role="status">
+        <span aria-label="Has unread messages" className="agent-row-marker" role="status">
           <i />
         </span>
       ) : null}
@@ -122,7 +122,7 @@ const accountMenuItems = [
 ] as const;
 
 export function WorkspaceAccount({
-  name = "Daniel Adams",
+  name = "Your account",
   defaultOpen = false,
 }: WorkspaceAccountProps) {
   const [open, setOpen] = useState(defaultOpen);

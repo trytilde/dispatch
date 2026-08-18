@@ -12,7 +12,7 @@ OpenBot is a TypeScript monorepo for a local or Vercel-hosted agent workspace. I
 
 ## Toolchain and commands
 
-- Node.js 24, pnpm 10, TypeScript ESM, strict mode.
+- Node.js 24, pnpm 10, TypeScript ESM, strict mode. `CONTRIBUTING.md` carries the per-platform prerequisites and setup; keep it and `openbot mobile doctor` current when an external dependency changes.
 - Use repository-pinned tools through `pnpm`; do not install global substitutes.
 - Do not hand-edit generated files under `packages/computer-service-proto/src/gen/` or `apps/web/src/routeTree.gen.ts`.
 

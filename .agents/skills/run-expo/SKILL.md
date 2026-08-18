@@ -27,7 +27,7 @@ What it resolves, and why each mattered:
 - `ANDROID_SDK_ROOT` and `ANDROID_HOME`, defaulting to `/root/Android/sdk`, plus `platform-tools`, `emulator`, and `cmdline-tools/latest/bin` on `PATH`.
 - A real Node binary, taken from `process.execPath`. Gradle spawns `node` while evaluating settings, and a version-manager shim or an expired `fnm` multishell directory fails there with `A problem occurred starting process 'command 'node''`.
 
-The SDK itself must already have `platform-tools`, `emulator`, `platforms;android-36`, `build-tools;36.0.0`, and a `system-images;android-36;google_apis;x86_64` image. The host also needs a full JDK, `Xvfb`, `x11vnc`, and the emulator's shared libraries, including `libpulse0`.
+The SDK itself must already have `platform-tools`, `emulator`, `platforms;android-36`, `build-tools;36.0.0`, and a system image matching the host CPU — `arm64-v8a` on Apple Silicon, `x86_64` elsewhere. `openbot mobile setup` and `openbot mobile avd` pick the right one; an x86_64 image on Apple Silicon has no acceleration path and is unusable. The host also needs a full JDK, `Xvfb`, `x11vnc`, and the emulator's shared libraries, including `libpulse0`.
 
 Gradle needs a JDK, not a JRE. A JRE-only install fails with `Toolchain installation ... does not provide the required capabilities: [JAVA_COMPILER]` when a native module such as `react-native-svg` requests a Java toolchain; confirm with `javac -version`, not `java -version`.
 
@@ -52,7 +52,7 @@ pnpm dev:mobile:emulator
 Create the AVD once if it is missing:
 
 ```bash
-avdmanager create avd -n openbot -k "system-images;android-36;google_apis;x86_64" -d pixel_7
+pnpm openbot mobile avd    # or: avdmanager create avd -n openbot -k "system-images;android-36;google_apis;<abi>" -d pixel_7
 ```
 
 ## Build And Install The Dev Client
@@ -144,7 +144,8 @@ Read colors through `useColor` and never hardcode a value, so every surface reso
 - The Android build runs edge-to-edge (`edgeToEdgeEnabled=true` in `android/gradle.properties`), so `adjustResize` does not shrink the window and the keyboard overlays content. Every screen with an input needs the `AvoidKeyboard` spacer; do not assume Android handles it.
 - A running app may not repaint when the OS light/dark setting changes. Relaunch before judging appearance.
 - iOS cannot be built or run on the Linux host.
-- macOS needs CocoaPods for `expo run:ios`; `mobile doctor` checks for `pod`. iOS coverage is limited to `expo export`, which validates the bundle only. Any iOS-specific claim requires a Mac with Xcode; say so instead of implying iOS was exercised.
+- macOS needs CocoaPods for `expo run:ios`, and Xcode at or above React Native's minimum — 16.1 for React Native 0.86. Below it, `pod install` fails with `Please upgrade XCode`. `mobile doctor` checks both, reading the minimum from the installed React Native so it cannot drift.
+- A simulator that fails to boot with `launchd failed to respond` is a simulator-host problem, not a repository one: `xcrun simctl shutdown all && killall -9 Simulator`, then reboot if it persists. iOS coverage is limited to `expo export`, which validates the bundle only. Any iOS-specific claim requires a Mac with Xcode; say so instead of implying iOS was exercised.
 - Real OAuth against a deployed service needs `openbot://auth/callback` registered as a redirect URI.
 
 ## Reporting

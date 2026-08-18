@@ -5,15 +5,21 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { androidSdkRoot, androidTool, toolchainEnvironment } from "../../toolchain.js";
+import {
+  androidApiLevel,
+  androidSdkRoot,
+  androidSystemImage,
+  androidTool,
+  toolchainEnvironment,
+} from "../../toolchain.js";
 
 const commandLineToolsVersion = "11076708";
 const packages = [
   "platform-tools",
   "emulator",
-  "platforms;android-36",
-  "build-tools;36.0.0",
-  "system-images;android-36;google_apis;x86_64",
+  `platforms;android-${androidApiLevel}`,
+  `build-tools;${androidApiLevel}.0.0`,
+  androidSystemImage(),
 ];
 
 export async function runSetup(): Promise<number> {

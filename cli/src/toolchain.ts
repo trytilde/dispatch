@@ -22,6 +22,18 @@ export function androidSdkRoot(): string {
   return candidates[0] ?? join(homedir(), "Android", "sdk");
 }
 
+export const androidApiLevel = 36;
+
+/**
+ * Emulator system images must match the host CPU: an x86_64 image on Apple
+ * Silicon has no hardware acceleration path and is unusable, and an arm64 image
+ * is wrong on an Intel or AMD host.
+ */
+export function androidSystemImage(): string {
+  const abi = process.arch === "arm64" ? "arm64-v8a" : "x86_64";
+  return `system-images;android-${androidApiLevel};google_apis;${abi}`;
+}
+
 export type AndroidTool = "adb" | "emulator" | "avdmanager" | "sdkmanager";
 
 export function androidTool(name: AndroidTool): string {

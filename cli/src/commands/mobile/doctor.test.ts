@@ -33,3 +33,25 @@ describe("runDoctor", () => {
         expect(line).toContain("openbot mobile setup");
   });
 });
+
+describe("reactNativeMinimumXcode", () => {
+  it("reads the minimum from the installed React Native rather than restating it", async () => {
+    // The constant lives in react-native/scripts/cocoapods/helpers.rb and is what
+    // `pod install` enforces; a stale copy here would silently pass a broken host.
+    const { readFileSync } = await import("node:fs");
+    const { createRequire } = await import("node:module");
+    const { dirname, join } = await import("node:path");
+    const { mobileAppDirectory, repositoryRoot } = await import("../../workspace.js");
+    const appRequire = createRequire(join(mobileAppDirectory(repositoryRoot()), "package.json"));
+    const helpers = join(
+      dirname(appRequire.resolve("react-native/package.json")),
+      "scripts",
+      "cocoapods",
+      "helpers.rb",
+    );
+    const matched = /min_xcode_version_supported[\s\S]{0,80}?return\s+'([\d.]+)'/.exec(
+      readFileSync(helpers, "utf8"),
+    );
+    expect(matched?.[1]).toMatch(/^\d+\.\d+/);
+  });
+});

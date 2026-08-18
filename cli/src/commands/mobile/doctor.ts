@@ -4,9 +4,12 @@
 // A failing check is an answer, not a crash, so this marks its non-zero exit as
 // diagnostic and the CLI skips the run-log crash notice.
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { markDiagnosticExit } from "../../diagnostics.js";
 import { androidSdkRoot, androidTool } from "../../toolchain.js";
+import { mobileAppDirectory, repositoryRoot } from "../../workspace.js";
 
 interface Check {
   name: string;
@@ -58,6 +61,7 @@ export async function runDoctor(): Promise<number> {
     }
   }
   if (platform === "darwin") {
+    checks.push(xcodeCheck());
     const simctl = spawnSync("xcrun", ["simctl", "help"], { stdio: "ignore" });
     checks.push({
       name: "ios-simulator",
@@ -117,4 +121,59 @@ function javaCheck(): Check {
       detail: `javac ${version} — the Android Gradle Plugin supports ${supportedJdkMajors.join(" and ")}; Android builds may fail`,
     };
   return { name: "jdk", passed: true, detail: `javac ${version}` };
+}
+
+// React Native's CocoaPods helpers own the real minimum, and `pod install` raises
+// "Please upgrade XCode" from it. Read the constant from the installed copy rather
+// than restating a number here, so a React Native upgrade cannot leave this stale.
+function reactNativeMinimumXcode(): { version: string; sourced: boolean } {
+  const fallback = { version: "16.1", sourced: false };
+  try {
+    const appRequire = createRequire(join(mobileAppDirectory(repositoryRoot()), "package.json"));
+    const helpers = join(
+      dirname(appRequire.resolve("react-native/package.json")),
+      "scripts",
+      "cocoapods",
+      "helpers.rb",
+    );
+    const matched = /min_xcode_version_supported[\s\S]{0,80}?return\s+'([\d.]+)'/.exec(
+      readFileSync(helpers, "utf8"),
+    );
+    return matched?.[1] ? { version: matched[1], sourced: true } : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function compareVersions(left: string, right: string): number {
+  const leftParts = left.split(".").map(Number);
+  const rightParts = right.split(".").map(Number);
+  for (let index = 0; index < Math.max(leftParts.length, rightParts.length); index += 1) {
+    const difference = (leftParts[index] ?? 0) - (rightParts[index] ?? 0);
+    if (difference !== 0) return difference;
+  }
+  return 0;
+}
+
+function xcodeCheck(): Check {
+  const installed = spawnSync("xcodebuild", ["-version"], { encoding: "utf8" });
+  if (installed.status !== 0)
+    return { name: "xcode", passed: false, detail: "xcodebuild not found; install Xcode" };
+  const version = /Xcode\s+([\d.]+)/.exec(installed.stdout ?? "")?.[1];
+  const minimum = reactNativeMinimumXcode();
+  const source = minimum.sourced ? "React Native requires" : "React Native is assumed to require";
+  if (!version)
+    return {
+      name: "xcode",
+      passed: false,
+      warning: true,
+      detail: `could not parse xcodebuild output; ${source} >= ${minimum.version}`,
+    };
+  if (compareVersions(version, minimum.version) < 0)
+    return {
+      name: "xcode",
+      passed: false,
+      detail: `Xcode ${version} — ${source} >= ${minimum.version}; pod install fails with "Please upgrade XCode"`,
+    };
+  return { name: "xcode", passed: true, detail: `Xcode ${version} (minimum ${minimum.version})` };
 }

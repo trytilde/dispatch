@@ -35,6 +35,8 @@ Gradle needs a JDK, not a JRE. A JRE-only install fails with `Toolchain installa
 
 The Android Gradle Plugin supports Java 17 and 21. A newer JDK — what a plain `brew install openjdk` gives you — fails deep inside a Gradle run rather than at the start, so `mobile doctor` warns about an unsupported major before you spend the build time.
 
+Observed on Java 25: `Execution failed for task ':react-native-worklets:configureCMakeDebug[arm64-v8a]'` with `WARNING: A restricted method in java.lang.System has been called`, after four minutes of building. Java 24 restricted the native-access calls React Native's CMake configuration makes, and no part of the message names the JDK. Treat that signature as the unsupported-JDK symptom.
+
 A running Gradle daemon caches the environment it started with, so after changing the toolchain, restart it:
 
 ```bash

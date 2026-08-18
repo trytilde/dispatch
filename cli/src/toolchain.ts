@@ -5,7 +5,8 @@
 //   expired multishell path fails there. `process.execPath` is the real binary
 //   running this process, so its directory always works.
 // - `adb`, `emulator`, and `avdmanager` are not on a login PATH on a build host.
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
@@ -32,6 +33,26 @@ export const androidApiLevel = 36;
 export function androidSystemImage(): string {
   const abi = process.arch === "arm64" ? "arm64-v8a" : "x86_64";
   return `system-images;android-${androidApiLevel};google_apis;${abi}`;
+}
+
+/**
+ * React Native pins the NDK its native modules build against, and a mismatch fails
+ * a CMake configure task deep in a Gradle run. Read that pin from the installed
+ * copy so an upgrade cannot leave this behind.
+ */
+export function reactNativeNdkVersion(appDirectory: string): string {
+  const fallback = "27.1.12297006";
+  try {
+    const appRequire = createRequire(join(appDirectory, "package.json"));
+    const versions = join(
+      dirname(appRequire.resolve("react-native/package.json")),
+      "gradle",
+      "libs.versions.toml",
+    );
+    return /ndkVersion\s*=\s*"([\d.]+)"/.exec(readFileSync(versions, "utf8"))?.[1] ?? fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export type AndroidTool = "adb" | "emulator" | "avdmanager" | "sdkmanager";

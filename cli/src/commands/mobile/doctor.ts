@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { markDiagnosticExit } from "../../diagnostics.js";
-import { androidSdkRoot, androidTool } from "../../toolchain.js";
+import { androidSdkRoot, androidTool, reactNativeNdkVersion } from "../../toolchain.js";
 import { mobileAppDirectory, repositoryRoot } from "../../workspace.js";
 
 interface Check {
@@ -36,6 +36,7 @@ export async function runDoctor(): Promise<number> {
     passed: existsSync(sdk),
     detail: existsSync(sdk) ? sdk : `${sdk} — run: openbot mobile setup`,
   });
+  checks.push(nativeBuildCheck(sdk));
   for (const tool of ["adb", "emulator", "avdmanager"] as const) {
     const path = androidTool(tool);
     checks.push({
@@ -176,4 +177,29 @@ function xcodeCheck(): Check {
       detail: `Xcode ${version} — ${source} >= ${minimum.version}; pod install fails with "Please upgrade XCode"`,
     };
   return { name: "xcode", passed: true, detail: `Xcode ${version} (minimum ${minimum.version})` };
+}
+
+// React Native's native modules build through CMake against a pinned NDK. The
+// Android Gradle Plugin will download both mid-build, but a mismatch surfaces as a
+// failed `configureCMakeDebug` task rather than anything naming the NDK, so check
+// it here where the answer is legible.
+function nativeBuildCheck(sdk: string): Check {
+  let expected = "";
+  try {
+    expected = reactNativeNdkVersion(mobileAppDirectory(repositoryRoot()));
+  } catch {
+    return {
+      name: "ndk",
+      passed: true,
+      detail: "skipped: no workspace mobile app resolved from here",
+    };
+  }
+  const installed = join(sdk, "ndk", expected);
+  if (existsSync(installed)) return { name: "ndk", passed: true, detail: installed };
+  return {
+    name: "ndk",
+    passed: false,
+    warning: true,
+    detail: `ndk;${expected} missing — Gradle will download it mid-build, or run: openbot mobile setup`,
+  };
 }

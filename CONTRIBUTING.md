@@ -24,7 +24,7 @@ Needed only for the surfaces you touch:
 | Surface | Dependency | Notes |
 | --- | --- | --- |
 | Mobile, Android | JDK **17 or 21** | the Android Gradle Plugin does not support newer majors; `javac -version`, not `java -version`, because a JRE fails mid-build |
-| Mobile, Android | Android SDK | provisioned by `openbot mobile setup`; the system image matches your CPU, `arm64-v8a` on Apple Silicon and `x86_64` elsewhere |
+| Mobile, Android | Android SDK, NDK, CMake | provisioned by `openbot mobile setup`; the system image matches your CPU, `arm64-v8a` on Apple Silicon and `x86_64` elsewhere, and the NDK matches the version React Native pins |
 | Mobile, iOS | Xcode **16.1 or newer** + command line tools, an iOS 15.1+ simulator runtime, CocoaPods | macOS only. React Native 0.86 enforces the Xcode minimum inside `pod install`, which fails with `Please upgrade XCode`; `mobile doctor` reads that minimum from the installed React Native and checks it up front |
 | Headless Android emulator | `/dev/kvm`, Xvfb, x11vnc | Linux only; without KVM the emulator is too slow to use |
 | Browser end-to-end | Playwright browsers | `pnpm exec playwright install chromium` |
@@ -99,6 +99,12 @@ pnpm openbot mobile doctor
 does not need Gradle. It fails on an Xcode below the React Native minimum, because
 `pod install` will refuse regardless. The emulator opens a real window on macOS, so Xvfb and
 x11vnc are not used and not required.
+
+A Gradle failure reading `Execution failed for task ':react-native-worklets:configureCMakeDebug'`
+with `WARNING: A restricted method in java.lang.System has been called` is the unsupported JDK,
+not a broken checkout: Java 24 and newer restrict the native-access calls that React Native's
+CMake configuration makes. Install `openjdk@21`, point `JAVA_HOME` at it, and rebuild. Nothing
+in the message names the JDK, which is why `mobile doctor` warns about the major version.
 
 If the simulator refuses to boot with `launchd failed to respond` or
 `Failed to start launchd_sim`, that is a simulator-host problem rather than a repository one.

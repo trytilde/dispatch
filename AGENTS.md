@@ -43,6 +43,8 @@ pnpm dev:mobile:emulator
 pnpm doctor
 pnpm connect -- <host>
 pnpm dev:remote -- <host> emulator
+pnpm dev:desktop
+pnpm desktop:package
 ```
 
 `openbot` resolves the Android SDK and a real Node binary in `cli/src/toolchain.ts`, so no command needs an `export PATH=...` prefix. Extend that module rather than prefixing a command. Remote hosts live in fork-owned `configuration/dev-hosts.json`.

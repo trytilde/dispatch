@@ -14,6 +14,7 @@ import { runNewAgent } from "./new-agent.js";
 import { runSecrets } from "./secrets.js";
 import { runDevelopmentServer } from "./serve.js";
 import { runConnect } from "./connect.js";
+import { runDesktop } from "./desktop/index.js";
 import { runMobile } from "./mobile/index.js";
 import { runRemote } from "./remote.js";
 
@@ -95,10 +96,7 @@ export async function runCommand(command: string, args: readonly string[]): Prom
   if (command === "check" || command === "build" || command === "test")
     return delegate(command, args);
   if (command === "e2e") return delegate("test:e2e", args);
-  if (command === "desktop") {
-    if (args[0] !== "package") throw new Error("Usage: openbot desktop package");
-    return delegateFilter("@tryopenbot/desktop", "package", args.slice(1));
-  }
+  if (command === "desktop") return reportedExit(await runDesktop(args));
   // These delegate to a child with inherited stdio, or print their own explanation.
   // A non-zero result is therefore already reported, so the run-log crash notice
   // would only point at a log holding nothing but the run's start and finish.

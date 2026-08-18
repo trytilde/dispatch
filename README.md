@@ -40,6 +40,7 @@ pnpm openbot check                  # contracts, types, lint, package tests
 pnpm openbot build                  # every package, plus artifact verification
 pnpm openbot test                   # repository tests
 pnpm openbot e2e                    # browser Playwright suite
+pnpm openbot desktop dev            # Electron shell, headless with VNC on a display-less host
 pnpm openbot desktop package        # Electron packaging
 pnpm openbot mobile doctor          # verify the mobile toolchain
 pnpm openbot mobile emulator        # Android emulator, headless on a display-less Linux host

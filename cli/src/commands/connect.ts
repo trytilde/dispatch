@@ -11,6 +11,7 @@ export async function runConnect(argv: readonly string[]): Promise<number> {
     {
       "--print": Boolean,
       "--no-vnc": Boolean,
+      "--no-desktop": Boolean,
       "--no-metro": Boolean,
       "--no-adb": Boolean,
     },
@@ -18,12 +19,15 @@ export async function runConnect(argv: readonly string[]): Promise<number> {
   );
   const [name] = options._;
   if (!name) {
-    console.error("Usage: openbot connect <host> [--print] [--no-vnc] [--no-metro] [--no-adb]");
+    console.error(
+      "Usage: openbot connect <host> [--print] [--no-vnc] [--no-desktop] [--no-metro] [--no-adb]",
+    );
     return 1;
   }
   const host = resolveHost(name, loadHosts(repositoryRoot()));
   const tunnel: TunnelOptions = {
     vnc: !options["--no-vnc"],
+    desktop: !options["--no-desktop"],
     metro: !options["--no-metro"],
     adb: !options["--no-adb"],
   };

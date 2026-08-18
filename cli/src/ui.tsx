@@ -39,6 +39,7 @@ const commands = [
   ["build", "Build the deployable application shell"],
   ["test", "Run repository tests"],
   ["e2e", "Run the browser Playwright suite"],
+  ["desktop dev", "Build and launch the Electron shell, headless with VNC on a display-less host"],
   ["desktop package", "Package the Electron desktop app"],
   ["mobile expo|emulator|avd|setup|screenshot|logs|doctor", "Mobile developer workflow"],
   ["connect HOST", "Tunnel a remote dev host's emulator screen, Metro, and adb"],

@@ -5,10 +5,16 @@
 // renders into it with software GL, and x11vnc exposes that screen on loopback
 // only — a remote developer reaches it through `openbot connect`. On macOS
 // the emulator gets a real window and needs neither.
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import arg from "arg";
-import { requireAndroidTool, toolchainEnvironment } from "../../toolchain.js";
+import { requireAndroidTool } from "../../toolchain.js";
+import {
+  detach,
+  ensureVirtualScreen,
+  ensureVncServer,
+  processMatches,
+} from "../../virtual-display.js";
 
 export async function runEmulator(argv: readonly string[]): Promise<number> {
   const options = arg(
@@ -31,15 +37,11 @@ export async function runEmulator(argv: readonly string[]): Promise<number> {
   const emulator = requireAndroidTool("emulator");
   const display = `:${displayNumber}`;
 
-  if (headless && !isRunning(`Xvfb ${display}`)) {
-    console.log(`starting Xvfb ${display}`);
-    detach("Xvfb", [display, "-screen", "0", "1200x2200x24", "-nolisten", "tcp"]);
-    await delay(2000);
-  }
+  if (headless) await ensureVirtualScreen({ displayNumber, vncPort, geometry: "1200x2200x24" });
 
   // Match the launcher or the qemu process it leaves behind, with a single-dash
   // `-avd` so this process's own `--avd` argument can never self-match.
-  if (!isRunning(`(qemu-system[^ ]*|emulator) -avd ${avd}`)) {
+  if (!processMatches(`(qemu-system[^ ]*|emulator) -avd ${avd}`)) {
     console.log(`starting emulator ${avd}`);
     detach(
       emulator,
@@ -83,22 +85,7 @@ export async function runEmulator(argv: readonly string[]): Promise<number> {
   }
   console.log("boot completed");
 
-  if (headless && !isRunning(`x11vnc .*-rfbport ${vncPort}`)) {
-    console.log(`starting x11vnc on 127.0.0.1:${vncPort}`);
-    detach("x11vnc", [
-      "-display",
-      display,
-      // Loopback only. Reach it through `openbot connect`, never a public bind.
-      "-localhost",
-      "-rfbport",
-      vncPort,
-      "-shared",
-      "-forever",
-      "-nopw",
-      "-quiet",
-    ]);
-    await delay(2000);
-  }
+  if (headless) await ensureVncServer({ displayNumber, vncPort });
 
   spawnSync(adb, ["devices"], { stdio: "inherit" });
   if (headless)
@@ -107,16 +94,4 @@ export async function runEmulator(argv: readonly string[]): Promise<number> {
     );
   else console.log("ready.");
   return 0;
-}
-
-const isRunning = (pattern: string): boolean =>
-  spawnSync("pgrep", ["-f", pattern], { stdio: "ignore" }).status === 0;
-
-function detach(command: string, args: string[], overrides: Record<string, string> = {}): void {
-  const child = spawn(command, args, {
-    detached: true,
-    stdio: "ignore",
-    env: toolchainEnvironment(overrides),
-  });
-  child.unref();
 }

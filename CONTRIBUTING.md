@@ -60,8 +60,10 @@ pnpm openbot mobile avd
 pnpm openbot mobile doctor
 ```
 
-A Linux host without a display runs the emulator headless behind Xvfb with x11vnc bound to
-loopback. Reach it from a workstation with `pnpm openbot connect -- <host>`; see
+A Linux host without a display runs both the emulator and the Electron shell headless behind
+Xvfb with x11vnc bound to loopback — the emulator on `:1` and VNC 5900, Electron on `:2` and
+VNC 5901, so they coexist. `pnpm openbot connect -- <host>` forwards both screens plus Metro
+and adb. Run a task on a remote with `pnpm dev:remote -- <host> <task>`; see
 [.agents/skills/run-expo/SKILL.md](.agents/skills/run-expo/SKILL.md).
 
 ## Setup on macOS
@@ -141,6 +143,7 @@ pnpm openbot check                     # contracts, types, lint, package tests
 pnpm openbot build                     # every package, plus artifact verification
 pnpm openbot test                      # repository tests
 pnpm openbot e2e                       # browser Playwright suite
+pnpm openbot desktop dev               # launch the Electron shell
 pnpm openbot desktop package           # Electron packaging
 pnpm openbot mobile expo start --dev-client
 pnpm --filter <package> test           # narrowest useful check while iterating

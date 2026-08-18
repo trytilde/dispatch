@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { runDoctor } from "./doctor.js";
 
 async function captureDoctor(): Promise<{ code: number; lines: string[] }> {
@@ -53,5 +53,28 @@ describe("reactNativeMinimumXcode", () => {
       readFileSync(helpers, "utf8"),
     );
     expect(matched?.[1]).toMatch(/^\d+\.\d+/);
+  });
+});
+
+describe("javaCheck resolution", () => {
+  const original = process.env.JAVA_HOME;
+  afterEach(() => {
+    if (original === undefined) delete process.env.JAVA_HOME;
+    else process.env.JAVA_HOME = original;
+  });
+
+  it("names JAVA_HOME as the source when it is set, because Gradle follows it", async () => {
+    process.env.JAVA_HOME = "/nonexistent-jdk";
+    const { lines } = await captureDoctor();
+    const jdk = lines.find((line) => line.includes("jdk"));
+    expect(jdk).toContain("/nonexistent-jdk/bin/javac");
+    expect(jdk).toContain("JAVA_HOME");
+    expect(jdk).toMatch(/^FAIL/);
+  });
+
+  it("falls back to PATH when JAVA_HOME is unset", async () => {
+    delete process.env.JAVA_HOME;
+    const { lines } = await captureDoctor();
+    expect(lines.find((line) => line.includes("jdk"))).toContain("from PATH");
   });
 });

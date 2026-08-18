@@ -107,21 +107,50 @@ export async function runDoctor(): Promise<number> {
 }
 
 function javaCheck(): Check {
-  // javac, not java: a JRE-only install passes `java -version` and then fails a
-  // Gradle run with "does not provide the required capabilities: [JAVA_COMPILER]".
-  const javac = spawnSync("javac", ["-version"], { encoding: "utf8" });
+  // Gradle resolves its JDK from JAVA_HOME, so check the same one Gradle will use.
+  // A machine with several JDKs installed — a linked Homebrew `openjdk` shadowing a
+  // keg-only `openjdk@21`, say — otherwise reports a compiler the build never runs.
+  const home = process.env.JAVA_HOME?.trim();
+  const candidate = home ? join(home, "bin", "javac") : "javac";
+  const source = home ? "JAVA_HOME" : "PATH";
+
+  const javac = spawnSync(candidate, ["-version"], { encoding: "utf8" });
   if (javac.status !== 0)
-    return { name: "jdk", passed: false, detail: "javac not found; install a full JDK" };
-  const version = (javac.stdout.trim() || javac.stderr.trim()).replace(/^javac\s+/, "");
+    return {
+      name: "jdk",
+      passed: false,
+      detail: home
+        ? `no javac at ${candidate} (JAVA_HOME); install a full JDK or correct JAVA_HOME`
+        : "javac not found on PATH; install a full JDK",
+    };
+
+  const version = readJavacVersion(javac);
   const major = Number(version.split(".")[0]);
+  const shadowed = shadowingNote(home, version);
+
   if (Number.isFinite(major) && !supportedJdkMajors.includes(major))
     return {
       name: "jdk",
       passed: false,
       warning: true,
-      detail: `javac ${version} — the Android Gradle Plugin supports ${supportedJdkMajors.join(" and ")}; Android builds may fail`,
+      detail: `javac ${version} from ${source} — the Android Gradle Plugin supports ${supportedJdkMajors.join(" and ")}; Android builds may fail${shadowed}`,
     };
-  return { name: "jdk", passed: true, detail: `javac ${version}` };
+  return { name: "jdk", passed: true, detail: `javac ${version} from ${source}${shadowed}` };
+}
+
+function readJavacVersion(result: { stdout?: string; stderr?: string }): string {
+  return (result.stdout?.trim() || result.stderr?.trim() || "").replace(/^javac\s+/, "");
+}
+
+// When JAVA_HOME and PATH disagree, say so: Gradle follows the first and a developer
+// checking `javac -version` by hand sees the second.
+function shadowingNote(home: string | undefined, effective: string): string {
+  if (!home) return "";
+  const onPath = spawnSync("javac", ["-version"], { encoding: "utf8" });
+  if (onPath.status !== 0) return "";
+  const pathVersion = readJavacVersion(onPath);
+  if (!pathVersion || pathVersion === effective) return "";
+  return ` (PATH javac is ${pathVersion}; Gradle follows JAVA_HOME)`;
 }
 
 // React Native's CocoaPods helpers own the real minimum, and `pod install` raises

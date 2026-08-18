@@ -31,6 +31,8 @@ What it resolves, and why each mattered:
 
 The SDK itself must already have `platform-tools`, `emulator`, `platforms;android-36`, `build-tools;36.0.0`, and a system image matching the host CPU — `arm64-v8a` on Apple Silicon, `x86_64` elsewhere. `openbot mobile setup` and `openbot mobile avd` pick the right one; an x86_64 image on Apple Silicon has no acceleration path and is unusable. The host also needs a full JDK, `Xvfb`, `x11vnc`, and the emulator's shared libraries, including `libpulse0`.
 
+Gradle resolves its JDK from `JAVA_HOME` and only falls back to `PATH`, so a machine with several JDKs installed can run a build on a different compiler than `javac -version` reports. `mobile doctor` resolves it the same way Gradle does and names the source, calling out a disagreement between the two.
+
 Gradle needs a JDK, not a JRE. A JRE-only install fails with `Toolchain installation ... does not provide the required capabilities: [JAVA_COMPILER]` when a native module such as `react-native-svg` requests a Java toolchain; confirm with `javac -version`, not `java -version`.
 
 The Android Gradle Plugin supports Java 17 and 21. A newer JDK — what a plain `brew install openjdk` gives you — fails deep inside a Gradle run rather than at the start, so `mobile doctor` warns about an unsupported major before you spend the build time.

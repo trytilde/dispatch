@@ -23,7 +23,7 @@ Needed only for the surfaces you touch:
 
 | Surface | Dependency | Notes |
 | --- | --- | --- |
-| Mobile, Android | JDK **17 or 21** | the Android Gradle Plugin does not support newer majors; `javac -version`, not `java -version`, because a JRE fails mid-build |
+| Mobile, Android | JDK **17 or 21** | the Android Gradle Plugin does not support newer majors. Gradle resolves its JDK from `JAVA_HOME`, so setting that matters more than which `javac` is on `PATH`; `mobile doctor` reports whichever one Gradle will actually use |
 | Mobile, Android | Android SDK, NDK, CMake | provisioned by `openbot mobile setup`; the system image matches your CPU, `arm64-v8a` on Apple Silicon and `x86_64` elsewhere, and the NDK matches the version React Native pins |
 | Mobile, iOS | Xcode **16.1 or newer** + command line tools, an iOS 15.1+ simulator runtime, CocoaPods | macOS only. React Native 0.86 enforces the Xcode minimum inside `pod install`, which fails with `Please upgrade XCode`; `mobile doctor` reads that minimum from the installed React Native and checks it up front |
 | Headless Android emulator | `/dev/kvm`, Xvfb, x11vnc | Linux only; without KVM the emulator is too slow to use |
@@ -84,6 +84,11 @@ For mobile work:
 brew install openjdk@21
 sudo ln -sfn /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk \
   /Library/Java/JavaVirtualMachines/openjdk-21.jdk
+
+# openjdk@21 is keg-only, so a linked `openjdk` keeps shadowing javac on PATH.
+# Gradle follows JAVA_HOME, so point that at 21 and persist it:
+echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 21)' >> ~/.zshrc
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 
 # iOS — Xcode 16.1 or newer, from the App Store or developer.apple.com
 xcode-select --install    # skip if Xcode is already installed

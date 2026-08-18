@@ -187,7 +187,6 @@ export {
   WorkspaceShell,
   type WorkspaceShellProps,
 } from "./workspace-shell.js";
-export { FloatingTabNav, type FloatingTab, type FloatingTabNavProps } from "./floating-tab-nav.js";
 export {
   ActivityEmpty,
   ActivityQueue,

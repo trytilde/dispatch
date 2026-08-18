@@ -28,8 +28,7 @@ Integrate model, MCP, skills, Composio, or another vendor SDK directly in the
 agent. If the integration should become a default, update
 `configuration/templates/agent/` as well; migrate existing agents explicitly.
 
-Creating the source tree does not deploy it. Use the test-agent skill so the
-owner can chat with the new agent through the local-runtime tunnel, and the
-deploy-agent skill when they are ready to ship it. If this computer does not
-contain a writable OpenBot source checkout, report that instead of writing
-elsewhere.
+The command also registers the agent with Tilde, so the owner can chat with
+it immediately; the background orchestrator publishes and redeploys the
+project on its own. If this computer does not contain a writable OpenBot
+source checkout, report that instead of writing elsewhere.

@@ -1,7 +1,7 @@
 import { watch, type FSWatcher } from "node:fs";
 import { stat } from "node:fs/promises";
 import type { OpenBotConfiguration } from "@tryopenbot/configuration";
-import { discoverAgentWorkspaces, primaryAgentId } from "@tryopenbot/agent-service-provider";
+import { discoverAgentWorkspaces } from "@tryopenbot/agent-service-provider";
 import {
   buildProviders,
   deployProviders,
@@ -12,7 +12,8 @@ import {
   type DeploymentReporter,
 } from "@tryopenbot/runtime-provider";
 import {
-  persistPrimaryAgentSandboxUrl,
+  discoveredAgentIds,
+  persistAgentSandboxUrls,
   repositoryDeploymentPersistence,
 } from "./agent-lifecycle.js";
 
@@ -61,11 +62,12 @@ export async function reconcileDevelopmentInfrastructure(
           deploy: async (context: DeploymentContext) => {
             const computerId =
               options.environment.DEVELOPMENT_SANDBOX_ID?.trim() || "openbot-development";
+            const agentIds = await discoveredAgentIds(context.repositoryRoot);
             const result = await options.providers.computer.deployDevelopmentSandbox(
-              { computerId, agentWorkspaceIds: [primaryAgentId] },
+              { computerId, agentWorkspaceIds: agentIds },
               context,
             );
-            await persistPrimaryAgentSandboxUrl(context);
+            await persistAgentSandboxUrls(context, agentIds);
             return result;
           },
         },

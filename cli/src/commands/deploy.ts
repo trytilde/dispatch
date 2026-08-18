@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import arg from "arg";
 import type { OpenBotConfiguration } from "@tryopenbot/configuration";
-import { discoverAgentWorkspaces, primaryAgentId } from "@tryopenbot/agent-service-provider";
+import { discoverAgentWorkspaces } from "@tryopenbot/agent-service-provider";
 import {
   buildProviders,
   deployProviders,
@@ -10,7 +10,8 @@ import {
   type DeploymentParticipant,
 } from "@tryopenbot/runtime-provider";
 import {
-  persistPrimaryAgentSandboxUrl,
+  discoveredAgentIds,
+  persistAgentSandboxUrls,
   reconcileAgentResources,
   repositoryDeploymentPersistence,
 } from "../agent-lifecycle.js";
@@ -152,11 +153,12 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
                   ],
                 }),
                 deploy: async (context: DeploymentContext) => {
+                  const agentIds = await discoveredAgentIds(context.repositoryRoot);
                   const result = await computer.deployDevelopmentSandbox(
-                    { computerId: developmentSandboxId, agentWorkspaceIds: [primaryAgentId] },
+                    { computerId: developmentSandboxId, agentWorkspaceIds: agentIds },
                     context,
                   );
-                  await persistPrimaryAgentSandboxUrl(context);
+                  await persistAgentSandboxUrls(context, agentIds);
                   return result;
                 },
               },

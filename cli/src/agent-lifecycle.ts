@@ -21,17 +21,34 @@ import {
   unsetEnvironmentValue,
 } from "./initialization.js";
 
-/** Point the primary agent's computer tools at the trusted development sandbox. */
-export async function persistPrimaryAgentSandboxUrl(context: DeploymentContext): Promise<void> {
+/**
+ * Point every authored agent's computer tools at the trusted development sandbox, where the
+ * writable checkout lives so agents (including the factory) can edit their own source.
+ */
+/** Discovered agent slugs, or none when the authored tree is not scaffolded yet. */
+export async function discoveredAgentIds(repositoryRoot: string): Promise<readonly string[]> {
+  try {
+    return (await discoverAgents(repositoryRoot)).map((agent) => agent.slug);
+  } catch {
+    return [];
+  }
+}
+
+export async function persistAgentSandboxUrls(
+  context: DeploymentContext,
+  agentIds: readonly string[],
+): Promise<void> {
   const serviceUrl = context.environment.DEVELOPMENT_SANDBOX_SERVICE_URL?.trim();
   if (!serviceUrl) return;
-  const prefix = `AGENT_${primaryAgentId.replaceAll("-", "_").toUpperCase()}`;
-  await persistEnvironment(
-    context,
-    `${prefix}_COMPUTER_SERVICE_URL`,
-    serviceUrl,
-    `Computer service URL used by the ${primaryAgentId} agent's tools.`,
-  );
+  for (const agentId of agentIds) {
+    const prefix = `AGENT_${agentId.replaceAll("-", "_").toUpperCase()}`;
+    await persistEnvironment(
+      context,
+      `${prefix}_COMPUTER_SERVICE_URL`,
+      serviceUrl,
+      `Computer service URL used by the ${agentId} agent's tools.`,
+    );
+  }
 }
 
 export interface ReconcileAgentResourcesOptions {

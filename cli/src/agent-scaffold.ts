@@ -26,15 +26,18 @@ const defaultAgentTemplates = [
   ["sandbox/workspace/README.md", "./assets/agents/factory/sandbox/workspace/README.md.hbs"],
 ] as const;
 
+/** Rendered only into scaffolded subagents, never into the primary factory agent. */
+const subagentTemplates = [
+  ["skills/self-edit/SKILL.md", "./assets/agents/subagent/skills/self-edit/SKILL.md.hbs"],
+] as const;
+
 /** Rendered only into the primary factory agent, never into scaffolded subagents. */
 const factoryAgentTemplates = [
   ["skills/create-agent/SKILL.md", "./assets/agents/factory/skills/create-agent/SKILL.md.hbs"],
-  ["skills/deploy-agent/SKILL.md", "./assets/agents/factory/skills/deploy-agent/SKILL.md.hbs"],
   [
     "skills/develop-openbot/SKILL.md",
     "./assets/agents/factory/skills/develop-openbot/SKILL.md.hbs",
   ],
-  ["skills/test-agent/SKILL.md", "./assets/agents/factory/skills/test-agent/SKILL.md.hbs"],
 ] as const;
 
 const requiredAgentTemplatePaths = [
@@ -53,6 +56,7 @@ const requiredAgentTemplatePaths = [
 
 export const agentTemplateDirectory = "configuration/templates/agent";
 export const factoryTemplateDirectory = "configuration/templates/factory";
+export const subagentTemplateDirectory = "configuration/templates/subagent";
 
 export interface ScaffoldedAgent {
   id: string;
@@ -68,6 +72,7 @@ export async function scaffoldAgentTemplates(repositoryRoot: string): Promise<st
     defaultAgentTemplates,
   );
   await seedTemplateDirectory(repositoryRoot, factoryTemplateDirectory, factoryAgentTemplates);
+  await seedTemplateDirectory(repositoryRoot, subagentTemplateDirectory, subagentTemplates);
   return directory;
 }
 
@@ -169,21 +174,23 @@ async function materializeAgent(
         { flag: "wx", mode: 0o600 },
       );
     }
-    if (createSubagentDirectory) {
-      const factoryDirectory = resolve(repositoryRoot, factoryTemplateDirectory);
-      if (await exists(factoryDirectory)) {
-        for (const template of await walkAgentTemplates(factoryDirectory)) {
-          const relativePath = relative(factoryDirectory, template).replaceAll("\\", "/");
-          await materializeFileTemplate(
-            template,
-            resolve(directory, relativePath.slice(0, -".hbs".length)),
-            values,
-            { flag: "wx", mode: 0o600 },
-          );
-        }
+    const roleTemplateDirectory = resolve(
+      repositoryRoot,
+      createSubagentDirectory ? factoryTemplateDirectory : subagentTemplateDirectory,
+    );
+    if (await exists(roleTemplateDirectory)) {
+      for (const template of await walkAgentTemplates(roleTemplateDirectory)) {
+        const relativePath = relative(roleTemplateDirectory, template).replaceAll("\\", "/");
+        await materializeFileTemplate(
+          template,
+          resolve(directory, relativePath.slice(0, -".hbs".length)),
+          values,
+          { flag: "wx", mode: 0o600 },
+        );
       }
-      await mkdir(resolve(directory, "subagents"), { recursive: true, mode: 0o700 });
     }
+    if (createSubagentDirectory)
+      await mkdir(resolve(directory, "subagents"), { recursive: true, mode: 0o700 });
   } catch (error) {
     await rm(directory, { recursive: true, force: true });
     throw error;

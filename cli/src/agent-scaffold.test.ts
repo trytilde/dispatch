@@ -89,12 +89,18 @@ describe("agent scaffolding", () => {
       await readFile(join(root, "configuration/agent/skills/create-agent/SKILL.md"), "utf8"),
     ).toContain('pnpm openbot new-agent "<display name>"');
     expect(
-      await readFile(join(root, "configuration/agent/skills/deploy-agent/SKILL.md"), "utf8"),
-    ).toContain("pnpm openbot deploy --yes --service agents");
-    // Factory-only skills never scaffold into subagents.
+      await readFile(join(root, "configuration/agent/skills/develop-openbot/SKILL.md"), "utf8"),
+    ).toContain("openbot/sandbox-edits");
+    // Factory-only skills never scaffold into subagents; subagents get self-edit instead.
     await expect(access(join(directory, "skills/create-agent/SKILL.md"))).rejects.toMatchObject({
       code: "ENOENT",
     });
+    expect(await readFile(join(directory, "skills/self-edit/SKILL.md"), "utf8")).toContain(
+      "configuration/agent/subagents/research-assistant",
+    );
+    await expect(
+      access(join(root, "configuration/agent/skills/self-edit/SKILL.md")),
+    ).rejects.toMatchObject({ code: "ENOENT" });
     await expect(access(join(directory, "tools/factory.ts"))).rejects.toMatchObject({
       code: "ENOENT",
     });

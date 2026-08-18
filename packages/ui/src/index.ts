@@ -292,3 +292,9 @@ export {
   type TraceBlockProps,
   type TraceRow,
 } from "./beautiful-ui/blocks/trace-block.js";
+export {
+  Onboarding,
+  type OnboardingProps,
+  type OnboardingResult,
+  type OnboardingStep,
+} from "./onboarding.js";

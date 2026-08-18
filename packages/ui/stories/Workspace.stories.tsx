@@ -67,6 +67,7 @@ export const AgentSearch: Story = {
       onChange={noop}
       onClose={noop}
       onSelect={noop}
+      open
       value=""
     />
   ),
@@ -97,7 +98,7 @@ export const AccountMenu: Story = {
         width: 280,
       }}
     >
-      <WorkspaceAccount defaultOpen />
+      <WorkspaceAccount />
     </div>
   ),
 };
@@ -126,13 +127,8 @@ export const Header: Story = {
       <ChatHeader
         agentId="hello-world"
         agentName="Hello World"
-        asyncTasksOpen={false}
         computerOpen
-        conversationOutlineOpen={false}
-        onToggleAsyncTasks={noop}
         onToggleComputer={noop}
-        onToggleConversationOutline={noop}
-        status="Online"
       />
     </div>
   ),
@@ -225,7 +221,6 @@ export const ChatPaneSurface: Story = {
           agentName="Hello World"
           computerOpen={false}
           onToggleComputer={noop}
-          status="Online"
         />
       </ChatPane>
     </div>
@@ -257,7 +252,6 @@ function LayoutExample() {
           agentName="Hello World"
           computerOpen={layout.workspaceOpen}
           onToggleComputer={layout.toggleWorkspace}
-          status="Online"
         />
         <EmptyConversation onSelectSuggestion={noop} suggestions={["Start a task"]} />
       </ChatPane>

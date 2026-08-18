@@ -7,6 +7,8 @@ export interface PendingFile {
   status: "ready" | "uploading" | "uploaded" | "error";
   attachmentId?: string;
   error?: string;
+  /** Blob URL for image previews in the composer tray. */
+  previewUrl?: string;
 }
 
 export async function uploadAttachment(

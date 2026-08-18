@@ -48,6 +48,7 @@ const configurationAssets = {
     new URL("./assets/agents/instrumentation.ts.hbs", import.meta.url),
   ),
   local: fileURLToPath(new URL("./assets/configuration/local.ts.hbs", import.meta.url)),
+  tsconfig: fileURLToPath(new URL("./assets/configuration/tsconfig.json.hbs", import.meta.url)),
   vercel: fileURLToPath(new URL("./assets/configuration/vercel.ts.hbs", import.meta.url)),
 } as const;
 const fileTemplates = {
@@ -323,6 +324,10 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
     resolve(configurationDirectory, "instrumentation.ts"),
     configurationAssets.instrumentation,
   );
+  await createConfiguration(
+    resolve(configurationDirectory, "tsconfig.json"),
+    configurationAssets.tsconfig,
+  );
   await scaffoldAgentTemplates(options.repositoryRoot);
   await scaffoldPrimaryAgent(options.repositoryRoot, "Factory", { existing: "preserve" });
   await rm(configurationIgnorePath, { force: true });
@@ -420,6 +425,10 @@ async function reconfigureOpenBot(
   await reconcileEnvironmentFile(paths.environmentPath, environmentValues, removedEnvironmentNames);
   await writeFileAtomically(paths.secretsPath, await renderDocument(encrypted), 0o600);
   await scaffoldAgentTemplates(options.repositoryRoot);
+  await createConfiguration(
+    resolve(dirname(paths.environmentPath), "tsconfig.json"),
+    configurationAssets.tsconfig,
+  );
   await scaffoldPrimaryAgent(options.repositoryRoot, "Factory", { existing: "preserve" });
   await runner.run("vp", ["install"], { cwd: options.repositoryRoot });
 }

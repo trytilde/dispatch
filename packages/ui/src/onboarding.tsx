@@ -1,3 +1,4 @@
+import type { OnboardingResult } from "@tryopenbot/client-runtime";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AgentAvatar, agentAvatarPalette, type AgentAvatarShapeName } from "./agent-avatar.js";
 import { Button } from "./beautiful-ui/atoms/button.js";
@@ -21,12 +22,10 @@ const STEPS: readonly OnboardingStep[] = [
   "create",
 ];
 
-export interface OnboardingResult {
-  name: string;
-  color: string;
-  shape: AgentAvatarShapeName;
-  tools: string[];
-}
+// The shape of a completed onboarding is a persisted, cross-client contract owned by
+// `@tryopenbot/client-runtime` per ADR-0017. Import it for local use and re-export it so
+// callers keep a single type regardless of which package they import from.
+export type { OnboardingResult };
 
 export interface OnboardingProps {
   signedIn: boolean;

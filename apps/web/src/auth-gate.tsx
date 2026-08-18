@@ -1,16 +1,45 @@
 import { Onboarding, Shimmer, type OnboardingResult } from "@tryopenbot/ui";
+import {
+  completeOnboarding,
+  loadOnboarding,
+  type OnboardingStorage,
+} from "@tryopenbot/client-runtime";
 import { type ReactNode, useEffect, useState } from "react";
 
 type Session = { authenticated: true; user: { subject: string; email?: string } };
 
-const onboardingSeenKey = "openbot.onboarding-seen";
-const onboardingResultKey = "openbot.onboarding-result";
+// Onboarding state is owned by the client runtime per ADR-0017; the browser only
+// supplies storage. `localStorage` throws outright in some privacy modes, so every
+// access is guarded and a failure reads as "not onboarded" rather than breaking boot.
+const browserStorage: OnboardingStorage = {
+  getItem: (key) => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Non-persistent environments still proceed into the app.
+    }
+  },
+  removeItem: (key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Nothing to do.
+    }
+  },
+};
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>();
   const [error, setError] = useState("");
   const [signingIn, setSigningIn] = useState(false);
-  const [seen, setSeen] = useState(() => readSeen());
+  const [seen, setSeen] = useState<boolean>();
 
   useEffect(() => {
     void loadSession()
@@ -21,7 +50,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  if (session === undefined)
+  useEffect(() => {
+    void loadOnboarding(browserStorage).then((state) => setSeen(state.completed));
+  }, []);
+
+  if (session === undefined || seen === undefined)
     return (
       <main className="grid min-h-screen place-items-center bg-page">
         <Shimmer className="text-[13px]">Checking access…</Shimmer>
@@ -43,26 +76,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
           });
         }}
         onComplete={(result: OnboardingResult) => {
-          try {
-            localStorage.setItem(onboardingSeenKey, "true");
-            localStorage.setItem(onboardingResultKey, JSON.stringify(result));
-          } catch {
-            // Non-persistent environments still proceed into the app.
-          }
-          setSeen(true);
+          void completeOnboarding(browserStorage, result).then((state) => setSeen(state.completed));
         }}
       />
     );
 
   return children;
-}
-
-function readSeen(): boolean {
-  try {
-    return localStorage.getItem(onboardingSeenKey) === "true";
-  } catch {
-    return true;
-  }
 }
 
 async function loadSession(): Promise<Session | null> {

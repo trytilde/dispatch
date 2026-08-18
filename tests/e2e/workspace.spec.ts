@@ -1,4 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { seedCompletedOnboarding } from "./onboarding-state.js";
+
+// Every test but the first-run one wants the workspace, so skip onboarding by seeding
+// the persisted state the client runtime reads.
+test.beforeEach(async ({ page }) => {
+  await seedCompletedOnboarding(page);
+});
 
 test("requires a Tilde owner session", async ({ browser }) => {
   const context = await browser.newContext({
@@ -7,8 +14,9 @@ test("requires a Tilde owner session", async ({ browser }) => {
   });
   const page = await context.newPage();
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Sign in to OpenBot" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Continue with Tilde" })).toBeVisible();
+  // The onboarding surface owns sign-in now; an unauthenticated visitor gets its
+  // sign-in affordance rather than a separate sign-in screen.
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
 
   const login = await context.request.get("/auth/login", { maxRedirects: 0 });
   expect(login.status()).toBe(302);

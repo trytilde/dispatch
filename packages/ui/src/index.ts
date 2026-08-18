@@ -279,3 +279,16 @@ export {
   setThemePreference,
   type ThemePreference,
 } from "./theme.js";
+export {
+  splitMessageSegments,
+  ThinkingBlock,
+  ToolsBlock,
+  type MessageSegment,
+  type ThinkingBlockProps,
+  type ToolsBlockProps,
+} from "./message-blocks.js";
+export {
+  TraceBlock,
+  type TraceBlockProps,
+  type TraceRow,
+} from "./beautiful-ui/blocks/trace-block.js";

@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
-import { MarkdownText } from "./markdown-components.js";
-
+import { useEffect, useRef, useState } from "react";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "./components/ai-elements/reasoning.js";
 export { MarkdownText } from "./markdown-components.js";
 
 export interface MessagePart {
@@ -104,10 +107,10 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
 
 export function ReasoningCard({ state = "", text }: { state?: string | null; text: string }) {
   return (
-    <details className="reasoning-part" open={state === "streaming"}>
-      <summary>{state === "streaming" ? "Thinking…" : "Reasoning"}</summary>
-      <MarkdownText text={text} />
-    </details>
+    <Reasoning className="reasoning-part" isStreaming={state === "streaming"}>
+      <ReasoningTrigger />
+      <ReasoningContent>{text}</ReasoningContent>
+    </Reasoning>
   );
 }
 
@@ -137,6 +140,7 @@ export function FileCard({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: 
   const mediaType = part.media_type ?? part.mediaType ?? "application/octet-stream";
   const [resolvedUrl, setResolvedUrl] = useState(directUrl);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const retriesRef = useRef(0);
 
   useEffect(() => {
     if (resolvedUrl || !attachmentId || !mediaType.startsWith("image/")) return;
@@ -150,6 +154,14 @@ export function FileCard({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: 
       cancelled = true;
     };
   }, [attachmentId, mediaType, resolveAttachmentUrl, resolvedUrl, sessionId]);
+
+  // Signed download URLs expire; when the image errors, re-resolve a
+  // fresh one from the attachment id instead of staying broken.
+  function retryImage(): void {
+    if (!attachmentId || retriesRef.current >= 2) return;
+    retriesRef.current += 1;
+    setResolvedUrl(undefined);
+  }
 
   async function open(): Promise<void> {
     if (resolvedUrl) {
@@ -183,7 +195,7 @@ export function FileCard({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: 
         type="button"
       >
         {mediaType.startsWith("image/") && resolvedUrl ? (
-          <img alt="" loading="lazy" src={resolvedUrl} />
+          <img alt="" loading="lazy" onError={retryImage} src={resolvedUrl} />
         ) : (
           <span>↗</span>
         )}
@@ -399,7 +411,10 @@ export function safeUrl(value: string): string | undefined {
   if (value.startsWith("/")) return value;
   try {
     const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : undefined;
+    // blob: covers optimistic local previews before the upload lands.
+    return url.protocol === "http:" || url.protocol === "https:" || url.protocol === "blob:"
+      ? url.toString()
+      : undefined;
   } catch {
     return undefined;
   }

@@ -9,6 +9,8 @@ description: Build, run, and inspect the OpenBot Expo client in apps/mobile, inc
 
 Note the topology this repository is developed on: the workstation is a Mac, the build host is a display-less remote Linux box, and iOS simulators cannot run on Linux. Android is the only emulator target on that host.
 
+Verified on both platforms as of 2026-08-18: `mobile setup`, `mobile avd`, `mobile emulator`, and `mobile doctor` on Apple Silicon macOS 14.6, and the same plus `expo run:android` on x86_64 Linux. On macOS the emulator opens a real window and starts neither Xvfb nor x11vnc, and the system image resolves to `arm64-v8a`. Unverified anywhere: `expo run:ios`, which needs Xcode 16.1 or newer.
+
 ## Choose The Narrowest Check
 
 1. Bundle-level correctness, and the fastest gate: `pnpm --filter @tryopenbot/mobile build`. This runs `expo export --platform all` and fails on a platform-unsafe import such as DOM, Node, or Electron reaching `packages/client-runtime`. Run it for every mobile change.

@@ -62,7 +62,7 @@ export async function runDevelopment(): Promise<never> {
   console.log(`OpenBot control and agent HMR server: http://127.0.0.1:${serverPort}`);
 
   const [serverCommand, serverArguments] = developmentServerCommand();
-  const server = await runDevelopmentServer(serverCommand, serverArguments, env);
+  const server = await startTunneledAgentService(serverCommand, serverArguments, env);
   try {
     await reconcileAgentResources({
       repositoryRoot,
@@ -161,7 +161,7 @@ export function developmentTunnelOptions(
   };
 }
 
-async function runDevelopmentServer(
+export async function startTunneledAgentService(
   command: string,
   arguments_: readonly string[],
   environment: NodeJS.ProcessEnv,
@@ -204,7 +204,7 @@ async function runDevelopmentServer(
   };
 }
 
-interface DevelopmentServer {
+export interface DevelopmentServer {
   child: ChildProcess;
   agentServiceOrigin: string;
   stop(): void;

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ThinkingBlock, ToolsBlock } from "./message-blocks.js";
 import {
   ConnectionCard,
   FileCard,
@@ -6,10 +7,8 @@ import {
   JsonBlock,
   MarkdownText,
   type MessagePart,
-  ReasoningCard,
   safeUrl,
   stringify,
-  ToolCallCard,
   type ConnectionView,
 } from "./rich-message-components.js";
 
@@ -45,7 +44,28 @@ export function MessageContent({
       </div>
     );
   }
-  return <MarkdownText text={message.text ?? signalText(message)} />;
+  // Regular messages can carry attachments alongside (or instead of) text.
+  const attachmentParts = (message.parts ?? []).filter(
+    (part) => part.type === "file" || part.type === "image",
+  );
+  const text = message.text ?? signalText(message);
+  if (attachmentParts.length > 0) {
+    return (
+      <div className="message-parts">
+        {text.trim() ? <MarkdownText text={text} /> : null}
+        {attachmentParts.map((part, index) =>
+          renderPart(
+            { ...part, type: "file" },
+            index,
+            message.session_id,
+            resolveAttachmentUrl,
+            rewriteUrl,
+          ),
+        )}
+      </div>
+    );
+  }
+  return <MarkdownText text={text} />;
 }
 
 function renderPart(
@@ -56,12 +76,12 @@ function renderPart(
   rewriteUrl: NonNullable<MessageContentProps["rewriteUrl"]>,
 ): ReactNode {
   const key = `${part.type}-${part.tool_invocation_id ?? part.toolCallId ?? part.attachment_id ?? part.attachmentId ?? index}`;
-  if (isToolPart(part)) return <ToolCallCard key={key} part={part} />;
+  if (isToolPart(part)) return <ToolsBlock key={key} parts={[part]} />;
   switch (part.type) {
     case "text":
       return <MarkdownText key={key} text={part.text ?? ""} />;
     case "reasoning":
-      return part.text ? <ReasoningCard key={key} state={part.state} text={part.text} /> : null;
+      return part.text ? <ThinkingBlock key={key} part={part} /> : null;
     case "file": {
       return (
         <FileCard

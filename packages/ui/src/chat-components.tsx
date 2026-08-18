@@ -1,62 +1,38 @@
 import type { ReactNode } from "react";
 import { AgentAvatar } from "./agent-avatar.js";
-import { ClockIcon, ComputerIcon, ListIcon, MoreIcon, ReplyIcon } from "./workspace-icons.js";
+import { LoaderGrid, useElapsed } from "./beautiful-ui/blocks/loader-grid.js";
+import { Suggestion, Suggestions } from "./components/ai-elements/suggestion.js";
+import { ComputerIcon, MoreIcon, ReplyIcon } from "./workspace-icons.js";
 
 export interface ChatHeaderProps {
   agentId?: string;
   agentName: string;
-  status?: string;
+  /** Agent is mid-turn — the avatar spins its orbit. */
+  busy?: boolean;
   computerOpen: boolean;
   onToggleComputer: () => void;
-  conversationOutlineOpen?: boolean;
-  asyncTasksOpen?: boolean;
-  onToggleConversationOutline?: () => void;
-  onToggleAsyncTasks?: () => void;
 }
 
 export function ChatHeader({
   agentId,
   agentName,
-  status,
+  busy = false,
   computerOpen,
   onToggleComputer,
-  conversationOutlineOpen = false,
-  asyncTasksOpen = false,
-  onToggleConversationOutline,
-  onToggleAsyncTasks,
 }: ChatHeaderProps) {
   return (
     <header className="chat-header">
       <div className="chat-identity">
-        {agentId ? <AgentAvatar id={agentId} /> : <span className="agent-avatar">O</span>}
+        {agentId ? (
+          <AgentAvatar id={agentId} state={busy ? "working" : "idle"} />
+        ) : (
+          <span className="agent-avatar">O</span>
+        )}
         <div className="chat-title">
           <h2>{agentName}</h2>
-          <span>{status}</span>
         </div>
       </div>
       <div className="chat-actions">
-        {onToggleConversationOutline ? (
-          <button
-            aria-expanded={conversationOutlineOpen}
-            aria-label="Toggle full conversation"
-            className={conversationOutlineOpen ? "active" : ""}
-            onClick={onToggleConversationOutline}
-            title="Full conversation"
-          >
-            <ListIcon />
-          </button>
-        ) : null}
-        {onToggleAsyncTasks ? (
-          <button
-            aria-expanded={asyncTasksOpen}
-            aria-label="Toggle async tasks"
-            className={asyncTasksOpen ? "active" : ""}
-            onClick={onToggleAsyncTasks}
-            title="Async tasks"
-          >
-            <ClockIcon />
-          </button>
-        ) : null}
         <button
           aria-expanded={computerOpen}
           aria-label="Toggle Computer pane"
@@ -89,13 +65,11 @@ export function EmptyConversation({
       <div className="openbot-glyph">✣</div>
       <h1>{title}</h1>
       <p>{description}</p>
-      <div className="suggestions">
+      <Suggestions className="suggestions">
         {suggestions.map((suggestion) => (
-          <button key={suggestion} onClick={() => onSelectSuggestion(suggestion)}>
-            {suggestion}
-          </button>
+          <Suggestion key={suggestion} onClick={onSelectSuggestion} suggestion={suggestion} />
         ))}
-      </div>
+      </Suggestions>
     </div>
   );
 }
@@ -105,6 +79,8 @@ export interface ConversationMessageProps {
   createdAt: string;
   continuedPrevious?: boolean;
   continuedNext?: boolean;
+  /** Message is attachments only — the bubble renders bare. */
+  mediaOnly?: boolean;
   children: ReactNode;
   menuOpen?: boolean;
   onReply?: () => void;
@@ -118,6 +94,7 @@ export function ConversationMessage({
   createdAt,
   continuedPrevious = false,
   continuedNext = false,
+  mediaOnly = false,
   children,
   menuOpen = false,
   onReply,
@@ -128,7 +105,7 @@ export function ConversationMessage({
   return (
     <article
       aria-label={role === "user" ? "Your message" : "Agent message"}
-      className={`message ${role} ${continuedPrevious ? "continued-previous" : "group-start"} ${continuedNext ? "continued-next" : ""}`}
+      className={`message ${role} ${continuedPrevious ? "continued-previous" : "group-start"} ${continuedNext ? "continued-next" : ""} ${mediaOnly ? "media-only" : ""}`}
     >
       <div className="message-bubble">{children}</div>
       <div className="message-footer">
@@ -167,9 +144,22 @@ export function ConversationMessage({
 }
 
 export function ThinkingIndicator({ children }: { children: ReactNode }) {
+  const elapsed = useElapsed();
   return (
-    <div className="thinking-inline">
-      <span /> {children}
+    <div className="thinking-inline" role="status">
+      <LoaderGrid variant="drive" />
+      <span
+        className="bg-clip-text text-[13px] font-medium text-transparent"
+        style={{
+          backgroundImage:
+            "linear-gradient(90deg, var(--ink-3) 35%, var(--ink) 50%, var(--ink-3) 65%)",
+          backgroundSize: "200% 100%",
+          animation: "shimmer-text 1.4s linear infinite",
+        }}
+      >
+        {children}
+      </span>
+      <span className="font-mono text-[12px] text-ink-3 tabular-nums">{elapsed}</span>
     </div>
   );
 }

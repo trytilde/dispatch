@@ -8,6 +8,8 @@ export interface ComposerAttachment {
   progress: number;
   status: "ready" | "uploading" | "uploaded" | "error";
   error?: string;
+  /** Local blob URL for image previews while the upload is pending. */
+  previewUrl?: string;
 }
 
 export interface ComposerReply {
@@ -96,7 +98,11 @@ export function ChatComposer({
         <div className="attachment-tray">
           {attachments.map((attachment) => (
             <div className={`pending-file ${attachment.status}`} key={attachment.id}>
-              <span className="file-icon">↗</span>
+              {attachment.previewUrl ? (
+                <img alt="" className="file-thumb" src={attachment.previewUrl} />
+              ) : (
+                <span className="file-icon">↗</span>
+              )}
               <span>
                 <strong>{attachment.name}</strong>
                 <small>
@@ -124,13 +130,22 @@ export function ChatComposer({
         aria-label="Message"
         disabled={!agentAvailable}
         ref={inputRef}
-        placeholder={agentAvailable ? "Ask anything, or drop a file." : "No agent is available."}
+        placeholder={
+          agentAvailable ? "Type a message, or drop in a file." : "No agent is available."
+        }
         value={draft}
         onChange={(event) => onDraftChange(event.target.value)}
         onBlur={onBlur}
         onFocus={onFocus}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+          const modEnter = event.key === "Enter" && (event.metaKey || event.ctrlKey);
+          const plainEnter =
+            event.key === "Enter" &&
+            !event.shiftKey &&
+            !event.metaKey &&
+            !event.ctrlKey &&
+            !event.nativeEvent.isComposing;
+          if (modEnter || plainEnter) {
             event.preventDefault();
             event.currentTarget.form?.requestSubmit();
           }
@@ -158,7 +173,7 @@ export function ChatComposer({
           >
             <PlusIcon />
           </button>
-          <span className={error ? "error" : ""}>{error || "Shift + Enter for a new line"}</span>
+          {error ? <span className="error">{error}</span> : null}
         </div>
         <div className="composer-actions">
           {busy ? (

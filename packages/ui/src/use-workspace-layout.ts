@@ -11,6 +11,7 @@ const SIDEBAR_DEFAULT = 280;
 const SIDEBAR_COLLAPSED = 88;
 const SIDEBAR_MIN = 240;
 const SIDEBAR_MAX = 400;
+const SIDEBAR_SNAP = 210;
 const WORKSPACE_DEFAULT = 320;
 const WORKSPACE_MIN = 280;
 const WORKSPACE_MAX = 480;
@@ -91,7 +92,7 @@ export function useWorkspaceLayout(): WorkspaceLayout {
       const originWidth = compact ? SIDEBAR_COLLAPSED : sidebarWidth;
       beginResize((pointerX) => {
         const candidate = originWidth + pointerX - originX;
-        if (candidate < (SIDEBAR_COLLAPSED + SIDEBAR_MIN) / 2) {
+        if (candidate < SIDEBAR_SNAP) {
           setSidebarCollapsed(true);
           writeBoolean(sidebarCollapsedKey, true);
           return;

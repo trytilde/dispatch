@@ -18,15 +18,15 @@ export function StatusBadge({
   tone?: StatusBadgeTone;
 }) {
   return (
-    <span className="ui-status-badge" data-tone={tone}>
-      <i aria-hidden="true" className="ui-indicator-dot" />
+    <span className="ob-status-badge" data-tone={tone}>
+      <i aria-hidden="true" className="ob-indicator-dot" />
       {children}
     </span>
   );
 }
 
 export function KeyboardKey({ children }: { children: ReactNode }) {
-  return <kbd className="ui-kbd">{children}</kbd>;
+  return <kbd className="ob-kbd">{children}</kbd>;
 }
 
 export interface InputGroupProps {
@@ -47,12 +47,12 @@ export function InputGroup({
   value,
 }: InputGroupProps) {
   return (
-    <label className="ui-input-group">
-      {addon ? <span className="ui-input-group__addon">{addon}</span> : null}
+    <label className="ob-input-group">
+      {addon ? <span className="ob-input-group__addon">{addon}</span> : null}
       {multiline ? (
         <textarea
           aria-label={ariaLabel}
-          className="ui-input-group__textarea"
+          className="ob-input-group__textarea"
           onChange={onChange}
           placeholder={placeholder}
           value={value}
@@ -60,7 +60,7 @@ export function InputGroup({
       ) : (
         <input
           aria-label={ariaLabel}
-          className="ui-input-group__input"
+          className="ob-input-group__input"
           onChange={onChange}
           placeholder={placeholder}
           value={value}
@@ -89,9 +89,9 @@ export function SelectField({
   value?: string;
 }) {
   return (
-    <label className="ui-select-label">
+    <label className="ob-select-label">
       {label ? <span>{label}</span> : null}
-      <span className="ui-select-trigger">
+      <span className="ob-select-trigger">
         <select aria-label={ariaLabel} onChange={onChange} value={value}>
           {options.map((option) => (
             <option key={option.value} value={option.value}>
@@ -99,7 +99,7 @@ export function SelectField({
             </option>
           ))}
         </select>
-        <span aria-hidden="true" className="ui-select-icon">
+        <span aria-hidden="true" className="ob-select-icon">
           ⌄
         </span>
       </span>
@@ -115,9 +115,9 @@ export function ScrollArea({
   maxHeight?: number | string;
 }) {
   return (
-    <div className="ui-scroll-area" style={{ maxHeight }}>
-      <div className="ui-scroll-area__viewport">
-        <div className="ui-scroll-area__content">{children}</div>
+    <div className="ob-scroll-area" style={{ maxHeight }}>
+      <div className="ob-scroll-area__viewport">
+        <div className="ob-scroll-area__content">{children}</div>
       </div>
     </div>
   );
@@ -133,8 +133,8 @@ export function TextRoll({
   const itemKey =
     transitionKey ?? (typeof value === "string" || typeof value === "number" ? value : "content");
   return (
-    <span className="ui-text-roll" aria-live="polite">
-      <span className="ui-text-roll__item" key={itemKey}>
+    <span className="ob-text-roll" aria-live="polite">
+      <span className="ob-text-roll__item" key={itemKey}>
         {value}
       </span>
     </span>
@@ -151,7 +151,7 @@ export function VoiceWaveform({
   return (
     <span
       aria-label={label}
-      className="ui-voice-waveform"
+      className="ob-voice-waveform"
       data-active={active || undefined}
       role="img"
     >
@@ -207,24 +207,24 @@ export function ModelPicker({ label = "Model", onChange, options, value }: Model
   }, [open]);
 
   return (
-    <div className="ui-model-picker" ref={rootRef}>
+    <div className="ob-model-picker" ref={rootRef}>
       <button
         aria-controls={menuId}
         aria-expanded={open}
-        className="ui-model-picker__trigger"
+        className="ob-model-picker__trigger"
         onClick={() => setOpen((current) => !current)}
         type="button"
       >
-        <span className="ui-model-picker__trigger-text">{selected?.label ?? label}</span>
+        <span className="ob-model-picker__trigger-text">{selected?.label ?? label}</span>
         {selected?.suffix ? (
-          <span className="ui-model-picker__trigger-variant-suffix">{selected.suffix}</span>
+          <span className="ob-model-picker__trigger-variant-suffix">{selected.suffix}</span>
         ) : null}
-        <span aria-hidden="true" className="ui-model-picker__trigger-chevron">
+        <span aria-hidden="true" className="ob-model-picker__trigger-chevron">
           ⌄
         </span>
       </button>
       {open ? (
-        <div aria-label={label} className="ui-model-picker__menu" id={menuId} role="listbox">
+        <div aria-label={label} className="ob-model-picker__menu" id={menuId} role="listbox">
           {options.map((option) => (
             <button
               aria-selected={option.id === value}
@@ -237,14 +237,14 @@ export function ModelPicker({ label = "Model", onChange, options, value }: Model
               role="option"
               type="button"
             >
-              <span className="ui-model-picker__item-content-name">
+              <span className="ob-model-picker__item-content-name">
                 <strong>{option.label}</strong>
                 {option.description ? <small>{option.description}</small> : null}
               </span>
-              <span className="ui-model-picker__item-right-section">
+              <span className="ob-model-picker__item-right-section">
                 {option.suffix ? <small>{option.suffix}</small> : null}
                 {option.id === value ? (
-                  <i aria-hidden="true" className="ui-model-picker__item-check">
+                  <i aria-hidden="true" className="ob-model-picker__item-check">
                     ✓
                   </i>
                 ) : null}

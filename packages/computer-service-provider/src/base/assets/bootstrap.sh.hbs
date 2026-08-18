@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BOOTSTRAP_VERSION=2026-08-15.1
+BOOTSTRAP_VERSION=2026-08-18.1
 SOPS_VERSION=3.13.3
 SOPS_SHA256_AMD64=e5bec3346a873ae91d871550f3e698c1aad962aff462a080e40f25fde17fef6b
 SOPS_SHA256_ARM64=53b0abacd38ef1b12a66d6c100956691b9cefce018d91f81e73ddf7438b94d77
@@ -39,6 +39,21 @@ curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/s
 echo "$sops_sha256  $sops_binary" | sha256sum -c -
 install -m 0755 "$sops_binary" /usr/local/bin/sops
 rm -f "$sops_binary"
+
+# cloudflared carries the Tilde local-runtime tunnel used by the in-sandbox SDLC orchestrator.
+CLOUDFLARED_VERSION="2026.8.2"
+CLOUDFLARED_SHA256_AMD64="fcfb02b575a52ca1af2e3267af4e1517bcdeb30ac48c834c69abaed3c0576ad2"
+CLOUDFLARED_SHA256_ARM64="7747d94570fb390cf47dcb4f9555c193c6355cda9793f0d878d9049e5d6a7790"
+case "$architecture" in
+  amd64) cloudflared_sha256="$CLOUDFLARED_SHA256_AMD64" ;;
+  arm64) cloudflared_sha256="$CLOUDFLARED_SHA256_ARM64" ;;
+  *) echo "Unsupported cloudflared architecture: $architecture" >&2; exit 1 ;;
+esac
+cloudflared_binary="/tmp/cloudflared-linux-${architecture}"
+curl -fsSL "https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-${architecture}" -o "$cloudflared_binary"
+echo "$cloudflared_sha256  $cloudflared_binary" | sha256sum -c -
+install -m 0755 "$cloudflared_binary" /usr/local/bin/cloudflared
+rm -f "$cloudflared_binary"
 
 if [[ "$architecture" == "amd64" ]]; then
   chrome_deb=/tmp/google-chrome.deb

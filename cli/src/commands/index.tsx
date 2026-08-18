@@ -11,6 +11,7 @@ import { runDevelopment } from "./dev.js";
 import { runEnvironment } from "./env.js";
 import { runInitialization } from "./init.js";
 import { runNewAgent } from "./new-agent.js";
+import { runOrchestrator } from "./orchestrate.js";
 import { runSecrets } from "./secrets.js";
 import { runDevelopmentServer } from "./serve.js";
 import { runConnect } from "./connect.js";
@@ -71,6 +72,10 @@ export async function runCommand(command: string, args: readonly string[]): Prom
     rejectArguments(command, args);
     if (process.stdout.isTTY) show(<Success title="Starting OpenBot development" />);
     return runDevelopment();
+  }
+  if (command === "orchestrate") {
+    rejectArguments(command, args);
+    return runOrchestrator();
   }
   if (command === "_serve") {
     rejectArguments(command, args);

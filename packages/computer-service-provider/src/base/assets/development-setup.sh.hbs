@@ -28,4 +28,54 @@ done
 cd "$source_directory"
 SOPS_AGE_KEY_FILE="$age_key_file" sops decrypt --output /dev/null configuration/secrets.enc.yaml
 pnpm install --frozen-lockfile
+
+# Attach the seeded source tree to its GitHub fork through the Tilde git reverse proxy so the
+# sandbox has an authenticated git client without holding a GitHub token.
+set +u
+# shellcheck disable=SC1090
+source "$profile_loader"
+set -u
+if [ -n "${GIT_GITHUB_GIT_PROXY_PROFILE_ID:-}" ] && [ -n "${GIT_GITHUB_REPOSITORY:-}" ]; then
+  git_proxy_url="${TILDE_BASE_URL:-https://api.trytilde.ai}/api/v1/team/${TILDE_TEAM_ID}/reverse-proxy/${GIT_GITHUB_GIT_PROXY_PROFILE_ID}"
+  if [ ! -d "$source_directory/.git" ]; then
+    git -C "$source_directory" init --initial-branch=main --quiet
+    git -C "$source_directory" config user.name "OpenBot Factory"
+    git -C "$source_directory" config user.email "factory@users.noreply.github.com"
+    git -C "$source_directory" add --all
+    git -C "$source_directory" commit --quiet --message "Seed trusted development sandbox"
+  fi
+  # Repository-local configuration: agent tools execute with per-agent HOME values, so a global
+  # gitconfig is invisible to them; the checkout carries its own authenticated transport.
+  git -C "$source_directory" config url."$git_proxy_url/".insteadOf "https://github.com/"
+  git -C "$source_directory" config --unset-all http."$git_proxy_url/".extraHeader 2>/dev/null || true
+  git -C "$source_directory" config --add http."$git_proxy_url/".extraHeader "x-api-key: ${TILDE_API_KEY}"
+  git -C "$source_directory" config --add http."$git_proxy_url/".extraHeader "x-tilde-org-id: ${TILDE_ORG_ID}"
+  chmod 0600 "$source_directory/.git/config"
+  git -C "$source_directory" remote get-url origin >/dev/null 2>&1 \
+    || git -C "$source_directory" remote add origin "https://github.com/${GIT_GITHUB_REPOSITORY}.git"
+  git -C "$source_directory" remote get-url upstream >/dev/null 2>&1 \
+    || git -C "$source_directory" remote add upstream "https://github.com/trytilde/openbot.git"
+  # Tolerate a still-pending GitHub authorization; the next deployment retries the fetch.
+  git -C "$source_directory" fetch --quiet origin || true
+fi
+
+# Keep the SDLC orchestrator running inside the trusted sandbox: it serves agents over the
+# local-runtime tunnel with hot reload while the checkout is edited, then verifies, publishes,
+# and redeploys on settle (ADR-0017).
+orchestrator_supervisor="$state_directory/orchestrator-supervisor.sh"
+cat > "$orchestrator_supervisor" <<SUPERVISOR
+#!/usr/bin/env bash
+export SOPS_AGE_KEY_FILE="$age_key_file"
+cd "$source_directory"
+while true; do
+  pnpm openbot orchestrate >> "$state_directory/orchestrator.log" 2>&1
+  sleep 5
+done
+SUPERVISOR
+chmod 0700 "$orchestrator_supervisor"
+chown "$sandbox_user:$sandbox_user" "$orchestrator_supervisor"
+if ! pgrep -f "orchestrator-supervisor.sh" >/dev/null 2>&1; then
+  nohup "$orchestrator_supervisor" >/dev/null 2>&1 &
+fi
+
 touch "$state_directory/ready"

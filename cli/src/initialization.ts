@@ -1060,8 +1060,10 @@ async function sopsCommandEnvironment(
     options.environment.SOPS_AGE_KEY_FILE ||
     options.environment.SOPS_AGE_KEY_CMD,
   );
+  // An explicitly provided age identity decrypts on its own; skip owner-identity resolution
+  // even when KMS recipients exist, since SOPS needs only one successful key group.
+  if (hasAgeIdentity) return { ...options.environment };
   const creationRule = await readSopsCreationRule(repositoryRoot);
-  if (hasAgeIdentity && !creationRule.kms) return { ...options.environment };
   const metadata = await loadStoredOwnerMetadata(
     repositoryRoot,
     options.environment,

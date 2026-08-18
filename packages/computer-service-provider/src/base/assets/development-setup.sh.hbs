@@ -37,11 +37,6 @@ source "$profile_loader"
 set -u
 if [ -n "${GIT_GITHUB_GIT_PROXY_PROFILE_ID:-}" ] && [ -n "${GIT_GITHUB_REPOSITORY:-}" ]; then
   git_proxy_url="${TILDE_BASE_URL:-https://api.trytilde.ai}/api/v1/team/${TILDE_TEAM_ID}/reverse-proxy/${GIT_GITHUB_GIT_PROXY_PROFILE_ID}"
-  git config --global url."$git_proxy_url/".insteadOf "https://github.com/"
-  git config --global --unset-all http."$git_proxy_url/".extraHeader 2>/dev/null || true
-  git config --global --add http."$git_proxy_url/".extraHeader "x-api-key: ${TILDE_API_KEY}"
-  git config --global --add http."$git_proxy_url/".extraHeader "x-tilde-org-id: ${TILDE_ORG_ID}"
-  chmod 0600 "$sandbox_home/.gitconfig"
   if [ ! -d "$source_directory/.git" ]; then
     git -C "$source_directory" init --initial-branch=main --quiet
     git -C "$source_directory" config user.name "OpenBot Factory"
@@ -49,6 +44,13 @@ if [ -n "${GIT_GITHUB_GIT_PROXY_PROFILE_ID:-}" ] && [ -n "${GIT_GITHUB_REPOSITOR
     git -C "$source_directory" add --all
     git -C "$source_directory" commit --quiet --message "Seed trusted development sandbox"
   fi
+  # Repository-local configuration: agent tools execute with per-agent HOME values, so a global
+  # gitconfig is invisible to them; the checkout carries its own authenticated transport.
+  git -C "$source_directory" config url."$git_proxy_url/".insteadOf "https://github.com/"
+  git -C "$source_directory" config --unset-all http."$git_proxy_url/".extraHeader 2>/dev/null || true
+  git -C "$source_directory" config --add http."$git_proxy_url/".extraHeader "x-api-key: ${TILDE_API_KEY}"
+  git -C "$source_directory" config --add http."$git_proxy_url/".extraHeader "x-tilde-org-id: ${TILDE_ORG_ID}"
+  chmod 0600 "$source_directory/.git/config"
   git -C "$source_directory" remote get-url origin >/dev/null 2>&1 \
     || git -C "$source_directory" remote add origin "https://github.com/${GIT_GITHUB_REPOSITORY}.git"
   git -C "$source_directory" remote get-url upstream >/dev/null 2>&1 \

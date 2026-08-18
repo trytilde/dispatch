@@ -1,6 +1,5 @@
 import { Children, useEffect, useRef, useState, type ReactNode } from "react";
-import ReactMarkdown, { type Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { Streamdown, type Components } from "streamdown";
 
 export interface CodeBlockProps {
   children: string;
@@ -37,32 +36,75 @@ export function CodeBlock({
     return <DiffBlock value={children} />;
   }
 
+  const lines = children.replace(/\n$/, "").split("\n");
   return (
-    <section className="ob-code-block" data-word-wrap={wordWrap || undefined}>
-      <header className="ob-code-block-header">
-        <span>{language || "Code"}</span>
+    <section
+      className="not-prose my-2 w-full overflow-hidden rounded-card bg-surface shadow-hairline"
+      data-word-wrap={wordWrap || undefined}
+    >
+      <header className="flex items-center justify-between border-b border-line px-3 py-1.5">
+        <span className="text-[11.5px] text-ink-3">{language || "Code"}</span>
         <button
-          className="ob-code-block-copy"
           aria-label={copied ? "Copied" : "Copy code"}
           onClick={copy}
           type="button"
+          className={`flex h-6 items-center gap-1 rounded-[6px] px-1.5 text-[11.5px] font-medium
+            transition-colors duration-100 hover:bg-hover
+            ${copied ? "text-green" : "text-ink-3 hover:text-ink"}`}
         >
-          {copied ? "✓ Copied" : "Copy"}
+          {copied ? (
+            <svg
+              aria-hidden
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          ) : (
+            <svg
+              aria-hidden
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="9" y="9" width="12" height="12" rx="2.5" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+          )}
+          {copied ? "Copied" : "Copy"}
         </button>
       </header>
-      <div className="ob-code-block-content">
-        <code className="ob-default-code">
-          {children
-            .replace(/\n$/, "")
-            .split("\n")
-            .map((line, index) => (
-              <span className="ob-default-code__line-content" key={`${index}-${line}`}>
-                {showLineNumbers ? <i aria-hidden="true">{index + 1}</i> : null}
-                <span>{line || " "}</span>
+      <pre
+        className={`m-0 overflow-x-auto bg-inset px-3 py-2.5 font-mono text-[11.5px] leading-[1.7] text-ink-2
+          ${wordWrap ? "whitespace-pre-wrap" : ""}`}
+      >
+        {lines.map((line, index) => (
+          <div className="flex" key={`${index}-${line}`}>
+            {showLineNumbers ? (
+              <span
+                aria-hidden="true"
+                className="w-5 shrink-0 select-none text-right text-[10.5px] leading-[1.86] text-ink-3/60"
+              >
+                {index + 1}
               </span>
-            ))}
-        </code>
-      </div>
+            ) : null}
+            <span className={`whitespace-pre ${showLineNumbers ? "pl-2.5" : ""}`}>
+              {line || " "}
+            </span>
+          </div>
+        ))}
+      </pre>
     </section>
   );
 }
@@ -168,7 +210,7 @@ const markdownComponents: Components = {
       <input
         className={type === "checkbox" ? "ob-markdown__task-marker" : undefined}
         type={type}
-        {...props}
+        {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
       />
     );
   },
@@ -199,9 +241,9 @@ export function MarkdownText({ text }: { text: string }) {
   if (!text) return null;
   return (
     <div className="markdown ob-markdown">
-      <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]}>
+      <Streamdown components={markdownComponents} controls={false}>
         {text}
-      </ReactMarkdown>
+      </Streamdown>
     </div>
   );
 }

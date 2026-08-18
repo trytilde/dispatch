@@ -76,7 +76,7 @@ The production build stages the web app in the control provider's `.vercel/outpu
 
 ## Current application boundary
 
-- `cli` owns the React Ink repository CLI, development process supervision, and provider deployment coordination.
+- `cli` owns the React Ink `openbot` CLI: operator commands, development process supervision, provider deployment coordination, and the developer workflow — repository gates, Expo runs across local and remote mac/Linux hosts, headless emulators, ssh tunnels, and toolchain doctor — for humans and sandboxed agents alike.
 - `packages/runtime-provider` owns the optional provider deployment contract and runtime-last coordinator.
 - `packages/control-service-provider` owns local and Vercel control/web builds and deployment.
 - `packages/agent-service-provider` owns Eve-compatible agent-directory discovery, instrumentation startup, concurrent per-agent Vercel bundles, the local agent server, and deployment.

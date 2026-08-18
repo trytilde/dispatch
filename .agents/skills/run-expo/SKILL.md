@@ -20,7 +20,7 @@ Do not run an emulator to prove something the export already proves.
 
 ## Toolchain
 
-Every `@tryopenbot/mobile` script runs through `scripts/expo.mjs`, which resolves the toolchain in `scripts/toolchain.mjs` before spawning the Expo CLI. No `export PATH=...` prefix is needed, and none belongs in a command you hand to someone. If you find yourself writing one, fix `toolchain.mjs` instead.
+Every `@tryopenbot/mobile` script runs through the published `openbot` CLI (ADR-0018), which resolves the toolchain in `cli/src/toolchain.ts` before spawning the Expo CLI. No `export PATH=...` prefix is needed, and none belongs in a command you hand to someone. If you find yourself writing one, fix that module instead.
 
 What it resolves, and why each mattered:
 
@@ -42,10 +42,10 @@ Hardware acceleration requires `/dev/kvm`. Without it the emulator is too slow t
 ## Start The Emulator
 
 ```bash
-pnpm --filter @tryopenbot/mobile emulator
+pnpm dev:mobile:emulator
 ```
 
-`apps/mobile/scripts/android-emulator.mjs` starts `Xvfb` on `:1`, boots the `openbot` AVD with the software rasterizer, waits for `sys.boot_completed`, and exposes the virtual screen through `x11vnc` on `127.0.0.1:5900`. It is idempotent: rerunning it reuses whatever is already up.
+`openbot mobile emulator` starts `Xvfb` on `:1` (Linux only; on a mac the emulator gets a real window), boots the `openbot` AVD with the software rasterizer, waits for `sys.boot_completed`, and exposes the virtual screen through `x11vnc` on `127.0.0.1:5900`. It is idempotent: rerunning it reuses whatever is already up. Flags: `--avd`, `--display`, `--vnc-port`, `--timeout`.
 
 Create the AVD once if it is missing:
 
@@ -56,7 +56,7 @@ avdmanager create avd -n openbot -k "system-images;android-36;google_apis;x86_64
 ## Build And Install The Dev Client
 
 ```bash
-pnpm --filter @tryopenbot/mobile android
+pnpm dev:mobile:android
 ```
 
 This prebuilds `android/`, assembles the debug APK, installs it on the running emulator, and starts Metro on port 8081. It takes several minutes on a cold Gradle cache.
@@ -84,11 +84,15 @@ If you invoke the Expo CLI directly instead of through a package script, note tw
 
 The emulator's adb ports and the VNC port bind to loopback. Metro does not: `expo start` and `expo run:android` bind port 8081 on all interfaces by default, so on a public-facing host either keep a firewall in front of 8081 or pass `--host localhost` — `expo run:android` installs an `adb reverse` mapping, so the emulator still reaches a loopback-bound Metro.
 
-Forward what you need over SSH from the workstation rather than exposing anything. Never open a host firewall port for the emulator, VNC, or Metro.
+From the workstation, the `openbot` CLI owns the tunnel. Name hosts once in fork-owned `configuration/dev-hosts.json` (`{"hosts": {"build": {"ssh": "user@host", "platform": "linux", "path": "~/openbot"}}}`), or pass a raw `user@host`:
 
 ```bash
-ssh -N -L 5900:127.0.0.1:5900 -L 8081:127.0.0.1:8081 -L 5554:127.0.0.1:5554 -L 5555:127.0.0.1:5555 <host>
+pnpm connect -- <host>            # holds the tunnel: VNC 5900, Metro 8081, adb 5555
+pnpm connect -- <host> --print    # prints the ssh command and hints instead
+pnpm dev:remote -- <host> emulator
 ```
+
+Never open a host firewall port for the emulator, VNC, or Metro. On a mac remote the same VNC port reaches macOS Screen Sharing, and `dev:remote -- <host> ios` runs the iOS simulator there.
 
 - Screen: open `vnc://localhost:5900` on macOS, which uses the built-in Screen Sharing client and needs no install. The `x11vnc` instance runs with `-nopw`, so its only protection is the loopback bind plus the tunnel. Do not remove `-localhost`.
 - Metro: `http://localhost:8081` for the bundler status and logs.

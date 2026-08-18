@@ -43,14 +43,16 @@ build; a Metro reload will not pick it up.
 Read colors through `useColor`. No screen hardcodes a color value, so every surface resolves in both
 light and dark, and `ModeProvider` persists the Owner's appearance choice in SecureStore.
 
-## Running on a display-less host
+## Development tooling
 
-`pnpm --filter @tryopenbot/mobile emulator` boots a headless Android emulator behind Xvfb and
-exposes its screen over loopback VNC for a remote workstation. See `.agents/skills/run-expo/SKILL.md`
-for the toolchain requirements, tunnel commands, and current platform gaps.
+Every script here runs the Expo CLI through the `openbot` CLI, which resolves
+the Android SDK and a real Node binary first. Gradle shells out to `node` during settings evaluation
+and fails on a version-manager shim, so that resolution is not optional. Commands therefore need no
+`export PATH=...` prefix; if one seems necessary, extend `cli/src/toolchain.ts` rather than the
+command.
 
-Every script here runs the Expo CLI through `scripts/expo.mjs`, which resolves the Android SDK and a
-real Node binary in `scripts/toolchain.mjs` first. Gradle shells out to `node` during settings
-evaluation and fails on a version-manager shim, so that resolution is not optional. Commands
-therefore need no `export PATH=...` prefix; if one seems necessary, extend `toolchain.mjs` rather
-than the command.
+`pnpm dev:mobile:emulator` boots the Android emulator — headless behind Xvfb with loopback VNC on a
+display-less Linux host, windowed on a mac — and `pnpm connect -- <host>` tunnels a remote host's
+emulator screen, Metro, and adb to your workstation. See ADR-0018 and
+`.agents/skills/run-expo/SKILL.md` for the topology, and `cli/README.md` for the command
+surface.

@@ -34,20 +34,24 @@ pnpm --filter @tryopenbot/control-service test
 pnpm --filter openbot test
 ```
 
-Expo client, per `run-expo`:
+Expo client, per `run-expo`. Root scripts follow a verb:target taxonomy and delegate to `openbot`:
 
 ```bash
-pnpm --filter @tryopenbot/mobile build
-pnpm --filter @tryopenbot/mobile emulator
-pnpm --filter @tryopenbot/mobile dev
-pnpm --filter @tryopenbot/mobile android
+pnpm dev:mobile
+pnpm dev:mobile:android
+pnpm dev:mobile:emulator
+pnpm doctor
+pnpm connect -- <host>
+pnpm dev:remote -- <host> emulator
 ```
 
-These resolve the Android SDK and a real Node binary through `apps/mobile/scripts/toolchain.mjs`, so they need no `export PATH=...` prefix. Extend that module rather than prefixing a command.
+`openbot` resolves the Android SDK and a real Node binary in `cli/src/toolchain.ts`, so no command needs an `export PATH=...` prefix. Extend that module rather than prefixing a command. Remote hosts live in fork-owned `configuration/dev-hosts.json`.
+
+Per ADR-0018, every developer workflow is an `openbot` command — repository gates (`check`, `build`, `test`, `e2e`, `desktop package`), the `mobile` group, `connect`, and `remote`. Do not add loose `scripts/*.mjs`, package-local helper scripts, or repeat-use command lines that live only in docs; promote them to CLI commands. Root scripts stay thin plumbing the CLI delegates to.
 
 ## Repository map
 
-- `cli`: React Ink repository CLI; command entrypoints live under `cli/src/commands/`, while shared process, environment, initialization, and UI helpers remain at `cli/src/`.
+- `cli`: React Ink CLI (`openbot`) owning both operator commands for installations and the developer workflow for humans and sandboxed agents — repository gates, the `mobile` group, and remote dev hosts. Command entrypoints live under `cli/src/commands/`, while shared process, environment, initialization, and UI helpers remain at `cli/src/`. Remote host identity stays in fork-owned `configuration/dev-hosts.json`. See ADR-0018.
 - `apps/web`: React 19, Vite, TanStack Router, and the browser adapter for the shared client runtime.
 - `apps/mobile`: Expo and React Native owner client.
 - `apps/control-service`: Hono HTTP routes, the allowlisted Tilde ChatKit REST/SSE bridge, and the local control-service entrypoint.

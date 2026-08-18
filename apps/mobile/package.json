@@ -5,13 +5,12 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "android": "node scripts/expo.mjs run:android",
-    "build": "node scripts/expo.mjs export --platform all --output-dir dist",
+    "android": "vp run --filter openbot start -- mobile expo run:android",
+    "build": "vp run --filter openbot start -- mobile expo export --platform all --output-dir dist",
     "check": "vp check",
-    "dev": "node scripts/expo.mjs start --dev-client --clear",
-    "emulator": "node scripts/android-emulator.mjs",
-    "ios": "node scripts/expo.mjs run:ios",
-    "start": "node scripts/expo.mjs start",
+    "dev": "vp run --filter openbot start -- mobile expo start --dev-client --clear",
+    "ios": "vp run --filter openbot start -- mobile expo run:ios",
+    "start": "vp run --filter openbot start -- mobile expo start",
     "test": "vp test run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },

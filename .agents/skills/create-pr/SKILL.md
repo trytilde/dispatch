@@ -14,12 +14,13 @@ Use when the user asks to open, publish, prepare, or update a PR for the current
 3. Run `pre-commit-checks` and fix in-scope failures.
 4. Review protobuf, Tilde API reconciliation, environment, deployment, package README, public documentation, and Changesets impact.
 5. Run the cross-client parity gate for `apps/mobile`, `apps/desktop`, and `apps/web`. Confirm the port/no-port decision with the user before publishing.
-6. Run the architecture and ADR gate. Resolve any user decision before publishing.
-7. Use a Conventional Commits title and intentional file selection; commit the validated implementation.
-8. Push the branch and open or update the draft PR so its stable PR number is known.
-9. Generate `docs/updates/<pr-number>.md`, commit it, and push it to the draft PR.
-10. Keep the update record current after every subsequent implementation, documentation, rebase, or conflict-resolution change.
-11. Re-read PR checks and review feedback before declaring completion.
+6. Run the CLI ownership gate: every developer workflow and operator behavior belongs in the `openbot` CLI. Refactor before publishing.
+7. Run the architecture and ADR gate. Resolve any user decision before publishing.
+8. Use a Conventional Commits title and intentional file selection; commit the validated implementation.
+9. Push the branch and open or update the draft PR so its stable PR number is known.
+10. Generate `docs/updates/<pr-number>.md`, commit it, and push it to the draft PR.
+11. Keep the update record current after every subsequent implementation, documentation, rebase, or conflict-resolution change.
+12. Re-read PR checks and review feedback before declaring completion.
 
 ## Gather Context
 
@@ -115,6 +116,17 @@ Rules:
 Confirm the classification with the user before publishing when anything falls in **To port, not in this PR**. Do not infer approval of a deferral.
 
 Record the result in the PR body under a `Cross-client parity` heading as a per-capability table or list. When the PR changes no client-visible capability, record `Cross-client parity: no client capability changed`.
+
+## CLI Ownership Gate
+
+Per ADR-0018, the `openbot` CLI is the single command surface for operating an installation and developing the codebase. Before publishing, inspect the diff for logic that landed in the wrong place:
+
+- new `scripts/*.mjs` files, package-local helper scripts, or multi-step shell one-liners added to package.json scripts — refactor into an `openbot` command; root and package scripts stay thin delegations.
+- command lines that exist only in documentation or skill prose but that developers or agents will run repeatedly — promote to an `openbot` command and have the prose reference it.
+- a second CLI, binary, or runner package for developer workflow — fold it into `cli`. That split was tried and reversed; see ADR-0018's Updates.
+- host names, addresses, or machine-specific paths in package code — move them to fork-owned configuration such as `configuration/dev-hosts.json`.
+
+Trivial single-filter delegations (`vp run --filter <pkg> <script>`) are fine as scripts and need no command. When a workflow is promoted, update `cli/README.md`'s command surface and add a changeset, because the command surface is the CLI's public API.
 
 ## Architecture And ADR Gate
 

@@ -12,6 +12,9 @@ import { runInitialization } from "./init.js";
 import { runNewAgent } from "./new-agent.js";
 import { runSecrets } from "./secrets.js";
 import { runDevelopmentServer } from "./serve.js";
+import { runConnect } from "./connect.js";
+import { runMobile } from "./mobile/index.js";
+import { runRemote } from "./remote.js";
 
 export interface CliInvocation {
   command: string;
@@ -90,6 +93,23 @@ export async function runCommand(command: string, args: readonly string[]): Prom
   }
   if (command === "check" || command === "build" || command === "test")
     return delegate(command, args);
+  if (command === "e2e") return delegate("test:e2e", args);
+  if (command === "desktop") {
+    if (args[0] !== "package") throw new Error("Usage: openbot desktop package");
+    return delegateFilter("@tryopenbot/desktop", "package", args.slice(1));
+  }
+  if (command === "mobile") {
+    process.exitCode = await runMobile(args);
+    return;
+  }
+  if (command === "connect") {
+    process.exitCode = await runConnect(args);
+    return;
+  }
+  if (command === "remote") {
+    process.exitCode = await runRemote(args);
+    return;
+  }
   throw new Error(`Unknown command: ${[command, ...args].join(" ")}`);
 }
 
@@ -104,7 +124,20 @@ function show(view: ReactElement): void {
 
 async function delegate(script: string, args: readonly string[]): Promise<void> {
   if (process.stdout.isTTY) show(<Success title={`Starting pnpm ${script}`} />);
-  const child = spawn("pnpm", [script, ...args], {
+  return spawnPnpm([script, ...args]);
+}
+
+// Package-filtered delegation for workflows that are not root scripts.
+async function delegateFilter(
+  packageName: string,
+  script: string,
+  args: readonly string[],
+): Promise<void> {
+  return spawnPnpm(["--filter", packageName, script, ...args]);
+}
+
+async function spawnPnpm(pnpmArguments: readonly string[]): Promise<void> {
+  const child = spawn("pnpm", [...pnpmArguments], {
     cwd: repositoryRoot,
     stdio: "inherit",
     env: { ...process.env, NODE_OPTIONS: undefined },

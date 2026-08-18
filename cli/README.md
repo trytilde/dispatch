@@ -1,6 +1,6 @@
 # openbot
 
-The React Ink repository CLI for OpenBot initialization, development supervision, encrypted secret maintenance, service execution, and provider-coordinated deployment. Commands are parsed with `arg`; command entrypoints live under `src/commands/`.
+The React Ink CLI for OpenBot. It operates an installation — initialization, development supervision, encrypted secret maintenance, service execution, provider-coordinated deployment — and it carries the developer workflow for the codebase itself: repository gates, the Expo mobile toolchain, and remote development hosts. One command surface serves operators, fork developers, and sandboxed agents (ADR-0018). Commands are parsed with `arg`; command entrypoints live under `src/commands/`.
 
 Provider lifecycle failures identify both the concrete implementation and provider domain. CLI failures always print the complete redacted stack and cause chain below the concise error message; the same stack is included in JSON error output and the private run log.
 
@@ -24,7 +24,29 @@ The CLI operates on the OpenBot repository in the current working directory. For
 - `openbot deploy` builds selected providers, optionally stops with `--skip-deploy`, or plans and deploys providers with the runtime last.
 - `openbot secrets set NAME --description TEXT` and `openbot secrets unset NAME` maintain described `configuration/secrets.enc.yaml` entries without putting plaintext values in command arguments. SOPS encrypts only each entry's `value`; its `description` stays readable. Agents pipe values with `--stdin`; descriptions are mandatory.
 - `openbot env set NAME VALUE --description TEXT` and `openbot env unset NAME` maintain `configuration/.env`. Descriptions are mandatory and appear as plaintext comments above quoted values.
-- `openbot check`, `openbot build`, and `openbot test` delegate to the matching repository scripts.
+- `openbot check`, `openbot build`, `openbot test`, and `openbot e2e` delegate to the matching repository scripts, which remain the single definition of what each gate runs. `openbot desktop package` packages the Electron app. Extra arguments pass through.
+- `openbot mobile <subcommand>` owns the Expo developer workflow and resolves `ANDROID_SDK_ROOT`, `ANDROID_HOME`, and a real Node binary before spawning anything, because Gradle shells out to `node` while evaluating settings and fails on a version-manager shim:
+  - `mobile expo <args...>` passes through to the Expo CLI of the workspace app that depends on `expo`; override the location with `OPENBOT_MOBILE_DIR`.
+  - `mobile emulator [--avd NAME] [--display N] [--vnc-port PORT] [--timeout MS]` boots the Android emulator and is idempotent, reusing a running Xvfb, emulator, or x11vnc. On Linux it runs headless behind Xvfb with x11vnc bound to loopback only; on macOS the emulator gets a real window.
+  - `mobile setup` provisions the Android SDK idempotently — command line tools, licenses, platform and system-image packages — and reports root-only system packages instead of installing them.
+  - `mobile avd [--name NAME] [--image PKG] [--device PROFILE]` creates the virtual device the emulator boots.
+  - `mobile screenshot [--out FILE]` captures the device screen and prints the PNG path.
+  - `mobile logs [logcat args]` streams the `ReactNativeJS` log channel.
+  - `mobile doctor` verifies the toolchain and exits non-zero when a required tool is missing.
+- `openbot connect <host> [--print] [--no-vnc] [--no-metro] [--no-adb]` opens the ssh tunnel that carries a remote development host's emulator screen, Metro bundler, and adb to this machine's loopback. Everything on a remote binds loopback, so the tunnel is the only path in; on a mac remote the same VNC port reaches macOS Screen Sharing.
+- `openbot remote <host> <emulator|dev|android|ios|build|doctor>` runs a development task on a configured host over ssh. `ios` requires a mac host.
+- Development hosts are fork-owned configuration in `configuration/dev-hosts.json`, never package code. Any command also accepts a raw `user@host`:
+
+```json
+{
+  "hosts": {
+    "build": { "ssh": "root@198.51.100.7", "platform": "linux", "path": "~/openbot" },
+    "mini": { "ssh": "me@mac-mini.local", "platform": "mac", "path": "~/openbot" }
+  }
+}
+```
+
+Developer commands require a repository checkout and fail with a clear error outside one. Operator commands such as `init` keep working in an empty directory.
 
 ## Public API
 

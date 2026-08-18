@@ -1,4 +1,12 @@
-import { type FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   type ActivityEvent,
   type ChatAgent,
@@ -24,7 +32,11 @@ import {
   type ConversationOutlineItem,
   ConversationOutlinePanel,
   EmptyConversation,
+  MarkdownText,
   MessageContent,
+  type MessagePart,
+  splitMessageSegments,
+  ToolsBlock,
   ScrollToLatestButton,
   ThinkingIndicator,
   ThreadOverlay,
@@ -139,7 +151,7 @@ export function OpenBotApp() {
   }, [agents, search]);
 
   function selectAgent(agent: ChatAgent): void {
-    setFiles([]);
+    clearFiles();
     setReplyingTo(null);
     setThreadRootId("");
     restoredSessionRef.current = "";
@@ -160,7 +172,7 @@ export function OpenBotApp() {
       setDraft("");
       setReplyingTo(null);
       setThreadRootId("");
-      setFiles([]);
+      clearFiles();
 
       const attachmentIds: string[] = [];
       for (const pending of outgoingFiles) {
@@ -190,7 +202,7 @@ export function OpenBotApp() {
         optimisticParts: optimisticParts(text, outgoingFiles),
         title: titleFrom(text, outgoingFiles),
       });
-      setFiles([]);
+      clearFiles();
     } catch (reason) {
       openBotRuntime.actions.setError(errorMessage(reason));
     }
@@ -205,14 +217,37 @@ export function OpenBotApp() {
     }
   }
 
+  // Cmd/Ctrl+I and Cmd/Ctrl+L focus the prompt.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if ((event.metaKey || event.ctrlKey) && (key === "i" || key === "l") && !event.altKey) {
+        event.preventDefault();
+        composerInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   function addFiles(incoming: FileList | File[]): void {
     const additions = [...incoming].map((file) => ({
       id: crypto.randomUUID(),
       file,
       progress: 0,
       status: "ready" as const,
+      ...(file.type.startsWith("image/") ? { previewUrl: URL.createObjectURL(file) } : {}),
     }));
     setFiles((current) => [...current, ...additions].slice(0, 10));
+  }
+
+  function clearFiles(): void {
+    setFiles((current) => {
+      for (const pending of current) {
+        if (pending.previewUrl) URL.revokeObjectURL(pending.previewUrl);
+      }
+      return [];
+    });
   }
 
   function setFileState(id: string, patch: Partial<PendingFile>): void {
@@ -310,6 +345,7 @@ export function OpenBotApp() {
         progress: pending.progress,
         status: pending.status,
         error: pending.error,
+        previewUrl: pending.previewUrl,
       }))}
       inputRef={composerInputRef}
       fileInputRef={fileInputRef}
@@ -368,13 +404,9 @@ export function OpenBotApp() {
         <ChatHeader
           agentId={selectedAgent?.id}
           agentName={selectedAgent?.display_name || "OpenBot"}
-          status={turnStatus || (streamStatus === "Live" ? "Online" : selectedAgent?.status)}
+          busy={agentBusy}
           computerOpen={layout.workspaceOpen}
           onToggleComputer={layout.toggleWorkspace}
-          conversationOutlineOpen={conversationOutlineOpen}
-          asyncTasksOpen={asyncTasksOpen}
-          onToggleConversationOutline={() => setConversationOutlineOpen((value) => !value)}
-          onToggleAsyncTasks={() => setAsyncTasksOpen((value) => !value)}
         />
 
         <ConversationSurface scrollRef={conversationRef} onScroll={handleConversationScroll}>
@@ -390,50 +422,143 @@ export function OpenBotApp() {
                   Load earlier messages
                 </button>
               ) : null}
-              {visibleMessages.map((message, index) => {
-                const previous = visibleMessages[index - 1];
-                const next = visibleMessages[index + 1];
-                const continuedPrevious = previous?.role === message.role;
-                const continuedNext = next?.role === message.role;
-                return (
-                  <ConversationMessage
-                    key={message.id}
-                    role={message.role}
-                    createdAt={message.created_at}
-                    continuedPrevious={continuedPrevious}
-                    continuedNext={continuedNext}
-                    menuOpen={messageMenuId === message.id}
-                    onReply={() => {
+              {(() => {
+                const rendered: ReactNode[] = [];
+                // An agent run (reasoning + tool calls) that spans adjacent
+                // messages merges into one grouped tool-chips block.
+                let pendingRun: { key: string; parts: MessagePart[] } | null = null;
+                const flushRun = () => {
+                  if (!pendingRun) return;
+                  rendered.push(
+                    <div className="message-block" key={pendingRun.key}>
+                      <ToolsBlock parts={pendingRun.parts} />
+                    </div>,
+                  );
+                  pendingRun = null;
+                };
+                const resolveAttachmentUrl = (sessionKey: string, attachmentId: string) =>
+                  openBotRuntime.client.getAttachmentDownloadUrl(sessionKey, attachmentId);
+                const rewriteUrl = (value: string) => openBotRuntime.client.rewriteTildeUrl(value);
+
+                visibleMessages.forEach((message, index) => {
+                  const previous = visibleMessages[index - 1];
+                  const next = visibleMessages[index + 1];
+                  const continuedPrevious = previous?.role === message.role;
+                  const continuedNext = next?.role === message.role;
+                  const parts = message.parts ?? [];
+                  const messageActions = {
+                    menuOpen: messageMenuId === message.id,
+                    onReply: () => {
                       setReplyingTo(message);
                       composerInputRef.current?.focus();
-                    }}
-                    onToggleMenu={() => {
+                    },
+                    onToggleMenu: () => {
                       setMessageMenuId((current) => (current === message.id ? "" : message.id));
-                    }}
-                    onStartThread={() => {
+                    },
+                    onStartThread: () => {
                       setThreadRootId(message.id);
                       setReplyingTo(message);
                       setMessageMenuId("");
                       composerInputRef.current?.focus();
-                    }}
-                    onCopy={() => {
+                    },
+                    onCopy: () => {
                       void navigator.clipboard.writeText(messageText(message));
                       setMessageMenuId("");
-                    }}
-                  >
-                    <MessageContent
-                      message={message}
-                      resolveAttachmentUrl={(selectedSessionId, attachmentId) =>
-                        openBotRuntime.client.getAttachmentDownloadUrl(
-                          selectedSessionId,
-                          attachmentId,
-                        )
+                    },
+                  };
+
+                  // Messages split into standalone blocks: text in bubbles;
+                  // agent runs and attachments as their own rows.
+                  const segments = parts.length > 0 ? splitMessageSegments(parts) : [];
+                  if (segments.length === 0) {
+                    flushRun();
+                    rendered.push(
+                      <ConversationMessage
+                        key={message.id}
+                        role={message.role}
+                        createdAt={message.created_at}
+                        continuedPrevious={continuedPrevious}
+                        continuedNext={continuedNext}
+                        {...messageActions}
+                      >
+                        <MessageContent
+                          message={message}
+                          resolveAttachmentUrl={resolveAttachmentUrl}
+                          rewriteUrl={rewriteUrl}
+                        />
+                      </ConversationMessage>,
+                    );
+                    return;
+                  }
+
+                  const lastText = segments.reduce(
+                    (last, segment, at) => (segment.kind === "text" ? at : last),
+                    -1,
+                  );
+                  segments.forEach((segment, at) => {
+                    const key = `${message.id}:${at}`;
+                    if (segment.kind === "run") {
+                      if (pendingRun && message.role !== "user") {
+                        pendingRun.parts.push(...segment.parts);
+                      } else {
+                        flushRun();
+                        pendingRun = { key, parts: [...segment.parts] };
                       }
-                      rewriteUrl={(value) => openBotRuntime.client.rewriteTildeUrl(value)}
-                    />
-                  </ConversationMessage>
-                );
-              })}
+                      return;
+                    }
+                    flushRun();
+                    if (segment.kind === "text") {
+                      rendered.push(
+                        <ConversationMessage
+                          key={key}
+                          role={message.role}
+                          createdAt={message.created_at}
+                          continuedPrevious={
+                            at > 0 ? segments[at - 1]?.kind === "text" : continuedPrevious
+                          }
+                          continuedNext={
+                            at < segments.length - 1
+                              ? segments[at + 1]?.kind === "text"
+                              : continuedNext
+                          }
+                          {...(at === lastText ? messageActions : {})}
+                        >
+                          <MarkdownText text={segment.text} />
+                        </ConversationMessage>,
+                      );
+                      return;
+                    }
+                    if (segment.kind === "files") {
+                      rendered.push(
+                        <ConversationMessage
+                          key={key}
+                          role={message.role}
+                          createdAt={message.created_at}
+                          mediaOnly
+                        >
+                          <MessageContent
+                            message={{ ...message, type: "ui", parts: segment.parts }}
+                            resolveAttachmentUrl={resolveAttachmentUrl}
+                            rewriteUrl={rewriteUrl}
+                          />
+                        </ConversationMessage>,
+                      );
+                      return;
+                    }
+                    rendered.push(
+                      <div className="message-block" key={key}>
+                        <MessageContent
+                          message={{ ...message, type: "ui", parts: [segment.part] }}
+                          resolveAttachmentUrl={resolveAttachmentUrl}
+                          rewriteUrl={rewriteUrl}
+                        />
+                      </div>,
+                    );
+                  });
+                });
+                flushRun();
+                return rendered;
+              })()}
               {agentBusy ? (
                 <ThinkingIndicator>
                   {turnStatus || `${selectedAgent?.display_name || "Agent"} is working…`}

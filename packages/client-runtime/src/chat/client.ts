@@ -35,6 +35,7 @@ export interface OpenBotClientOptions {
 export interface OpenBotClient {
   getSession(): Promise<AuthenticatedSession | null>;
   logout(): Promise<void>;
+  createAgent(name: string): Promise<CreatedAgent>;
   getSidebar(
     query?: string,
     agentSort?: AgentSortOrder,
@@ -79,6 +80,8 @@ export interface OpenBotClient {
 }
 
 const SessionEnvelopeSchema = z.object({ session: ChatSessionSchema });
+const CreatedAgentSchema = z.object({ id: z.string(), name: z.string() });
+export type CreatedAgent = z.infer<typeof CreatedAgentSchema>;
 const ErrorBodySchema = z.object({
   error: z.string().optional(),
   detail: z.string().optional(),
@@ -166,6 +169,12 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
       return AuthenticatedSessionSchema.parse(await response.json());
     },
     logout: () => empty("/auth/logout", { method: "POST" }),
+    async createAgent(name) {
+      return await json("/api/agents", CreatedAgentSchema, {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      });
+    },
     async getSidebar(
       query = "",
       agentSort = "updated_at",

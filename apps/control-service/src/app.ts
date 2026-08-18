@@ -7,6 +7,7 @@ import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
 import type { AuthProvider } from "@tryopenbot/auth-provider";
 import type { ComputerProvider } from "@tryopenbot/computer-service-provider";
+import { registerAgentCreation } from "./agent-create.js";
 import { registerTildeChatProxy, type TildeChatProxyOptions } from "./chat-proxy.js";
 import { registerComputerPreview } from "./computer-preview.js";
 import { registerOwnerAuth, requireOwner } from "./auth.js";
@@ -34,6 +35,7 @@ export function createApp(options: AppOptions = {}): Hono {
     const middleware = requireOwner(options.authProvider, options);
     app.use("/api/chat/*", middleware);
     app.use("/api/computer/*", middleware);
+    app.use("/api/agents", middleware);
   } else
     app.get("/auth/native-config", (context) =>
       context.json({ error: "Owner authentication is not configured" }, 503),
@@ -42,6 +44,7 @@ export function createApp(options: AppOptions = {}): Hono {
     devMode: options.devMode,
     environment: options.environment,
   });
+  registerAgentCreation(app, { environment: options.environment });
   registerTildeChatProxy(app, options.tildeChatProxy);
   if (existsSync(webRoot)) {
     const cacheHeaders = (

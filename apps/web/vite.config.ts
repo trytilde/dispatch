@@ -13,6 +13,7 @@ export default defineConfig({
       "/healthz": controlProxy(),
       "/api/chat": controlProxy(),
       "/api/computer": controlProxy(),
+      "/api/agents": controlProxy(),
       "/auth": controlProxy(),
     },
   },

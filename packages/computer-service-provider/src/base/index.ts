@@ -255,7 +255,9 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       if (!(error instanceof ComputerProviderError) || error.code !== "not_found") throw error;
       computer = await this.create(spec, call);
     }
-    if (context.devMode && image && computer.image !== image) {
+    // A computer running an outdated image must be replaced in every mode; agent workspaces are
+    // reseeded and are explicitly not durable storage.
+    if (image && !this.computerImageMatches(computer.id, computer.image, image)) {
       await this.delete(computer.id, call);
       computer = await this.create(spec, call);
     }
@@ -285,19 +287,22 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       environment: context.environment,
     };
     const image = context.environment[this.deployedImageEnvironmentVariable];
+    const sandboxSpec: ComputerSpec = {
+      id: request.computerId,
+      ...(image ? { image } : {}),
+      labels: { role: "openbot-development-sandbox" },
+    };
     let computer;
     try {
       computer = await this.get(request.computerId, call);
     } catch (error) {
       if (!(error instanceof ComputerProviderError) || error.code !== "not_found") throw error;
-      computer = await this.create(
-        {
-          id: request.computerId,
-          ...(image ? { image } : {}),
-          labels: { role: "openbot-development-sandbox" },
-        },
-        call,
-      );
+      computer = await this.create(sandboxSpec, call);
+    }
+    // The development sandbox must also follow image updates; its durable state is reseeded.
+    if (image && !this.computerImageMatches(computer.id, computer.image, image)) {
+      await this.delete(computer.id, call);
+      computer = await this.create(sandboxSpec, call);
     }
     if (computer.state === "sleeping") await this.wake(computer.id, call);
 
@@ -380,6 +385,18 @@ export abstract class BaseComputerProvider implements ComputerProvider {
         `Could not protect the development sandbox environment: ${result.stderr}`,
       );
 
+    for (const agentId of request.agentWorkspaceIds ?? []) {
+      result = await this.exec(
+        computer.id,
+        { command: "mkdir", args: ["-p", agentWorkspaceRoot(agentId)] },
+        call,
+      );
+      if (result.exitCode !== 0)
+        throw new ComputerProviderError(
+          "provider_unavailable",
+          `Could not prepare the ${agentId} workspace in the development sandbox: ${result.stderr}`,
+        );
+    }
     result = await this.exec(
       computer.id,
       {
@@ -394,13 +411,25 @@ export abstract class BaseComputerProvider implements ComputerProvider {
         "provider_unavailable",
         `Could not initialize the development sandbox: ${result.stderr}`,
       );
+    const serviceUrl = await this.computerServiceUrl(computer.id);
     await persistEnvironment(
       context,
       "DEVELOPMENT_SANDBOX_ID",
       computer.id,
       "Trusted development sandbox ID.",
     );
-    return { outputs: { "development-sandbox.computer-id": computer.id } };
+    await persistEnvironment(
+      context,
+      "DEVELOPMENT_SANDBOX_SERVICE_URL",
+      serviceUrl,
+      "Trusted development sandbox computer service URL.",
+    );
+    return {
+      outputs: {
+        "development-sandbox.computer-id": computer.id,
+        "development-sandbox.service-url": serviceUrl,
+      },
+    };
   }
 
   async #registerAgentWorkspace(
@@ -470,14 +499,35 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       },
       ...(context.signal ? { signal: context.signal } : {}),
     };
-    return await retryComputerServiceStartup(
-      async () =>
-        (await service.ensureDesktop(request, options)) as unknown as {
-          display: string;
-          vncPort: number;
-        },
-      context.signal,
-    );
+    const ensure = () =>
+      retryComputerServiceStartup(
+        async () =>
+          (await service.ensureDesktop(request, options)) as unknown as {
+            display: string;
+            vncPort: number;
+          },
+        context.signal,
+      );
+    try {
+      return await ensure();
+    } catch (error) {
+      // A resumed computer can report "running" while its services are down; restart them once.
+      if (!this.reviveComputerServices || !isServiceUnavailable(error)) throw error;
+      await this.reviveComputerServices(computerId, context);
+      return await ensure();
+    }
+  }
+
+  /** Restart in-computer services after a resume left the instance running but unreachable. */
+  protected reviveComputerServices?(id: string, context: ComputerCallContext): Promise<void>;
+
+  /** Whether the running computer already uses the desired image reference. */
+  protected computerImageMatches(
+    _id: string,
+    currentImage: string | undefined,
+    desiredImage: string,
+  ): boolean {
+    return currentImage === desiredImage;
   }
 
   async #writeComputerFiles(
@@ -637,6 +687,11 @@ export abstract class BaseComputerProvider implements ComputerProvider {
   #outputName(suffix: string): string {
     return `${this.providerId.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase()}_IMAGE_${suffix}`;
   }
+}
+
+export function isServiceUnavailable(error: unknown): boolean {
+  const failure = ConnectError.from(error);
+  return [Code.Aborted, Code.Unavailable, Code.Unknown].includes(failure.code);
 }
 
 export async function retryComputerServiceStartup<T>(

@@ -23,6 +23,7 @@ export interface WorkspaceSidebarProps {
   onSearchClose: () => void;
   onSelectAgent: (id: string) => void;
   onLoadMore?: () => void;
+  onCreateAgent?: () => void;
   onResize: (event: ReactPointerEvent<HTMLDivElement>) => void;
 }
 
@@ -38,6 +39,7 @@ export function WorkspaceSidebar({
   onSearchClose,
   onSelectAgent,
   onLoadMore,
+  onCreateAgent,
   onResize,
 }: WorkspaceSidebarProps) {
   useSearchShortcut(onSearchOpen);
@@ -109,6 +111,22 @@ export function WorkspaceSidebar({
             </button>
           ) : null}
         </nav>
+        {onCreateAgent ? (
+          <div className="px-3 pb-1">
+            <button
+              className="flex h-8 w-full items-center gap-2 rounded-control px-2.5 text-left
+                text-[12.5px] font-medium text-ink-2 transition-[background-color,color]
+                duration-150 hover:bg-hover hover:text-ink"
+              onClick={onCreateAgent}
+              type="button"
+            >
+              <span aria-hidden className="text-[15px] leading-none">
+                +
+              </span>
+              New agent
+            </button>
+          </div>
+        ) : null}
         <WorkspaceAccount />
         <div
           aria-label="Drag to resize the sidebar"

@@ -81,6 +81,9 @@ export function OpenBotApp() {
   const [threadRootId, setThreadRootId] = useState("");
   const [conversationOutlineOpen, setConversationOutlineOpen] = useState(false);
   const [asyncTasksOpen, setAsyncTasksOpen] = useState(false);
+  const [createAgentOpen, setCreateAgentOpen] = useState(false);
+  const [createAgentName, setCreateAgentName] = useState("");
+  const [creatingAgent, setCreatingAgent] = useState(false);
   const conversationRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerInputRef = useRef<HTMLTextAreaElement>(null);
@@ -367,6 +370,40 @@ export function OpenBotApp() {
     />
   );
 
+  /** Scaffold and register a new agent, then open a fresh conversation with it. */
+  async function submitCreateAgent(): Promise<void> {
+    const name = createAgentName.trim();
+    if (!name || creatingAgent) return;
+    setCreatingAgent(true);
+    openBotRuntime.actions.setError("");
+    try {
+      const created = await openBotRuntime.client.createAgent(name);
+      // The registration is reconciled by the sandbox CLI; wait for the sidebar to surface it.
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        await openBotRuntime.actions.refreshSidebar();
+        const agent = openBotRuntime.store
+          .getState()
+          .sidebar.agents.find((candidate) => candidate.id === created.id);
+        if (agent) {
+          setCreateAgentOpen(false);
+          setCreateAgentName("");
+          await openBotRuntime.actions.selectAgent(agent.id);
+          openBotRuntime.actions.startNewConversation(agent.id);
+          return;
+        }
+        await new Promise((resolveDelay) => window.setTimeout(resolveDelay, 1_500));
+      }
+      setCreateAgentOpen(false);
+      openBotRuntime.actions.setError(
+        `Agent ${created.name} was created but has not appeared yet; refresh shortly.`,
+      );
+    } catch (reason) {
+      openBotRuntime.actions.setError(errorMessage(reason));
+    } finally {
+      setCreatingAgent(false);
+    }
+  }
+
   return (
     <WorkspaceShell
       sidebarCollapsed={layout.sidebarCollapsed}
@@ -397,6 +434,7 @@ export function OpenBotApp() {
           if (agent) selectAgent(agent);
         }}
         onLoadMore={() => void loadMoreAgents()}
+        onCreateAgent={() => setCreateAgentOpen(true)}
         onResize={layout.beginSidebarResize}
       />
 
@@ -661,6 +699,56 @@ export function OpenBotApp() {
           onClose={() => setAsyncTasksOpen(false)}
           tasks={asyncTasks}
         />
+      ) : null}
+      {createAgentOpen ? (
+        <div
+          aria-label="New agent"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 pt-[18vh]"
+          role="dialog"
+        >
+          <form
+            className="flex w-[360px] flex-col gap-3 rounded-[12px] bg-surface p-4 shadow-lg"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submitCreateAgent();
+            }}
+          >
+            <h2 className="text-[14px] font-semibold text-ink">New agent</h2>
+            <p className="text-[12.5px] text-ink-3">
+              The agent is scaffolded in your OpenBot fork and registered immediately.
+            </p>
+            <input
+              autoFocus
+              className="h-8 rounded-control bg-inset px-2.5 text-[13px] text-ink shadow-hairline"
+              disabled={creatingAgent}
+              maxLength={72}
+              onChange={(event) => setCreateAgentName(event.target.value)}
+              placeholder="Agent name"
+              value={createAgentName}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                className="h-8 rounded-control px-3 text-[12.5px] text-ink-2 hover:bg-hover"
+                disabled={creatingAgent}
+                onClick={() => {
+                  setCreateAgentOpen(false);
+                  setCreateAgentName("");
+                }}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className="h-8 rounded-control bg-accent px-3 text-[12.5px] font-medium
+                  text-accent-foreground disabled:opacity-50"
+                disabled={creatingAgent || !createAgentName.trim()}
+                type="submit"
+              >
+                {creatingAgent ? "Creating…" : "Create agent"}
+              </button>
+            </div>
+          </form>
+        </div>
       ) : null}
     </WorkspaceShell>
   );

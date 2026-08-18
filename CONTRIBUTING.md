@@ -90,7 +90,7 @@ sudo ln -sfn /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk \
 echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 21)' >> ~/.zshrc
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 
-# iOS — Xcode 16.1 or newer, from the App Store or developer.apple.com
+# iOS — Xcode 16.1 or newer
 xcode-select --install    # skip if Xcode is already installed
 sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
 brew install cocoapods
@@ -99,6 +99,24 @@ pnpm openbot mobile setup
 pnpm openbot mobile avd
 pnpm openbot mobile doctor
 ```
+
+Installing a specific Xcode is the awkward part. Your macOS version caps which Xcode you can
+run — Xcode 16.1 and 16.2 need macOS 14.5 or newer, and 16.3 and newer need macOS 15 — so pick
+the newest that your OS supports rather than the newest that exists. Two routes work:
+
+- Download the `.xip` for that exact version from <https://developer.apple.com/download/all>
+  with a free Apple ID, then `xip --expand Xcode_<version>.xip`,
+  `sudo mv Xcode.app /Applications/Xcode-<version>.app`, and `sudo xcode-select --switch` to it.
+- Or `brew install --cask xcodes`, a prebuilt release manager that installs and switches
+  between versions.
+
+Do not use the `xcodesorg/made/xcodes` **formula** to escape an outdated Xcode: it builds from
+source with Swift 6 tools, which require Xcode 16, so it cannot install on the machine that
+needs it. The cask is prebuilt and has no such constraint.
+
+Finish with `sudo xcodebuild -license accept` and `sudo xcodebuild -runFirstLaunch`. Xcode 16
+no longer bundles simulator runtimes; if `xcrun simctl list runtimes` is empty, run
+`xcodebuild -downloadPlatform iOS`.
 
 `mobile doctor` warns rather than fails when the JDK major is unsupported, because iOS work
 does not need Gradle. It fails on an Xcode below the React Native minimum, because

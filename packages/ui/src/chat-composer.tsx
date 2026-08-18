@@ -124,7 +124,9 @@ export function ChatComposer({
         aria-label="Message"
         disabled={!agentAvailable}
         ref={inputRef}
-        placeholder={agentAvailable ? "Ask anything, or drop a file." : "No agent is available."}
+        placeholder={
+          agentAvailable ? "Type a message, or drop in a file." : "No agent is available."
+        }
         value={draft}
         onChange={(event) => onDraftChange(event.target.value)}
         onBlur={onBlur}

@@ -87,7 +87,7 @@ export function WorkspaceSidebar({
         </nav>
         <WorkspaceAccount />
         <div
-          aria-label="Resize sidebar"
+          aria-label="Drag to resize the sidebar"
           className="sidebar-resize-handle"
           onPointerDown={onResize}
           role="separator"

@@ -41,7 +41,7 @@ export function ChatHeader({
             aria-label="Toggle full conversation"
             className={conversationOutlineOpen ? "active" : ""}
             onClick={onToggleConversationOutline}
-            title="Full conversation"
+            title="Conversation outline"
           >
             <ListIcon />
           </button>
@@ -52,7 +52,7 @@ export function ChatHeader({
             aria-label="Toggle async tasks"
             className={asyncTasksOpen ? "active" : ""}
             onClick={onToggleAsyncTasks}
-            title="Async tasks"
+            title="Background tasks"
           >
             <ClockIcon />
           </button>

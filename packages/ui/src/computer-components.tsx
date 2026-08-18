@@ -198,7 +198,7 @@ function operationSteps(kind: ComputerOperationKind, computerName: string): read
   if (kind === "reset") {
     return [
       "Getting ready",
-      "Wiping your data",
+      "Clearing your data",
       `Creating ${sentenceName}`,
       `Starting ${sentenceName}`,
       "Cleaning up",
@@ -215,7 +215,7 @@ function operationSteps(kind: ComputerOperationKind, computerName: string): read
   }
   return [
     "Getting ready",
-    "Backing up your data",
+    "Saving your data",
     `Recreating ${sentenceName}`,
     `Starting ${sentenceName}`,
     "Cleaning up",
@@ -344,9 +344,9 @@ const failureTitles: Record<ComputerOperationKind, string> = {
 };
 
 const failureRetryLabels: Record<ComputerOperationKind, string> = {
-  update: "Retry Update",
+  update: "Try update again",
   reset: "Retry Reset",
-  recover: "Retry Recovery",
+  recover: "Try recovery again",
 };
 
 export function ComputerFailureDialog({
@@ -560,7 +560,7 @@ export interface ComputerTakingLongerDialogProps {
 }
 
 const operationPhrases: Record<ComputerOperationKind, string> = {
-  update: "The update is still running — a large image download can take a few minutes.",
+  update: "Update still in progress. Large downloads can take several minutes.",
   reset: "The reset is still running — rebuilding the Computer can take a few minutes.",
   recover: "The recovery is still running — recreating the Computer can take a few minutes.",
 };
@@ -587,7 +587,7 @@ export function ComputerTakingLongerDialog({
       description={`${operationPhrases[kind]} You can keep waiting, or continue in the background.`}
       onDismiss={onKeepWaiting}
       open={open}
-      title="Taking longer than expected"
+      title="Still going"
     />
   );
 }
@@ -619,7 +619,7 @@ export function ComputerMonitorStrip({
             <span className="computer-monitor-more-preview">⌑</span>
             <span>and {overflow.length} more</span>
           </summary>
-          <div aria-label="More screens" role="menu">
+          <div aria-label="Other screens" role="menu">
             {overflow.map((monitor) => (
               <button key={monitor.id} onClick={() => onSelect(monitor.id)} role="menuitem">
                 {monitor.title}

@@ -51,6 +51,12 @@ _Avoid_: agent state, chat state
 
 _Avoid_: credentials, runtime state
 
+**Client Runtime**:
+The framework-neutral layer in `packages/client-runtime` that owns every UI contract, remote
+snapshot, and live-state reconciliation shared by the web, mobile, and desktop clients. Required for
+major UX surfaces and state interactions; presentation-only component state is excluded.
+_Avoid_: frontend state library, shared components, or server SDK
+
 ## Relationships
 
 - An **Owner** authenticates through OIDC without a pairing-code gate.
@@ -63,6 +69,8 @@ _Avoid_: credentials, runtime state
 - A **Tilde Team** owns one or more **Tilde Agents** and their **ChatKit Sessions**.
 - An **OpenBot Installation** controls at most one active **OpenBot Computer**.
 - **Control State** belongs to OpenBot; agent and conversation state belongs to the **Tilde Team**.
+- Every OpenBot client reaches an **OpenBot Workspace** through the **Client Runtime**; renderers own
+  presentation only.
 - Tilde provider lifecycles reconcile their resources through the typed API client.
 
 ## Example dialogue
@@ -92,6 +100,6 @@ Work: <specific remaining behavior and its acceptance proof>
 
 <FOLLOW UP>
 Owner: production deployment orchestrator
-Trigger: when computer-provider replaces the legacy production sandbox adapter
-Work: persist the computer-provider build lifecycle's source digest and immutable image reference in redacted deployment state, and prove a second unchanged deployment skips both image build and publication
+Trigger: when computer-service-provider replaces the legacy production sandbox adapter
+Work: persist the computer-service-provider build lifecycle's source digest and immutable image reference in redacted deployment state, and prove a second unchanged deployment skips both image build and publication
 </FOLLOW UP>

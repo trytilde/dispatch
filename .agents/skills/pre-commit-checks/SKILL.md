@@ -33,7 +33,8 @@ pnpm build
 ```bash
 pnpm --filter @tryopenbot/control-service test
 pnpm --filter @tryopenbot/agent-service-provider test
-pnpm --filter @tryopenbot/computer-provider test
+pnpm --filter @tryopenbot/computer-service-provider test
+pnpm --filter @tryopenbot/client-runtime test
 pnpm --filter @tryopenbot/desktop test
 ```
 
@@ -48,6 +49,7 @@ Prefer:
 - schema validation for untyped external payloads
 - exhaustive unions for provider states and errors
 - shared provider contracts in `src/core.ts` or `src/core/index.ts` inside the owning provider package, or in protobuf for an actual service boundary
+- shared client contracts in `packages/client-runtime` for anything a renderer consumes; do not satisfy a UI type error by declaring a local copy of a wire or state shape
 - request cancellation through `AbortSignal`
 - focused compatibility adapters at external boundaries
 
@@ -77,3 +79,4 @@ OpenBot uses Changesets with one fixed group for every workspace package. Follow
 - Diff contains no secrets, local state, generated noise, or unrelated edits.
 - A valid changeset is present when release impact requires one, or the handoff explains why none is needed.
 - Changed provider contract interfaces are defined in `src/core.ts` or `src/core/index.ts`, re-exported by the package root, and reflected in the package README's `Public API` section.
+- New or changed major UX surfaces and state interactions consume `packages/client-runtime` contracts. `apps/web`, `apps/mobile`, and `apps/desktop` added no local wire types, fetch/SSE parsing, or duplicate snapshots; only presentation-only state is component-local.

@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "@hono/node-server": "1.19.1",
-    "@tryopenbot/computer-provider": "workspace:*",
+    "@tryopenbot/computer-service-provider": "workspace:*",
     "@tryopenbot/control-service-provider": "workspace:*",
     "@tryopenbot/platform-integrations": "workspace:*",
     "@tryopenbot/runtime-provider": "workspace:*",

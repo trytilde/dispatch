@@ -21,7 +21,7 @@ import { Configuration } from "@tryopenbot/configuration";
 import { TildeAgentProvider } from "@tryopenbot/agent-provider";
 import { VercelAgentServiceProvider } from "@tryopenbot/agent-service-provider";
 import { VercelControlServiceProvider } from "@tryopenbot/control-service-provider";
-import { VercelSandboxComputerProvider } from "@tryopenbot/computer-provider";
+import { VercelSandboxComputerProvider } from "@tryopenbot/computer-service-provider";
 import { VercelInferenceProvider } from "@tryopenbot/inference-provider";
 import { TildePlatform, VercelPlatform } from "@tryopenbot/platform-integrations";
 

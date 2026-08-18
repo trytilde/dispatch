@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { Code, ConnectError } from "@connectrpc/connect";
-import type { ComputerProvider } from "@tryopenbot/computer-provider";
+import type { ComputerProvider } from "@tryopenbot/computer-service-provider";
 import { app, createApp } from "./app.js";
 
 const temporaryRoots: string[] = [];
@@ -19,6 +19,14 @@ describe("bare OpenBot server", () => {
     const response = await app.request("https://openbot.test/healthz");
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, service: "openbot" });
+  });
+
+  it("reports native authentication as unavailable when it is not configured", async () => {
+    const response = await app.request("https://openbot.test/auth/native-config");
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "Owner authentication is not configured",
+    });
   });
 
   it("does not expose an API namespace", async () => {

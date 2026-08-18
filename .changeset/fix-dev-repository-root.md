@@ -2,7 +2,7 @@
 "@tryopenbot/agent-provider": patch
 "@tryopenbot/agent-service-provider": patch
 "openbot": patch
-"@tryopenbot/computer-provider": patch
+"@tryopenbot/computer-service-provider": patch
 "@tryopenbot/computer-service": patch
 "@tryopenbot/computer-service-proto": patch
 "@tryopenbot/configuration": patch

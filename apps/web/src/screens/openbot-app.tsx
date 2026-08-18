@@ -1,38 +1,16 @@
+import { type FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
-  type Dispatch,
-  type FormEvent,
-  type SetStateAction,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
-  type AgentSortOrder,
+  type ActivityEvent,
   type ChatAgent,
-  type ChatEvent,
   type ChatMessage,
   type ChatPart,
-  type ChatSession,
-  createSession,
-  deleteAttachment,
-  deleteQueuedTurn,
-  getAttachmentDownloadUrl,
-  getMessages,
-  getQueuedTurns,
-  getSidebar,
-  interruptSession,
-  observeSession,
+  eventName,
+  errorMessage,
+  latestMessagePreview,
+  messageText,
   type QueuedTurn,
-  reorderQueuedTurn,
-  rewriteTildeUrl,
-  sendMessage,
-  type SessionSortOrder,
-  steerQueuedTurn,
-  uploadAttachment,
-} from "../chat-api.js";
+} from "@tryopenbot/client-runtime";
+import { useStore } from "zustand";
 import {
   type AsyncTask,
   AsyncTasksPanel,
@@ -54,19 +32,8 @@ import {
   WorkspaceShell,
   useWorkspaceLayout,
 } from "@tryopenbot/ui";
-
-interface PendingFile {
-  id: string;
-  file: File;
-  progress: number;
-  status: "ready" | "uploading" | "uploaded" | "error";
-  attachmentId?: string;
-  error?: string;
-}
-
-interface ActivityEvent extends ChatEvent {
-  receivedAt: Date;
-}
+import { openBotRuntime } from "../runtime.js";
+import { optimisticParts, type PendingFile, uploadAttachment } from "../web-attachments.js";
 
 const suggestions = [
   "Inspect this workspace and tell me what to improve first",
@@ -75,36 +42,33 @@ const suggestions = [
 ];
 
 export function OpenBotApp() {
-  const [agents, setAgents] = useState<ChatAgent[]>([]);
-  const [nextAgentToken, setNextAgentToken] = useState<string | null>();
-  const [agentId, setAgentId] = useState("");
-  const [sessionId, setSessionId] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [nextMessageToken, setNextMessageToken] = useState<string | null>();
+  const sidebar = useStore(openBotRuntime.store, (state) => state.sidebar);
+  const conversation = useStore(openBotRuntime.store, (state) => state.conversation);
+  const { agents, nextAgentToken, selectedAgentId: agentId, loading } = sidebar;
+  const {
+    selectedSessionId: sessionId,
+    messages,
+    nextMessageToken,
+    queuedTurns,
+    activity,
+    loading: loadingMessages,
+    submitting,
+    agentBusy,
+    streamStatus,
+    turnStatus,
+    error,
+  } = conversation;
   const [draft, setDraft] = useState("");
   const [files, setFiles] = useState<PendingFile[]>([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [loadingMessages, setLoadingMessages] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [agentBusy, setAgentBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [activity, setActivity] = useState<ActivityEvent[]>([]);
-  const [queuedTurns, setQueuedTurns] = useState<QueuedTurn[]>([]);
-  const [streamStatus, setStreamStatus] = useState("Disconnected");
-  const [turnStatus, setTurnStatus] = useState("");
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [composerFocused, setComposerFocused] = useState(false);
-  const [agentSort] = useState<AgentSortOrder>("updated_at");
-  const [sessionSort] = useState<SessionSortOrder>("updated_at");
   const [messageMenuId, setMessageMenuId] = useState("");
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [threadRootId, setThreadRootId] = useState("");
   const [conversationOutlineOpen, setConversationOutlineOpen] = useState(false);
   const [asyncTasksOpen, setAsyncTasksOpen] = useState(false);
-  const observerRef = useRef<AbortController | undefined>(undefined);
-  const refreshTimerRef = useRef<number | undefined>(undefined);
   const conversationRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerInputRef = useRef<HTMLTextAreaElement>(null);
@@ -112,7 +76,6 @@ export function OpenBotApp() {
   const restoredSessionRef = useRef("");
   const stickToBottomRef = useRef(true);
   const previousMessageIdRef = useRef("");
-  const loadedAgentRef = useRef("");
   const [showScrollLatest, setShowScrollLatest] = useState(false);
   const layout = useWorkspaceLayout();
 
@@ -129,124 +92,6 @@ export function OpenBotApp() {
     input.style.height = "0px";
     input.style.height = `${Math.min(200, Math.max(44, input.scrollHeight))}px`;
   }, [draft]);
-
-  const refreshSidebar = useCallback(async () => {
-    const response = await getSidebar("", agentSort, sessionSort);
-    const hydratedAgents = await Promise.all(
-      response.items.map(async (agent) => {
-        const latestSession = agent.sessions.items[0];
-        if (!latestSession) return agent;
-        try {
-          const page = await getMessages(latestSession.id);
-          return { ...agent, last_message_preview: latestMessagePreview(page.items) };
-        } catch {
-          return agent;
-        }
-      }),
-    );
-    setAgents(hydratedAgents);
-    setNextAgentToken(response.next_page_token);
-    setAgentId((current) =>
-      hydratedAgents.some((agent) => agent.id === current)
-        ? current
-        : (hydratedAgents[0]?.id ?? ""),
-    );
-  }, [agentSort, sessionSort]);
-
-  const refreshMessages = useCallback(async (id: string, preserveLiveMessages = false) => {
-    const response = await getMessages(id);
-    setMessages((current) =>
-      uniqueMessages(preserveLiveMessages ? [...response.items, ...current] : response.items),
-    );
-    setNextMessageToken(response.next_page_token);
-  }, []);
-
-  const refreshQueue = useCallback(async (id: string) => {
-    const response = await getQueuedTurns(id);
-    setQueuedTurns(
-      response.items.sort((left, right) => left.queue_position - right.queue_position),
-    );
-  }, []);
-
-  const beginObservation = useCallback(
-    (id: string) => {
-      observerRef.current?.abort();
-      const controller = new AbortController();
-      const seenEventIds = new Set<string>();
-      observerRef.current = controller;
-      setStreamStatus("Connecting");
-
-      void (async () => {
-        while (!controller.signal.aborted) {
-          try {
-            setStreamStatus("Live");
-            await observeSession(id, controller.signal, (event) => {
-              if (event.id && seenEventIds.has(event.id)) return;
-              if (event.id) {
-                seenEventIds.add(event.id);
-                if (seenEventIds.size > 1_000) {
-                  const oldest = seenEventIds.values().next().value;
-                  if (oldest) seenEventIds.delete(oldest);
-                }
-              }
-              setActivity((current) =>
-                [{ ...event, receivedAt: new Date() }, ...current].slice(0, 60),
-              );
-              const status = eventStatus(event);
-              if (status) setTurnStatus(status);
-              const busy = eventBusyState(event);
-              if (busy !== undefined) setAgentBusy(busy);
-              if (eventName(event).includes("queue")) {
-                void refreshQueue(id).catch(() => undefined);
-              }
-              const streaming = applyLiveChatEvent(event, id, setMessages);
-              if (streaming) {
-                window.clearTimeout(refreshTimerRef.current);
-                return;
-              }
-              window.clearTimeout(refreshTimerRef.current);
-              refreshTimerRef.current = window.setTimeout(() => {
-                void refreshMessages(id, true).catch((reason: unknown) =>
-                  setError(errorMessage(reason)),
-                );
-              }, 80);
-            });
-          } catch (reason) {
-            if (controller.signal.aborted) break;
-            setStreamStatus("Reconnecting");
-            setError(errorMessage(reason));
-          }
-          await abortableDelay(900, controller.signal);
-        }
-      })();
-    },
-    [refreshMessages, refreshQueue],
-  );
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void refreshSidebar()
-        .catch((reason: unknown) => setError(errorMessage(reason)))
-        .finally(() => setLoading(false));
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [refreshSidebar]);
-
-  useEffect(() => {
-    if (loading || !agentId || loadedAgentRef.current === agentId) return;
-    const agent = agents.find((candidate) => candidate.id === agentId);
-    const latestSession = agent?.sessions.items[0];
-    loadedAgentRef.current = agentId;
-    if (latestSession) void selectSession(agentId, latestSession);
-  }, [agentId, agents, loading]);
-
-  useEffect(
-    () => () => {
-      observerRef.current?.abort();
-      window.clearTimeout(refreshTimerRef.current);
-    },
-    [],
-  );
 
   useEffect(() => {
     const element = conversationRef.current;
@@ -293,53 +138,12 @@ export function OpenBotApp() {
       : agents;
   }, [agents, search]);
 
-  async function selectSession(nextAgentId: string, nextSession: ChatSession): Promise<void> {
-    loadedAgentRef.current = nextAgentId;
-    setAgentId(nextAgentId);
-    setSessionId(nextSession.id);
-    setMessages([]);
-    setFiles([]);
-    setReplyingTo(null);
-    setThreadRootId("");
-    setError("");
-    setActivity([]);
-    setQueuedTurns([]);
-    setTurnStatus("");
-    setAgentBusy(false);
-    restoredSessionRef.current = "";
-    setLoadingMessages(true);
-    beginObservation(nextSession.id);
-    try {
-      await refreshMessages(nextSession.id, true);
-      await refreshQueue(nextSession.id);
-    } catch (reason) {
-      setError(errorMessage(reason));
-    } finally {
-      setLoadingMessages(false);
-    }
-  }
-
   function selectAgent(agent: ChatAgent): void {
-    const latestSession = agent.sessions.items[0];
-    if (latestSession) {
-      void selectSession(agent.id, latestSession);
-      return;
-    }
-    observerRef.current?.abort();
-    loadedAgentRef.current = agent.id;
-    setAgentId(agent.id);
-    setSessionId("");
-    setMessages([]);
     setFiles([]);
     setReplyingTo(null);
     setThreadRootId("");
-    setActivity([]);
-    setQueuedTurns([]);
-    setTurnStatus("");
-    setAgentBusy(false);
     restoredSessionRef.current = "";
-    setStreamStatus("Disconnected");
-    setError("");
+    void openBotRuntime.actions.selectAgent(agent.id);
   }
 
   async function send(event: FormEvent): Promise<void> {
@@ -349,25 +153,10 @@ export function OpenBotApp() {
     const text = replyingTo
       ? `> ${messageText(replyingTo).replaceAll("\n", "\n> ")}\n\n${authoredText}`.trim()
       : authoredText;
-    const queueing = agentBusy;
     const outgoingFiles = files;
-    setSubmitting(true);
-    setError("");
-    setTurnStatus(queueing ? "Adding to queue" : "Starting turn");
     let activeSessionId = sessionId;
     try {
-      if (!activeSessionId) {
-        const created = await createSession(agentId, titleFrom(text, outgoingFiles));
-        activeSessionId = created.id;
-        setSessionId(created.id);
-        setAgents((current) => addSession(current, agentId, created));
-        beginObservation(created.id);
-      }
-
-      if (!queueing) {
-        const optimistic = optimisticMessage(activeSessionId, text, outgoingFiles);
-        setMessages((current) => [...current, optimistic]);
-      }
+      activeSessionId = await openBotRuntime.actions.ensureSession(titleFrom(text, outgoingFiles));
       setDraft("");
       setReplyingTo(null);
       setThreadRootId("");
@@ -377,8 +166,11 @@ export function OpenBotApp() {
       for (const pending of outgoingFiles) {
         setFiles((current) => [...current, { ...pending, status: "uploading", progress: 0 }]);
         try {
-          const attachment = await uploadAttachment(activeSessionId, pending.file, (progress) =>
-            setFileState(pending.id, { progress }),
+          const attachment = await uploadAttachment(
+            openBotRuntime.client,
+            activeSessionId,
+            pending.file,
+            (progress) => setFileState(pending.id, { progress }),
           );
           attachmentIds.push(attachment.id);
           setFileState(pending.id, {
@@ -392,33 +184,24 @@ export function OpenBotApp() {
         }
       }
 
-      const response = await sendMessage(agentId, activeSessionId, text, attachmentIds);
-      if (!queueing) {
-        setMessages(uniqueMessages(response.items));
-        setNextMessageToken(response.next_page_token);
-        setAgentBusy(true);
-      }
+      await openBotRuntime.actions.sendMessage({
+        text,
+        attachmentIds,
+        optimisticParts: optimisticParts(text, outgoingFiles),
+        title: titleFrom(text, outgoingFiles),
+      });
       setFiles([]);
-      setTurnStatus(queueing ? "Queued" : "Agent working");
-      await refreshSidebar();
-      await refreshQueue(activeSessionId);
     } catch (reason) {
-      setError(errorMessage(reason));
-      setTurnStatus("Turn failed");
-      if (activeSessionId) await refreshMessages(activeSessionId).catch(() => undefined);
-    } finally {
-      setSubmitting(false);
+      openBotRuntime.actions.setError(errorMessage(reason));
     }
   }
 
   async function stop(): Promise<void> {
     if (!sessionId) return;
     try {
-      await interruptSession(sessionId);
-      setTurnStatus("Interrupted");
-      setAgentBusy(false);
+      await openBotRuntime.actions.interrupt();
     } catch (reason) {
-      setError(errorMessage(reason));
+      openBotRuntime.actions.setError(errorMessage(reason));
     }
   }
 
@@ -438,26 +221,24 @@ export function OpenBotApp() {
 
   async function removeFile(pending: PendingFile): Promise<void> {
     if (pending.attachmentId && sessionId) {
-      await deleteAttachment(sessionId, pending.attachmentId).catch(() => undefined);
+      await openBotRuntime.client
+        .deleteAttachment(sessionId, pending.attachmentId)
+        .catch(() => undefined);
     }
     setFiles((current) => current.filter((file) => file.id !== pending.id));
   }
 
   async function loadOlderMessages(): Promise<void> {
     if (!sessionId || !nextMessageToken) return;
-    const response = await getMessages(sessionId, nextMessageToken);
-    setMessages((current) => uniqueMessages([...response.items, ...current]));
-    setNextMessageToken(response.next_page_token);
+    await openBotRuntime.actions.loadOlderMessages();
   }
 
   async function loadMoreAgents(): Promise<void> {
     if (!nextAgentToken) return;
     try {
-      const response = await getSidebar("", agentSort, sessionSort, nextAgentToken);
-      setAgents((current) => uniqueAgents([...current, ...response.items]));
-      setNextAgentToken(response.next_page_token);
+      await openBotRuntime.actions.loadMoreAgents();
     } catch (reason) {
-      setError(errorMessage(reason));
+      openBotRuntime.actions.setError(errorMessage(reason));
     }
   }
 
@@ -465,15 +246,15 @@ export function OpenBotApp() {
     if (!sessionId) return;
     try {
       await operation();
-      await refreshQueue(sessionId);
+      await openBotRuntime.actions.refreshQueue(sessionId);
     } catch (reason) {
-      setError(errorMessage(reason));
+      openBotRuntime.actions.setError(errorMessage(reason));
     }
   }
 
   async function editQueuedTurn(turn: QueuedTurn): Promise<void> {
     const text = queuedTurnText(turn);
-    await mutateQueue(() => deleteQueuedTurn(turn.id));
+    await mutateQueue(() => openBotRuntime.client.deleteQueuedTurn(turn.id));
     setDraft(text === "Queued agent turn" ? "" : text);
   }
 
@@ -642,8 +423,13 @@ export function OpenBotApp() {
                   >
                     <MessageContent
                       message={message}
-                      resolveAttachmentUrl={getAttachmentDownloadUrl}
-                      rewriteUrl={rewriteTildeUrl}
+                      resolveAttachmentUrl={(selectedSessionId, attachmentId) =>
+                        openBotRuntime.client.getAttachmentDownloadUrl(
+                          selectedSessionId,
+                          attachmentId,
+                        )
+                      }
+                      rewriteUrl={(value) => openBotRuntime.client.rewriteTildeUrl(value)}
                     />
                   </ConversationMessage>
                 );
@@ -671,8 +457,10 @@ export function OpenBotApp() {
               <ConversationMessage role={threadRoot.role} createdAt={threadRoot.created_at}>
                 <MessageContent
                   message={threadRoot}
-                  resolveAttachmentUrl={getAttachmentDownloadUrl}
-                  rewriteUrl={rewriteTildeUrl}
+                  resolveAttachmentUrl={(selectedSessionId, attachmentId) =>
+                    openBotRuntime.client.getAttachmentDownloadUrl(selectedSessionId, attachmentId)
+                  }
+                  rewriteUrl={(value) => openBotRuntime.client.rewriteTildeUrl(value)}
                 />
               </ConversationMessage>
             </div>
@@ -707,18 +495,24 @@ export function OpenBotApp() {
             }))}
             onMoveEarlier={(id) => {
               const turn = queuedTurns.find((candidate) => candidate.id === id);
-              if (turn) void mutateQueue(() => reorderQueuedTurn(id, turn.queue_position - 1));
+              if (turn)
+                void mutateQueue(() =>
+                  openBotRuntime.client.reorderQueuedTurn(id, turn.queue_position - 1),
+                );
             }}
             onMoveLater={(id) => {
               const turn = queuedTurns.find((candidate) => candidate.id === id);
-              if (turn) void mutateQueue(() => reorderQueuedTurn(id, turn.queue_position + 1));
+              if (turn)
+                void mutateQueue(() =>
+                  openBotRuntime.client.reorderQueuedTurn(id, turn.queue_position + 1),
+                );
             }}
-            onRunNow={(id) => void mutateQueue(() => steerQueuedTurn(id))}
+            onRunNow={(id) => void mutateQueue(() => openBotRuntime.client.steerQueuedTurn(id))}
             onEdit={(id) => {
               const turn = queuedTurns.find((candidate) => candidate.id === id);
               if (turn) void editQueuedTurn(turn);
             }}
-            onRemove={(id) => void mutateQueue(() => deleteQueuedTurn(id))}
+            onRemove={(id) => void mutateQueue(() => openBotRuntime.client.deleteQueuedTurn(id))}
           />
         }
       />
@@ -744,14 +538,6 @@ export function OpenBotApp() {
         />
       ) : null}
     </WorkspaceShell>
-  );
-}
-
-function addSession(agents: ChatAgent[], agentId: string, session: ChatSession): ChatAgent[] {
-  return agents.map((agent) =>
-    agent.id === agentId
-      ? { ...agent, sessions: { ...agent.sessions, items: [session, ...agent.sessions.items] } }
-      : agent,
   );
 }
 
@@ -844,40 +630,6 @@ function activeAsyncTasks(events: readonly ActivityEvent[]): AsyncTask[] {
   return [...tasks.values()];
 }
 
-function uniqueMessages(messages: ChatMessage[]): ChatMessage[] {
-  return [...new Map(messages.map((message) => [message.id, message])).values()].sort(
-    (left, right) => Date.parse(left.created_at) - Date.parse(right.created_at),
-  );
-}
-
-function latestMessagePreview(messages: readonly ChatMessage[]): string {
-  const latest = [...messages]
-    .filter((message) => message.type !== "signal")
-    .sort((left, right) => Date.parse(left.created_at) - Date.parse(right.created_at))
-    .at(-1);
-  if (!latest) return "";
-  const message =
-    latest.parts
-      ?.filter((part) => part.type === "text")
-      .map((part) => part.text || "")
-      .join(" ") ||
-    latest.text ||
-    latest.summary ||
-    "";
-  const text = message
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/[*_~`>#]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (text) return text;
-  const attachment = latest.parts?.find((part) => part.type === "file" || part.type === "image");
-  return attachment?.filename ? `Sent ${attachment.filename}` : "";
-}
-
-function uniqueAgents(agents: ChatAgent[]): ChatAgent[] {
-  return [...new Map(agents.map((agent) => [agent.id, agent])).values()];
-}
-
 const SCROLL_STORAGE_KEY = "openbot:chat-scroll";
 
 function readScrollSnapshots(): Record<string, number> {
@@ -899,292 +651,9 @@ function saveScrollSnapshot(
   localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(recent));
 }
 
-function optimisticMessage(sessionId: string, text: string, files: PendingFile[]): ChatMessage {
-  const parts = [
-    ...(text ? [{ type: "text", text }] : []),
-    ...files.map(({ file }) => ({
-      type: "file",
-      filename: file.name,
-      media_type: file.type || "application/octet-stream",
-      url: URL.createObjectURL(file),
-    })),
-  ];
-  return {
-    id: `optimistic-${crypto.randomUUID()}`,
-    type: "ui",
-    role: "user",
-    session_id: sessionId,
-    user_display_name: "You",
-    parts,
-    created_at: new Date().toISOString(),
-  };
-}
-
 function titleFrom(text: string, files: PendingFile[]): string {
   const value = text || files[0]?.file.name || "New chat";
   return value.length > 80 ? `${value.slice(0, 77)}...` : value;
-}
-
-function eventStatus(event: ChatEvent): string {
-  const kind = eventName(event);
-  const data = record(event.data);
-  if (kind.includes("turn") || kind.includes("status")) {
-    const status = stringValue(data.status) || stringValue(record(data.payload).status);
-    return status ? humanEventName(status) : humanEventName(event.type);
-  }
-  if (kind.includes("streaming")) return "Streaming response";
-  if (kind.includes("queued")) return "Queued";
-  if (kind.includes("message_created")) return "Message received";
-  return "";
-}
-
-function eventBusyState(event: ChatEvent): boolean | undefined {
-  const kind = eventName(event);
-  const data = record(event.data);
-  const deltaType = findField(data, "type").toLowerCase();
-  if (["finish", "abort", "error"].includes(deltaType)) return false;
-
-  const status = (
-    firstString(data, "status") ||
-    firstString(record(data.payload), "status") ||
-    firstString(record(data.kind), "status")
-  ).toLowerCase();
-  if (
-    /^(idle|complete|completed|finished|failed|error|aborted|cancelled|canceled|interrupted)$/.test(
-      status,
-    )
-  ) {
-    return false;
-  }
-  if (/^(busy|working|running|streaming|queued|pending|starting|in_progress)$/.test(status)) {
-    return true;
-  }
-  if (kind.includes("message.streaming") || kind.includes("turn.started")) return true;
-  if (kind.includes("turn.completed") || kind.includes("turn.failed")) return false;
-  return undefined;
-}
-
-function eventName(event: ChatEvent): string {
-  const nestedKind = record(record(event.data).kind);
-  const named = firstString(nestedKind, "kind") || Object.keys(nestedKind)[0] || event.type;
-  return named.toLowerCase().replaceAll("_", ".");
-}
-
-function applyLiveChatEvent(
-  event: ChatEvent,
-  activeSessionId: string,
-  setMessages: Dispatch<SetStateAction<ChatMessage[]>>,
-): boolean {
-  const kind = event.type.toLowerCase();
-  const payload =
-    eventKindPayload(event.data, "message_streaming") ??
-    eventKindPayload(event.data, "MessageStreaming") ??
-    (kind.includes("message_streaming") || kind.includes("message.streaming")
-      ? record(event.data)
-      : undefined);
-  if (payload) {
-    const sessionId = firstString(payload, "session_id", "sessionId") || activeSessionId;
-    const messageId = firstString(payload, "message_id", "messageId");
-    if (sessionId !== activeSessionId || !messageId) return true;
-    const deltaKind = findField(payload.delta ?? payload, "type");
-    if (deltaKind === "finish" || deltaKind === "abort") return false;
-    if (deltaKind === "error") {
-      const text =
-        findField(payload.delta ?? payload, "errorText", "error_text", "error", "message") ||
-        "The agent failed to respond.";
-      setMessages((current) =>
-        upsertMessage(current, {
-          id: `agent-stream-error:${messageId}`,
-          type: "text",
-          role: "assistant",
-          session_id: sessionId,
-          user_display_name: "Agent",
-          text,
-          created_at: new Date().toISOString(),
-        }),
-      );
-      return false;
-    }
-    const textDelta = findTextDelta(payload);
-    const toolPart = findToolPart(payload);
-    if (!textDelta && !toolPart) return true;
-    setMessages((current) => {
-      const index = current.findIndex((message) => message.id === messageId);
-      if (index < 0) {
-        return [
-          ...current,
-          {
-            id: messageId,
-            type: "ui",
-            role: "assistant",
-            session_id: sessionId,
-            user_display_name: "Agent",
-            parts: [
-              ...(textDelta ? [{ type: "text", text: textDelta }] : []),
-              ...(toolPart ? [toolPart] : []),
-            ],
-            created_at: new Date().toISOString(),
-          },
-        ];
-      }
-      return current.map((message, messageIndex) =>
-        messageIndex === index
-          ? {
-              ...message,
-              type: "ui",
-              parts: mergeStreamingParts(message.parts ?? [], textDelta, toolPart),
-              updated_at: new Date().toISOString(),
-            }
-          : message,
-      );
-    });
-    return true;
-  }
-
-  const createdPayload =
-    eventKindPayload(event.data, "message_created") ??
-    eventKindPayload(event.data, "MessageCreated") ??
-    (kind.includes("message_created") || kind.includes("message.created")
-      ? record(event.data)
-      : undefined);
-  const created = record(createdPayload?.message ?? createdPayload);
-  if (created.id && created.session_id === activeSessionId) {
-    setMessages((current) => upsertMessage(current, created as unknown as ChatMessage));
-  }
-  return false;
-}
-
-function mergeStreamingParts(
-  parts: ChatPart[],
-  textDelta: string,
-  toolPart: ChatPart | undefined,
-): ChatPart[] {
-  let next = parts;
-  if (textDelta) {
-    const lastTextIndex = next.findLastIndex((part) => part.type === "text");
-    next =
-      lastTextIndex < 0
-        ? [...next, { type: "text", text: textDelta }]
-        : next.map((part, index) =>
-            index === lastTextIndex ? { ...part, text: `${part.text ?? ""}${textDelta}` } : part,
-          );
-  }
-  if (toolPart) {
-    const toolIndex = next.findIndex(
-      (part) => part.type === "tool" && part.tool_invocation_id === toolPart.tool_invocation_id,
-    );
-    next =
-      toolIndex < 0
-        ? [...next, toolPart]
-        : next.map((part, index) => (index === toolIndex ? { ...part, ...toolPart } : part));
-  }
-  return next;
-}
-
-function upsertMessage(current: ChatMessage[], message: ChatMessage): ChatMessage[] {
-  const withoutOptimistic = current.filter(
-    (candidate) =>
-      !(
-        candidate.id.startsWith("optimistic-") &&
-        candidate.role === message.role &&
-        messageText(candidate) === messageText(message)
-      ),
-  );
-  const index = withoutOptimistic.findIndex((candidate) => candidate.id === message.id);
-  if (index < 0) return uniqueMessages([...withoutOptimistic, message]);
-  return withoutOptimistic.map((candidate, candidateIndex) =>
-    candidateIndex === index ? message : candidate,
-  );
-}
-
-function eventKindPayload(value: unknown, key: string): Record<string, unknown> | undefined {
-  const event = record(value);
-  const kind = record(event.kind);
-  if (kind.kind === key) return kind;
-  const payload = kind[key];
-  return typeof payload === "object" && payload !== null
-    ? (payload as Record<string, unknown>)
-    : undefined;
-}
-
-function findTextDelta(value: unknown, depth = 0): string {
-  if (depth > 6) return "";
-  const item = record(value);
-  const type = firstString(item, "type", "delta_type", "deltaType");
-  if (
-    (type === "text-delta" || type === "text_delta" || type === "text") &&
-    typeof item.delta === "string"
-  ) {
-    return item.delta;
-  }
-  if ((type === "text-delta" || type === "text_delta") && typeof item.text === "string") {
-    return item.text;
-  }
-  for (const key of ["delta", "ui", "Ui", "text", "Text", "value", "payload"]) {
-    if (typeof item[key] === "object" && item[key] !== null) {
-      const found = findTextDelta(item[key], depth + 1);
-      if (found) return found;
-    }
-  }
-  return "";
-}
-
-function findToolPart(value: unknown, depth = 0): ChatPart | undefined {
-  if (depth > 6) return undefined;
-  const item = record(value);
-  const type = firstString(item, "type");
-  if (type === "dynamic-tool" || type.startsWith("tool-")) {
-    const toolName =
-      firstString(item, "toolName", "tool_name") ||
-      (type.startsWith("tool-") ? type.slice("tool-".length) : "tool");
-    const toolInvocationId = firstString(item, "toolCallId", "tool_call_id", "id") || toolName;
-    return {
-      type: "tool",
-      tool_name: toolName,
-      tool_invocation_id: toolInvocationId,
-      state: toolState(type, firstString(item, "state")),
-      input: item.input,
-      output: item.output,
-      error_text: firstString(item, "errorText", "error_text", "error", "message") || undefined,
-    };
-  }
-  for (const key of ["delta", "ui", "Ui", "value", "payload", "part"]) {
-    if (typeof item[key] === "object" && item[key] !== null) {
-      const found = findToolPart(item[key], depth + 1);
-      if (found) return found;
-    }
-  }
-  return undefined;
-}
-
-function toolState(type: string, explicit: string): string {
-  if (explicit) return explicit;
-  switch (type) {
-    case "tool-input-start":
-    case "tool-input-delta":
-      return "input-streaming";
-    case "tool-input-available":
-      return "input-available";
-    case "tool-output-available":
-      return "output-available";
-    case "tool-output-error":
-      return "output-error";
-    default:
-      return "input-available";
-  }
-}
-
-function findField(value: unknown, ...keys: string[]): string {
-  const item = record(value);
-  const direct = firstString(item, ...keys);
-  if (direct) return direct;
-  for (const key of ["delta", "ui", "Ui", "value", "payload"]) {
-    if (typeof item[key] === "object" && item[key] !== null) {
-      const found = findField(item[key], ...keys);
-      if (found) return found;
-    }
-  }
-  return "";
 }
 
 function firstString(value: Record<string, unknown>, ...keys: string[]): string {
@@ -1221,11 +690,6 @@ function unknownText(value: unknown): string {
   return nested === undefined ? "" : unknownText(nested);
 }
 
-function messageText(message: ChatMessage): string {
-  if (message.text) return message.text;
-  return (message.parts ?? []).map((part) => part.text || "").join("");
-}
-
 function humanEventName(value: string): string {
   return value
     .replaceAll("_", " ")
@@ -1241,23 +705,4 @@ function record(value: unknown): Record<string, unknown> {
 
 function stringValue(value: unknown): string {
   return typeof value === "string" ? value : "";
-}
-
-function errorMessage(value: unknown): string {
-  return value instanceof Error ? value.message : "OpenBot request failed";
-}
-
-async function abortableDelay(milliseconds: number, signal: AbortSignal): Promise<void> {
-  if (signal.aborted) return;
-  await new Promise<void>((resolve) => {
-    const timer = window.setTimeout(resolve, milliseconds);
-    signal.addEventListener(
-      "abort",
-      () => {
-        window.clearTimeout(timer);
-        resolve();
-      },
-      { once: true },
-    );
-  });
 }

@@ -5,7 +5,7 @@
 "openbot": patch
 "@tryopenbot/configuration": patch
 "@tryopenbot/agent-provider": patch
-"@tryopenbot/computer-provider": patch
+"@tryopenbot/computer-service-provider": patch
 ---
 
 Add one-command provider lifecycle deployment with separate control and agent

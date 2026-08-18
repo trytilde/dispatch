@@ -3,6 +3,12 @@ import type { AuthProvider } from "@tryopenbot/auth-provider";
 import { createApp } from "../src/app.js";
 
 const authProvider: AuthProvider = {
+  nativeClientConfiguration: () => ({
+    authorizationEndpoint: "https://identity.test/authorize",
+    tokenEndpoint: "https://identity.test/token",
+    clientId: "e2e-client",
+    scope: "openid openbot:control",
+  }),
   authorizationUrl: ({ redirectUri }) => {
     const url = new URL("https://identity.test/authorize");
     url.searchParams.set("redirect_uri", redirectUri);

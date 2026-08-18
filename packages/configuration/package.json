@@ -43,7 +43,7 @@
     "@tryopenbot/agent-provider": "workspace:*",
     "@tryopenbot/agent-service-provider": "workspace:*",
     "@tryopenbot/auth-provider": "workspace:*",
-    "@tryopenbot/computer-provider": "workspace:*",
+    "@tryopenbot/computer-service-provider": "workspace:*",
     "@tryopenbot/control-service-provider": "workspace:*",
     "@tryopenbot/inference-provider": "workspace:*",
     "@tryopenbot/runtime-provider": "workspace:*"

@@ -6,7 +6,7 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
 import type { AuthProvider } from "@tryopenbot/auth-provider";
-import type { ComputerProvider } from "@tryopenbot/computer-provider";
+import type { ComputerProvider } from "@tryopenbot/computer-service-provider";
 import { registerTildeChatProxy, type TildeChatProxyOptions } from "./chat-proxy.js";
 import { registerComputerPreview } from "./computer-preview.js";
 import { registerOwnerAuth, requireOwner } from "./auth.js";
@@ -34,7 +34,10 @@ export function createApp(options: AppOptions = {}): Hono {
     const middleware = requireOwner(options.authProvider, options);
     app.use("/api/chat/*", middleware);
     app.use("/api/computer/*", middleware);
-  }
+  } else
+    app.get("/auth/native-config", (context) =>
+      context.json({ error: "Owner authentication is not configured" }, 503),
+    );
   registerComputerPreview(app, options.computerProvider, {
     devMode: options.devMode,
     environment: options.environment,

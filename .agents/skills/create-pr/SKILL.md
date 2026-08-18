@@ -13,12 +13,13 @@ Use when the user asks to open, publish, prepare, or update a PR for the current
 2. Review the full diff against the actual default branch. Preserve unrelated user changes.
 3. Run `pre-commit-checks` and fix in-scope failures.
 4. Review protobuf, Tilde API reconciliation, environment, deployment, package README, public documentation, and Changesets impact.
-5. Run the architecture and ADR gate. Resolve any user decision before publishing.
-6. Use a Conventional Commits title and intentional file selection; commit the validated implementation.
-7. Push the branch and open or update the draft PR so its stable PR number is known.
-8. Generate `docs/updates/<pr-number>.md`, commit it, and push it to the draft PR.
-9. Keep the update record current after every subsequent implementation, documentation, rebase, or conflict-resolution change.
-10. Re-read PR checks and review feedback before declaring completion.
+5. Run the cross-client parity gate for `apps/mobile`, `apps/desktop`, and `apps/web`. Confirm the port/no-port decision with the user before publishing.
+6. Run the architecture and ADR gate. Resolve any user decision before publishing.
+7. Use a Conventional Commits title and intentional file selection; commit the validated implementation.
+8. Push the branch and open or update the draft PR so its stable PR number is known.
+9. Generate `docs/updates/<pr-number>.md`, commit it, and push it to the draft PR.
+10. Keep the update record current after every subsequent implementation, documentation, rebase, or conflict-resolution change.
+11. Re-read PR checks and review feedback before declaring completion.
 
 ## Gather Context
 
@@ -49,6 +50,8 @@ Add focused checks by surface:
 - server/providers: corresponding package tests
 - browser flow: `pnpm test:e2e`
 - Electron packaging: `pnpm --filter @tryopenbot/desktop package`
+- shared client contracts: `pnpm --filter @tryopenbot/client-runtime test`
+- Expo bundles: `pnpm --filter @tryopenbot/mobile build`, which exports the iOS and Android bundles and fails on a platform-unsafe import
 
 Record exact commands and failures. Do not claim checks that did not run.
 
@@ -82,13 +85,44 @@ git status --short -- configuration .env '.env.*' '*.env' '*.local'
 
 For an upstream PR, `git ls-files configuration` must print only the sentinel. For a fork PR, it must not print the sentinel or `configuration/.env`, and it must include the initialized composition root and agent configuration. Explain the classification and result in the PR body.
 
+## Cross-Client Parity Gate
+
+OpenBot has three owner clients: `apps/mobile` (Expo and React Native), `apps/desktop` (Electron), and `apps/web` (React DOM). This gate is mandatory and never skipped, including for PRs that touch only one of them.
+
+Ask and answer explicitly: **has this PR added or changed functionality in the Expo mobile, Electron desktop, or web app that needs to be ported to the others?**
+
+Determine the answer from evidence, not assumption:
+
+```bash
+git diff --stat "$(git merge-base HEAD <base>)"..HEAD -- apps/web apps/mobile apps/desktop packages/ui packages/client-runtime
+git diff "$(git merge-base HEAD <base>)"..HEAD -- packages/client-runtime/src/contracts
+```
+
+For every user-facing capability or state interaction the PR adds or changes in one client, classify it as exactly one of:
+
+- **Ported in this PR** — implemented on the other clients here. Name the files per client.
+- **To port, not in this PR** — deliberately deferred. Record the owning client, the trigger, and concrete acceptance in the PR body as a `<FOLLOW UP>` block using the exact syntax in `CONTEXT.md`, and link an existing issue when one exists.
+- **Not portable** — genuinely platform-specific. State the reason: no platform API, different interaction model, or a decision recorded in an ADR.
+
+Rules:
+
+- Shared behavior belongs in `packages/client-runtime` before it is rendered anywhere, so a runtime contract change is a parity signal for all three clients by default. A contract or slice change that only one client consumes needs a stated reason.
+- Presentation-only work — hover, focus, transitions, tooltips, menu visibility, scroll position, drafts, layout sizing — is out of scope for this gate and needs no parity entry.
+- Native-only capability (SecureStore, PKCE redirect handling, native file pickers, push, background delivery) and desktop-only capability (privileged main-process work, packaging, native credential stores, same-origin proxying) are legitimately not portable. Say which one applies.
+- Web DOM implementation detail does not port as JSX. Expo receives native components sharing the same runtime contract, per ADR-0017.
+- Do not silently ship a one-client feature. An unclassified capability blocks the PR.
+
+Confirm the classification with the user before publishing when anything falls in **To port, not in this PR**. Do not infer approval of a deferral.
+
+Record the result in the PR body under a `Cross-client parity` heading as a per-capability table or list. When the PR changes no client-visible capability, record `Cross-client parity: no client capability changed`.
+
 ## Architecture And ADR Gate
 
 Always inspect the complete diff for major architecture, strongly opinionated code, or durable code/product design decisions. Compare it with `CONTEXT.md`, `AGENTS.md`, and relevant records under `docs/adrs/`.
 
 Review at least:
 
-- ownership and boundaries across OpenBot, Tilde, providers, database, sandbox, web, and desktop
+- ownership and boundaries across OpenBot, Tilde, providers, database, sandbox, client runtime, web, mobile, and desktop
 - public protocols, compatibility, authentication, secrets, deployment, and failure policy
 - framework, storage, provider, or platform choices with meaningful switching cost
 - cross-package layering and strong coding conventions future maintainers may otherwise undo
@@ -111,6 +145,7 @@ Use the checked-in `.github/pull_request_template.md` when present and complete 
 - key implementation choices
 - checks actually run
 - migration, contract, Tilde reconciliation, deployment, and security impact
+- cross-client parity result: what was ported, what is deferred with its `<FOLLOW UP>` block, and what is not portable with the reason
 - ADR review result and links to any new or governing ADRs
 - screenshots for user-visible changes when captured
 - known limitations or follow-ups
@@ -172,6 +207,8 @@ The update diff must show exactly `docs/updates/<pr-number>.md` for the current 
 ## Frontend Verification
 
 Use `e2e-debug-and-qa` when the user requests browser proof or the acceptance condition is visual. Keep screenshots, traces, videos, HAR files, and browser profiles outside git. GitHub-hosted attachments may be used in PR comments; never commit generated artifacts.
+
+For `apps/mobile`, Playwright does not apply. Verify Expo changes with `pnpm --filter @tryopenbot/mobile build` plus a device or emulator run through `run-expo`, and capture a screenshot when the acceptance condition is visual. State plainly which client each piece of evidence came from and name any client that was not exercised; never present a web screenshot as mobile proof.
 
 ## Interactive Review
 

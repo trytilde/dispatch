@@ -19,4 +19,7 @@ configuration/secrets.enc.yaml
 apps/web/src/routeTree.gen.ts
 apps/desktop/out/
 apps/desktop/release/
+.expo/
+apps/mobile/android/
+apps/mobile/ios/
 .vercel

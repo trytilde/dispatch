@@ -28,7 +28,7 @@
     "@tryopenbot/agent-provider": "workspace:*",
     "@tryopenbot/agent-service-provider": "workspace:*",
     "@tryopenbot/auth-provider": "workspace:*",
-    "@tryopenbot/computer-provider": "workspace:*",
+    "@tryopenbot/computer-service-provider": "workspace:*",
     "@tryopenbot/computer-tools": "workspace:*",
     "@tryopenbot/configuration": "workspace:*",
     "@tryopenbot/control-service": "workspace:*",

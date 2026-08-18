@@ -20,7 +20,7 @@ import type {
 import {
   MicrosandboxComputerProvider,
   VercelSandboxComputerProvider,
-} from "@tryopenbot/computer-provider";
+} from "@tryopenbot/computer-service-provider";
 import {
   collectProviderInitializations,
   initializeProviders,

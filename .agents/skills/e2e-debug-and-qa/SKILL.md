@@ -86,6 +86,7 @@ If the app cannot start, report the shortest decisive error and the missing requ
 3. Test one hypothesis at a time.
 4. Verify the fix through the original flow.
 5. Run focused server/provider tests when browser evidence crosses those boundaries.
+6. Separate the layers before fixing. Wrong data, wrong reconciliation, or wrong shared state is a `packages/client-runtime` defect and needs a runtime test plus a check on the other clients; only styling, hover, focus, transition, and layout symptoms belong to the renderer.
 
 ## Cleanup
 

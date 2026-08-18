@@ -11,6 +11,7 @@ import { TildePlatform } from "@tryopenbot/platform-integrations";
 import {
   AuthProviderError,
   type AuthProvider,
+  type NativeAuthConfiguration,
   type OAuthTokens,
   type OwnerPrincipal,
 } from "./core.js";
@@ -82,6 +83,15 @@ export class TildeAuthProvider implements AuthProvider, InitializableProvider {
 
   async deploy() {
     return {};
+  }
+
+  nativeClientConfiguration(): NativeAuthConfiguration {
+    return {
+      authorizationEndpoint: required(this.#environment, "OPENBOT_OIDC_AUTHORIZATION_ENDPOINT"),
+      tokenEndpoint: required(this.#environment, "OPENBOT_OIDC_TOKEN_ENDPOINT"),
+      clientId: required(this.#environment, "OPENBOT_OIDC_CLIENT_ID"),
+      scope: this.#environment.OPENBOT_OIDC_SCOPE || defaultScope,
+    };
   }
 
   authorizationUrl(input: { redirectUri: string; state: string; codeChallenge: string }): URL {

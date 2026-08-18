@@ -15,7 +15,7 @@ Anything else belongs in the code that actually uses it.
 | --- | --- |
 | `agent-provider` | Reconcile each authored agent's complete external footprint through one idempotent `Deployable`: endpoint, skills, exact registry membership, dynamic MCP server, Tilde control-plane tools, and deployment-platform MCP integrations. |
 | `inference-provider` | Initialize inference accounts and provision credentials such as a Vercel AI Gateway API key. It exposes no model factory to authored agents. |
-| `computer-provider` | Build and deploy the Computer image, provision Computers, install agent workspaces, and prepare the trusted development Computer. |
+| `computer-service-provider` | Build and deploy the Computer service image, provision Computers, install agent workspaces, and prepare the trusted development Computer. |
 | `control-service-provider` | Check, build, configure, and deploy the control-service artifact. |
 | `agent-service-provider` | Discover authored agents and check, build, configure, and deploy their service artifacts. |
 | `runtime-provider` | Shared initialization, build, and phased deployment contracts and coordination. |

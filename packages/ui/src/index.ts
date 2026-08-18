@@ -273,3 +273,9 @@ export {
   TextRoll,
   VoiceWaveform,
 } from "./primitive-components.js";
+export {
+  getThemePreference,
+  initTheme,
+  setThemePreference,
+  type ThemePreference,
+} from "./theme.js";

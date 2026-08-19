@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import type { ChildProcess } from "node:child_process";
 import type { OpenBotConfiguration } from "@tryopenbot/configuration";
+import { waitForHealth } from "@tryopenbot/control-service-provider";
 import { runLocalRuntimeTunnelCommand } from "@trytilde/cli";
 import { formatAgentLifecycleProgress, reconcileAgentResources } from "../agent-lifecycle.js";
 import { loadConfigurationModule } from "../configuration-loader.js";
@@ -170,6 +171,14 @@ export async function startTunneledAgentService(
   const tunnelOptions = developmentTunnelOptions(command, arguments_, environment);
   if (!tunnelOptions) {
     const child = run(command, arguments_, serverEnvironment);
+    // Dependent traffic (agent reconciliation, Vite proxying) starts as soon as this resolves,
+    // so wait for the service to answer instead of surfacing transient connection refusals.
+    try {
+      await waitForHealth(fetch, `http://127.0.0.1:${environment.PORT ?? "4100"}`);
+    } catch (error) {
+      child.kill("SIGTERM");
+      throw error;
+    }
     return {
       child,
       agentServiceOrigin: `http://127.0.0.1:${environment.PORT ?? "4100"}`,
@@ -194,6 +203,13 @@ export async function startTunneledAgentService(
     if (!tunnel.command.killed) tunnel.command.kill("SIGTERM");
   });
   console.log("Tilde local-runtime tunnel: connected");
+  try {
+    await waitForHealth(fetch, `http://127.0.0.1:${environment.PORT ?? "4100"}`);
+  } catch (error) {
+    tunnel.command.kill("SIGTERM");
+    tunnel.stop();
+    throw error;
+  }
   return {
     child: tunnel.command,
     agentServiceOrigin: tunnel.connector.tunnel_origin,

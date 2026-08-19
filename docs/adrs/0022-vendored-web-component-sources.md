@@ -66,3 +66,4 @@ flowchart LR
 
 - 2026-08-19T09:00:00Z: Recorded retroactively while backfilling PR 50's documentation. The strategy
   shipped with that PR; only the record is new.
+- 2026-08-19T09:05:00Z: The deferred token and theming record now exists as ADR-0024. It owns token values by import order rather than by editing the vendored tree, so the provenance hashes this record depends on stay valid.

@@ -108,6 +108,14 @@ export function OpenBotApp() {
     input.style.height = `${Math.min(200, Math.max(44, input.scrollHeight))}px`;
   }, [draft]);
 
+  // Start the shared runtime once on mount: it checks the session, loads the sidebar,
+  // and selects an agent. Without this the sidebar stays on its initial loading state
+  // forever and no session is ever selected, so nothing subscribes to live events.
+  // The runtime is a module singleton, so it is not disposed on unmount.
+  useEffect(() => {
+    void openBotRuntime.actions.initialize();
+  }, []);
+
   useEffect(() => {
     const element = conversationRef.current;
     if (!element || loadingMessages || !sessionId) return;

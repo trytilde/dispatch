@@ -43,6 +43,7 @@ const commands = [
   ["desktop dev", "Build and launch the Electron shell, headless with VNC on a display-less host"],
   ["desktop package", "Package the Electron desktop app"],
   ["mobile expo|emulator|avd|setup|screenshot|logs|doctor", "Mobile developer workflow"],
+  ["mobile release build|submit|status", "Store publication through EAS (upstream only)"],
   ["connect HOST", "Tunnel a remote dev host's emulator screen, Metro, and adb"],
   ["remote HOST TASK", "Run emulator|dev|android|ios|build|doctor on a remote dev host"],
   ["deploy --yes", "Deploy the current fork to production"],

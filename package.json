@@ -28,6 +28,7 @@
     "lint": "vp lint",
     "openbot": "vp run --filter openbot start --",
     "prepare": "vp config",
+    "release:mobile": "vp run --filter openbot start -- mobile release --",
     "test": "vp run -r test",
     "test:e2e": "playwright test",
     "typecheck": "XDG_CACHE_HOME=.cache vp run contracts:generate && XDG_CACHE_HOME=.cache vp check --no-fmt --no-lint",

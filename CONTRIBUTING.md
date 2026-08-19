@@ -28,6 +28,7 @@ Needed only for the surfaces you touch:
 | Mobile, iOS | Xcode **16.1 or newer** + command line tools, an iOS 15.1+ simulator runtime, CocoaPods | macOS only. React Native 0.86 enforces the Xcode minimum inside `pod install`, which fails with `Please upgrade XCode`; `mobile doctor` reads that minimum from the installed React Native and checks it up front |
 | Headless Android emulator | `/dev/kvm`, Xvfb, x11vnc | Linux only; without KVM the emulator is too slow to use |
 | Browser end-to-end | Playwright browsers | `pnpm exec playwright install chromium` |
+| Store publication | an authenticated EAS session, paid Apple Developer and Google Play accounts | upstream only, see ADR-0027; `eas-cli` runs through `npx eas-cli@latest` and needs network access |
 | Local Computer, deployment | Microsandbox, SOPS, age | see [docs/sandbox.md](docs/sandbox.md) and [docs/configuration.md](docs/configuration.md) |
 
 Confirm the mobile toolchain at any time — it prints one line per check and names the remedy:
@@ -170,6 +171,27 @@ about the other two, per [ADR-0017](docs/adrs/0017-shared-client-runtime-and-exp
 Never commit `.env`, deployment state, generated credentials, or machine-specific paths.
 Development host names and addresses belong in fork-owned `configuration/dev-hosts.json`,
 which stays untracked upstream.
+
+## Publishing the app
+
+Store publication belongs to `trytilde/openbot`. The official EAS project, bundle identifier,
+and both store listings are upstream-owned, and `openbot mobile release` refuses to use the
+official EAS project from any other remote (ADR-0027):
+
+```bash
+pnpm openbot mobile release status
+pnpm openbot mobile release build --platform ios --profile production --yes
+pnpm openbot mobile release submit --platform ios --yes
+```
+
+`build` and `submit` require `--yes` because the first spends EAS build minutes and the second
+changes a public listing. Build numbers live in EAS, not in a tracked file.
+
+A fork that wants to publish its own app creates its own EAS project and sets
+`OPENBOT_EAS_PROJECT_ID`, `OPENBOT_APP_ID`, and `OPENBOT_EXPO_OWNER` in `configuration/.env`.
+Store identity is read from the environment in `apps/mobile/app.config.ts`, so no tracked file
+needs editing. Never commit signing credentials, service account keys, or App Store Connect API
+keys; they stay in EAS and in the Apple and Google consoles.
 
 ## Changing an external dependency
 

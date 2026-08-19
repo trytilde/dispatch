@@ -136,13 +136,13 @@ An out-of-date setup instruction costs every future contributor and agent the ti
 ```bash
 git diff "$(git merge-base HEAD <base>)"..HEAD -- '**/package.json' pnpm-workspace.yaml .nvmrc
 git diff "$(git merge-base HEAD <base>)"..HEAD -- cli/src/toolchain.ts cli/src/commands/mobile
-git diff "$(git merge-base HEAD <base>)"..HEAD -- '**/*.hbs' 'apps/*/app.json' 'apps/*/Containerfile*'
+git diff "$(git merge-base HEAD <base>)"..HEAD -- '**/*.hbs' 'apps/*/app.config.ts' 'apps/*/eas.json' 'apps/*/Containerfile*'
 ```
 
 Treat all of these as external dependency changes:
 
 - a Node or pnpm version pin, or a new `engines` constraint
-- a new or changed tool a contributor installs outside `pnpm install`: a JDK major, Xcode or a simulator runtime, CocoaPods, an Android SDK package or system image, a system library, Microsandbox, SOPS, age, Docker, Playwright browsers
+- a new or changed tool a contributor installs outside `pnpm install`: a JDK major, Xcode or a simulator runtime, CocoaPods, an Android SDK package or system image, a system library, Microsandbox, SOPS, age, Docker, Playwright browsers, an authenticated EAS session or a paid store account
 - a new native module in a client that forces a rebuild or a new platform capability
 - a changed minimum operating system, CPU architecture, or virtualization requirement such as KVM
 

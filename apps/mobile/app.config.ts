@@ -1,0 +1,50 @@
+import type { ExpoConfig } from "expo/config";
+
+// Store identity for the official OpenBot app, published only from trytilde/openbot.
+//
+// A fork inherits this file, so every value a fork must not reuse is overridable through
+// the environment. Setting OPENBOT_EAS_PROJECT_ID to a fork's own EAS project is what
+// makes `openbot mobile release` willing to run there; see ADR-0027.
+const officialEasProjectId = "ace1107b-b007-451a-8e50-2b571c40593e";
+const officialOwner = "trytilde";
+const officialBundleIdentifier = "dev.openbot.mobile";
+
+export const officialStoreIdentity = {
+  easProjectId: officialEasProjectId,
+  owner: officialOwner,
+  bundleIdentifier: officialBundleIdentifier,
+} as const;
+
+const easProjectId = process.env.OPENBOT_EAS_PROJECT_ID ?? officialEasProjectId;
+const owner = process.env.OPENBOT_EXPO_OWNER ?? officialOwner;
+const bundleIdentifier = process.env.OPENBOT_APP_ID ?? officialBundleIdentifier;
+
+const config: ExpoConfig = {
+  name: process.env.OPENBOT_APP_NAME ?? "OpenBot",
+  slug: process.env.OPENBOT_APP_SLUG ?? "openbot",
+  version: "0.1.0",
+  orientation: "portrait",
+  scheme: process.env.OPENBOT_APP_SCHEME ?? "openbot",
+  platforms: ["ios", "android"],
+  userInterfaceStyle: "automatic",
+  owner,
+  ios: {
+    supportsTablet: true,
+    bundleIdentifier,
+  },
+  android: {
+    package: bundleIdentifier,
+    adaptiveIcon: {
+      backgroundColor: "#f5f5f2",
+    },
+  },
+  plugins: ["expo-secure-store", "expo-image"],
+  experiments: {
+    typedRoutes: false,
+  },
+  extra: {
+    eas: { projectId: easProjectId },
+  },
+};
+
+export default config;

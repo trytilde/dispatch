@@ -5,7 +5,7 @@ description: Build, run, and inspect the OpenBot Expo client in apps/mobile, inc
 
 # Run Expo
 
-`apps/mobile` is an Expo and React Native client using continuous native generation. `android/` and `ios/` are generated build output, are gitignored, and are never committed or hand-edited — change `app.json`, config plugins, or dependencies instead and let prebuild regenerate them.
+`apps/mobile` is an Expo and React Native client using continuous native generation. `android/` and `ios/` are generated build output, are gitignored, and are never committed or hand-edited — change `app.config.ts`, config plugins, or dependencies instead and let prebuild regenerate them.
 
 Note the topology this repository is developed on: the workstation is a Mac, the build host is a display-less remote Linux box, and iOS simulators cannot run on Linux. Android is the only emulator target on that host.
 
@@ -84,7 +84,7 @@ Once the dev client is installed, later iterations only need Metro:
 pnpm --filter @tryopenbot/mobile dev
 ```
 
-Rebuild with `android` again only when a native module is added or `app.json` changes; a Metro reload cannot pick those up.
+Rebuild with `android` again only when a native module is added or `app.config.ts` changes; a Metro reload cannot pick those up.
 
 If you invoke the Expo CLI directly instead of through a package script, note two traps: run it from `apps/mobile`, because from `apps/mobile/android` it fails with `Command "expo" not found`, and do not pass `--device emulator-5554`, because Expo matches AVD names rather than adb serials and the serial fails with `Could not find device with name`.
 

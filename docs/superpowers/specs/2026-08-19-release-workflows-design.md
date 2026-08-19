@@ -12,10 +12,11 @@ to Tilde's bucket.
 
 ## What already existed
 
-- `openbot mobile release build|submit|status|credentials` with the ADR-0027 upstream guard.
-  The mobile side needed a workflow, not a command.
+- `openbot mobile release build|submit|status|credentials|install` with the ADR-0027 upstream
+  guard, and `.github/workflows/mobile-release.yml` driving it from a `mobile-v*` tag or a
+  manual dispatch. The mobile side turned out to need neither a command nor a workflow.
 - `openbot desktop package`, a local unsigned build with no publish path.
-- `.github/workflows/changesets.yml` and nothing else.
+- `.github/workflows/changesets.yml` and `mobile-release.yml`.
 - `tilde-app-updates-prod` in the shared AWS account, already hosting Tilde's Electrobun feed
   under `desktop/`, with public read on `desktop/*`.
 
@@ -40,8 +41,9 @@ URL. A client reads its own platform key and semver-compares.
 
 **Fork boundary.** The official bucket is a constant in the CLI; the command refuses it from a
 non-upstream `origin` and names `OPENBOT_DESKTOP_UPDATES_BUCKET`. A GitHub OIDC role scoped to
-`repo:trytilde/openbot:*` is the backstop. Neither workflow filters on repository name, so a
-fork with its own bucket runs them unchanged.
+`repo:trytilde/openbot:*` is the backstop. `release-desktop.yml` does not filter on repository
+name, so a fork with its own bucket runs it unchanged. This differs from `mobile-release.yml`,
+which fences on `github.repository`.
 
 **Signing.** Developer ID certificate plus notarytool with an App Store Connect key, under the
 hardened runtime with Electron's JIT entitlements. Missing credentials degrade to unsigned with

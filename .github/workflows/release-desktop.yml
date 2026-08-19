@@ -38,6 +38,25 @@ jobs:
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Vite+
+        uses: voidzero-dev/setup-vp@v1.15.0
+        with:
+          node-version: 24
+          cache: true
+
+      - name: Install dependencies
+        run: vp install --frozen-lockfile
+
+      # Publishing changes a public feed, so the repository gates run before anything is
+      # packaged. Once here rather than in each matrix job: the tree is the same for both.
+      - name: Check
+        run: vp run --filter openbot start -- check
+
       - id: plan
         shell: bash
         run: |
@@ -57,6 +76,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     env:
       OPENBOT_DESKTOP_UPDATES_BUCKET: ${{ vars.DESKTOP_UPDATES_S3_BUCKET }}
       OPENBOT_DESKTOP_UPDATES_PREFIX: ${{ vars.DESKTOP_UPDATES_S3_PREFIX }}

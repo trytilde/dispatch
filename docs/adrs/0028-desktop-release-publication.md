@@ -73,8 +73,9 @@ unsigned with a warning, because a fork without an Apple Developer account shoul
 artifacts. The cost is that a misconfigured upstream run also succeeds, so the outcome is
 recorded in `version.json` as `signed: false` where it is visible rather than silent.
 
-Both workflows are `workflow_dispatch` only. The matrix is macOS arm64 and Linux x64; mac x64
-is deliberately not built.
+`release-desktop.yml` is `workflow_dispatch` only. The matrix is macOS arm64 and Linux x64;
+mac x64 is deliberately not built. Mobile keeps its own `mobile-release.yml`, which predates
+this decision and additionally releases from a `mobile-v*` tag; this ADR does not change it.
 
 ```mermaid
 flowchart LR
@@ -104,6 +105,9 @@ flowchart LR
 - Nothing consumes `version.json` yet. The in-app update banner, its `client-runtime` contract,
   and the web/Expo parity decision it triggers are deliberately not part of this decision.
 - Windows, linux arm64, mac x64, and `eas update` OTA are out of scope.
+- The desktop workflow deliberately carries no `if: github.repository ==` fence, unlike
+  `mobile-release.yml`. The two therefore differ: a fork can run the desktop release against
+  its own bucket, but cannot run the mobile one at all without editing it.
 
 ## Updates
 

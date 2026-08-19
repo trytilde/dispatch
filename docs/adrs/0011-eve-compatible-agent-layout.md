@@ -116,3 +116,4 @@ flowchart LR
 - 2026-08-14T10:55:00+02:00: Made `new-agent` invoke the same idempotent development lifecycle as `dev` after filesystem scaffolding; the Tilde agent provider, rather than the CLI, owns endpoint reconciliation and local tunneling.
 - 2026-08-14T15:27:17+02:00: Made `configuration/agent/` the full primary agent and `configuration/agent/subagents/<id>/` the canonical home for equally complete additional agents. Discovery and builds reject deeper nesting.
 - 2026-08-15T13:25:19+02:00: Added one persistent virtual display and browser profile per agent inside the shared Computer; display routing does not add sandbox or operating-system isolation.
+- 2026-08-18T16:30:00Z: Renamed the primary agent from `hello-world` to `factory`, deleted the hello-world template assets, and gave every scaffolded subagent a `self-edit` skill. Recorded retroactively; PR 57 amended this record's prose without an entry.

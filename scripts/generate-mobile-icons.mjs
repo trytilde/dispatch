@@ -14,9 +14,9 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const assetsDirectory = join(repositoryRoot, "apps/mobile/assets");
 const assetsModule = join(repositoryRoot, "packages/ui/dist/agent-avatar-assets.js");
 
-/* Tilde publishes the app, so the field is the publisher's navy rather than a
+/* Tilde publishes the app, so the field is Tilde's electric blue rather than a
  * colour from the avatar palette. Flat: no gradient on the field or the body. */
-const FIELD = "#001F6B";
+const FIELD = "#0038AE";
 const LOOK = { shape: "blob", tone: "1", eyes: "28", color: "#FFFFFF" };
 const INK = "#191919";
 const SIZE = 1024;

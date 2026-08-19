@@ -46,7 +46,7 @@
     "vite-plus": "catalog:"
   },
   "build": {
-    "appId": "dev.openbot.desktop",
+    "appId": "ai.trytilde.openbot",
     "productName": "OpenBot",
     "protocols": [
       {

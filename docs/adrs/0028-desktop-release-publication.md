@@ -66,6 +66,12 @@ electron-builder also emits `latest-mac.yml` and `latest-linux.yml` through a `g
 provider. Nothing reads them today. They are published anyway so that adopting electron-updater
 later is a client change rather than a re-run of every past release.
 
+The Electron `appId` is `ai.trytilde.openbot`, matching the mobile identifier for the reason
+ADR-0027 gives: the identifier is reverse-DNS of the publisher, not of the product or the
+platform. Desktop and mobile therefore share one identifier. They are distinct records to
+Apple regardless, because the desktop app is distributed with Developer ID rather than through
+a store, and nothing keys off the two being different.
+
 macOS builds are signed with a Developer ID Application certificate and notarized through
 notarytool with an App Store Connect API key, under the hardened runtime with the JIT
 entitlements Electron requires. When the certificate secrets are absent the build proceeds
@@ -112,3 +118,4 @@ flowchart LR
 ## Updates
 
 - 2026-08-19T13:30:00+02:00: Initial decision.
+- 2026-08-19T15:10:00+02:00: Moved the Electron `appId` from `dev.openbot.desktop` to `ai.trytilde.openbot`, before the first signed release makes it permanent. Unlike the mobile identifier it is not environment-overridable; a fork that publishes its own desktop build inherits it and must edit `apps/desktop/package.json`. The fork boundary that matters is the bucket, not the identifier.

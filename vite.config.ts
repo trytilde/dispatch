@@ -7,6 +7,7 @@ export default defineConfig({
   fmt: {
     ignorePatterns: [
       ".agents/**",
+      ".claude/skills/**",
       "**/*.md",
       "**/*.hbs",
       "configuration/secrets.enc.yaml",
@@ -19,6 +20,7 @@ export default defineConfig({
   lint: {
     ignorePatterns: [
       ".agents/**",
+      ".claude/skills/**",
       "**/*.hbs",
       "apps/control-service/src/generated/**",
       "apps/web/src/routeTree.gen.ts",

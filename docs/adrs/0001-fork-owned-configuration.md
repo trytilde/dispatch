@@ -53,3 +53,4 @@ flowchart LR
 - 2026-08-14T10:18:00+02:00: Consolidated all provider construction in `configuration/index.ts`, removed `configuration/runtime-providers.ts`, and kept generated agent entrypoints independent by reading their runtime environment directly.
 - 2026-08-14T10:28:18+02:00: Limited provider composition to OpenBot control and lifecycle concerns; authored agents now integrate external SDKs directly and keep future defaults in the agent template.
 - 2026-08-14T15:27:17+02:00: Established one full primary agent at `configuration/agent/` and equally capable full agents under `configuration/agent/subagents/<id>/`.
+- 2026-08-18T16:30:00Z: Renamed the primary agent from `hello-world` to `factory` and added the `providers.git` slot to the composition root. Recorded retroactively; PR 57 amended this record's prose without an entry.

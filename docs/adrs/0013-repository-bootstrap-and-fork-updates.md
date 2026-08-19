@@ -104,3 +104,4 @@ flowchart LR
 - 2026-08-13T18:27:43+02:00: Added stdin JSON answers and JSON results for non-interactive init, using stable core and provider question IDs so AI agents execute the same validated bootstrap path without a TTY or secrets in arguments; agent scaffolding and secret mutations also expose explicit JSON/stdin modes.
 - 2026-08-13T18:29:50+02:00: Allowed repository bootstrap to target an authorized GitHub organization through explicit `owner/name` input while preserving bare-name account defaults.
 - 2026-08-13T18:33:45+02:00: Required init to verify canonical HEAD's workspace compatibility before prompts or repository mutation and to verify the owned clone remains pinned to that checked revision.
+- 2026-08-18T16:30:00Z: The deferred code-forge domain now exists. ADR-0020 records brokered hosted-git access through `packages/git-provider`; sandbox-side GitHub operations no longer shell `gh` or use a direct credential.

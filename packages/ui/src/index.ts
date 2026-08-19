@@ -75,18 +75,6 @@ export { cn } from "./lib/utils.js";
 export { Shimmer, type ShimmerProps } from "./beautiful-ui/atoms/shimmer.js";
 export { StreamText, type StreamTextProps } from "./beautiful-ui/atoms/stream-text.js";
 export { AgentWorkspacePanel, type AgentWorkspacePanelProps } from "./agent-workspace-panel.js";
-export {
-  type AsyncTask,
-  type AsyncTaskKind,
-  AsyncTasksPanel,
-  type AsyncTasksPanelProps,
-  type ConversationOutlineItem,
-  ConversationOutlinePanel,
-  type ConversationOutlinePanelProps,
-  type ConversationOutlineTab,
-  type ConversationOutlineTabStatus,
-  type ConversationOutlineToolStatus,
-} from "./activity-panels.js";
 export { ComputerStagePlaceholder, type ComputerStagePlaceholderProps } from "./computer-stage.js";
 export {
   ComputerFailureDialog,

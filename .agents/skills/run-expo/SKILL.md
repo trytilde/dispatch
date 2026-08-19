@@ -9,6 +9,13 @@ description: Build, run, and inspect the OpenBot Expo client in apps/mobile, inc
 
 Note the topology this repository is developed on: the workstation is a Mac, the build host is a display-less remote Linux box, and iOS simulators cannot run on Linux. Android is the only emulator target on that host.
 
+Supported toolchain versions, so a build failure is not mistaken for a version mismatch: Expo
+SDK 56 documents "Android API level 36 and Xcode 26.4 and higher are supported" and builds for
+iOS 16.4+, and SDK 57 carries that line forward with React Native 0.86. React Native's own gate
+sets a minimum of Xcode 16.1 with no maximum, so `pod install` succeeding is direct evidence the
+installed Xcode is acceptable. Do not infer an upper bound from a React Native changelog entry
+mentioning a newer Xcode; check the gate and the SDK's stated support instead.
+
 Verified on both platforms as of 2026-08-18: `mobile setup`, `mobile avd`, `mobile emulator`, and `mobile doctor` on Apple Silicon macOS 14.6, and the same plus `expo run:android` on x86_64 Linux. On macOS the emulator opens a real window and starts neither Xvfb nor x11vnc, and the system image resolves to `arm64-v8a`. Unverified anywhere: `expo run:ios`, which needs Xcode 16.1 or newer.
 
 ## Choose The Narrowest Check

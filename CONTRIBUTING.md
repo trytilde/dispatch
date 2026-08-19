@@ -243,6 +243,46 @@ Store identity is read from the environment in `apps/mobile/app.config.ts`, so n
 needs editing. Never commit signing credentials, service account keys, or App Store Connect API
 keys; they stay in EAS and in the Apple and Google consoles.
 
+## Publishing the desktop app
+
+Desktop publication is upstream-only for the same reason (ADR-0028). Signed builds go to
+`s3://tilde-app-updates-prod/desktop/openbot/<channel>/`, and `openbot desktop release` refuses
+the official bucket from any other remote:
+
+```bash
+pnpm release:desktop -- status
+pnpm release:desktop -- build --platform mac
+pnpm release:desktop -- publish --yes
+pnpm release:desktop -- manifest --yes
+```
+
+`publish` and `manifest` require `--yes` because both change a public feed. In CI this runs as
+the manually triggered **Release desktop** workflow, which needs these repository variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `AWS_OIDC_ROLE_ARN` | Role the workflow assumes through GitHub OIDC |
+| `AWS_REGION` | Region of the updates bucket |
+| `DESKTOP_UPDATES_S3_BUCKET` | Bucket name; omit upstream to take the default |
+| `DESKTOP_UPDATES_S3_PREFIX` | Prefix above the channel, default `desktop/openbot` |
+| `DESKTOP_UPDATES_BASE_URL` | Public https origin used for download URLs |
+
+and these repository secrets for a signed, notarized macOS build:
+
+| Secret | Purpose |
+| --- | --- |
+| `MACOS_CERTIFICATE` | Base64 Developer ID Application `.p12` |
+| `MACOS_CERTIFICATE_PASSWORD` | Password for that `.p12` |
+| `APPLE_API_KEY` | Base64 App Store Connect `.p8` used by notarytool |
+| `APPLE_API_KEY_ID` | Key ID for that `.p8` |
+| `APPLE_API_ISSUER` | Issuer ID for that key |
+
+Without the certificate secrets the build still succeeds but produces **unsigned** artifacts
+that macOS Gatekeeper refuses, recorded as `signed: false` in `version.json`. A fork publishes
+to its own bucket with `OPENBOT_DESKTOP_UPDATES_BUCKET`, optionally
+`OPENBOT_DESKTOP_UPDATES_PREFIX` and `OPENBOT_DESKTOP_UPDATES_BASE_URL`. Never commit an Apple
+certificate or an App Store Connect key.
+
 ## Changing an external dependency
 
 If your change adds, removes, or bumps a tool a contributor must install — a JDK major, an

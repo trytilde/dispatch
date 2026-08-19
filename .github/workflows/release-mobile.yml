@@ -1,0 +1,62 @@
+# Manual store release through EAS. The upstream-only refusal lives in the CLI
+# (ADR-0027), so a fork with its own EAS project can run this workflow unmodified.
+name: Release mobile
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Platform to build"
+        type: choice
+        default: all
+        options: [all, ios, android]
+      profile:
+        description: "eas.json build profile"
+        type: choice
+        default: production
+        options: [production, preview]
+      submit:
+        description: "Submit the build to the stores when it finishes"
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-mobile
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: eas build
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      OPENBOT_EAS_PROJECT_ID: ${{ vars.OPENBOT_EAS_PROJECT_ID }}
+      OPENBOT_EXPO_OWNER: ${{ vars.OPENBOT_EXPO_OWNER }}
+      OPENBOT_APP_ID: ${{ vars.OPENBOT_APP_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Vite+
+        uses: voidzero-dev/setup-vp@v1.15.0
+        with:
+          node-version: 24
+          cache: true
+
+      - name: Install dependencies
+        run: vp install --frozen-lockfile
+
+      # `mobile release build` already forces --non-interactive without a TTY, so
+      # credentials must be set up beforehand from a terminal.
+      - name: Build on EAS
+        run: >
+          pnpm release:mobile -- build
+          --platform ${{ inputs.platform }}
+          --profile ${{ inputs.profile }}
+          ${{ inputs.submit && '--submit' || '' }}
+          --yes

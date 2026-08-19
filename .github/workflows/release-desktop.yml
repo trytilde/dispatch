@@ -1,0 +1,145 @@
+# Manual desktop release. Publication is upstream-only, but the refusal lives in the CLI
+# (ADR-0028) rather than in an `if: github.repository ==` guard here, so a fork that has
+# set its own bucket and its own AWS role can run this workflow unmodified.
+name: Release desktop
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Release channel to publish under"
+        type: choice
+        default: latest
+        options: [latest, beta]
+      platforms:
+        description: "Which platforms to build"
+        type: choice
+        default: all
+        options: [all, mac, linux]
+      dry_run:
+        description: "Build and sign, but do not upload"
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-desktop-${{ inputs.channel }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  # A job-level `if` cannot read the matrix context, so the platform selection is
+  # resolved into the matrix itself rather than filtering jobs after the fact.
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - id: plan
+        shell: bash
+        run: |
+          mac='{"platform":"mac","os":"macos-latest"}'
+          linux='{"platform":"linux","os":"ubuntu-latest"}'
+          case "${{ inputs.platforms }}" in
+            mac)   include="[$mac]" ;;
+            linux) include="[$linux]" ;;
+            *)     include="[$mac,$linux]" ;;
+          esac
+          echo "matrix={\"include\":$include}" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.platform }}
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    env:
+      OPENBOT_DESKTOP_UPDATES_BUCKET: ${{ vars.DESKTOP_UPDATES_S3_BUCKET }}
+      OPENBOT_DESKTOP_UPDATES_PREFIX: ${{ vars.DESKTOP_UPDATES_S3_PREFIX }}
+      OPENBOT_DESKTOP_UPDATES_BASE_URL: ${{ vars.DESKTOP_UPDATES_BASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Vite+
+        uses: voidzero-dev/setup-vp@v1.15.0
+        with:
+          node-version: 24
+          cache: true
+
+      - name: Install dependencies
+        run: vp install --frozen-lockfile
+
+      - name: Build and sign
+        run: pnpm release:desktop -- build --platform ${{ matrix.platform }} --channel ${{ inputs.channel }}
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+
+      - name: Configure AWS credentials
+        if: ${{ !inputs.dry_run }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Publish artifacts
+        if: ${{ !inputs.dry_run }}
+        run: pnpm release:desktop -- publish --channel ${{ inputs.channel }} --yes
+
+      - name: Upload artifacts for inspection
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.platform }}
+          path: |
+            apps/desktop/out/*.dmg
+            apps/desktop/out/*.zip
+            apps/desktop/out/*.AppImage
+            apps/desktop/out/*.deb
+            apps/desktop/out/latest*.yml
+          retention-days: 7
+
+  manifest:
+    name: version.json
+    needs: build
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    env:
+      OPENBOT_DESKTOP_UPDATES_BUCKET: ${{ vars.DESKTOP_UPDATES_S3_BUCKET }}
+      OPENBOT_DESKTOP_UPDATES_PREFIX: ${{ vars.DESKTOP_UPDATES_S3_PREFIX }}
+      OPENBOT_DESKTOP_UPDATES_BASE_URL: ${{ vars.DESKTOP_UPDATES_BASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Vite+
+        uses: voidzero-dev/setup-vp@v1.15.0
+        with:
+          node-version: 24
+          cache: true
+
+      - name: Install dependencies
+        run: vp install --frozen-lockfile
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # Rebuilt from every release entry in the bucket, so a mac-only run leaves the
+      # linux entry standing rather than replacing the manifest with one platform.
+      - name: Publish version.json
+        run: pnpm release:desktop -- manifest --channel ${{ inputs.channel }} --yes

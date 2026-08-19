@@ -16,7 +16,7 @@ sets a minimum of Xcode 16.1 with no maximum, so `pod install` succeeding is dir
 installed Xcode is acceptable. Do not infer an upper bound from a React Native changelog entry
 mentioning a newer Xcode; check the gate and the SDK's stated support instead.
 
-Verified on both platforms as of 2026-08-18: `mobile setup`, `mobile avd`, `mobile emulator`, and `mobile doctor` on Apple Silicon macOS 14.6, and the same plus `expo run:android` on x86_64 Linux. On macOS the emulator opens a real window and starts neither Xvfb nor x11vnc, and the system image resolves to `arm64-v8a`. Unverified anywhere: `expo run:ios`, which needs Xcode 16.1 or newer.
+Verified on both platforms as of 2026-08-18: `mobile setup`, `mobile avd`, `mobile emulator`, and `mobile doctor` on Apple Silicon macOS 14.6, and the same plus `expo run:android` on x86_64 Linux. On macOS the emulator opens a real window and starts neither Xvfb nor x11vnc, and the system image resolves to `arm64-v8a`. Unverified anywhere: `expo run:ios`. It is blocked locally on Xcode 26.5; see Known Gaps.
 
 ## Choose The Narrowest Check
 
@@ -154,43 +154,43 @@ Read colors through `useColor` and never hardcode a value, so every surface reso
 
 ## An iOS Build Failing Inside The SDK
 
-A cascade of `could not build module 'Foundation'` and `'UIKit'` against the simulator SDK, with
-the first error being a modulemap that `requires feature found_incompatible_headers__check_search_paths`,
-is not a broken Xcode, a wrong SDK, or an unsupported React Native. It is an inherited compiler
-search path: Homebrew tells you to export `CPPFLAGS=-I/opt/homebrew/opt/llvm/include` when
-building C projects against its LLVM, that directory carries its own C standard library, and
-clang then builds an incompatible `float.h` that every framework including it fails on. Apple's
-diagnostic names neither the variable nor the shell that set it.
+A cascade of `could not build module 'Foundation'`, `'CoreFoundation'`, and `'UIKit'` against the
+simulator SDK, whose first error is a modulemap requiring
+`found_incompatible_headers__check_search_paths`, means clang built an incompatible `float.h`.
+Apple's diagnostic names neither the cause nor the search path responsible.
 
-These variables belong to the developer's environment, not to this repository, so `mobile doctor`
-reports them and nothing here changes them: silently stripping a developer's compiler settings
-would hide the cause rather than fix it, and would surprise anyone who set them deliberately.
-Scope them to the shells that need them — a direnv profile or a wrapper for the project that
-needs Homebrew LLVM — rather than exporting them from a shell profile that every build inherits.
-
-Two things make this hard to diagnose, so check them in this order:
-
-1. Isolate the toolchain from the project. This compiles against the SDK with modules enabled and no project flags, so success means the SDK is healthy and the fault is in the build environment:
+Isolate before theorising. Two commands separate the three possible owners, and skipping them
+costs a build cycle per guess:
 
 ```bash
+# 1. Is the toolchain itself healthy? Compiles against the SDK with modules, no project flags.
 printf '#import <Foundation/Foundation.h>\nint main(void){return 0;}\n' > /tmp/t.m
 xcrun -sdk iphonesimulator clang -fmodules -fmodules-cache-path=/tmp/mc \
   -target arm64-apple-ios16.4-simulator \
   -isysroot "$(xcrun --sdk iphonesimulator --show-sdk-path)" -c /tmp/t.m -o /tmp/t.o
+
+# 2. Is this repository involved at all? Runs Expo directly, without the CLI.
+cd apps/mobile && npx expo run:ios 2>&1 | tail -30
 ```
 
-2. Read the *first* error, never the tail. Every later line is a cascade from one root cause, and a tail shows only the cascade:
+Read the *first* error, never the tail: every later line is a cascade from one root, and a tail
+shows only the cascade. `grep -nE "requires feature|Script .* failed|could not build module" log | head`.
 
-```bash
-pnpm openbot mobile expo run:ios > /tmp/ios-build.log 2>&1
-grep -nE "requires feature|could not build module|error:" /tmp/ios-build.log | head -8
-```
-
-Clear the module cache *after* fixing the environment. A cache poisoned by an earlier bad build
-reproduces the failure once the cause is gone: `rm -rf ~/Library/Developer/Xcode/DerivedData` and
+Clear the module cache *after* changing anything, because a cache poisoned by an earlier build
+reproduces the failure once the cause is gone:
+`rm -rf ~/Library/Developer/Xcode/DerivedData` and
 `rm -rf "$(getconf DARWIN_USER_CACHE_DIR)/org.llvm.clang/ModuleCache"`.
 
+A shell exporting `CPPFLAGS`, `C_INCLUDE_PATH`, or similar can produce this signature, because
+Homebrew LLVM's include directory carries its own C standard library. `mobile doctor` reports
+those variables and deliberately does not change them — the developer's environment is theirs.
+On the one machine where this was investigated, removing them did **not** fix the build, so treat
+them as a candidate to rule out rather than the answer.
+
 ## Known Gaps
+
+- Local iOS builds fail on Apple Silicon macOS with Xcode 26.5 and the iOS 26.5 simulator SDK, on Expo SDK 57 with React Native 0.86.2. Verified as not ours and not the machine's: plain clang modularises `Foundation` fine, a bare `npx expo run:ios` fails identically without this CLI, the shell carries no compiler flags, and the module cache was cold. The first failure is the `[CP-User] Build ExpoModulesJSI xcframework` script phase, whose nested `xcodebuild` fails before the modulemap cascade. Expo's SDK 56 announcement states Xcode 26.4 and higher are supported, so this is an upstream report worth filing with `npx --yes submit-expo-feedback@latest`. Use EAS for iOS artifacts until it is resolved: `openbot mobile release build --platform ios`.
+
 
 - The Android build runs edge-to-edge (`edgeToEdgeEnabled=true` in `android/gradle.properties`), so `adjustResize` does not shrink the window and the keyboard overlays content. Every screen with an input needs the `AvoidKeyboard` spacer; do not assume Android handles it.
 - A running app may not repaint when the OS light/dark setting changes. Relaunch before judging appearance.

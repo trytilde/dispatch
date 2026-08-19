@@ -30,6 +30,30 @@ pnpm dev
 
 A fresh upstream checkout intentionally contains only `configuration/.gitignore`, which hides all configuration contents. `openbot init` creates and clones the owner repository into the empty destination before configuring it; successful initialization removes that exact upstream sentinel so the fork can commit its configuration and initial agent. Commit the deletion with the generated configuration. Ordinary upstream merges preserve the fork's committed deletion while upstream leaves the sentinel unchanged. No setup or pairing code is required.
 
+## Develop this repository
+
+Contributors and coding agents drive the repository through the same `openbot` CLI, which
+carries the developer workflow beside its operator commands (ADR-0018):
+
+```bash
+pnpm openbot check                  # contracts, types, lint, package tests
+pnpm openbot build                  # every package, plus artifact verification
+pnpm openbot test                   # repository tests
+pnpm openbot e2e                    # browser Playwright suite
+pnpm openbot desktop dev            # Electron shell, headless with VNC on a display-less host
+pnpm openbot desktop package        # Electron packaging
+pnpm openbot mobile doctor          # verify the mobile toolchain
+pnpm openbot mobile emulator        # Android emulator, headless on a display-less Linux host
+pnpm openbot mobile expo run:ios    # iOS simulator, macOS only
+pnpm openbot mobile release status  # EAS store builds, upstream only; a mobile-v* tag releases
+pnpm openbot connect -- <host>      # tunnel a remote dev host's emulator, Metro, and adb
+```
+
+Prerequisites differ per platform and per surface — a JDK 17 or 21 for Android, Xcode 16.1 or
+newer with CocoaPods for iOS, KVM with Xvfb and x11vnc for a headless Linux emulator. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for Linux and macOS setup from scratch, and run
+`pnpm openbot mobile doctor` to check the current machine.
+
 ## Deploy
 
 ```bash

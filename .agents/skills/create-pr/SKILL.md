@@ -15,12 +15,13 @@ Use when the user asks to open, publish, prepare, or update a PR for the current
 4. Review protobuf, Tilde API reconciliation, environment, deployment, package README, public documentation, and Changesets impact.
 5. Run the cross-client parity gate for `apps/mobile`, `apps/desktop`, and `apps/web`. Confirm the port/no-port decision with the user before publishing.
 6. Run the CLI ownership gate: every developer workflow and operator behavior belongs in the `openbot` CLI. Refactor before publishing.
-7. Run the architecture and ADR gate. Resolve any user decision before publishing.
-8. Use a Conventional Commits title and intentional file selection; commit the validated implementation.
-9. Push the branch and open or update the draft PR so its stable PR number is known.
-10. Generate `docs/updates/<pr-number>.md`, commit it, and push it to the draft PR.
-11. Keep the update record current after every subsequent implementation, documentation, rebase, or conflict-resolution change.
-12. Re-read PR checks and review feedback before declaring completion.
+7. Run the external dependency gate: if a contributor must install something new or different, update the setup instructions and `mobile doctor` in the same PR.
+8. Run the architecture and ADR gate. Resolve any user decision before publishing.
+9. Use a Conventional Commits title and intentional file selection; commit the validated implementation.
+10. Push the branch and open or update the draft PR so its stable PR number is known.
+11. Generate `docs/updates/<pr-number>.md`, commit it, and push it to the draft PR.
+12. Keep the update record current after every subsequent implementation, documentation, rebase, or conflict-resolution change.
+13. Re-read PR checks and review feedback before declaring completion.
 
 ## Gather Context
 
@@ -128,6 +129,31 @@ Per ADR-0018, the `openbot` CLI is the single command surface for operating an i
 
 Trivial single-filter delegations (`vp run --filter <pkg> <script>`) are fine as scripts and need no command. When a workflow is promoted, update `cli/README.md`'s command surface and add a changeset, because the command surface is the CLI's public API.
 
+## External Dependency Gate
+
+An out-of-date setup instruction costs every future contributor and agent the time it takes to rediscover the requirement. Determine from evidence whether this PR changes what a machine must have installed:
+
+```bash
+git diff "$(git merge-base HEAD <base>)"..HEAD -- '**/package.json' pnpm-workspace.yaml .nvmrc
+git diff "$(git merge-base HEAD <base>)"..HEAD -- cli/src/toolchain.ts cli/src/commands/mobile
+git diff "$(git merge-base HEAD <base>)"..HEAD -- '**/*.hbs' 'apps/*/app.config.ts' 'apps/*/eas.json' 'apps/*/Containerfile*'
+```
+
+Treat all of these as external dependency changes:
+
+- a Node or pnpm version pin, or a new `engines` constraint
+- a new or changed tool a contributor installs outside `pnpm install`: a JDK major, Xcode or a simulator runtime, CocoaPods, an Android SDK package or system image, a system library, Microsandbox, SOPS, age, Docker, Playwright browsers, an authenticated EAS session or a paid store account
+- a new native module in a client that forces a rebuild or a new platform capability
+- a changed minimum operating system, CPU architecture, or virtualization requirement such as KVM
+
+When any apply, the same PR must:
+
+- update the prerequisite tables and both the Linux and macOS setup sections in `CONTRIBUTING.md`, and the developer workflow list in `README.md` when a command changed
+- extend `openbot mobile doctor` so the requirement is checked rather than only documented, with a `warn` for a soft requirement and a `FAIL` for a hard one, and name the remedy in the detail text
+- state in the PR body which platforms were verified and which were not; a requirement proven on one operating system is not proven on the other
+
+Record the result under an `External dependencies` heading. When nothing changed, record `External dependencies: unchanged`.
+
 ## Architecture And ADR Gate
 
 Always inspect the complete diff for major architecture, strongly opinionated code, or durable code/product design decisions. Compare it with `CONTEXT.md`, `AGENTS.md`, and relevant records under `docs/adrs/`.
@@ -158,6 +184,7 @@ Use the checked-in `.github/pull_request_template.md` when present and complete 
 - checks actually run
 - migration, contract, Tilde reconciliation, deployment, and security impact
 - cross-client parity result: what was ported, what is deferred with its `<FOLLOW UP>` block, and what is not portable with the reason
+- external dependency result: what a contributor must now install, which setup instructions and doctor checks changed, and which platforms were verified
 - ADR review result and links to any new or governing ADRs
 - screenshots for user-visible changes when captured
 - known limitations or follow-ups

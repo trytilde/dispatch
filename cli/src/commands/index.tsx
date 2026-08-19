@@ -3,6 +3,7 @@ import { relative } from "node:path";
 import arg from "arg";
 import type { ReactElement } from "react";
 import { render } from "ink";
+import { markDiagnosticExit } from "../diagnostics.js";
 import { repositoryRoot } from "../paths.js";
 import { Help, Success } from "../ui.js";
 import { runProductionDeploy } from "./deploy.js";
@@ -14,6 +15,7 @@ import { runOrchestrator } from "./orchestrate.js";
 import { runSecrets } from "./secrets.js";
 import { runDevelopmentServer } from "./serve.js";
 import { runConnect } from "./connect.js";
+import { runDesktop } from "./desktop/index.js";
 import { runMobile } from "./mobile/index.js";
 import { runRemote } from "./remote.js";
 
@@ -99,23 +101,20 @@ export async function runCommand(command: string, args: readonly string[]): Prom
   if (command === "check" || command === "build" || command === "test")
     return delegate(command, args);
   if (command === "e2e") return delegate("test:e2e", args);
-  if (command === "desktop") {
-    if (args[0] !== "package") throw new Error("Usage: openbot desktop package");
-    return delegateFilter("@tryopenbot/desktop", "package", args.slice(1));
-  }
-  if (command === "mobile") {
-    process.exitCode = await runMobile(args);
-    return;
-  }
-  if (command === "connect") {
-    process.exitCode = await runConnect(args);
-    return;
-  }
-  if (command === "remote") {
-    process.exitCode = await runRemote(args);
-    return;
-  }
+  if (command === "desktop") return reportedExit(await runDesktop(args));
+  // These delegate to a child with inherited stdio, or print their own explanation.
+  // A non-zero result is therefore already reported, so the run-log crash notice
+  // would only point at a log holding nothing but the run's start and finish.
+  if (command === "mobile") return reportedExit(await runMobile(args));
+  if (command === "connect") return reportedExit(await runConnect(args));
+  if (command === "remote") return reportedExit(await runRemote(args));
   throw new Error(`Unknown command: ${[command, ...args].join(" ")}`);
+}
+
+function reportedExit(code: number): void {
+  if (code === 0) return;
+  process.exitCode = code;
+  markDiagnosticExit();
 }
 
 function rejectArguments(command: string, args: readonly string[]): void {
@@ -151,5 +150,5 @@ async function spawnPnpm(pnpmArguments: readonly string[]): Promise<void> {
     child.once("error", reject);
     child.once("exit", (value) => resolveCode(value ?? 1));
   });
-  if (code) process.exitCode = code;
+  reportedExit(code);
 }

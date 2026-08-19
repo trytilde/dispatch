@@ -4,6 +4,7 @@ import React, { type ReactElement } from "react";
 import { render } from "ink";
 import { redact } from "./commands/deploy.js";
 import { parseInvocation, runCommand } from "./commands/index.js";
+import { diagnosticExitReported } from "./diagnostics.js";
 import { cliFailureDetails, createCliRunLog, type CliRunLog } from "./logging.js";
 import { runWithTypeScriptLoader } from "./typescript-loader.js";
 import { CommandMenu, Failure } from "./ui.js";
@@ -54,7 +55,7 @@ async function runLoggedCli(): Promise<void> {
   const recordWarning = (warning: Error) => log.writeError(warning, "Process warning");
   let failureReferenced = false;
   const closeLog = (code: number) => {
-    if (code !== 0 && !failureReferenced) referenceUnexpectedExit(log);
+    if (code !== 0 && !failureReferenced && !diagnosticExitReported()) referenceUnexpectedExit(log);
     log.close();
   };
   process.on("uncaughtExceptionMonitor", monitorError);
@@ -72,7 +73,8 @@ async function runLoggedCli(): Promise<void> {
     process.off("uncaughtExceptionMonitor", monitorError);
     process.off("warning", recordWarning);
     process.off("exit", closeLog);
-    if ((process.exitCode ?? 0) !== 0 && !failureReferenced) referenceUnexpectedExit(log);
+    if ((process.exitCode ?? 0) !== 0 && !failureReferenced && !diagnosticExitReported())
+      referenceUnexpectedExit(log);
     restoreConsole();
     log.close();
   }

@@ -5,9 +5,18 @@ description: Build, run, and inspect the OpenBot Expo client in apps/mobile, inc
 
 # Run Expo
 
-`apps/mobile` is an Expo and React Native client using continuous native generation. `android/` and `ios/` are generated build output, are gitignored, and are never committed or hand-edited — change `app.json`, config plugins, or dependencies instead and let prebuild regenerate them.
+`apps/mobile` is an Expo and React Native client using continuous native generation. `android/` and `ios/` are generated build output, are gitignored, and are never committed or hand-edited — change `app.config.ts`, config plugins, or dependencies instead and let prebuild regenerate them.
 
 Note the topology this repository is developed on: the workstation is a Mac, the build host is a display-less remote Linux box, and iOS simulators cannot run on Linux. Android is the only emulator target on that host.
+
+Supported toolchain versions, so a build failure is not mistaken for a version mismatch: Expo
+SDK 56 documents "Android API level 36 and Xcode 26.4 and higher are supported" and builds for
+iOS 16.4+, and SDK 57 carries that line forward with React Native 0.86. React Native's own gate
+sets a minimum of Xcode 16.1 with no maximum, so `pod install` succeeding is direct evidence the
+installed Xcode is acceptable. Do not infer an upper bound from a React Native changelog entry
+mentioning a newer Xcode; check the gate and the SDK's stated support instead.
+
+Verified on both platforms as of 2026-08-18: `mobile setup`, `mobile avd`, `mobile emulator`, and `mobile doctor` on Apple Silicon macOS 14.6, and the same plus `expo run:android` on x86_64 Linux. On macOS the emulator opens a real window and starts neither Xvfb nor x11vnc, and the system image resolves to `arm64-v8a`. Verified on macOS as of 2026-08-19: `expo run:ios` builds, installs, and launches on the iPhone 15 Pro simulator with Xcode 26.6 and the iOS 26.5 simulator SDK. Unverified anywhere: a physical iOS device.
 
 ## Choose The Narrowest Check
 
@@ -27,9 +36,15 @@ What it resolves, and why each mattered:
 - `ANDROID_SDK_ROOT` and `ANDROID_HOME`, defaulting to `/root/Android/sdk`, plus `platform-tools`, `emulator`, and `cmdline-tools/latest/bin` on `PATH`.
 - A real Node binary, taken from `process.execPath`. Gradle spawns `node` while evaluating settings, and a version-manager shim or an expired `fnm` multishell directory fails there with `A problem occurred starting process 'command 'node''`.
 
-The SDK itself must already have `platform-tools`, `emulator`, `platforms;android-36`, `build-tools;36.0.0`, and a `system-images;android-36;google_apis;x86_64` image. The host also needs a full JDK, `Xvfb`, `x11vnc`, and the emulator's shared libraries, including `libpulse0`.
+The SDK itself must already have `platform-tools`, `emulator`, `platforms;android-36`, `build-tools;36.0.0`, and a system image matching the host CPU — `arm64-v8a` on Apple Silicon, `x86_64` elsewhere. `openbot mobile setup` and `openbot mobile avd` pick the right one; an x86_64 image on Apple Silicon has no acceleration path and is unusable. The host also needs a full JDK, `Xvfb`, `x11vnc`, and the emulator's shared libraries, including `libpulse0`.
+
+Gradle resolves its JDK from `JAVA_HOME` and only falls back to `PATH`, so a machine with several JDKs installed can run a build on a different compiler than `javac -version` reports. `mobile doctor` resolves it the same way Gradle does and names the source, calling out a disagreement between the two.
 
 Gradle needs a JDK, not a JRE. A JRE-only install fails with `Toolchain installation ... does not provide the required capabilities: [JAVA_COMPILER]` when a native module such as `react-native-svg` requests a Java toolchain; confirm with `javac -version`, not `java -version`.
+
+The Android Gradle Plugin supports Java 17 and 21. A newer JDK — what a plain `brew install openjdk` gives you — fails deep inside a Gradle run rather than at the start, so `mobile doctor` warns about an unsupported major before you spend the build time.
+
+Observed on Java 25: `Execution failed for task ':react-native-worklets:configureCMakeDebug[arm64-v8a]'` with `WARNING: A restricted method in java.lang.System has been called`, after four minutes of building. Java 24 restricted the native-access calls React Native's CMake configuration makes, and no part of the message names the JDK. Treat that signature as the unsupported-JDK symptom.
 
 A running Gradle daemon caches the environment it started with, so after changing the toolchain, restart it:
 
@@ -50,7 +65,7 @@ pnpm dev:mobile:emulator
 Create the AVD once if it is missing:
 
 ```bash
-avdmanager create avd -n openbot -k "system-images;android-36;google_apis;x86_64" -d pixel_7
+pnpm openbot mobile avd    # or: avdmanager create avd -n openbot -k "system-images;android-36;google_apis;<abi>" -d pixel_7
 ```
 
 ## Build And Install The Dev Client
@@ -64,7 +79,7 @@ This prebuilds `android/`, assembles the debug APK, installs it on the running e
 It then does not exit: Metro stays in the foreground. Do not wait for the command to finish, and do not pipe it through `tail`, which buffers until an EOF that never comes. Judge completion from the device and the bundler instead:
 
 ```bash
-adb shell dumpsys package dev.openbot.mobile | grep lastUpdateTime
+adb shell dumpsys package ai.trytilde.openbot | grep lastUpdateTime
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8081/status
 ```
 
@@ -76,7 +91,7 @@ Once the dev client is installed, later iterations only need Metro:
 pnpm --filter @tryopenbot/mobile dev
 ```
 
-Rebuild with `android` again only when a native module is added or `app.json` changes; a Metro reload cannot pick those up.
+Rebuild with `android` again only when a native module is added or `app.config.ts` changes; a Metro reload cannot pick those up.
 
 If you invoke the Expo CLI directly instead of through a package script, note two traps: run it from `apps/mobile`, because from `apps/mobile/android` it fails with `Command "expo" not found`, and do not pass `--device emulator-5554`, because Expo matches AVD names rather than adb serials and the serial fails with `Could not find device with name`.
 
@@ -115,13 +130,33 @@ Check both appearances, because every surface must resolve in light and dark:
 
 ```bash
 adb shell cmd uimode night yes
-adb shell am force-stop dev.openbot.mobile
-adb shell monkey -p dev.openbot.mobile -c android.intent.category.LAUNCHER 1
+adb shell am force-stop ai.trytilde.openbot
+adb shell monkey -p ai.trytilde.openbot -c android.intent.category.LAUNCHER 1
 ```
 
 A running app does not always repaint when the OS scheme changes, so force-stop and relaunch before judging dark mode, and restore with `cmd uimode night no` afterwards.
 
 Store screenshots and recordings outside the repository. Never capture or paste a screen showing a real access token, setup code, or `.env` content.
+
+## Workspace Dependencies Must Be Built
+
+`packages/client-runtime` resolves through its `exports` to `dist`, so Metro cannot bundle the
+app until that package is built. A source checkout has no `dist`, and the failure names the
+wrong thing: `the package ... specifies a main module field that could not be resolved`, because
+Metro falls back to `index` once `exports` misses.
+
+Two consumers need the guarantee, and they are separate:
+
+- Locally, `openbot mobile expo` checks each workspace dependency's runtime export condition and
+  builds what is missing. Entry resolution must prefer `react-native`, `import`, `require`, or
+  `default` — never `types` or `development`, which point at TypeScript source that always exists
+  and therefore always looks built.
+- On EAS, none of this repository's commands run: EAS performs its own install and then calls
+  `pnpm expo export:embed` directly. The guarantee lives in `eas-build-post-install` in
+  `apps/mobile/package.json`, which builds the dependency after EAS installs.
+
+A guard in a wrapper only protects callers of that wrapper. When a build contract has to hold for
+every consumer, put it where every consumer sees it.
 
 ## Adding UI Components
 
@@ -137,11 +172,62 @@ The CLI copies source into `src/components/ui`, hooks into `src/hooks`, tokens i
 
 Read colors through `useColor` and never hardcode a value, so every surface resolves in light and dark.
 
+## An iOS Build Failing Inside The SDK
+
+A cascade of `could not build module 'Foundation'`, `'CoreFoundation'`, and `'UIKit'` against the
+simulator SDK, whose first error is a modulemap requiring
+`found_incompatible_headers__check_search_paths`, means clang built an incompatible `float.h`.
+Apple's diagnostic names neither the cause nor the search path responsible.
+
+Regenerate the native project first. It is the cheapest fix and the one that resolved this
+signature on 2026-08-19: `ios/` is generated build output, and a tree left over from before a
+bundle-identifier change, a dependency bump, or an Xcode upgrade fails inside the SDK rather
+than at a name mismatch. The first failure is the `[CP-User] Build ExpoModulesJSI xcframework`
+script phase, whose nested `xcodebuild` dies before the modulemap cascade begins.
+
+```bash
+rm -rf apps/mobile/ios ~/Library/Developer/Xcode/DerivedData
+cd apps/mobile && npx expo prebuild --platform ios && npx expo run:ios
+```
+
+Only if that still fails, isolate before theorising. Two commands separate the remaining owners,
+and skipping them costs a build cycle per guess:
+
+```bash
+# 1. Is the toolchain itself healthy? Compiles against the SDK with modules, no project flags.
+printf '#import <Foundation/Foundation.h>\nint main(void){return 0;}\n' > /tmp/t.m
+xcrun -sdk iphonesimulator clang -fmodules -fmodules-cache-path=/tmp/mc \
+  -target arm64-apple-ios16.4-simulator \
+  -isysroot "$(xcrun --sdk iphonesimulator --show-sdk-path)" -c /tmp/t.m -o /tmp/t.o
+
+# 2. Is this repository involved at all? Runs Expo directly, without the CLI.
+cd apps/mobile && npx expo run:ios > /tmp/ios-build.log 2>&1; grep -n "error:" /tmp/ios-build.log | head
+```
+
+Capture the whole log and grep it; never pipe the build through `tail`. On success the command
+does not exit — Metro stays in the foreground — so a tail buffers until an EOF that never comes.
+On failure it shows only the cascade, when every line after the first is downstream of one root:
+`grep -nE "requires feature|Script .* failed|could not build module|error:" /tmp/ios-build.log | head`.
+
+Clear the module cache *after* changing anything, because a cache poisoned by an earlier build
+reproduces the failure once the cause is gone:
+`rm -rf ~/Library/Developer/Xcode/DerivedData` and
+`rm -rf "$(getconf DARWIN_USER_CACHE_DIR)/org.llvm.clang/ModuleCache"`.
+
+A shell exporting `CPPFLAGS`, `C_INCLUDE_PATH`, or similar can produce this signature, because
+Homebrew LLVM's include directory carries its own C standard library. `mobile doctor` reports
+those variables and deliberately does not change them — the developer's environment is theirs.
+On the one machine where this was investigated, removing them did **not** fix the build, so treat
+them as a candidate to rule out rather than the answer.
+
 ## Known Gaps
 
 - The Android build runs edge-to-edge (`edgeToEdgeEnabled=true` in `android/gradle.properties`), so `adjustResize` does not shrink the window and the keyboard overlays content. Every screen with an input needs the `AvoidKeyboard` spacer; do not assume Android handles it.
 - A running app may not repaint when the OS light/dark setting changes. Relaunch before judging appearance.
-- iOS cannot be built or run on the Linux host. iOS coverage is limited to `expo export`, which validates the bundle only. Any iOS-specific claim requires a Mac with Xcode; say so instead of implying iOS was exercised.
+- Changing the bundle identifier or Android package invalidates the generated native projects. Remove `apps/mobile/android` and `apps/mobile/ios` so prebuild regenerates them; a stale directory keeps the old application ID and installs a second app. On iOS a stale tree does not fail cleanly on the identifier — it fails deep inside the simulator SDK; see An iOS Build Failing Inside The SDK.
+- iOS cannot be built or run on the Linux host.
+- macOS needs CocoaPods for `expo run:ios`, and Xcode at or above React Native's minimum — 16.1 for React Native 0.86. Below it, `pod install` fails with `Please upgrade XCode`. `mobile doctor` checks both, reading the minimum from the installed React Native so it cannot drift.
+- A simulator that fails to boot with `launchd failed to respond` is a simulator-host problem, not a repository one: `xcrun simctl shutdown all && killall -9 Simulator`, then reboot if it persists. Any iOS-specific claim requires a Mac with Xcode; on the Linux host iOS coverage is limited to `expo export`, which validates the bundle only, so say so instead of implying iOS was exercised.
 - Real OAuth against a deployed service needs `openbot://auth/callback` registered as a redirect URI.
 
 ## Reporting

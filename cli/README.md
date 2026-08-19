@@ -33,8 +33,9 @@ The CLI operates on the OpenBot repository in the current working directory. For
   - `mobile screenshot [--out FILE]` captures the device screen and prints the PNG path.
   - `mobile logs [logcat args]` streams the `ReactNativeJS` log channel.
   - `mobile doctor` verifies the toolchain and exits non-zero when a required tool is missing.
-- `openbot connect <host> [--print] [--no-vnc] [--no-metro] [--no-adb]` opens the ssh tunnel that carries a remote development host's emulator screen, Metro bundler, and adb to this machine's loopback. Everything on a remote binds loopback, so the tunnel is the only path in; on a mac remote the same VNC port reaches macOS Screen Sharing.
-- `openbot remote <host> <emulator|dev|android|ios|build|doctor>` runs a development task on a configured host over ssh. `ios` requires a mac host.
+- `openbot desktop dev [--headless] [--display N] [--vnc-port PORT]` builds and launches the Electron shell. On a machine with a display it opens a window; on a display-less host it renders to a virtual screen published over loopback VNC on port 5901, a different display and port than the Android emulator so both run at once. `openbot desktop package` packages the app for the host platform.
+- `openbot connect <host> [--print] [--no-vnc] [--no-desktop] [--no-metro] [--no-adb]` opens the ssh tunnel that carries a remote development host's emulator screen, Electron screen, Metro bundler, and adb to this machine's loopback. Everything on a remote binds loopback, so the tunnel is the only path in; on a mac remote the same VNC port reaches macOS Screen Sharing.
+- `openbot remote <host> <emulator|dev|android|ios|build|desktop|desktop-package|doctor>` runs a development task on a configured host over ssh. `ios` requires a mac host, and `desktop-package` produces artifacts for the remote's platform because Electron Builder targets the host it runs on.
 - Development hosts are fork-owned configuration in `configuration/dev-hosts.json`, never package code. Any command also accepts a raw `user@host`:
 
 ```json

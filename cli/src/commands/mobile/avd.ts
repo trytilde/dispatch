@@ -2,7 +2,7 @@
 // an existing AVD with the same name is left untouched.
 import { spawnSync } from "node:child_process";
 import arg from "arg";
-import { requireAndroidTool, toolchainEnvironment } from "../../toolchain.js";
+import { androidSystemImage, requireAndroidTool, toolchainEnvironment } from "../../toolchain.js";
 
 export async function runAvd(argv: readonly string[]): Promise<number> {
   const options = arg(
@@ -10,7 +10,7 @@ export async function runAvd(argv: readonly string[]): Promise<number> {
     { argv: [...argv] },
   );
   const name = options["--name"] ?? process.env.AVD_NAME ?? "openbot";
-  const image = options["--image"] ?? "system-images;android-36;google_apis;x86_64";
+  const image = options["--image"] ?? androidSystemImage();
   const device = options["--device"] ?? "pixel_7";
 
   const emulator = requireAndroidTool("emulator");

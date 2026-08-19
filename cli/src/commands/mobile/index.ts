@@ -3,6 +3,7 @@ import { runDoctor } from "./doctor.js";
 import { runEmulator } from "./emulator.js";
 import { runExpo } from "./expo.js";
 import { runLogs } from "./logs.js";
+import { runRelease } from "./release.js";
 import { runScreenshot } from "./screenshot.js";
 import { runSetup } from "./setup.js";
 
@@ -13,6 +14,7 @@ export const mobileSubcommands: readonly (readonly [string, string])[] = [
   ["setup", "Provision the Android SDK, licenses, and required packages"],
   ["screenshot [--out FILE]", "Capture the device screen to a PNG and print its path"],
   ["logs [logcat args]", "Stream the React Native application log"],
+  ["release <subcommand>", "Store publication through EAS (upstream only)"],
   ["doctor", "Check the mobile development toolchain on this machine"],
 ];
 
@@ -31,6 +33,8 @@ export async function runMobile(rest: readonly string[]): Promise<number> {
       return runScreenshot(args);
     case "logs":
       return runLogs(args);
+    case "release":
+      return runRelease(args);
     case "doctor":
       return runDoctor();
     default: {

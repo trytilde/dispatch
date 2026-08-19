@@ -5,16 +5,39 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { androidSdkRoot, androidTool, toolchainEnvironment } from "../../toolchain.js";
+import {
+  androidApiLevel,
+  androidSdkRoot,
+  androidSystemImage,
+  androidTool,
+  reactNativeNdkVersion,
+  toolchainEnvironment,
+} from "../../toolchain.js";
+import { mobileAppDirectory, repositoryRoot } from "../../workspace.js";
 
 const commandLineToolsVersion = "11076708";
-const packages = [
-  "platform-tools",
-  "emulator",
-  "platforms;android-36",
-  "build-tools;36.0.0",
-  "system-images;android-36;google_apis;x86_64",
-];
+// The CMake version is what the Android Gradle Plugin resolves for React Native's
+// native modules; installing both here keeps provisioning deterministic instead of
+// letting a Gradle run discover and download them partway through a build.
+const cmakeVersion = "3.22.1";
+
+function sdkPackages(): string[] {
+  let ndk = "27.1.12297006";
+  try {
+    ndk = reactNativeNdkVersion(mobileAppDirectory(repositoryRoot()));
+  } catch {
+    // Outside a repository the fallback pin is the best available answer.
+  }
+  return [
+    "platform-tools",
+    "emulator",
+    `platforms;android-${androidApiLevel}`,
+    `build-tools;${androidApiLevel}.0.0`,
+    androidSystemImage(),
+    `ndk;${ndk}`,
+    `cmake;${cmakeVersion}`,
+  ];
+}
 
 export async function runSetup(): Promise<number> {
   const sdk = androidSdkRoot();
@@ -42,6 +65,7 @@ export async function runSetup(): Promise<number> {
   spawnSync("bash", ["-c", `yes | "${sdkmanager}" --licenses > /dev/null 2>&1 || true`], {
     env: toolchainEnvironment(),
   });
+  const packages = sdkPackages();
   console.log(`installing: ${packages.join(", ")}`);
   if (run(sdkmanager, ["--install", ...packages]) !== 0) return fail("sdkmanager install failed");
 

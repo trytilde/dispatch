@@ -1,20 +1,56 @@
-import { Onboarding, Shimmer } from "@tryopenbot/ui";
+import { Onboarding, Shimmer, type OnboardingResult } from "@tryopenbot/ui";
+import {
+  completeOnboarding,
+  loadOnboarding,
+  type OnboardingStorage,
+} from "@tryopenbot/client-runtime";
 import { type ReactNode, useEffect, useState } from "react";
 import { useStore } from "zustand";
 import { openBotRuntime } from "./runtime.js";
 
-const onboardingSeenKey = "openbot.onboarding-seen";
+// Onboarding state is owned by the client runtime per ADR-0017; the browser only
+// supplies storage. `localStorage` throws outright in some privacy modes, so every
+// access is guarded and a failure reads as "not onboarded" rather than breaking boot.
+const browserStorage: OnboardingStorage = {
+  getItem: (key) => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Non-persistent environments still proceed into the app.
+    }
+  },
+  removeItem: (key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Nothing to do.
+    }
+  },
+};
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const auth = useStore(openBotRuntime.store, (state) => state.auth);
   const [signingIn, setSigningIn] = useState(false);
-  const [seen, setSeen] = useState(() => readSeen());
+  const [seen, setSeen] = useState<boolean>();
 
+  // Starting the runtime here rather than deeper in the tree means the session check,
+  // sidebar load, and agent selection all happen before any screen renders.
   useEffect(() => {
     void openBotRuntime.actions.initialize();
   }, []);
 
-  if (auth.status === "checking")
+  useEffect(() => {
+    void loadOnboarding(browserStorage).then((state) => setSeen(state.completed));
+  }, []);
+
+  if (auth.status === "checking" || seen === undefined)
     return (
       <main className="grid min-h-screen place-items-center bg-page">
         <Shimmer className="text-[13px]">Checking access…</Shimmer>
@@ -37,24 +73,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
             .catch(() => undefined)
             .finally(() => setSigningIn(false));
         }}
-        onComplete={() => {
-          try {
-            localStorage.setItem(onboardingSeenKey, "true");
-          } catch {
-            // Non-persistent environments still proceed into the app.
-          }
-          setSeen(true);
+        onComplete={(result: OnboardingResult) => {
+          void completeOnboarding(browserStorage, result).then((state) => setSeen(state.completed));
         }}
       />
     );
 
   return children;
-}
-
-function readSeen(): boolean {
-  try {
-    return localStorage.getItem(onboardingSeenKey) === "true";
-  } catch {
-    return true;
-  }
 }

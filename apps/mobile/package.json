@@ -9,6 +9,7 @@
     "build": "vp run --filter openbot start -- mobile expo export --platform all --output-dir dist",
     "check": "vp check",
     "dev": "vp run --filter openbot start -- mobile expo start --dev-client --clear",
+    "eas-build-post-install": "pnpm --filter @tryopenbot/client-runtime build",
     "ios": "vp run --filter openbot start -- mobile expo run:ios",
     "start": "vp run --filter openbot start -- mobile expo start",
     "test": "vp test run --passWithNoTests",

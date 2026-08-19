@@ -12,7 +12,7 @@ OpenBot is a TypeScript monorepo for a local or Vercel-hosted agent workspace. I
 
 ## Toolchain and commands
 
-- Node.js 24, pnpm 10, TypeScript ESM, strict mode.
+- Node.js 24, pnpm 10, TypeScript ESM, strict mode. `CONTRIBUTING.md` carries the per-platform prerequisites and setup; keep it and `openbot mobile doctor` current when an external dependency changes.
 - Use repository-pinned tools through `pnpm`; do not install global substitutes.
 - Do not hand-edit generated files under `packages/computer-service-proto/src/gen/` or `apps/web/src/routeTree.gen.ts`.
 
@@ -43,6 +43,8 @@ pnpm dev:mobile:emulator
 pnpm doctor
 pnpm connect -- <host>
 pnpm dev:remote -- <host> emulator
+pnpm dev:desktop
+pnpm desktop:package
 ```
 
 `openbot` resolves the Android SDK and a real Node binary in `cli/src/toolchain.ts`, so no command needs an `export PATH=...` prefix. Extend that module rather than prefixing a command. Remote hosts live in fork-owned `configuration/dev-hosts.json`.
@@ -117,7 +119,8 @@ Per ADR-0018, every developer workflow is an `openbot` command — repository ga
 - Read every Expo color through `useColor` against `apps/mobile/src/theme/colors.ts`. No hardcoded color values in Expo screens, and every surface resolves in both light and dark.
 - The `@/*` alias in `apps/mobile/tsconfig.json` resolves to `apps/mobile/src` and the BNA UI CLI depends on it. Do not remove or repoint it.
 - Expo renders native components and reuses runtime contracts and behavior, not DOM JSX.
-- `apps/mobile` uses continuous native generation. `apps/mobile/android/` and `apps/mobile/ios/` are gitignored build output: never commit or hand-edit them. Change `app.json`, config plugins, or dependencies and let prebuild regenerate.
+- `apps/mobile` uses continuous native generation. `apps/mobile/android/` and `apps/mobile/ios/` are gitignored build output: never commit or hand-edit them. Change `app.config.ts`, config plugins, or dependencies and let prebuild regenerate.
+- Store publication is upstream-only: Tilde is the publisher and OpenBot the app, so the official EAS project, the `ai.trytilde.openbot` identifier, and both store listings belong to `trytilde/openbot`, and `openbot mobile release` refuses the official project from another remote. `openbot init` must never ask about EAS or require it. Expo store identity is overridable through the environment in `apps/mobile/app.config.ts`; never hardcode a fork's identity into it, and never commit signing credentials. See ADR-0027.
 - Adding or changing a user-facing capability in one client obliges an explicit decision about the other two. `create-pr` blocks on the cross-client parity gate, so state per capability whether it is ported here, deferred with a `<FOLLOW UP>` block, or genuinely not portable with the platform reason.
 - Electron renderer must not gain direct Node.js access. Keep privileged work in main/preload with a narrow bridge.
 - Preserve same-origin proxying between packaged web assets and the local control server.

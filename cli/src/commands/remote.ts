@@ -12,6 +12,8 @@ const tasks: Record<string, string> = {
   android: "pnpm dev:mobile:android",
   ios: "pnpm dev:mobile:ios",
   build: "pnpm --filter @tryopenbot/mobile build",
+  desktop: "pnpm dev:desktop",
+  "desktop-package": "pnpm desktop:package",
   doctor: "pnpm doctor",
 };
 
@@ -29,6 +31,9 @@ export async function runRemote(argv: readonly string[]): Promise<number> {
     console.error(`Host ${name} is ${host.platform}; iOS needs a mac host.`);
     return 1;
   }
+  // Electron Builder targets the host platform, so a mac artifact needs a mac host.
+  if (task === "desktop-package" && host.platform !== "mac")
+    console.log(`note: ${name} is ${host.platform}; this produces ${host.platform} artifacts only`);
   const repositoryPath = host.path ?? "~/openbot";
   const command = `cd ${repositoryPath} && ${tasks[task]}`;
   console.log(`${host.ssh}: ${command}`);
@@ -43,7 +48,7 @@ export async function runRemote(argv: readonly string[]): Promise<number> {
       resolvePromise(exitCode ?? 0);
     });
   });
-  if (code === 0 && (task === "emulator" || task === "dev" || task === "android"))
+  if (code === 0 && ["emulator", "dev", "android", "desktop"].includes(task))
     console.log(`next: openbot connect ${name}`);
   return code;
 }

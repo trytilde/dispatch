@@ -9,6 +9,7 @@
 - `app.json` becomes `app.config.ts` so store identity can be overridden without editing a tracked file.
 - `openbot mobile release build|submit|status|credentials`. Nothing spends money or publishes without `--yes`.
 - `eas-cli` runs through `npx eas-cli@latest`, deliberately unpinned.
+- A `mobile-v*` tag releases through GitHub Actions, which calls the same CLI command a human would.
 - Store credentials stay in EAS and Apple/Google, never in this repository.
 
 ## Context
@@ -55,6 +56,21 @@ blocked, because the thing being protected is the official identity, not the act
 `build` and `submit` also require an explicit `--yes`, because both spend plan build minutes and
 `submit` changes a public listing.
 
+Releases are automated by tag rather than by branch. `.github/workflows/mobile-release.yml`
+runs on a `mobile-v*` tag or a manual dispatch, and it invokes `openbot mobile release build`
+rather than `eas-cli` directly, so CI and a human release through one code path with one guard.
+The job is additionally fenced to `github.repository == 'trytilde/openbot'`; a fork's Actions run
+would already fail the CLI guard and has no `EXPO_TOKEN`, but a public listing deserves a fence
+that is readable in the workflow file. `openbot check` runs first, because an iOS build costs
+plan minutes and a queue wait that a typecheck failure should not consume.
+
+CI holds exactly one credential, `EXPO_TOKEN`, and holds it as a repository secret read from the
+environment. Signing certificates, provisioning profiles, the App Store Connect API key, and the
+Play service account key stay in EAS. A first iOS build therefore still runs interactively from a
+terminal, because that is when EAS creates the distribution certificate; afterwards CI builds
+unattended. Distribution to TestFlight is automatic on submission, while release to the public
+App Store and beta review for external testers stay human decisions in App Store Connect.
+
 `eas-cli` is invoked as `npx eas-cli@latest` rather than added as a dependency. It releases far
 more often than this repository, and a pinned copy fails against the current EAS API; the cost
 is that a release needs network access to fetch it.
@@ -76,6 +92,7 @@ flowchart LR
 ## Consequences
 
 - One store identity with one owner, and a fork cannot reach it by inheriting tracked files.
+- A release is a tag push, and the automation runs the same command a maintainer would run by hand.
 - A fork that wants its own app has a documented path and no patch to maintain.
 - `app.config.ts` replaces `app.json`, so Expo config is now code. It must stay free of secrets
   and of anything requiring a build step.

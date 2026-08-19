@@ -196,6 +196,34 @@ pnpm openbot mobile release submit --platform ios --yes
 `build` and `submit` require `--yes` because the first spends EAS build minutes and the second
 changes a public listing. Build numbers live in EAS, not in a tracked file.
 
+### Automated releases
+
+Pushing a `mobile-v*` tag builds both platforms on EAS and submits them, through
+`.github/workflows/mobile-release.yml`:
+
+```bash
+git tag mobile-v0.1.0
+git push origin mobile-v0.1.0
+```
+
+The same workflow runs from the Actions tab with `workflow_dispatch` when a single platform,
+the `preview` profile, or a build without submission is wanted. It runs `openbot check` before
+spending build minutes, and it is skipped on any repository other than `trytilde/openbot`.
+
+Automation needs three things set up once, none of which live in this repository:
+
+| What | Where | Why |
+| --- | --- | --- |
+| `EXPO_TOKEN` repository secret | a robot access token from expo.dev, added under Settings → Secrets and variables → Actions | the only credential CI holds; EAS CLI reads it from the environment |
+| iOS signing credentials | generated once by an interactive `pnpm openbot mobile release build --platform ios --profile production --yes`, then held by EAS | a first build needs a terminal to create the distribution certificate and provisioning profile; after that CI can build unattended |
+| App Store Connect API key | created in App Store Connect under Users and Access → Integrations, uploaded through `pnpm openbot mobile release credentials` | `eas submit` cannot authenticate to App Store Connect without it in a non-interactive run |
+
+For Android, EAS additionally needs a Google Play service account key, and the very first AAB
+has to be uploaded by hand through the Play Console before any API submission is accepted.
+
+A submitted iOS build reaches TestFlight automatically. Releasing it to the public App Store
+stays a human step in App Store Connect, as does the beta review for external testers.
+
 A fork that wants to publish its own app creates its own EAS project and sets
 `OPENBOT_EAS_PROJECT_ID`, `OPENBOT_APP_ID`, and `OPENBOT_EXPO_OWNER` in `configuration/.env`.
 Store identity is read from the environment in `apps/mobile/app.config.ts`, so no tracked file

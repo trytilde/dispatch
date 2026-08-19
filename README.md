@@ -45,7 +45,7 @@ pnpm openbot desktop package        # Electron packaging
 pnpm openbot mobile doctor          # verify the mobile toolchain
 pnpm openbot mobile emulator        # Android emulator, headless on a display-less Linux host
 pnpm openbot mobile expo run:ios    # iOS simulator, macOS only
-pnpm openbot mobile release status  # EAS store builds, upstream only
+pnpm openbot mobile release status  # EAS store builds, upstream only; a mobile-v* tag releases
 pnpm openbot connect -- <host>      # tunnel a remote dev host's emulator, Metro, and adb
 ```
 

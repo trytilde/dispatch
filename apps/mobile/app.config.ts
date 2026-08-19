@@ -50,7 +50,7 @@ const config: ExpoConfig = {
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundImage: "./assets/adaptive-background.png",
-      backgroundColor: "#000000",
+      backgroundColor: "#001F6B",
     },
   },
   plugins: ["expo-secure-store", "expo-image"],

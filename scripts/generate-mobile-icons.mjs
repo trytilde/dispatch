@@ -14,12 +14,18 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const assetsDirectory = join(repositoryRoot, "apps/mobile/assets");
 const assetsModule = join(repositoryRoot, "packages/ui/dist/agent-avatar-assets.js");
 
-const LOOK = { shape: "blob", tone: "1", eyes: "28", color: "#4F7CFF" };
-/* A black field lit very faintly from the top right, so the mark sits in the
- * dark the way the app's own dark surfaces do. */
+/* Tilde publishes the app, so the field carries Tilde's brand blues rather than
+ * the avatar palette: navy lit from the top right by the electric blue, the same
+ * pair Tilde uses for its own store covers. The body stays a plain white avatar. */
+const TILDE_NAVY = "#001F6B";
+const TILDE_ELECTRIC_BLUE = "0, 56, 174";
+const LOOK = { shape: "blob", tone: "1", eyes: "28", color: "#FFFFFF" };
 const FIELD = [
-  "radial-gradient(100% 100% at 86% 10%,",
-  "rgba(255,255,255,0.18), rgba(255,255,255,0.045) 38%, rgba(255,255,255,0) 72%), #000000",
+  "radial-gradient(110% 110% at 86% 8%,",
+  `rgba(${TILDE_ELECTRIC_BLUE}, 0.95),`,
+  `rgba(${TILDE_ELECTRIC_BLUE}, 0.35) 42%,`,
+  `rgba(${TILDE_ELECTRIC_BLUE}, 0) 75%),`,
+  TILDE_NAVY,
 ].join(" ");
 const INK = "#191919";
 const SIZE = 1024;

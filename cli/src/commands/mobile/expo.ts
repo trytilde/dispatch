@@ -100,15 +100,33 @@ function workspacePackageDirectory(root: string, name: string): string | undefin
 
 function publishedEntry(packageDirectory: string): string | undefined {
   const manifest = readManifest(join(packageDirectory, "package.json"));
-  const target = firstFileTarget(manifest.exports) ?? manifest.main;
+  const target = runtimeTarget(manifest.exports) ?? manifest.main;
   return target ? resolve(packageDirectory, target) : undefined;
 }
 
-function firstFileTarget(value: unknown): string | undefined {
+// Conditions a bundler actually loads at runtime, in preference order. `types` and
+// `development` must be ignored: they point at TypeScript source that always exists, so
+// treating either as the entry reports a package as built when its dist is missing —
+// exactly the case Metro then fails on with "could not be resolved".
+const runtimeConditions = ["react-native", "import", "require", "default", "module"];
+
+/** Exported for tests: entry resolution decides whether a package looks built. */
+export const runtimeTargetForTest = (value: unknown): string | undefined => runtimeTarget(value);
+
+function runtimeTarget(value: unknown): string | undefined {
   if (typeof value === "string") return value.startsWith(".") ? value : undefined;
   if (!value || typeof value !== "object") return undefined;
-  for (const nested of Object.values(value as Record<string, unknown>)) {
-    const found = firstFileTarget(nested);
+  const entries = value as Record<string, unknown>;
+  for (const condition of runtimeConditions) {
+    if (condition in entries) {
+      const found = runtimeTarget(entries[condition]);
+      if (found) return found;
+    }
+  }
+  // Subpath maps such as `{".": {...}}` nest one level before reaching conditions.
+  for (const [key, nested] of Object.entries(entries)) {
+    if (!key.startsWith(".")) continue;
+    const found = runtimeTarget(nested);
     if (found) return found;
   }
   return undefined;

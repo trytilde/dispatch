@@ -49,7 +49,8 @@ const config: ExpoConfig = {
     package: bundleIdentifier,
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
-      backgroundColor: "#f5f5f2",
+      backgroundImage: "./assets/adaptive-background.png",
+      backgroundColor: "#000000",
     },
   },
   plugins: ["expo-secure-store", "expo-image"],

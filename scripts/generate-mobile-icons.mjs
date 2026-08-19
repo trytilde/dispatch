@@ -14,14 +14,19 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const assetsDirectory = join(repositoryRoot, "apps/mobile/assets");
 const assetsModule = join(repositoryRoot, "packages/ui/dist/agent-avatar-assets.js");
 
-const LOOK = { shape: "blob", tone: "1", eyes: "27", color: "#4F7CFF" };
-const FIELD = "#f5f5f2";
+const LOOK = { shape: "blob", tone: "1", eyes: "28", color: "#4F7CFF" };
+/* A black field lit very faintly from the top right, so the mark sits in the
+ * dark the way the app's own dark surfaces do. */
+const FIELD = [
+  "radial-gradient(100% 100% at 86% 10%,",
+  "rgba(255,255,255,0.18), rgba(255,255,255,0.045) 38%, rgba(255,255,255,0) 72%), #000000",
+].join(" ");
 const INK = "#191919";
 const SIZE = 1024;
 /* iOS shows the icon square with its own mask, so the body can run wide.
  * Android masks the foreground layer to a circle covering about two thirds
  * of the canvas, so its body sits well inside that safe area. */
-const IOS_BODY = 0.78;
+const IOS_BODY = 0.74;
 const ANDROID_BODY = 0.62;
 
 const CENTER = 114.27;
@@ -85,13 +90,19 @@ try {
   await view.setContent(page(IOS_BODY, FIELD));
   await writeFile(join(assetsDirectory, "icon.png"), await view.screenshot());
 
-  /* Android composes the foreground over app.config.ts's adaptiveIcon
-   * backgroundColor, so this layer stays transparent. */
+  /* Android composes two layers, so the body ships transparent and the lit field
+   * ships as the background layer. adaptiveIcon.backgroundColor stays as the
+   * flat fallback for launchers that ignore the image. */
   await view.setContent(page(ANDROID_BODY, "transparent"));
   await writeFile(
     join(assetsDirectory, "adaptive-icon.png"),
     await view.screenshot({ omitBackground: true }),
   );
+
+  await view.setContent(
+    `<body style="margin:0;width:${SIZE}px;height:${SIZE}px;background:${FIELD}"></body>`,
+  );
+  await writeFile(join(assetsDirectory, "adaptive-background.png"), await view.screenshot());
 } finally {
   await browser.close();
 }

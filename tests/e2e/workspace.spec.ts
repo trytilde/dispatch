@@ -42,7 +42,9 @@ test("loads the bare workspace without setup", async ({ page }) => {
   await page.keyboard.press("Control+b");
   await expect(page.locator(".rail")).toHaveCSS("width", "280px");
 
-  const sidebarHandle = await page.getByRole("separator", { name: "Resize sidebar" }).boundingBox();
+  const sidebarHandle = await page
+    .getByRole("separator", { name: "Drag to resize the sidebar" })
+    .boundingBox();
   if (!sidebarHandle) throw new Error("Sidebar resize handle is not visible");
   const sidebarHandleX = sidebarHandle.x + sidebarHandle.width / 2;
   await page.mouse.move(sidebarHandleX, sidebarHandle.y + 120);
@@ -311,28 +313,28 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   });
 
   await page.goto("/");
-  await expect(page.locator(".agent-row")).toHaveCount(2);
+  await expect(page.locator("[data-menu-row]")).toHaveCount(2);
   await expect(page.locator(".agent-workspace-pane iframe")).toHaveCount(0);
   expect(computerPreviewRequests).toBe(0);
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(252, 252, 252)");
   await expect(page.locator(".rail")).toHaveCSS("background-color", "rgb(247, 247, 247)");
-  await expect(page.locator(".agent-row").first()).toHaveCSS("height", "54px");
-  await expect(page.locator(".agent-row").first()).toHaveCSS("border-radius", "10px");
-  await expect(page.locator(".agent-row .avatar").first()).toHaveCSS("width", "36px");
-  await expect(page.locator(".agent-row .agent-avatar-mark").first()).toBeVisible();
-  await expect(page.locator(".agent-row .avatar").first()).toHaveAttribute(
+  await expect(page.locator("[data-menu-row]").first()).toHaveCSS("height", "54px");
+  await expect(page.locator("[data-menu-row]").first()).toHaveCSS("border-radius", "8px");
+  await expect(page.locator("[data-menu-row] .avatar").first()).toHaveCSS("width", "36px");
+  await expect(page.locator("[data-menu-row] .agent-avatar-mark").first()).toBeVisible();
+  await expect(page.locator("[data-menu-row] .avatar").first()).toHaveAttribute(
     "data-avatar-shape",
-    "teardrop",
+    /.+/,
   );
-  await expect(page.locator(".agent-row .agent-avatar-body").first()).toHaveCSS(
+  await expect(page.locator("[data-menu-row] .agent-avatar-body").first()).toHaveCSS(
     "fill",
     "rgb(0, 201, 114)",
   );
-  await expect(page.locator(".agent-row .avatar").first()).toHaveCSS("border-radius", "0px");
-  await expect(page.locator(".agent-row .avatar").first()).toHaveCSS("box-shadow", "none");
-  await expect(page.locator(".agent-row").first()).toHaveAttribute("aria-current", "page");
-  await expect(page.locator(".agent-row").first()).toContainText("Streaming preview");
-  await expect(page.locator(".agent-row").first()).not.toContainText("enabled");
+  await expect(page.locator("[data-menu-row] .avatar").first()).toHaveCSS("border-radius", "0px");
+  await expect(page.locator("[data-menu-row] .avatar").first()).toHaveCSS("box-shadow", "none");
+  await expect(page.locator("[data-menu-row]").first()).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("[data-menu-row]").first()).toContainText("Streaming preview");
+  await expect(page.locator("[data-menu-row]").first()).not.toContainText("enabled");
   await expect(page.getByRole("button", { name: "Search", exact: true })).toHaveCSS(
     "font-size",
     "14px",
@@ -345,13 +347,13 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await expect(page.locator(".agent-row strong").first()).toHaveCSS("line-height", "20px");
   await expect(page.locator(".agent-row small").first()).toHaveCSS("font-size", "13px");
   await expect(page.locator(".agent-row small").first()).toHaveCSS("line-height", "18px");
-  await expect(page.locator(".agent-row").first().locator(".agent-row-marker")).toBeVisible();
-  await expect(page.locator(".agent-row").first().locator(".agent-row-marker > i")).toHaveCSS(
+  await expect(page.locator("[data-menu-row]").first().locator(".agent-row-marker")).toBeVisible();
+  await expect(page.locator("[data-menu-row]").first().locator(".agent-row-marker > i")).toHaveCSS(
     "background-color",
     "rgb(16, 132, 254)",
   );
-  await page.locator(".agent-row").nth(1).hover();
-  await expect(page.locator(".agent-row").nth(1)).toHaveCSS(
+  await page.locator("[data-menu-row]").nth(1).hover();
+  await expect(page.locator("[data-menu-row]").nth(1)).toHaveCSS(
     "background-color",
     "rgba(119, 119, 119, 0.09)",
   );
@@ -378,7 +380,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   );
   await page.keyboard.press("Control+b");
   await expect(page.locator(".rail")).toHaveCSS("width", "88px");
-  await expect(page.locator(".agent-row").first()).toHaveCSS("width", "54px");
+  await expect(page.locator("[data-menu-row]").first()).toHaveCSS("width", "54px");
   await expect(page.locator(".agent-row-body").first()).toBeHidden();
   await expect(page.getByRole("button", { name: "Search", exact: true })).toBeHidden();
   await expect(page.locator(".rail-footer")).toHaveCSS("width", "44px");

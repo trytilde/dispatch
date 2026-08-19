@@ -1,4 +1,4 @@
-# ADR-0004: Unified Vite+ toolchain
+# ADR-0026: Unified Vite+ toolchain
 
 ## In brief
 
@@ -49,3 +49,4 @@ flowchart LR
 ## Updates
 
 - 2026-08-14T15:03:00+02:00: Replaced stale tsup and package-specific lint guidance with tsdown, stable script meanings, environment-specific compiler and bundle presets, and external production source maps.
+- 2026-08-19T10:00:00Z: Renumbered from 0004 to 0026. This record and ADR-0004 (narrow domain provider packages) both claimed 0004; the provider record merged a day earlier and keeps the number, matching how the 0017 collision between ADR-0017 and ADR-0019 was resolved. Content is unchanged.

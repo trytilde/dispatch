@@ -5,8 +5,8 @@ import {
   type OnboardingStorage,
 } from "@tryopenbot/client-runtime";
 import { type ReactNode, useEffect, useState } from "react";
-
-type Session = { authenticated: true; user: { subject: string; email?: string } };
+import { useStore } from "zustand";
+import { openBotRuntime } from "./runtime.js";
 
 // Onboarding state is owned by the client runtime per ADR-0017; the browser only
 // supplies storage. `localStorage` throws outright in some privacy modes, so every
@@ -36,44 +36,42 @@ const browserStorage: OnboardingStorage = {
 };
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>();
-  const [error, setError] = useState("");
+  const auth = useStore(openBotRuntime.store, (state) => state.auth);
   const [signingIn, setSigningIn] = useState(false);
   const [seen, setSeen] = useState<boolean>();
 
+  // Starting the runtime here rather than deeper in the tree means the session check,
+  // sidebar load, and agent selection all happen before any screen renders.
   useEffect(() => {
-    void loadSession()
-      .then(setSession)
-      .catch((reason: unknown) => {
-        setError(reason instanceof Error ? reason.message : "Authentication is unavailable");
-        setSession(null);
-      });
+    void openBotRuntime.actions.initialize();
   }, []);
 
   useEffect(() => {
     void loadOnboarding(browserStorage).then((state) => setSeen(state.completed));
   }, []);
 
-  if (session === undefined || seen === undefined)
+  if (auth.status === "checking" || seen === undefined)
     return (
       <main className="grid min-h-screen place-items-center bg-page">
         <Shimmer className="text-[13px]">Checking access…</Shimmer>
       </main>
     );
 
-  if (!session || !seen)
+  const signedIn = auth.status === "authenticated";
+
+  if (!signedIn || !seen)
     return (
       <Onboarding
-        error={error}
-        signedIn={Boolean(session)}
+        error={auth.error}
+        signedIn={signedIn}
         signingIn={signingIn}
         onCancelSignIn={() => setSigningIn(false)}
         onSignIn={() => {
           setSigningIn(true);
-          void signIn().catch((reason: unknown) => {
-            setSigningIn(false);
-            setError(reason instanceof Error ? reason.message : "Sign in failed");
-          });
+          void openBotRuntime.actions
+            .signIn()
+            .catch(() => undefined)
+            .finally(() => setSigningIn(false));
         }}
         onComplete={(result: OnboardingResult) => {
           void completeOnboarding(browserStorage, result).then((state) => setSeen(state.completed));
@@ -82,21 +80,4 @@ export function AuthGate({ children }: { children: ReactNode }) {
     );
 
   return children;
-}
-
-async function loadSession(): Promise<Session | null> {
-  if (window.openbotDesktop) return window.openbotDesktop.authStatus();
-  const response = await fetch("/auth/session");
-  if (response.status === 401) return null;
-  if (!response.ok) throw new Error(`Authentication check failed (${response.status})`);
-  return (await response.json()) as Session;
-}
-
-async function signIn(): Promise<void> {
-  if (window.openbotDesktop) {
-    await window.openbotDesktop.signIn();
-    window.location.reload();
-    return;
-  }
-  window.location.assign("/auth/login");
 }

@@ -28,6 +28,12 @@ import { repositoryRoot } from "../../workspace.js";
  * nested prefix; public read is granted to `desktop/*` and therefore covers it.
  */
 const officialUpdatesBucket = "tilde-app-updates-prod";
+/**
+ * Reverse-DNS of the publisher, not of the product or the platform, matching the mobile
+ * identifier for the reason ADR-0027 gives. Overridable through the same OPENBOT_APP_ID a
+ * fork already sets for Expo, so one variable renames both clients.
+ */
+const officialAppId = "ai.trytilde.openbot";
 const officialUpdatesPrefix = "desktop/openbot";
 const officialUpdatesRegion = "us-east-1";
 
@@ -37,6 +43,11 @@ export const releaseSubcommands: readonly (readonly [string, string])[] = [
   ["manifest", "Rebuild version.json from the entries already in the bucket (--yes)"],
   ["status", "Print the resolved publication target and what the bucket holds"],
 ];
+
+/** The Electron appId, defaulting to the official identifier. */
+export function resolveAppId(): string {
+  return optionalEnvironment("OPENBOT_APP_ID") ?? officialAppId;
+}
 
 export interface PublicationTarget {
   readonly bucket: string;
@@ -294,19 +305,29 @@ async function runBuild(
   }
   const signing = platform === "mac" ? resolveSigning() : unsignedLinux();
   for (const warning of signing.warnings) console.warn(`! ${warning}`);
-  // Notarization is switched on at the command line rather than in package.json so an
-  // ordinary `openbot desktop package` on a developer machine never tries to reach Apple.
-  const extra = signing.notarized ? ["--", "-c.mac.notarize=true"] : [];
+  // Both of these are command-line overrides rather than package.json config. Notarization,
+  // so an ordinary `openbot desktop package` never tries to reach Apple; appId, because
+  // electron-builder strips `${env.*}` macros out of that field and would otherwise bake a
+  // literal `env.OPENBOTAPPID` into the bundle.
+  //
+  // Passed without a `--` separator: pnpm forwards `--` through to the script verbatim
+  // rather than consuming it, and electron-builder then ignores everything after it.
+  const overrides = [`-c.appId=${resolveAppId()}`];
+  if (signing.notarized) overrides.push("-c.mac.notarize=true");
   const code = await spawnProcess(
     "pnpm",
     [
       "--filter",
       "@tryopenbot/desktop",
       platform === "mac" ? "release:mac" : "release:linux",
-      ...extra,
+      ...overrides,
     ],
     root,
-    { ...signing.environment, OPENBOT_DESKTOP_UPDATES_URL: target.baseUrl },
+    {
+      ...signing.environment,
+      // Interpolated into latest-*.yml by the generic publish provider.
+      OPENBOT_DESKTOP_UPDATES_URL: target.baseUrl,
+    },
   );
   if (code !== 0) return code;
   // Written after the build because electron-builder creates `out/`, and read by

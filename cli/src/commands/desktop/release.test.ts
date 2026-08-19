@@ -5,6 +5,7 @@ import {
   platformEntry,
   publicationGuard,
   resolveSigning,
+  resolveAppId,
   resolveTarget,
 } from "./release.js";
 
@@ -51,6 +52,31 @@ describe("resolveTarget", () => {
       delete process.env.OPENBOT_DESKTOP_UPDATES_BUCKET;
       delete process.env.OPENBOT_DESKTOP_UPDATES_PREFIX;
       delete process.env.OPENBOT_DESKTOP_UPDATES_BASE_URL;
+    }
+  });
+});
+
+describe("resolveAppId", () => {
+  it("defaults to the publisher's identifier", () => {
+    expect(resolveAppId()).toBe("ai.trytilde.openbot");
+  });
+
+  // One variable renames both clients, matching what app.config.ts already reads for Expo.
+  it("honours the same OPENBOT_APP_ID a fork sets for Expo", () => {
+    process.env.OPENBOT_APP_ID = "com.example.fork";
+    try {
+      expect(resolveAppId()).toBe("com.example.fork");
+    } finally {
+      delete process.env.OPENBOT_APP_ID;
+    }
+  });
+
+  it("falls back when the override is set but empty", () => {
+    process.env.OPENBOT_APP_ID = "";
+    try {
+      expect(resolveAppId()).toBe("ai.trytilde.openbot");
+    } finally {
+      delete process.env.OPENBOT_APP_ID;
     }
   });
 });

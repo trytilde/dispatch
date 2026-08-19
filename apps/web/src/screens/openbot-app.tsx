@@ -20,8 +20,6 @@ import {
 } from "@tryopenbot/client-runtime";
 import { useStore } from "zustand";
 import {
-  type AsyncTask,
-  AsyncTasksPanel,
   AgentWorkspacePanel,
   AgentActivity,
   ChatComposer,
@@ -29,8 +27,6 @@ import {
   ChatPane,
   ConversationSurface,
   ConversationMessage,
-  type ConversationOutlineItem,
-  ConversationOutlinePanel,
   EmptyConversation,
   MarkdownText,
   MessageContent,
@@ -79,8 +75,6 @@ export function OpenBotApp() {
   const [messageMenuId, setMessageMenuId] = useState("");
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [threadRootId, setThreadRootId] = useState("");
-  const [conversationOutlineOpen, setConversationOutlineOpen] = useState(false);
-  const [asyncTasksOpen, setAsyncTasksOpen] = useState(false);
   const [createAgentOpen, setCreateAgentOpen] = useState(false);
   const [createAgentName, setCreateAgentName] = useState("");
   const [creatingAgent, setCreatingAgent] = useState(false);
@@ -95,8 +89,6 @@ export function OpenBotApp() {
   const layout = useWorkspaceLayout();
 
   const selectedAgent = agents.find((agent) => agent.id === agentId);
-  const conversationOutlineItems = useMemo(() => outlineItems(messages), [messages]);
-  const asyncTasks = useMemo(() => activeAsyncTasks(activity), [activity]);
   const hasContent = Boolean(draft.trim() || files.length);
   const composerExpanded =
     composerFocused || draft.includes("\n") || draft.length > 80 || files.length > 0;
@@ -679,27 +671,6 @@ export function OpenBotApp() {
           />
         }
       />
-      {conversationOutlineOpen ? (
-        <ConversationOutlinePanel
-          agentName={selectedAgent?.display_name || "Conversation"}
-          onClose={() => setConversationOutlineOpen(false)}
-          tabs={[
-            {
-              id: agentId || "conversation",
-              label: selectedAgent?.display_name || "Conversation",
-              status: agentBusy ? "running" : "done",
-              items: conversationOutlineItems,
-            },
-          ]}
-        />
-      ) : null}
-      {asyncTasksOpen ? (
-        <AsyncTasksPanel
-          agentName={selectedAgent?.display_name || "Agent"}
-          onClose={() => setAsyncTasksOpen(false)}
-          tasks={asyncTasks}
-        />
-      ) : null}
       {createAgentOpen ? (
         <div
           aria-label="New agent"
@@ -752,95 +723,6 @@ export function OpenBotApp() {
       ) : null}
     </WorkspaceShell>
   );
-}
-
-function outlineItems(messages: readonly ChatMessage[]): ConversationOutlineItem[] {
-  const items: ConversationOutlineItem[] = [];
-  for (const message of messages) {
-    if (message.role === "user") {
-      const text = messageText(message).trim();
-      if (text) items.push({ id: `${message.id}:user`, kind: "user", text });
-      continue;
-    }
-    const parts = message.parts ?? [];
-    if (parts.length === 0) {
-      const text = messageText(message).trim();
-      if (text) items.push({ id: `${message.id}:assistant`, kind: "assistant-text", text });
-      continue;
-    }
-    for (const [index, part] of parts.entries()) {
-      const id = `${message.id}:${index}`;
-      if (part.type === "reasoning") {
-        const text = part.text?.trim();
-        if (text) items.push({ id, kind: "thinking", text });
-        continue;
-      }
-      if (part.type === "tool" || part.type.startsWith("tool-")) {
-        const state = part.state?.toLowerCase() ?? "";
-        const status = state.includes("error")
-          ? "failed"
-          : state.includes("output") || state.includes("complete")
-            ? "completed"
-            : "pending";
-        items.push({
-          id,
-          kind: "tool-call",
-          name: part.tool_name || part.toolName || part.type.replace(/^tool-/, "") || "Tool",
-          status,
-          summary: compactOutlineSummary(part),
-        });
-        continue;
-      }
-      if (part.type === "text" && part.text?.trim()) {
-        items.push({ id, kind: "assistant-text", text: part.text.trim() });
-      }
-    }
-  }
-  return items;
-}
-
-function compactOutlineSummary(part: ChatPart): string {
-  if (part.error_text || part.errorText) return part.error_text || part.errorText || "";
-  const value = part.output ?? part.input;
-  if (typeof value === "string") return value;
-  if (value === undefined) return "";
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return "Unserializable tool value";
-  }
-}
-
-function activeAsyncTasks(events: readonly ActivityEvent[]): AsyncTask[] {
-  const tasks = new Map<string, AsyncTask>();
-  for (const event of [...events].reverse()) {
-    const name = eventName(event);
-    const kind = name.includes("subagent")
-      ? "subagent"
-      : name.includes("shell")
-        ? "shell"
-        : name.includes("cloud.agent") || name.includes("cloud-agent")
-          ? "cloud-agent"
-          : undefined;
-    if (!kind) continue;
-    const data = record(event.data);
-    const id =
-      firstString(data, "id", "task_id", "taskId", "subagent_id", "subagentId") || event.id;
-    if (!id) continue;
-    const status = firstString(data, "status", "state").toLowerCase();
-    if (/^(done|complete|completed|failed|error|aborted|cancelled|canceled)$/.test(status)) {
-      tasks.delete(id);
-      continue;
-    }
-    tasks.set(id, {
-      id,
-      kind,
-      label: firstString(data, "label", "title", "name", "agent_name") || humanEventName(name),
-      detail: eventSummary(data),
-      startedAtMs: event.receivedAt.valueOf(),
-    });
-  }
-  return [...tasks.values()];
 }
 
 const SCROLL_STORAGE_KEY = "openbot:chat-scroll";

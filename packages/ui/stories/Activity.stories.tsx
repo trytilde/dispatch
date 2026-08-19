@@ -1,12 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import {
-  ActivityEmpty,
-  ActivityQueue,
-  ActivityTimeline,
-  AgentActivity,
-  AsyncTasksPanel,
-  ConversationOutlinePanel,
-} from "../src/index.js";
+import { ActivityEmpty, ActivityQueue, ActivityTimeline, AgentActivity } from "../src/index.js";
 
 const meta = { title: "OpenBot/Activity" } satisfies Meta;
 export default meta;
@@ -60,72 +53,6 @@ export const CombinedActivity: Story = {
         onMoveLater={noop}
         onRemove={noop}
         onRunNow={noop}
-      />
-    </div>
-  ),
-};
-
-export const AsyncTasks: Story = {
-  render: () => (
-    <div style={{ height: 520, position: "relative", width: 720 }}>
-      <AsyncTasksPanel
-        agentName="Hello World"
-        nowMs={Date.parse("2026-08-15T12:05:00Z")}
-        onClose={noop}
-        tasks={[
-          {
-            detail: "Checking sources",
-            id: "research",
-            kind: "subagent",
-            label: "Researching launch options",
-            startedAtMs: Date.parse("2026-08-15T12:00:00Z"),
-          },
-          {
-            detail: "pnpm check",
-            id: "shell",
-            kind: "shell",
-            label: "Running validation",
-            startedAtMs: Date.parse("2026-08-15T12:03:00Z"),
-          },
-        ]}
-      />
-    </div>
-  ),
-};
-
-export const ConversationOutline: Story = {
-  render: () => (
-    <div style={{ height: 560, position: "relative", width: 760 }}>
-      <ConversationOutlinePanel
-        agentName="Hello World"
-        onClose={noop}
-        tabs={[
-          {
-            id: "main",
-            label: "Main",
-            status: "running",
-            items: [
-              { id: "user", kind: "user", text: "Research and summarize this topic" },
-              { id: "thinking", kind: "thinking", text: "Reviewing sources" },
-              {
-                id: "tool",
-                kind: "tool-call",
-                name: "Browser",
-                status: "completed",
-                summary: "Opened three sources",
-              },
-              { id: "answer", kind: "assistant-text", text: "The result is ready." },
-            ],
-          },
-          {
-            id: "research",
-            label: "Research",
-            status: "done",
-            items: [
-              { id: "send", kind: "send-message", message: "Found the supporting evidence." },
-            ],
-          },
-        ]}
       />
     </div>
   ),

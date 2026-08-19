@@ -138,6 +138,26 @@ A running app does not always repaint when the OS scheme changes, so force-stop 
 
 Store screenshots and recordings outside the repository. Never capture or paste a screen showing a real access token, setup code, or `.env` content.
 
+## Workspace Dependencies Must Be Built
+
+`packages/client-runtime` resolves through its `exports` to `dist`, so Metro cannot bundle the
+app until that package is built. A source checkout has no `dist`, and the failure names the
+wrong thing: `the package ... specifies a main module field that could not be resolved`, because
+Metro falls back to `index` once `exports` misses.
+
+Two consumers need the guarantee, and they are separate:
+
+- Locally, `openbot mobile expo` checks each workspace dependency's runtime export condition and
+  builds what is missing. Entry resolution must prefer `react-native`, `import`, `require`, or
+  `default` — never `types` or `development`, which point at TypeScript source that always exists
+  and therefore always looks built.
+- On EAS, none of this repository's commands run: EAS performs its own install and then calls
+  `pnpm expo export:embed` directly. The guarantee lives in `eas-build-post-install` in
+  `apps/mobile/package.json`, which builds the dependency after EAS installs.
+
+A guard in a wrapper only protects callers of that wrapper. When a build contract has to hold for
+every consumer, put it where every consumer sees it.
+
 ## Adding UI Components
 
 `apps/mobile` uses BNA UI. Add a component from `apps/mobile`:

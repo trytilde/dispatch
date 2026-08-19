@@ -16,7 +16,7 @@ sets a minimum of Xcode 16.1 with no maximum, so `pod install` succeeding is dir
 installed Xcode is acceptable. Do not infer an upper bound from a React Native changelog entry
 mentioning a newer Xcode; check the gate and the SDK's stated support instead.
 
-Verified on both platforms as of 2026-08-18: `mobile setup`, `mobile avd`, `mobile emulator`, and `mobile doctor` on Apple Silicon macOS 14.6, and the same plus `expo run:android` on x86_64 Linux. On macOS the emulator opens a real window and starts neither Xvfb nor x11vnc, and the system image resolves to `arm64-v8a`. Unverified anywhere: `expo run:ios`. It is blocked locally on Xcode 26.5; see Known Gaps.
+Verified on both platforms as of 2026-08-18: `mobile setup`, `mobile avd`, `mobile emulator`, and `mobile doctor` on Apple Silicon macOS 14.6, and the same plus `expo run:android` on x86_64 Linux. On macOS the emulator opens a real window and starts neither Xvfb nor x11vnc, and the system image resolves to `arm64-v8a`. Verified on macOS as of 2026-08-19: `expo run:ios` builds, installs, and launches on the iPhone 15 Pro simulator with Xcode 26.6 and the iOS 26.5 simulator SDK. Unverified anywhere: a physical iOS device.
 
 ## Choose The Narrowest Check
 
@@ -179,8 +179,19 @@ simulator SDK, whose first error is a modulemap requiring
 `found_incompatible_headers__check_search_paths`, means clang built an incompatible `float.h`.
 Apple's diagnostic names neither the cause nor the search path responsible.
 
-Isolate before theorising. Two commands separate the three possible owners, and skipping them
-costs a build cycle per guess:
+Regenerate the native project first. It is the cheapest fix and the one that resolved this
+signature on 2026-08-19: `ios/` is generated build output, and a tree left over from before a
+bundle-identifier change, a dependency bump, or an Xcode upgrade fails inside the SDK rather
+than at a name mismatch. The first failure is the `[CP-User] Build ExpoModulesJSI xcframework`
+script phase, whose nested `xcodebuild` dies before the modulemap cascade begins.
+
+```bash
+rm -rf apps/mobile/ios ~/Library/Developer/Xcode/DerivedData
+cd apps/mobile && npx expo prebuild --platform ios && npx expo run:ios
+```
+
+Only if that still fails, isolate before theorising. Two commands separate the remaining owners,
+and skipping them costs a build cycle per guess:
 
 ```bash
 # 1. Is the toolchain itself healthy? Compiles against the SDK with modules, no project flags.
@@ -190,11 +201,13 @@ xcrun -sdk iphonesimulator clang -fmodules -fmodules-cache-path=/tmp/mc \
   -isysroot "$(xcrun --sdk iphonesimulator --show-sdk-path)" -c /tmp/t.m -o /tmp/t.o
 
 # 2. Is this repository involved at all? Runs Expo directly, without the CLI.
-cd apps/mobile && npx expo run:ios 2>&1 | tail -30
+cd apps/mobile && npx expo run:ios > /tmp/ios-build.log 2>&1; grep -n "error:" /tmp/ios-build.log | head
 ```
 
-Read the *first* error, never the tail: every later line is a cascade from one root, and a tail
-shows only the cascade. `grep -nE "requires feature|Script .* failed|could not build module" log | head`.
+Capture the whole log and grep it; never pipe the build through `tail`. On success the command
+does not exit — Metro stays in the foreground — so a tail buffers until an EOF that never comes.
+On failure it shows only the cascade, when every line after the first is downstream of one root:
+`grep -nE "requires feature|Script .* failed|could not build module|error:" /tmp/ios-build.log | head`.
 
 Clear the module cache *after* changing anything, because a cache poisoned by an earlier build
 reproduces the failure once the cause is gone:
@@ -209,15 +222,12 @@ them as a candidate to rule out rather than the answer.
 
 ## Known Gaps
 
-- Local iOS builds fail on Apple Silicon macOS with Xcode 26.5 and the iOS 26.5 simulator SDK, on Expo SDK 57 with React Native 0.86.2. Verified as not ours and not the machine's: plain clang modularises `Foundation` fine, a bare `npx expo run:ios` fails identically without this CLI, the shell carries no compiler flags, and the module cache was cold. The first failure is the `[CP-User] Build ExpoModulesJSI xcframework` script phase, whose nested `xcodebuild` fails before the modulemap cascade. Expo's SDK 56 announcement states Xcode 26.4 and higher are supported, so this is an upstream report worth filing with `npx --yes submit-expo-feedback@latest`. Use EAS for iOS artifacts until it is resolved: `openbot mobile release build --platform ios`.
-
-
 - The Android build runs edge-to-edge (`edgeToEdgeEnabled=true` in `android/gradle.properties`), so `adjustResize` does not shrink the window and the keyboard overlays content. Every screen with an input needs the `AvoidKeyboard` spacer; do not assume Android handles it.
 - A running app may not repaint when the OS light/dark setting changes. Relaunch before judging appearance.
-- Changing the bundle identifier or Android package invalidates the generated native projects. Remove `apps/mobile/android` and `apps/mobile/ios` so prebuild regenerates them; a stale directory keeps the old application ID and installs a second app.
+- Changing the bundle identifier or Android package invalidates the generated native projects. Remove `apps/mobile/android` and `apps/mobile/ios` so prebuild regenerates them; a stale directory keeps the old application ID and installs a second app. On iOS a stale tree does not fail cleanly on the identifier — it fails deep inside the simulator SDK; see An iOS Build Failing Inside The SDK.
 - iOS cannot be built or run on the Linux host.
 - macOS needs CocoaPods for `expo run:ios`, and Xcode at or above React Native's minimum — 16.1 for React Native 0.86. Below it, `pod install` fails with `Please upgrade XCode`. `mobile doctor` checks both, reading the minimum from the installed React Native so it cannot drift.
-- A simulator that fails to boot with `launchd failed to respond` is a simulator-host problem, not a repository one: `xcrun simctl shutdown all && killall -9 Simulator`, then reboot if it persists. iOS coverage is limited to `expo export`, which validates the bundle only. Any iOS-specific claim requires a Mac with Xcode; say so instead of implying iOS was exercised.
+- A simulator that fails to boot with `launchd failed to respond` is a simulator-host problem, not a repository one: `xcrun simctl shutdown all && killall -9 Simulator`, then reboot if it persists. Any iOS-specific claim requires a Mac with Xcode; on the Linux host iOS coverage is limited to `expo export`, which validates the bundle only, so say so instead of implying iOS was exercised.
 - Real OAuth against a deployed service needs `openbot://auth/callback` registered as a redirect URI.
 
 ## Reporting

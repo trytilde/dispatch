@@ -6,8 +6,11 @@ import type { ExpoConfig } from "expo/config";
 // the environment. Setting OPENBOT_EAS_PROJECT_ID to a fork's own EAS project is what
 // makes `openbot mobile release` willing to run there; see ADR-0027.
 const officialEasProjectId = "ace1107b-b007-451a-8e50-2b571c40593e";
+// Tilde publishes the app; OpenBot is the product. The identifier is therefore reverse-DNS
+// of the publisher's domain, not the product's, and matches the Expo account that owns the
+// store listings. Changing it after a first store submission is effectively impossible.
 const officialOwner = "trytilde";
-const officialBundleIdentifier = "dev.openbot.mobile";
+const officialBundleIdentifier = "ai.trytilde.openbot";
 
 export const officialStoreIdentity = {
   easProjectId: officialEasProjectId,

@@ -174,9 +174,11 @@ which stays untracked upstream.
 
 ## Publishing the app
 
-Store publication belongs to `trytilde/openbot`. The official EAS project, bundle identifier,
-and both store listings are upstream-owned, and `openbot mobile release` refuses to use the
-official EAS project from any other remote (ADR-0027):
+Tilde publishes the app; OpenBot is the app. The official EAS project, the
+`ai.trytilde.openbot` identifier, and both store listings belong to `trytilde/openbot`, and
+`openbot mobile release` refuses to use the official EAS project from any other remote
+(ADR-0027). `openbot init` never asks about EAS and never requires it, because almost no fork
+publishes its own mobile app:
 
 ```bash
 pnpm openbot mobile release status

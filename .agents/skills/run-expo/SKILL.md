@@ -72,7 +72,7 @@ This prebuilds `android/`, assembles the debug APK, installs it on the running e
 It then does not exit: Metro stays in the foreground. Do not wait for the command to finish, and do not pipe it through `tail`, which buffers until an EOF that never comes. Judge completion from the device and the bundler instead:
 
 ```bash
-adb shell dumpsys package dev.openbot.mobile | grep lastUpdateTime
+adb shell dumpsys package ai.trytilde.openbot | grep lastUpdateTime
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8081/status
 ```
 
@@ -123,8 +123,8 @@ Check both appearances, because every surface must resolve in light and dark:
 
 ```bash
 adb shell cmd uimode night yes
-adb shell am force-stop dev.openbot.mobile
-adb shell monkey -p dev.openbot.mobile -c android.intent.category.LAUNCHER 1
+adb shell am force-stop ai.trytilde.openbot
+adb shell monkey -p ai.trytilde.openbot -c android.intent.category.LAUNCHER 1
 ```
 
 A running app does not always repaint when the OS scheme changes, so force-stop and relaunch before judging dark mode, and restore with `cmd uimode night no` afterwards.
@@ -149,6 +149,7 @@ Read colors through `useColor` and never hardcode a value, so every surface reso
 
 - The Android build runs edge-to-edge (`edgeToEdgeEnabled=true` in `android/gradle.properties`), so `adjustResize` does not shrink the window and the keyboard overlays content. Every screen with an input needs the `AvoidKeyboard` spacer; do not assume Android handles it.
 - A running app may not repaint when the OS light/dark setting changes. Relaunch before judging appearance.
+- Changing the bundle identifier or Android package invalidates the generated native projects. Remove `apps/mobile/android` and `apps/mobile/ios` so prebuild regenerates them; a stale directory keeps the old application ID and installs a second app.
 - iOS cannot be built or run on the Linux host.
 - macOS needs CocoaPods for `expo run:ios`, and Xcode at or above React Native's minimum — 16.1 for React Native 0.86. Below it, `pod install` fails with `Please upgrade XCode`. `mobile doctor` checks both, reading the minimum from the installed React Native so it cannot drift.
 - A simulator that fails to boot with `launchd failed to respond` is a simulator-host problem, not a repository one: `xcrun simctl shutdown all && killall -9 Simulator`, then reboot if it persists. iOS coverage is limited to `expo export`, which validates the bundle only. Any iOS-specific claim requires a Mac with Xcode; say so instead of implying iOS was exercised.

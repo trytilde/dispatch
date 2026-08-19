@@ -3,7 +3,7 @@
 ## In brief
 
 - One published mobile app. `trytilde/openbot` owns the EAS project, bundle identifier, and both store listings.
-- EAS project `ace1107b-b007-451a-8e50-2b571c40593e`, owner `trytilde`, identifier `dev.openbot.mobile`.
+- Tilde publishes, OpenBot is the app. EAS project `ace1107b-b007-451a-8e50-2b571c40593e`, owner `trytilde`, identifier `ai.trytilde.openbot`.
 - Forks cannot publish to it. The guard is code in the CLI, not a comment in a config file.
 - A fork releases its own app by setting `OPENBOT_EAS_PROJECT_ID`, `OPENBOT_APP_ID`, and `OPENBOT_EXPO_OWNER`.
 - `app.json` becomes `app.config.ts` so store identity can be overridden without editing a tracked file.
@@ -25,9 +25,21 @@ authorization to protect a public listing is not a boundary — it is a hope.
 
 ## Decision
 
+Tilde is the publisher and OpenBot is the app, so the identifier is reverse-DNS of the
+publisher's domain — `ai.trytilde.openbot` — rather than of the product name. The display name
+stays `OpenBot`, and the Expo owner is the `trytilde` account that holds the store
+relationships. An identifier cannot be changed after a first store submission, so it is fixed
+before the first release rather than after.
+
+`openbot init` neither asks about EAS nor requires it. Almost no fork publishes its own mobile
+app, so making store publication part of initialization would charge every fork owner a
+question, an account, and a failure mode for something they will never use. Publication is a
+separate, upstream-only workflow reached through `openbot mobile release`; a fork that does want
+its own app opts in by setting the environment overrides, and only then.
+
 `trytilde/openbot` owns store publication. The official EAS project is
 `ace1107b-b007-451a-8e50-2b571c40593e` under owner `trytilde`, with identifier
-`dev.openbot.mobile`, and `apps/mobile/eas.json` carries the development, preview, and
+`ai.trytilde.openbot`, and `apps/mobile/eas.json` carries the development, preview, and
 production profiles. Production uses `appVersionSource: remote` with `autoIncrement`, so build
 numbers live in EAS rather than in a tracked file where every fork merge would conflict.
 
@@ -76,3 +88,4 @@ flowchart LR
 ## Updates
 
 - 2026-08-19T10:20:00+02:00: Initial decision.
+- 2026-08-19T10:55:00+02:00: Named Tilde as publisher and OpenBot as the app, moving the identifier from `dev.openbot.mobile` to `ai.trytilde.openbot` before any store submission, and recorded that `openbot init` must never ask about EAS or require it.

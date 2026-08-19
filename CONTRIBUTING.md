@@ -29,6 +29,7 @@ Needed only for the surfaces you touch:
 | Headless Android emulator | `/dev/kvm`, Xvfb, x11vnc | Linux only; without KVM the emulator is too slow to use |
 | Browser end-to-end | Playwright browsers | `pnpm exec playwright install chromium` |
 | Store publication | an authenticated EAS session, paid Apple Developer and Google Play accounts | upstream only, see ADR-0027; `eas-cli` runs through `npx eas-cli@latest` and needs network access |
+| Desktop publication | the AWS CLI, a Developer ID Application certificate, an App Store Connect API key | upstream only, see ADR-0028. Only `openbot desktop release publish|manifest|status` needs them; building and packaging locally does not. Without the Apple credentials the build still succeeds and produces unsigned artifacts |
 | Local Computer, deployment | Microsandbox, SOPS, age | see [docs/sandbox.md](docs/sandbox.md) and [docs/configuration.md](docs/configuration.md) |
 
 Confirm the mobile toolchain at any time — it prints one line per check and names the remedy:

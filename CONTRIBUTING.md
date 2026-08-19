@@ -219,7 +219,20 @@ Automation needs three things set up once, none of which live in this repository
 | App Store Connect API key | created in App Store Connect under Users and Access → Integrations, uploaded through `pnpm openbot mobile release credentials` | `eas submit` cannot authenticate to App Store Connect without it in a non-interactive run |
 
 For Android, EAS additionally needs a Google Play service account key, and the very first AAB
-has to be uploaded by hand through the Play Console before any API submission is accepted.
+has to be uploaded by hand through the Play Console before any API submission is accepted. Play
+also requires the developer account to be verified from a real Android device; an emulator fails
+that check, because it is an attested device-access proof rather than a login.
+
+To exercise a build on a device without involving Play at all, use the `preview` profile, which
+distributes internally and builds an APK rather than the AAB Play wants:
+
+```bash
+pnpm openbot mobile release build --platform android --profile preview --yes
+pnpm openbot mobile release install --platform android
+```
+
+`install` puts the finished build on a running emulator or a connected device and never touches
+a store listing.
 
 A submitted iOS build reaches TestFlight automatically. Releasing it to the public App Store
 stays a human step in App Store Connect, as does the beta review for external testers.

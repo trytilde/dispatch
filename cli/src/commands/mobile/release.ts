@@ -14,6 +14,7 @@ export const releaseSubcommands: readonly (readonly [string, string])[] = [
   ["build", "Build a store binary on EAS (--platform, --profile, --submit, --non-interactive)"],
   ["submit", "Submit the latest EAS build to App Store Connect or Play"],
   ["status", "List recent EAS builds and submissions"],
+  ["install", "Install a finished EAS build on a local emulator or device (--platform, --id)"],
   ["credentials", "Manage the signing credentials EAS holds"],
 ];
 
@@ -94,6 +95,24 @@ export async function runRelease(argv: readonly string[]): Promise<number> {
     }
     case "status":
       return eas(["build:list", "--limit", "10", ...rest], root);
+    case "install": {
+      // Neither spends build minutes nor touches a listing, so no --yes gate. Android needs
+      // an APK, which only the internal-distribution profiles produce; a production AAB is
+      // for Play, not for a device.
+      const options = arg(
+        { "--platform": String, "--id": String },
+        { argv: [...rest], permissive: true },
+      );
+      return eas(
+        [
+          "build:run",
+          "--platform",
+          options["--platform"] ?? "android",
+          ...(options["--id"] ? ["--id", options["--id"]] : ["--latest"]),
+        ],
+        root,
+      );
+    }
     case "credentials":
       return eas(["credentials", ...rest], root);
     default:

@@ -152,6 +152,43 @@ The CLI copies source into `src/components/ui`, hooks into `src/hooks`, tokens i
 
 Read colors through `useColor` and never hardcode a value, so every surface resolves in light and dark.
 
+## An iOS Build Failing Inside The SDK
+
+A cascade of `could not build module 'Foundation'` and `'UIKit'` against the simulator SDK, with
+the first error being a modulemap that `requires feature found_incompatible_headers__check_search_paths`,
+is not a broken Xcode, a wrong SDK, or an unsupported React Native. It is an inherited compiler
+search path: Homebrew tells you to export `CPPFLAGS=-I/opt/homebrew/opt/llvm/include` when
+building C projects against its LLVM, that directory carries its own C standard library, and
+clang then builds an incompatible `float.h` that every framework including it fails on. Apple's
+diagnostic names neither the variable nor the shell that set it.
+
+`openbot` drops `CPPFLAGS`, `CFLAGS`, `CXXFLAGS`, `LDFLAGS`, `CPATH`, `C_INCLUDE_PATH`,
+`CPLUS_INCLUDE_PATH`, and the Objective-C equivalents before spawning a native build, and says
+so when it does. `mobile doctor` warns when a shell carries them. Set
+`OPENBOT_KEEP_COMPILER_FLAGS=1` for a build that genuinely needs them.
+
+Two things make this hard to diagnose, so check them in this order:
+
+1. Isolate the toolchain from the project. This compiles against the SDK with modules enabled and no project flags, so success means the SDK is healthy and the fault is in the build environment:
+
+```bash
+printf '#import <Foundation/Foundation.h>\nint main(void){return 0;}\n' > /tmp/t.m
+xcrun -sdk iphonesimulator clang -fmodules -fmodules-cache-path=/tmp/mc \
+  -target arm64-apple-ios16.4-simulator \
+  -isysroot "$(xcrun --sdk iphonesimulator --show-sdk-path)" -c /tmp/t.m -o /tmp/t.o
+```
+
+2. Read the *first* error, never the tail. Every later line is a cascade from one root cause, and a tail shows only the cascade:
+
+```bash
+pnpm openbot mobile expo run:ios > /tmp/ios-build.log 2>&1
+grep -nE "requires feature|could not build module|error:" /tmp/ios-build.log | head -8
+```
+
+Clear the module cache *after* fixing the environment. A cache poisoned by an earlier bad build
+reproduces the failure once the cause is gone: `rm -rf ~/Library/Developer/Xcode/DerivedData` and
+`rm -rf "$(getconf DARWIN_USER_CACHE_DIR)/org.llvm.clang/ModuleCache"`.
+
 ## Known Gaps
 
 - The Android build runs edge-to-edge (`edgeToEdgeEnabled=true` in `android/gradle.properties`), so `adjustResize` does not shrink the window and the keyboard overlays content. Every screen with an input needs the `AvoidKeyboard` spacer; do not assume Android handles it.

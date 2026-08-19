@@ -78,3 +78,28 @@ describe("javaCheck resolution", () => {
     expect(lines.find((line) => line.includes("jdk"))).toContain("from PATH");
   });
 });
+
+describe("compiler flag reporting", () => {
+  const originals = { CPPFLAGS: process.env.CPPFLAGS, C_INCLUDE_PATH: process.env.C_INCLUDE_PATH };
+  afterEach(() => {
+    for (const [name, value] of Object.entries(originals)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  });
+
+  it("warns about an inherited CPPFLAGS, the cause of the SDK modulemap failure", async () => {
+    process.env.CPPFLAGS = "-I/opt/homebrew/opt/llvm/include";
+    const { lines } = await captureDoctor();
+    const line = lines.find((entry) => entry.includes("compiler-env"));
+    expect(line).toMatch(/^warn/);
+    expect(line).toContain("CPPFLAGS");
+  });
+
+  it("passes when the shell carries none", async () => {
+    delete process.env.CPPFLAGS;
+    delete process.env.C_INCLUDE_PATH;
+    const { lines } = await captureDoctor();
+    expect(lines.find((entry) => entry.includes("compiler-env"))).toMatch(/^ok/);
+  });
+});

@@ -8,7 +8,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { markDiagnosticExit } from "../../diagnostics.js";
-import { androidSdkRoot, androidTool, reactNativeNdkVersion } from "../../toolchain.js";
+import {
+  androidSdkRoot,
+  androidTool,
+  inheritedCompilerFlagNames,
+  reactNativeNdkVersion,
+} from "../../toolchain.js";
 import { mobileAppDirectory, repositoryRoot } from "../../workspace.js";
 
 interface Check {
@@ -29,6 +34,7 @@ export async function runDoctor(): Promise<number> {
 
   checks.push({ name: "node", passed: existsSync(process.execPath), detail: process.execPath });
   checks.push(javaCheck());
+  checks.push(compilerFlagCheck());
 
   const sdk = androidSdkRoot();
   checks.push({
@@ -230,5 +236,23 @@ function nativeBuildCheck(sdk: string): Check {
     passed: false,
     warning: true,
     detail: `ndk;${expected} missing — Gradle will download it mid-build, or run: openbot mobile setup`,
+  };
+}
+
+// A global CPPFLAGS or C_INCLUDE_PATH is the cause of an iOS module build failing inside
+// the SDK's own modulemap. The CLI drops them for its own builds, but anything run by hand
+// still inherits them, so report them where they are legible.
+function compilerFlagCheck(): Check {
+  const present = inheritedCompilerFlagNames();
+  if (present.length === 0)
+    return { name: "compiler-env", passed: true, detail: "no inherited compiler flags" };
+  return {
+    name: "compiler-env",
+    passed: false,
+    warning: true,
+    detail:
+      `${present.join(", ")} set in this shell — these make clang find an incompatible C ` +
+      `standard library and break Xcode module builds. openbot drops them for its own builds; ` +
+      `remove them from your shell profile for anything run by hand.`,
   };
 }

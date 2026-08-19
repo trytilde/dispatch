@@ -78,6 +78,37 @@ export function requireAndroidTool(name: AndroidTool): string {
   return binary;
 }
 
+/**
+ * Compiler search paths that must not reach an Xcode or Gradle build.
+ *
+ * Homebrew tells you to export these when building C projects against its own libraries,
+ * and `~/.zshrc` is where that advice lands. The cost surfaces far away: Homebrew LLVM's
+ * include directory carries its own C standard library, so clang finds an incompatible
+ * `float.h`, `_Builtin_float` fails to build, and every framework including it cascades.
+ * Apple's diagnostic is a modulemap requiring
+ * `found_incompatible_headers__check_search_paths`, which names neither the variable nor
+ * the shell that set it.
+ *
+ * A native build gets its search paths from the project, so dropping these is safe. Set
+ * OPENBOT_KEEP_COMPILER_FLAGS=1 to keep them for a build that genuinely needs them.
+ */
+const inheritedCompilerFlags = [
+  "CPPFLAGS",
+  "CFLAGS",
+  "CXXFLAGS",
+  "LDFLAGS",
+  "CPATH",
+  "C_INCLUDE_PATH",
+  "CPLUS_INCLUDE_PATH",
+  "OBJC_INCLUDE_PATH",
+  "OBJCPLUS_INCLUDE_PATH",
+];
+
+/** The compiler-flag variables present in an environment, for reporting. */
+export function inheritedCompilerFlagNames(base: NodeJS.ProcessEnv = process.env): string[] {
+  return inheritedCompilerFlags.filter((name) => (base[name] ?? "").trim().length > 0);
+}
+
 export function toolchainEnvironment(
   overrides: Record<string, string> = {},
   base: NodeJS.ProcessEnv = process.env,
@@ -92,5 +123,16 @@ export function toolchainEnvironment(
   ]
     .filter(Boolean)
     .join(":");
-  return { ...base, ANDROID_SDK_ROOT: sdk, ANDROID_HOME: sdk, PATH: path, ...overrides };
+  const environment: NodeJS.ProcessEnv = {
+    ...base,
+    ANDROID_SDK_ROOT: sdk,
+    ANDROID_HOME: sdk,
+    PATH: path,
+    ...overrides,
+  };
+
+  if (base.OPENBOT_KEEP_COMPILER_FLAGS !== "1")
+    for (const name of inheritedCompilerFlagNames(base)) delete environment[name];
+
+  return environment;
 }

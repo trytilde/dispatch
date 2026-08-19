@@ -126,6 +126,12 @@ does not need Gradle. It fails on an Xcode below the React Native minimum, becau
 `pod install` will refuse regardless. The emulator opens a real window on macOS, so Xvfb and
 x11vnc are not used and not required.
 
+A global `CPPFLAGS`, `C_INCLUDE_PATH`, or similar in your shell profile breaks Xcode module
+builds: Homebrew suggests them for compiling against its own libraries, and Homebrew LLVM's
+include directory carries a C standard library that shadows the SDK's. `openbot` drops them for
+its own builds and `openbot mobile doctor` warns when your shell carries them, but remove them
+from your profile for anything you run by hand.
+
 A Gradle failure reading `Execution failed for task ':react-native-worklets:configureCMakeDebug'`
 with `WARNING: A restricted method in java.lang.System has been called` is the unsupported JDK,
 not a broken checkout: Java 24 and newer restrict the native-access calls that React Native's

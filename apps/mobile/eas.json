@@ -9,12 +9,10 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "channel": "preview"
+      "distribution": "internal"
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production",
       "ios": {
         "resourceClass": "m-medium"
       }

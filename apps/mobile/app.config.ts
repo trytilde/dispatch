@@ -34,6 +34,12 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier,
+    infoPlist: {
+      // The app uses only standard HTTPS and OAuth, which are exempt encryption under the
+      // US export rules, so declaring this up front avoids an App Store Connect prompt on
+      // every submission.
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     package: bundleIdentifier,

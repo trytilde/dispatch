@@ -11,7 +11,7 @@ import { mobileAppDirectory, repositoryRoot } from "../../workspace.js";
 const officialEasProjectId = "ace1107b-b007-451a-8e50-2b571c40593e";
 
 export const releaseSubcommands: readonly (readonly [string, string])[] = [
-  ["build", "Build a store binary on EAS (--platform, --profile, --submit)"],
+  ["build", "Build a store binary on EAS (--platform, --profile, --submit, --non-interactive)"],
   ["submit", "Submit the latest EAS build to App Store Connect or Play"],
   ["status", "List recent EAS builds and submissions"],
   ["credentials", "Manage the signing credentials EAS holds"],
@@ -30,7 +30,13 @@ export async function runRelease(argv: readonly string[]): Promise<number> {
   switch (subcommand) {
     case "build": {
       const options = arg(
-        { "--platform": String, "--profile": String, "--submit": Boolean, "--yes": Boolean },
+        {
+          "--platform": String,
+          "--profile": String,
+          "--submit": Boolean,
+          "--yes": Boolean,
+          "--non-interactive": Boolean,
+        },
         { argv: [...rest], permissive: true },
       );
       const platform = options["--platform"] ?? "all";
@@ -55,14 +61,19 @@ export async function runRelease(argv: readonly string[]): Promise<number> {
           "--profile",
           profile,
           ...(options["--submit"] ? ["--auto-submit"] : []),
-          "--non-interactive",
+          ...nonInteractive(options["--non-interactive"]),
         ],
         root,
       );
     }
     case "submit": {
       const options = arg(
-        { "--platform": String, "--profile": String, "--yes": Boolean },
+        {
+          "--platform": String,
+          "--profile": String,
+          "--yes": Boolean,
+          "--non-interactive": Boolean,
+        },
         { argv: [...rest], permissive: true },
       );
       if (!options["--yes"]) {
@@ -76,7 +87,7 @@ export async function runRelease(argv: readonly string[]): Promise<number> {
           options["--platform"] ?? "all",
           "--profile",
           options["--profile"] ?? "production",
-          "--non-interactive",
+          ...nonInteractive(options["--non-interactive"]),
         ],
         root,
       );
@@ -91,6 +102,16 @@ export async function runRelease(argv: readonly string[]): Promise<number> {
       );
       return 1;
   }
+}
+
+/**
+ * EAS needs a terminal to set up signing credentials on a first build, so interactivity is
+ * the default. Forcing `--non-interactive` turns "answer two prompts" into "Credentials are
+ * not set up. Run this command again in interactive mode." Pass the flag, or run without a
+ * TTY as CI does, to opt in.
+ */
+function nonInteractive(requested: boolean | undefined): string[] {
+  return requested || !process.stdin.isTTY ? ["--non-interactive"] : [];
 }
 
 /** Returns a refusal message when this checkout must not publish, otherwise undefined. */

@@ -14,19 +14,10 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const assetsDirectory = join(repositoryRoot, "apps/mobile/assets");
 const assetsModule = join(repositoryRoot, "packages/ui/dist/agent-avatar-assets.js");
 
-/* Tilde publishes the app, so the field carries Tilde's brand blues rather than
- * the avatar palette: navy lit from the top right by the electric blue, the same
- * pair Tilde uses for its own store covers. The body stays a plain white avatar. */
-const TILDE_NAVY = "#001F6B";
-const TILDE_ELECTRIC_BLUE = "0, 56, 174";
+/* Tilde publishes the app, so the field is the publisher's navy rather than a
+ * colour from the avatar palette. Flat: no gradient on the field or the body. */
+const FIELD = "#001F6B";
 const LOOK = { shape: "blob", tone: "1", eyes: "28", color: "#FFFFFF" };
-const FIELD = [
-  "radial-gradient(110% 110% at 86% 8%,",
-  `rgba(${TILDE_ELECTRIC_BLUE}, 0.95),`,
-  `rgba(${TILDE_ELECTRIC_BLUE}, 0.35) 42%,`,
-  `rgba(${TILDE_ELECTRIC_BLUE}, 0) 75%),`,
-  TILDE_NAVY,
-].join(" ");
 const INK = "#191919";
 const SIZE = 1024;
 /* iOS shows the icon square with its own mask, so the body can run wide.
@@ -96,19 +87,13 @@ try {
   await view.setContent(page(IOS_BODY, FIELD));
   await writeFile(join(assetsDirectory, "icon.png"), await view.screenshot());
 
-  /* Android composes two layers, so the body ships transparent and the lit field
-   * ships as the background layer. adaptiveIcon.backgroundColor stays as the
-   * flat fallback for launchers that ignore the image. */
+  /* Android composes the foreground over adaptiveIcon.backgroundColor, and a flat
+   * colour needs no background layer, so this one ships transparent. */
   await view.setContent(page(ANDROID_BODY, "transparent"));
   await writeFile(
     join(assetsDirectory, "adaptive-icon.png"),
     await view.screenshot({ omitBackground: true }),
   );
-
-  await view.setContent(
-    `<body style="margin:0;width:${SIZE}px;height:${SIZE}px;background:${FIELD}"></body>`,
-  );
-  await writeFile(join(assetsDirectory, "adaptive-background.png"), await view.screenshot());
 } finally {
   await browser.close();
 }

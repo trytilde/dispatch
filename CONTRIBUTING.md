@@ -128,9 +128,10 @@ x11vnc are not used and not required.
 
 A global `CPPFLAGS`, `C_INCLUDE_PATH`, or similar in your shell profile breaks Xcode module
 builds: Homebrew suggests them for compiling against its own libraries, and Homebrew LLVM's
-include directory carries a C standard library that shadows the SDK's. `openbot` drops them for
-its own builds and `openbot mobile doctor` warns when your shell carries them, but remove them
-from your profile for anything you run by hand.
+include directory carries a C standard library that shadows the SDK's. `openbot mobile doctor`
+warns when your shell carries them; scope them to the shells that need them rather than
+exporting them globally. The repository reports these and does not change them — your
+environment is yours.
 
 A Gradle failure reading `Execution failed for task ':react-native-worklets:configureCMakeDebug'`
 with `WARNING: A restricted method in java.lang.System has been called` is the unsupported JDK,

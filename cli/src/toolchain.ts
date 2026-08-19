@@ -79,18 +79,17 @@ export function requireAndroidTool(name: AndroidTool): string {
 }
 
 /**
- * Compiler search paths that must not reach an Xcode or Gradle build.
+ * Compiler search paths a shell can export that break an Xcode module build.
  *
- * Homebrew tells you to export these when building C projects against its own libraries,
- * and `~/.zshrc` is where that advice lands. The cost surfaces far away: Homebrew LLVM's
- * include directory carries its own C standard library, so clang finds an incompatible
- * `float.h`, `_Builtin_float` fails to build, and every framework including it cascades.
- * Apple's diagnostic is a modulemap requiring
- * `found_incompatible_headers__check_search_paths`, which names neither the variable nor
- * the shell that set it.
+ * Homebrew suggests these when compiling C projects against its own libraries. Homebrew
+ * LLVM's include directory carries its own C standard library, so clang finds an
+ * incompatible `float.h`, `_Builtin_float` fails to build, and every framework including
+ * it cascades. Apple's diagnostic is a modulemap requiring
+ * `found_incompatible_headers__check_search_paths` and names neither the variable nor the
+ * shell that set it.
  *
- * A native build gets its search paths from the project, so dropping these is safe. Set
- * OPENBOT_KEEP_COMPILER_FLAGS=1 to keep them for a build that genuinely needs them.
+ * These belong to the developer's environment, so the CLI reports them rather than
+ * changing them. `mobile doctor` is where that report lives.
  */
 const inheritedCompilerFlags = [
   "CPPFLAGS",
@@ -123,16 +122,5 @@ export function toolchainEnvironment(
   ]
     .filter(Boolean)
     .join(":");
-  const environment: NodeJS.ProcessEnv = {
-    ...base,
-    ANDROID_SDK_ROOT: sdk,
-    ANDROID_HOME: sdk,
-    PATH: path,
-    ...overrides,
-  };
-
-  if (base.OPENBOT_KEEP_COMPILER_FLAGS !== "1")
-    for (const name of inheritedCompilerFlagNames(base)) delete environment[name];
-
-  return environment;
+  return { ...base, ANDROID_SDK_ROOT: sdk, ANDROID_HOME: sdk, PATH: path, ...overrides };
 }

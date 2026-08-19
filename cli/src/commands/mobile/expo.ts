@@ -5,7 +5,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
-import { inheritedCompilerFlagNames, toolchainEnvironment } from "../../toolchain.js";
+import { toolchainEnvironment } from "../../toolchain.js";
 import { mobileAppDirectory, repositoryRoot } from "../../workspace.js";
 
 export async function runExpo(args: readonly string[]): Promise<number> {
@@ -30,14 +30,6 @@ export async function runExpo(args: readonly string[]): Promise<number> {
   }
   const require = createRequire(join(appDirectory, "package.json"));
   const expoCli = join(dirname(require.resolve("expo/package.json")), "bin", "cli");
-
-  const dropped = inheritedCompilerFlagNames();
-  if (dropped.length > 0 && process.env.OPENBOT_KEEP_COMPILER_FLAGS !== "1")
-    console.log(
-      `ignoring inherited ${dropped.join(", ")} for this build; ` +
-        `they make clang find an incompatible C standard library. ` +
-        `Set OPENBOT_KEEP_COMPILER_FLAGS=1 to keep them.`,
-    );
 
   const child = spawn(process.execPath, [expoCli, ...args], {
     cwd: appDirectory,

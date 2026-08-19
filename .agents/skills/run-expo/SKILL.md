@@ -162,10 +162,11 @@ building C projects against its LLVM, that directory carries its own C standard 
 clang then builds an incompatible `float.h` that every framework including it fails on. Apple's
 diagnostic names neither the variable nor the shell that set it.
 
-`openbot` drops `CPPFLAGS`, `CFLAGS`, `CXXFLAGS`, `LDFLAGS`, `CPATH`, `C_INCLUDE_PATH`,
-`CPLUS_INCLUDE_PATH`, and the Objective-C equivalents before spawning a native build, and says
-so when it does. `mobile doctor` warns when a shell carries them. Set
-`OPENBOT_KEEP_COMPILER_FLAGS=1` for a build that genuinely needs them.
+These variables belong to the developer's environment, not to this repository, so `mobile doctor`
+reports them and nothing here changes them: silently stripping a developer's compiler settings
+would hide the cause rather than fix it, and would surprise anyone who set them deliberately.
+Scope them to the shells that need them — a direnv profile or a wrapper for the project that
+needs Homebrew LLVM — rather than exporting them from a shell profile that every build inherits.
 
 Two things make this hard to diagnose, so check them in this order:
 

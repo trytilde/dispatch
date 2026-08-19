@@ -88,7 +88,7 @@ describe("compiler flag reporting", () => {
     }
   });
 
-  it("warns about an inherited CPPFLAGS, the cause of the SDK modulemap failure", async () => {
+  it("warns about an inherited CPPFLAGS without changing it", async () => {
     process.env.CPPFLAGS = "-I/opt/homebrew/opt/llvm/include";
     const { lines } = await captureDoctor();
     const line = lines.find((entry) => entry.includes("compiler-env"));

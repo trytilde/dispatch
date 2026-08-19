@@ -239,9 +239,9 @@ function nativeBuildCheck(sdk: string): Check {
   };
 }
 
-// A global CPPFLAGS or C_INCLUDE_PATH is the cause of an iOS module build failing inside
-// the SDK's own modulemap. The CLI drops them for its own builds, but anything run by hand
-// still inherits them, so report them where they are legible.
+// A global CPPFLAGS or C_INCLUDE_PATH is the cause of an iOS module build failing inside the
+// SDK's own modulemap. These belong to the developer's environment, so report them here
+// rather than changing them behind the developer's back.
 function compilerFlagCheck(): Check {
   const present = inheritedCompilerFlagNames();
   if (present.length === 0)
@@ -252,7 +252,7 @@ function compilerFlagCheck(): Check {
     warning: true,
     detail:
       `${present.join(", ")} set in this shell — these make clang find an incompatible C ` +
-      `standard library and break Xcode module builds. openbot drops them for its own builds; ` +
-      `remove them from your shell profile for anything run by hand.`,
+      `standard library and break Xcode module builds with ` +
+      `found_incompatible_headers__check_search_paths. Scope them to the shells that need them.`,
   };
 }

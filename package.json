@@ -28,6 +28,7 @@
     "lint": "vp lint",
     "openbot": "vp run --filter openbot start --",
     "prepare": "vp config",
+    "release:desktop": "vp run --filter openbot start -- desktop release --",
     "release:mobile": "vp run --filter openbot start -- mobile release --",
     "test": "vp run -r test",
     "test:e2e": "playwright test",

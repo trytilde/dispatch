@@ -23,10 +23,12 @@
     "check": "vp check",
     "dev": "vp run build && electron .",
     "lint": "vp lint",
-    "package": "vp run --filter @tryopenbot/web build && vp run build && node scripts/package-current.mjs",
-    "package:linux": "vp run --filter @tryopenbot/web build && vp run build && electron-builder --linux",
-    "package:mac": "vp run --filter @tryopenbot/web build && vp run build && electron-builder --mac",
+    "package": "vp run --filter \"@tryopenbot/web...\" build && vp run build && node scripts/package-current.mjs",
+    "package:linux": "vp run --filter \"@tryopenbot/web...\" build && vp run build && electron-builder --linux",
+    "package:mac": "vp run --filter \"@tryopenbot/web...\" build && vp run build && electron-builder --mac",
     "prepack": "pnpm build",
+    "release:linux": "vp run --filter \"@tryopenbot/web...\" build && vp run build && electron-builder --linux --x64 --publish never",
+    "release:mac": "vp run --filter \"@tryopenbot/web...\" build && vp run build && electron-builder --mac --arm64 --publish never",
     "test": "vp test run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
@@ -44,7 +46,7 @@
     "vite-plus": "catalog:"
   },
   "build": {
-    "appId": "dev.openbot.desktop",
+    "appId": "ai.trytilde.openbot",
     "productName": "OpenBot",
     "protocols": [
       {
@@ -74,7 +76,11 @@
         "dmg",
         "zip"
       ],
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "linux": {
       "target": [
@@ -84,7 +90,14 @@
       "category": "Development",
       "syncDesktopName": true
     },
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "${env.OPENBOT_DESKTOP_UPDATES_URL}",
+        "channel": "latest"
+      }
+    ]
   },
   "desktopName": "OpenBot.desktop"
 }

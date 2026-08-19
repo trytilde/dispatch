@@ -1,9 +1,11 @@
 import { runDesktopDev } from "./dev.js";
 import { runDesktopPackage } from "./package.js";
+import { runRelease } from "./release.js";
 
 export const desktopSubcommands: readonly (readonly [string, string])[] = [
   ["dev", "Build and launch the Electron shell on this machine"],
   ["package", "Package the Electron app for this platform"],
+  ["release <subcommand>", "Publish signed builds to the updates bucket (upstream only)"],
 ];
 
 export async function runDesktop(rest: readonly string[]): Promise<number> {
@@ -13,9 +15,11 @@ export async function runDesktop(rest: readonly string[]): Promise<number> {
       return runDesktopDev(args);
     case "package":
       return runDesktopPackage(args);
+    case "release":
+      return runRelease(args);
     default:
       console.error(
-        `Usage: openbot desktop <${desktopSubcommands.map(([name]) => name).join("|")}>`,
+        `Usage: openbot desktop <${desktopSubcommands.map(([name]) => name.split(" ")[0]).join("|")}>`,
       );
       return 1;
   }

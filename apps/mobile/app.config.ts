@@ -18,16 +18,23 @@ export const officialStoreIdentity = {
   bundleIdentifier: officialBundleIdentifier,
 } as const;
 
-const easProjectId = process.env.OPENBOT_EAS_PROJECT_ID ?? officialEasProjectId;
-const owner = process.env.OPENBOT_EXPO_OWNER ?? officialOwner;
-const bundleIdentifier = process.env.OPENBOT_APP_ID ?? officialBundleIdentifier;
+// A GitHub Actions workflow substitutes an empty string for an unset `vars.*`, and an
+// empty override must fall through to the official value rather than blanking it.
+const override = (name: string): string | undefined => {
+  const value = process.env[name]?.trim();
+  return value === "" ? undefined : value;
+};
+
+const easProjectId = override("OPENBOT_EAS_PROJECT_ID") ?? officialEasProjectId;
+const owner = override("OPENBOT_EXPO_OWNER") ?? officialOwner;
+const bundleIdentifier = override("OPENBOT_APP_ID") ?? officialBundleIdentifier;
 
 const config: ExpoConfig = {
-  name: process.env.OPENBOT_APP_NAME ?? "OpenBot",
-  slug: process.env.OPENBOT_APP_SLUG ?? "openbot",
+  name: override("OPENBOT_APP_NAME") ?? "OpenBot",
+  slug: override("OPENBOT_APP_SLUG") ?? "openbot",
   version: "0.1.0",
   orientation: "portrait",
-  scheme: process.env.OPENBOT_APP_SCHEME ?? "openbot",
+  scheme: override("OPENBOT_APP_SCHEME") ?? "openbot",
   platforms: ["ios", "android"],
   userInterfaceStyle: "automatic",
   owner,

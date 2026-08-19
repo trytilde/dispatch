@@ -20,6 +20,24 @@ describe("resolveTarget", () => {
     );
   });
 
+  // An unset `vars.DESKTOP_UPDATES_S3_BUCKET` arrives as "", which `??` would accept
+  // and resolve the bucket to an empty string.
+  it("falls back to the official bucket when the override is set but empty", () => {
+    process.env.OPENBOT_DESKTOP_UPDATES_BUCKET = "";
+    process.env.OPENBOT_DESKTOP_UPDATES_PREFIX = "";
+    process.env.OPENBOT_DESKTOP_UPDATES_BASE_URL = "";
+    try {
+      const target = resolveTarget("latest");
+      expect(target.bucket).toBe(officialBucket);
+      expect(target.prefix).toBe("desktop/openbot/latest");
+      expect(target.baseUrl).toContain(officialBucket);
+    } finally {
+      delete process.env.OPENBOT_DESKTOP_UPDATES_BUCKET;
+      delete process.env.OPENBOT_DESKTOP_UPDATES_PREFIX;
+      delete process.env.OPENBOT_DESKTOP_UPDATES_BASE_URL;
+    }
+  });
+
   it("lets a fork redirect the bucket, prefix, and public base url", () => {
     process.env.OPENBOT_DESKTOP_UPDATES_BUCKET = "a-fork-bucket";
     process.env.OPENBOT_DESKTOP_UPDATES_PREFIX = "/builds/";

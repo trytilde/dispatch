@@ -106,3 +106,4 @@ flowchart LR
 
 - 2026-08-19T10:20:00+02:00: Initial decision.
 - 2026-08-19T10:55:00+02:00: Named Tilde as publisher and OpenBot as the app, moving the identifier from `dev.openbot.mobile` to `ai.trytilde.openbot` before any store submission, and recorded that `openbot init` must never ask about EAS or require it.
+- 2026-08-19T13:40:00+02:00: Hardened the guard against an empty `OPENBOT_EAS_PROJECT_ID`. GitHub Actions substitutes an empty string for an unset repository variable, and `??` accepted it, so the official project compared unequal to itself and the refusal never fired. Overrides now read through `optionalEnvironment`, which treats empty and whitespace as absent.

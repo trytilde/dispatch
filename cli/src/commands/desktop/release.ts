@@ -18,6 +18,7 @@ import {
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import arg from "arg";
+import { optionalEnvironment } from "../../environment-overrides.js";
 import { isUpstreamRepository, remoteRepository, upstreamRepository } from "../../upstream.js";
 import { repositoryRoot } from "../../workspace.js";
 
@@ -49,11 +50,11 @@ export interface PublicationTarget {
  * to publish its own builds; nothing here is required for a fork that never publishes.
  */
 export function resolveTarget(channel: string): PublicationTarget {
-  const bucket = process.env.OPENBOT_DESKTOP_UPDATES_BUCKET ?? officialUpdatesBucket;
-  const root = process.env.OPENBOT_DESKTOP_UPDATES_PREFIX ?? officialUpdatesPrefix;
-  const region = process.env.AWS_REGION ?? officialUpdatesRegion;
+  const bucket = optionalEnvironment("OPENBOT_DESKTOP_UPDATES_BUCKET") ?? officialUpdatesBucket;
+  const root = optionalEnvironment("OPENBOT_DESKTOP_UPDATES_PREFIX") ?? officialUpdatesPrefix;
+  const region = optionalEnvironment("AWS_REGION") ?? officialUpdatesRegion;
   const prefix = `${trimSlashes(root)}/${channel}`;
-  const configuredBase = process.env.OPENBOT_DESKTOP_UPDATES_BASE_URL;
+  const configuredBase = optionalEnvironment("OPENBOT_DESKTOP_UPDATES_BASE_URL");
   const base = configuredBase
     ? trimTrailingSlash(configuredBase)
     : `https://${bucket}.s3.${region}.amazonaws.com`;
@@ -482,7 +483,7 @@ function readReleaseState(root: string): { signed: boolean; notarized: boolean }
 }
 
 export function desktopAppDirectory(root: string): string {
-  return join(root, process.env.OPENBOT_DESKTOP_DIR ?? "apps/desktop");
+  return join(root, optionalEnvironment("OPENBOT_DESKTOP_DIR") ?? "apps/desktop");
 }
 
 function desktopVersion(root: string): string {

@@ -5,6 +5,7 @@
 // and never submits unless asked.
 import { spawn } from "node:child_process";
 import arg from "arg";
+import { optionalEnvironment } from "../../environment-overrides.js";
 import { isUpstreamRepository, remoteRepository, upstreamRepository } from "../../upstream.js";
 import { mobileAppDirectory, repositoryRoot } from "../../workspace.js";
 
@@ -135,7 +136,7 @@ function nonInteractive(requested: boolean | undefined): string[] {
 
 /** Returns a refusal message when this checkout must not publish, otherwise undefined. */
 function publicationGuard(root: string): string | undefined {
-  const projectId = process.env.OPENBOT_EAS_PROJECT_ID ?? officialEasProjectId;
+  const projectId = optionalEnvironment("OPENBOT_EAS_PROJECT_ID") ?? officialEasProjectId;
   if (projectId !== officialEasProjectId) return undefined;
   if (isUpstreamRepository(root)) return undefined;
   const found = remoteRepository(root) ?? "an unknown remote";

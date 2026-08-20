@@ -8,14 +8,12 @@ import {
   useState,
 } from "react";
 import {
-  type ActivityEvent,
   type ChatAgent,
   type ChatMessage,
-  type ChatPart,
-  eventName,
   errorMessage,
   latestMessagePreview,
   messageText,
+  queuedTurnText,
   type QueuedTurn,
 } from "@tryopenbot/client-runtime";
 import { useStore } from "zustand";
@@ -62,7 +60,6 @@ export function OpenBotApp() {
     loading: loadingMessages,
     submitting,
     agentBusy,
-    streamStatus,
     turnStatus,
     error,
   } = conversation;
@@ -272,19 +269,13 @@ export function OpenBotApp() {
     }
   }
 
-  async function mutateQueue(operation: () => Promise<void>): Promise<void> {
-    if (!sessionId) return;
-    try {
-      await operation();
-      await openBotRuntime.actions.refreshQueue(sessionId);
-    } catch (reason) {
-      openBotRuntime.actions.setError(errorMessage(reason));
-    }
-  }
-
   async function editQueuedTurn(turn: QueuedTurn): Promise<void> {
     const text = queuedTurnText(turn);
-    await mutateQueue(() => openBotRuntime.client.deleteQueuedTurn(turn.id));
+    try {
+      await openBotRuntime.actions.removeQueuedTurn(turn.id);
+    } catch {
+      return;
+    }
     setDraft(text === "Queued agent turn" ? "" : text);
   }
 
@@ -651,23 +642,27 @@ export function OpenBotApp() {
             onMoveEarlier={(id) => {
               const turn = queuedTurns.find((candidate) => candidate.id === id);
               if (turn)
-                void mutateQueue(() =>
-                  openBotRuntime.client.reorderQueuedTurn(id, turn.queue_position - 1),
-                );
+                void openBotRuntime.actions
+                  .reorderQueuedTurn(id, turn.queue_position - 1)
+                  .catch(() => undefined);
             }}
             onMoveLater={(id) => {
               const turn = queuedTurns.find((candidate) => candidate.id === id);
               if (turn)
-                void mutateQueue(() =>
-                  openBotRuntime.client.reorderQueuedTurn(id, turn.queue_position + 1),
-                );
+                void openBotRuntime.actions
+                  .reorderQueuedTurn(id, turn.queue_position + 1)
+                  .catch(() => undefined);
             }}
-            onRunNow={(id) => void mutateQueue(() => openBotRuntime.client.steerQueuedTurn(id))}
+            onRunNow={(id) =>
+              void openBotRuntime.actions.runQueuedTurnNow(id).catch(() => undefined)
+            }
             onEdit={(id) => {
               const turn = queuedTurns.find((candidate) => candidate.id === id);
               if (turn) void editQueuedTurn(turn);
             }}
-            onRemove={(id) => void mutateQueue(() => openBotRuntime.client.deleteQueuedTurn(id))}
+            onRemove={(id) =>
+              void openBotRuntime.actions.removeQueuedTurn(id).catch(() => undefined)
+            }
           />
         }
       />
@@ -751,13 +746,6 @@ function titleFrom(text: string, files: PendingFile[]): string {
   return value.length > 80 ? `${value.slice(0, 77)}...` : value;
 }
 
-function firstString(value: Record<string, unknown>, ...keys: string[]): string {
-  for (const key of keys) {
-    if (typeof value[key] === "string") return value[key];
-  }
-  return "";
-}
-
 function eventSummary(value: unknown): string {
   if (typeof value === "string") return value.slice(0, 180);
   const data = record(value);
@@ -766,23 +754,6 @@ function eventSummary(value: unknown): string {
     if (found) return found.slice(0, 180);
   }
   return "";
-}
-
-function queuedTurnText(turn: QueuedTurn): string {
-  const messages = turn.chat_request.messages;
-  if (!Array.isArray(messages)) return "Queued agent turn";
-  const latest = messages.filter((message) => record(message).role === "user").at(-1);
-  return unknownText(record(latest).content ?? record(latest).parts) || "Queued agent turn";
-}
-
-function unknownText(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value.map(unknownText).filter(Boolean).join("\n");
-  if (typeof value !== "object" || value === null) return "";
-  const item = record(value);
-  if (typeof item.text === "string") return item.text;
-  const nested = item.content ?? item.parts;
-  return nested === undefined ? "" : unknownText(nested);
 }
 
 function humanEventName(value: string): string {

@@ -10,6 +10,10 @@ import {
 import {
   type ChatAgent,
   type ChatMessage,
+  connectorAccountCreatedMessage,
+  connectorAccountSelectionMessage,
+  type ConnectorProvider,
+  type CreateConnectorAccountResult,
   errorMessage,
   latestMessagePreview,
   messageText,
@@ -24,6 +28,11 @@ import {
   ChatComposer,
   ChatHeader,
   ChatPane,
+  type ConnectorCredentialSourceView,
+  type ConnectorPartActions,
+  type ConnectorSelectionView,
+  ConnectorSetupDialog,
+  type ConnectorSetupSubmit,
   ConversationSkeleton,
   ConversationSurface,
   ConversationMessage,
@@ -68,6 +77,7 @@ export function OpenBotApp() {
   const [threadRootId, setThreadRootId] = useState("");
   const [createAgentOpen, setCreateAgentOpen] = useState(false);
   const [creatingAgent, setCreatingAgent] = useState(false);
+  const [connectorSetup, setConnectorSetup] = useState<ConnectorSetupState | null>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerInputRef = useRef<HTMLTextAreaElement>(null);
@@ -385,6 +395,97 @@ export function OpenBotApp() {
     }
   }
 
+  const connectorActions: ConnectorPartActions = {
+    busy: Boolean(connectorSetup?.submitting),
+    onSelectAccount: (selection, account) => {
+      void openBotRuntime.actions.sendMessage({
+        text: connectorAccountSelectionMessage(
+          { provider_type_id: selection.providerTypeId, provider_name: selection.providerName },
+          { id: account.id, display_name: account.displayName },
+        ),
+      });
+    },
+    onAddAccount: (selection) => {
+      setConnectorSetup({ selection, loading: selection.credentialSources.length === 0 });
+      if (selection.credentialSources.length > 0) return;
+      // Older payloads omit credential sources; recover them from the catalog.
+      void openBotRuntime.client
+        .listConnectorProviders()
+        .then((providers) => {
+          const provider = providers.find(
+            (candidate) => candidate.type_id === selection.providerTypeId,
+          );
+          setConnectorSetup((current) =>
+            current && current.selection === selection
+              ? {
+                  ...current,
+                  loading: false,
+                  ...(provider
+                    ? {
+                        selection: {
+                          ...selection,
+                          credentialSources: credentialSourceViews(provider),
+                        },
+                      }
+                    : { error: `No connector catalog entry for ${selection.providerName}` }),
+                }
+              : current,
+          );
+        })
+        .catch((reason) => {
+          setConnectorSetup((current) =>
+            current && current.selection === selection
+              ? { ...current, loading: false, error: errorMessage(reason) }
+              : current,
+          );
+        });
+    },
+  };
+
+  async function submitConnectorSetup(input: ConnectorSetupSubmit): Promise<void> {
+    if (!connectorSetup) return;
+    const selection = connectorSetup.selection;
+    setConnectorSetup({ ...connectorSetup, submitting: true, error: undefined });
+    try {
+      const result = await openBotRuntime.client.createConnectorAccount({
+        providerTypeId: selection.providerTypeId,
+        credentialSourceTypeId: input.credentialSourceTypeId,
+        displayName: input.displayName,
+        ...(input.resourceServerValues ? { resourceServerValues: input.resourceServerValues } : {}),
+        ...(input.userCredentialValues ? { userCredentialValues: input.userCredentialValues } : {}),
+        returnUrl: `${window.location.origin}/?connector_setup=complete`,
+      });
+      if (result.status === "authorize" && result.authorization_url) {
+        window.open(result.authorization_url, "_blank", "noopener");
+        setConnectorSetup({
+          selection,
+          submitting: false,
+          result,
+          authorizationUrl: result.authorization_url,
+        });
+        return;
+      }
+      finishConnectorSetup(selection, result);
+    } catch (reason) {
+      setConnectorSetup((current) =>
+        current ? { ...current, submitting: false, error: errorMessage(reason) } : current,
+      );
+    }
+  }
+
+  function finishConnectorSetup(
+    selection: ConnectorSelectionView,
+    result: CreateConnectorAccountResult,
+  ): void {
+    setConnectorSetup(null);
+    void openBotRuntime.actions.sendMessage({
+      text: connectorAccountCreatedMessage(
+        { provider_type_id: selection.providerTypeId, provider_name: selection.providerName },
+        result,
+      ),
+    });
+  }
+
   return (
     <WorkspaceShell
       sidebarCollapsed={layout.sidebarCollapsed}
@@ -570,6 +671,7 @@ export function OpenBotApp() {
                       rendered.push(
                         <div className="message-block" key={key}>
                           <MessageContent
+                            connectorActions={connectorActions}
                             message={{ ...message, type: "ui", parts: [segment.part] }}
                             resolveAttachmentUrl={resolveAttachmentUrl}
                             rewriteUrl={rewriteUrl}
@@ -650,6 +752,29 @@ export function OpenBotApp() {
         onClose={layout.toggleWorkspace}
         onResize={layout.beginWorkspaceResize}
       />
+      {connectorSetup && !connectorSetup.loading ? (
+        <ConnectorSetupDialog
+          providerName={connectorSetup.selection.providerName}
+          credentialSources={connectorSetup.selection.credentialSources}
+          submitting={connectorSetup.submitting ?? false}
+          {...(connectorSetup.error ? { error: connectorSetup.error } : {})}
+          {...(connectorSetup.authorizationUrl
+            ? { authorizationUrl: connectorSetup.authorizationUrl }
+            : {})}
+          onSubmit={(input) => void submitConnectorSetup(input)}
+          onReopenAuthorization={() => {
+            if (connectorSetup.authorizationUrl)
+              window.open(connectorSetup.authorizationUrl, "_blank", "noopener");
+          }}
+          onClose={() => {
+            if (connectorSetup.result && connectorSetup.authorizationUrl) {
+              finishConnectorSetup(connectorSetup.selection, connectorSetup.result);
+              return;
+            }
+            setConnectorSetup(null);
+          }}
+        />
+      ) : null}
       <AddAgentDialog
         agents={agents.map((agent) => ({
           id: agent.id,
@@ -694,6 +819,31 @@ function saveScrollSnapshot(
 function titleFrom(text: string, files: PendingFile[]): string {
   const value = text || files[0]?.file.name || "New chat";
   return value.length > 80 ? `${value.slice(0, 77)}...` : value;
+}
+
+interface ConnectorSetupState {
+  selection: ConnectorSelectionView;
+  loading?: boolean;
+  submitting?: boolean;
+  error?: string | undefined;
+  authorizationUrl?: string;
+  result?: CreateConnectorAccountResult;
+}
+
+/** Map the runtime's wire-shaped provider onto the UI's credential-source view. */
+function credentialSourceViews(provider: ConnectorProvider): ConnectorCredentialSourceView[] {
+  return provider.credential_sources.map((source) => ({
+    typeId: source.type_id,
+    name: source.name,
+    ...(source.documentation ? { documentation: source.documentation } : {}),
+    requiresBrokering: source.requires_brokering,
+    supportsAutoDisplayName: source.supports_auto_display_name ?? false,
+    ...(source.display_name_description
+      ? { displayNameDescription: source.display_name_description }
+      : {}),
+    resourceServerSchema: source.resource_server_schema,
+    userCredentialSchema: source.user_credential_schema,
+  }));
 }
 
 function queuedTurnText(turn: QueuedTurn): string {

@@ -192,13 +192,22 @@ importers:
       '@tryopenbot/computer-service-provider':
         specifier: workspace:*
         version: link:../../packages/computer-service-provider
+      '@tryopenbot/utilities':
+        specifier: workspace:*
+        version: link:../../packages/utilities
       hono:
         specifier: 4.13.1
         version: 4.13.1
+      ws:
+        specifier: 8.21.3
+        version: 8.21.3
     devDependencies:
       '@types/node':
         specifier: 24.3.0
         version: 24.3.0
+      '@types/ws':
+        specifier: 8.18.1
+        version: 8.18.1
       '@typescript/native-preview':
         specifier: 7.0.0-dev.20260707.2
         version: 7.0.0-dev.20260707.2
@@ -5138,6 +5147,9 @@ packages:
 
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
+
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
   '@types/yargs-parser@21.0.3':
     resolution: {integrity: sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==}
@@ -13693,7 +13705,9 @@ snapshots:
       metro-runtime: 0.84.4
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.86.2': {}
 
@@ -14689,6 +14703,10 @@ snapshots:
   '@types/unist@2.0.11': {}
 
   '@types/unist@3.0.3': {}
+
+  '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 24.3.0
 
   '@types/yargs-parser@21.0.3': {}
 

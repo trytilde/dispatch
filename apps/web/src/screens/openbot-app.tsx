@@ -26,6 +26,7 @@ import { useStore } from "zustand";
 import {
   ActivityQueue,
   AddAgentDialog,
+  AgentSetupDialog,
   AgentWorkspacePanel,
   ChatComposer,
   ChatHeader,
@@ -58,6 +59,7 @@ import { useClientWorkspace } from "../workspaces.js";
 export function OpenBotApp() {
   const sidebar = useStore(openBotRuntime.store, (state) => state.sidebar);
   const conversation = useStore(openBotRuntime.store, (state) => state.conversation);
+  const agentSetup = useStore(openBotRuntime.store, (state) => state.agentSetup);
   const { agents, nextAgentToken, selectedAgentId: agentId, loading } = sidebar;
   const {
     selectedSessionId: sessionId,
@@ -82,7 +84,6 @@ export function OpenBotApp() {
   // it directly; see WorkspaceSearch in router.tsx.
   const workspaceSearch = useSearch({ strict: false }) as WorkspaceSearch;
   const createAgentOpen = workspaceSearch.dialog === "new-agent";
-  const [creatingAgent, setCreatingAgent] = useState(false);
   const [connectorSetup, setConnectorSetup] = useState<ConnectorSetupState | null>(null);
   const connectorWatchRef = useRef<AbortController | null>(null);
   const pendingConnectorSelectionRef = useRef<ConnectorSelectionView | null>(null);
@@ -390,37 +391,13 @@ export function OpenBotApp() {
     />
   );
 
-  /** Scaffold and register a new agent, then open a fresh conversation with it. */
+  /** Start durable agent setup; the runtime owns readiness polling and selection. */
   async function submitCreateAgent(candidateName: string): Promise<void> {
     const name = candidateName.trim();
-    if (!name || creatingAgent) return;
-    setCreatingAgent(true);
+    if (!name || agentSetup.status === "starting" || agentSetup.status === "setting_up") return;
     openBotRuntime.actions.setError("");
-    try {
-      const created = await openBotRuntime.client.createAgent(name);
-      // The registration is reconciled by the sandbox CLI; wait for the sidebar to surface it.
-      for (let attempt = 0; attempt < 10; attempt += 1) {
-        await openBotRuntime.actions.refreshSidebar();
-        const agent = openBotRuntime.store
-          .getState()
-          .sidebar.agents.find((candidate) => candidate.id === created.id);
-        if (agent) {
-          setCreateAgentOpen(false);
-          await openBotRuntime.actions.selectAgent(agent.id);
-          openBotRuntime.actions.startNewConversation(agent.id);
-          return;
-        }
-        await new Promise((resolveDelay) => window.setTimeout(resolveDelay, 1_500));
-      }
-      setCreateAgentOpen(false);
-      openBotRuntime.actions.setError(
-        `Bot ${created.name} was created but has not appeared yet; refresh shortly.`,
-      );
-    } catch (reason) {
-      openBotRuntime.actions.setError(errorMessage(reason));
-    } finally {
-      setCreatingAgent(false);
-    }
+    setCreateAgentOpen(false);
+    await openBotRuntime.actions.startAgentSetup(name);
   }
 
   const connectorActions: ConnectorPartActions = {
@@ -589,6 +566,8 @@ export function OpenBotApp() {
               : agent.last_message_preview || "",
           updatedAt: agent.last_user_message_at || agent.sessions.items[0]?.updated_at,
           unread: agent.sessions.items.some((item) => item.unread),
+          busy: sidebar.busyAgentIds.includes(agent.id),
+          status: agent.status,
         }))}
         selectedAgentId={agentId}
         loading={loading}
@@ -600,7 +579,9 @@ export function OpenBotApp() {
         onSearchClose={closeSearch}
         onSelectAgent={(id) => {
           const agent = agents.find((candidate) => candidate.id === id);
-          if (agent) selectAgent(agent);
+          if (agent) {
+            selectAgent(agent);
+          }
         }}
         onLoadMore={() => void loadMoreAgents()}
         onCreateAgent={() => setCreateAgentOpen(true)}
@@ -618,6 +599,12 @@ export function OpenBotApp() {
             computerOpen={layout.workspaceOpen}
             onToggleComputer={layout.toggleWorkspace}
           />
+        ) : null}
+
+        {loading && !selectedAgent ? (
+          <ConversationSurface scrollRef={conversationRef} onScroll={handleConversationScroll}>
+            <ConversationSkeleton />
+          </ConversationSurface>
         ) : null}
 
         {selectedAgent ? (
@@ -870,7 +857,7 @@ export function OpenBotApp() {
           name: agent.display_name,
           lastMessage: agent.last_message_preview || undefined,
         }))}
-        creating={creatingAgent}
+        creating={agentSetup.status === "starting"}
         loading={loading}
         onClose={() => setCreateAgentOpen(false)}
         onCreate={(name) => void submitCreateAgent(name)}
@@ -879,6 +866,14 @@ export function OpenBotApp() {
           if (agent) selectAgent(agent);
         }}
         open={createAgentOpen}
+      />
+      <AgentSetupDialog
+        agentId={agentSetup.agent?.id ?? ""}
+        error={agentSetup.error}
+        name={agentSetup.agent?.name ?? "New bot"}
+        onClose={() => openBotRuntime.actions.dismissAgentSetup()}
+        open={agentSetup.status !== "idle"}
+        status={agentSetup.status === "idle" ? "starting" : agentSetup.status}
       />
     </WorkspaceShell>
   );

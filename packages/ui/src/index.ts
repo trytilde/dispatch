@@ -107,6 +107,7 @@ export {
 } from "./computer-components.js";
 export { useWorkspaceLayout, type WorkspaceLayout } from "./use-workspace-layout.js";
 export { AgentAvatar, type AgentAvatarProps } from "./agent-avatar.js";
+export { AgentSetupDialog, type AgentSetupDialogProps } from "./agent-setup-dialog.js";
 export { BrandedLoadingState, type BrandedLoadingStateProps } from "./branded-loading-state.js";
 export {
   WorkspaceSidebar,

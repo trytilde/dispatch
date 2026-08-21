@@ -2,7 +2,7 @@ import { constants } from "node:fs";
 import { access, chmod, copyFile, lstat, mkdir, readdir, rm } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { materializeFileTemplate } from "@tryopenbot/utilities";
+import { agentIdFromName, materializeFileTemplate } from "@tryopenbot/utilities";
 import {
   primaryAgentDirectory,
   primaryAgentId,
@@ -121,17 +121,7 @@ async function seedTemplateDirectory(
   return directory;
 }
 
-export function agentIdFromName(name: string): string {
-  const id = name
-    .trim()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  if (!id) throw new Error("Agent name must contain at least one letter or number");
-  return id;
-}
+export { agentIdFromName } from "@tryopenbot/utilities";
 
 /** Materialize one complete authored agent without overwriting an existing directory. */
 export async function scaffoldAgent(

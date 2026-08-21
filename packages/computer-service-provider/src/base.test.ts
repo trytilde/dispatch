@@ -621,15 +621,26 @@ describe("computer image lifecycle", () => {
     expect(viewer).not.toContain("noVNC_control_bar");
     const bootstrap = await readFile(computerImageAssets.bootstrap, "utf8");
     expect(bootstrap).toContain("SOPS_VERSION=3.13.3");
-    expect(bootstrap).toContain("pcmanfm picom");
-    expect(bootstrap).toContain("tint2");
-    expect(await readFile(computerImageAssets.desktopSession, "utf8")).toContain(
-      "desktop-wallpaper.png",
+    expect(bootstrap).toContain("apt-get -o Acquire::Retries=3");
+    expect(bootstrap).toContain("apt_retry install -y --no-install-recommends");
+    expect(bootstrap).toContain("thunar");
+    expect(bootstrap).toContain("xfce4-panel xfce4-settings xfwm4");
+    expect(bootstrap).not.toContain("openbox");
+    expect(bootstrap).not.toContain("tint2");
+    const desktopSession = await readFile(computerImageAssets.desktopSession, "utf8");
+    expect(desktopSession).toContain("desktop-wallpaper.png");
+    expect(desktopSession).toContain("xfsettingsd --replace --no-daemon");
+    expect(desktopSession).toContain("xfwm4 --compositor=on");
+    expect(desktopSession).toContain("xfce4-panel --disable-wm-check");
+    expect(desktopSession).toContain(
+      'launcher_directory="$HOME/.config/xfce4/panel/launcher-$launcher_id"',
     );
-    const taskbar = await readFile(computerImageAssets.tint2, "utf8");
-    expect(taskbar).toContain("openbot-browser.desktop");
-    expect(taskbar).toContain("panel_size = 100% 54");
-    expect(taskbar).toContain("autohide = 0");
+    expect(desktopSession).toContain('"/usr/share/applications/$launcher_file"');
+    const taskbar = await readFile(computerImageAssets.xfcePanel, "utf8");
+    expect(taskbar).toContain('name="position" type="string" value="p=10;x=0;y=0"');
+    expect(taskbar).toContain('name="autohide-behavior" type="uint" value="0"');
+    expect(taskbar).toContain('value="openbot-files.desktop"');
+    expect(taskbar).toContain('value="openbot-browser.desktop"');
   });
 });
 

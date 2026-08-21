@@ -22,11 +22,25 @@ if [[ -f "$MARKER" ]] && [[ "$(cat "$MARKER")" == "$BOOTSTRAP_VERSION" ]]; then
 fi
 
 # Install the common desktop, browser automation, VNC, and diagnostic dependencies.
-apt-get -o Acquire::Retries=5 update
-apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
-  adwaita-icon-theme arc-theme at-spi2-core ca-certificates curl dbus-x11 feh fonts-liberation git jq libxi6 librsvg2-bin \
-  novnc openbox passwd pcmanfm picom procps ripgrep tigervnc-standalone-server tint2 \
-  util-linux websockify x11-utils xterm
+apt_retry() {
+  local attempt
+  for attempt in 1 2 3; do
+    if apt-get -o Acquire::Retries=3 "$@"; then
+      return 0
+    fi
+    if [[ "$attempt" -lt 3 ]]; then
+      echo "apt-get failed on attempt $attempt; retrying" >&2
+      sleep "$attempt"
+    fi
+  done
+  return 1
+}
+
+apt_retry update
+apt_retry install -y --no-install-recommends \
+  adwaita-icon-theme arc-theme at-spi2-core ca-certificates curl dbus-x11 feh fonts-liberation git imagemagick jq libxi6 librsvg2-bin \
+  novnc passwd procps ripgrep thunar tigervnc-standalone-server util-linux websockify \
+  x11-utils xdotool xfce4-panel xfce4-settings xfwm4 xterm
 
 # Google publishes a pinned amd64 package; Debian Chromium is the portable fallback.
 architecture="$(dpkg --print-architecture)"
@@ -77,10 +91,10 @@ if [[ "$architecture" == "amd64" ]]; then
   chrome_deb=/tmp/google-chrome.deb
   curl -fsSL "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION_AMD64}_amd64.deb" -o "$chrome_deb"
   echo "$CHROME_SHA256_AMD64  $chrome_deb" | sha256sum -c -
-  apt-get install -y "$chrome_deb"
+  apt_retry install -y "$chrome_deb"
   rm -f "$chrome_deb"
 else
-  apt-get install -y chromium
+  apt_retry install -y chromium
 fi
 
 # Record completion only after every dependency is usable, then trim package caches.

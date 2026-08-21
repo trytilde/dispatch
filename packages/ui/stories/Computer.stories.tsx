@@ -137,17 +137,10 @@ export const WorkspacePanel: Story = {
   render: () => (
     <div style={{ height: 620, position: "relative", width: 640 }}>
       <AgentWorkspacePanel
-        activity={<p>Agent activity appears here.</p>}
-        activityCount={2}
         agentId="hello-world"
         agentName="Hello World"
-        monitors={[
-          { id: "hello-world", previewUrl: preview, title: "Hello World" },
-          { id: "research", previewUrl: preview, title: "Research" },
-        ]}
         onClose={noop}
         onResize={noop}
-        onSelectMonitor={noop}
         open
       />
     </div>

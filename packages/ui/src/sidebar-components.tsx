@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { AgentAvatar, type AgentAvatarState } from "./agent-avatar.js";
 import GlideMenu from "./beautiful-ui/atoms/glide-menu.js";
 import {
@@ -9,12 +10,12 @@ import {
   CommandItem,
   CommandList,
 } from "./components/ui/command.js";
+import { BackIcon, PlusIcon } from "./workspace-icons.js";
 import { getThemePreference, setThemePreference, type ThemePreference } from "./theme.js";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./components/ui/dropdown-menu.js";
 
@@ -44,7 +45,7 @@ export function AgentListItem({ agent, selected, onSelect }: AgentListItemProps)
   return (
     <button
       data-menu-row
-      className={`group relative z-10 flex h-[54px] w-full items-center gap-2 rounded-[8px] px-2 text-left
+      className={`sidebar-agent-row group relative z-10 flex h-[54px] w-full items-center gap-2 rounded-[8px] px-2 text-left
         transition-[background-color,color,transform] duration-150 active:scale-[0.98]
         ${selected ? "bg-hover-2" : ""}`}
       aria-current={selected ? "page" : undefined}
@@ -62,7 +63,7 @@ export function AgentListItem({ agent, selected, onSelect }: AgentListItemProps)
       >
         <AgentAvatar emphasis={hovered} id={agent.id} state={avatarState(agent, selected)} />
       </span>
-      <span className="min-w-0 flex-1">
+      <span className="sidebar-agent-meta min-w-0 flex-1">
         <span className="flex items-baseline justify-between gap-2">
           <strong
             className={`truncate text-[13px] leading-tight ${
@@ -94,7 +95,7 @@ export function AgentListItem({ agent, selected, onSelect }: AgentListItemProps)
         <span
           aria-label="Has unread messages"
           role="status"
-          className="size-2 shrink-0 rounded-full bg-accent"
+          className="sidebar-agent-unread size-2 shrink-0 rounded-full bg-accent"
           style={{ animation: "pop-in 250ms cubic-bezier(0.23,1,0.32,1) both" }}
         />
       ) : null}
@@ -207,7 +208,7 @@ export function AgentSearchDialog({
     >
       <CommandInput autoFocus placeholder="Search" value={value} onValueChange={onChange} />
       <CommandList>
-        {!loading ? <CommandEmpty>{query ? "No results" : "No agents yet"}</CommandEmpty> : null}
+        {!loading ? <CommandEmpty>{query ? "No results" : "No bots yet"}</CommandEmpty> : null}
         {agents.map((agent, index) => (
           <CommandItem
             key={agent.id}
@@ -256,6 +257,170 @@ export function AgentSearchDialog({
   );
 }
 
+export interface AddAgentDialogProps {
+  agents: readonly SidebarAgent[];
+  loading: boolean;
+  open: boolean;
+  creating?: boolean;
+  onClose: () => void;
+  onCreate: (name: string) => void;
+  onSelect: (id: string) => void;
+}
+
+export function AddAgentDialog({
+  agents,
+  loading,
+  open,
+  creating = false,
+  onClose,
+  onCreate,
+  onSelect,
+}: AddAgentDialogProps) {
+  const [creatingNew, setCreatingNew] = useState(false);
+  const [query, setQuery] = useState("");
+  const matchingAgents = agents.filter((agent) =>
+    `${agent.name} ${agent.id}`.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+
+  useEffect(() => {
+    if (open) return;
+    setCreatingNew(false);
+    setQuery("");
+  }, [open]);
+
+  const close = () => {
+    if (creating) return;
+    onClose();
+  };
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const name = query.trim();
+    if (name && !creating) onCreate(name);
+  };
+
+  return (
+    <CommandDialog
+      className="max-w-[520px]"
+      commandProps={{ shouldFilter: false }}
+      onOpenChange={(next) => {
+        if (!next) close();
+      }}
+      open={open}
+      title={creatingNew ? "Create bot" : "Add bot"}
+    >
+      {creatingNew ? (
+        <form onSubmit={submit}>
+          <div className="flex items-center gap-1 border-b border-line px-2">
+            <button
+              aria-label="Back to bots"
+              className="flex size-8 shrink-0 items-center justify-center rounded-control text-ink-2
+                transition-colors hover:bg-hover hover:text-ink"
+              disabled={creating}
+              onClick={() => {
+                setCreatingNew(false);
+                setQuery("");
+              }}
+              type="button"
+            >
+              <BackIcon className="size-4 fill-none stroke-current stroke-[1.4]" />
+            </button>
+            <input
+              autoFocus
+              className="h-12 min-w-0 flex-1 bg-transparent px-1 text-[14px] text-ink outline-none
+                placeholder:text-ink-3"
+              disabled={creating}
+              maxLength={72}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Name your bot"
+              value={query}
+            />
+          </div>
+          <div className="px-4 py-3 text-[12.5px] leading-relaxed text-ink-3">
+            Create a new bot in this OpenBot workspace.
+          </div>
+          <div className="flex justify-end gap-2 border-t border-line px-3 py-2.5">
+            <button
+              className="h-8 rounded-control px-3 text-[12.5px] text-ink-2 transition-colors
+                hover:bg-hover hover:text-ink"
+              disabled={creating}
+              onClick={close}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              className="h-8 rounded-control bg-accent px-3 text-[12.5px] font-medium
+                text-accent-foreground disabled:opacity-50"
+              disabled={creating || !query.trim()}
+              type="submit"
+            >
+              {creating ? "Creating…" : "Create bot"}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
+          <CommandInput
+            autoFocus
+            onValueChange={setQuery}
+            placeholder="Search bots"
+            value={query}
+          />
+          <CommandList>
+            <CommandItem
+              onSelect={() => {
+                setCreatingNew(true);
+                setQuery("");
+              }}
+              value="Create a new bot"
+            >
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-inset text-ink-2">
+                <PlusIcon className="size-4 fill-none stroke-current stroke-[1.4]" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <strong className="block text-[13px] font-medium leading-tight text-ink">
+                  Create a new bot
+                </strong>
+                <small className="block text-[12px] leading-snug text-ink-3">
+                  Set up a new bot
+                </small>
+              </span>
+            </CommandItem>
+            {!loading && matchingAgents.length === 0 ? (
+              <div className="px-3 py-6 text-center text-[13px] text-ink-3">
+                {agents.length === 0 ? "No bots yet" : "No bots found"}
+              </div>
+            ) : null}
+            {matchingAgents.map((agent) => (
+              <CommandItem
+                key={agent.id}
+                onSelect={() => {
+                  onClose();
+                  onSelect(agent.id);
+                }}
+                value={`${agent.name} ${agent.id}`}
+              >
+                <AgentAvatar id={agent.id} />
+                <span className="min-w-0 flex-1">
+                  <strong className="block truncate text-[13px] font-medium leading-tight text-ink">
+                    {agent.name}
+                  </strong>
+                  {agent.lastMessage ? (
+                    <small className="block truncate text-[12px] leading-snug text-ink-3">
+                      {agent.lastMessage}
+                    </small>
+                  ) : null}
+                </span>
+              </CommandItem>
+            ))}
+          </CommandList>
+        </>
+      )}
+    </CommandDialog>
+  );
+}
+
 function ThemeActionIcon({ preference }: { preference: ThemePreference }) {
   const paths: Record<ThemePreference, string> = {
     system: "M2.75 3.75h10.5v7H2.75Zm2.5 9.5h5.5M8 10.75v2.5",
@@ -277,46 +442,52 @@ function ThemeActionIcon({ preference }: { preference: ThemePreference }) {
 }
 
 export interface WorkspaceAccountProps {
+  collapsed?: boolean;
   name?: string;
 }
 
-const accountMenuItems = [
-  { icon: "gear", label: "Settings" },
-  { icon: "info", label: "About" },
-  { icon: "help", label: "Help Center" },
-  { icon: "feedback", label: "Send Feedback" },
-] as const;
-
-export function WorkspaceAccount({ name = "Your account" }: WorkspaceAccountProps) {
+export function WorkspaceAccount({
+  collapsed = false,
+  name = "Your account",
+}: WorkspaceAccountProps) {
   return (
-    <div className="mt-auto border-t border-line p-2">
+    <div className={`mt-auto p-2 ${collapsed ? "sidebar-account-collapsed" : ""}`}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             aria-label={`Open account menu for ${name}`}
-            className="flex w-full items-center gap-2.5 rounded-control p-1.5 text-left
+            className={`flex w-full items-center rounded-control p-1.5 text-left
               transition-[background-color,transform] duration-100 hover:bg-hover active:scale-[0.98]
-              data-[state=open]:bg-hover"
+              data-[state=open]:bg-hover ${collapsed ? "justify-center gap-0" : "gap-2.5"}`}
             type="button"
           >
-            <span
+            <motion.span
               aria-hidden="true"
-              className="flex size-7 shrink-0 items-center justify-center rounded-full
-                bg-field text-[12px] font-semibold text-ink shadow-hairline"
+              animate={{ height: collapsed ? 36 : 28, width: collapsed ? 36 : 28 }}
+              className="flex shrink-0 items-center justify-center rounded-full bg-[#8D6E62]
+                text-[13px] font-semibold text-white shadow-hairline"
+              initial={false}
+              transition={avatarTransition}
             >
               {name.charAt(0).toUpperCase()}
-            </span>
-            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{name}</span>
+            </motion.span>
+            <AnimatePresence initial={false}>
+              {collapsed ? null : (
+                <motion.span
+                  animate={{ opacity: 1, width: "auto" }}
+                  className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink"
+                  exit={{ opacity: 0, width: 0 }}
+                  initial={{ opacity: 0, width: 0 }}
+                  key="account-name"
+                  transition={avatarTransition}
+                >
+                  {name}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" align="start" className="w-[220px]">
-          {accountMenuItems.map((item) => (
-            <DropdownMenuItem key={item.label}>
-              <AccountMenuIcon name={item.icon} />
-              <span>{item.label}</span>
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator />
           <DropdownMenuItem>
             <AccountMenuIcon name="logout" />
             <span>Log out</span>
@@ -327,13 +498,10 @@ export function WorkspaceAccount({ name = "Your account" }: WorkspaceAccountProp
   );
 }
 
-function AccountMenuIcon({ name }: { name: (typeof accountMenuItems)[number]["icon"] | "logout" }) {
+const avatarTransition = { duration: 0.18, ease: [0.23, 1, 0.32, 1] } as const;
+
+function AccountMenuIcon({ name }: { name: "logout" }) {
   const path = {
-    gear: "M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm0-3v1.25m0 8.5v1.25m5.5-5.5h-1.25M3.75 8H2.5m9.39-3.89-.88.88m-6.02 6.02-.88.88m7.78 0-.88-.88M4.99 4.99l-.88-.88",
-    info: "M8 13.25A5.25 5.25 0 1 0 8 2.75a5.25 5.25 0 0 0 0 10.5ZM8 7v3.25M8 5.25h.01",
-    help: "M8 13.25A5.25 5.25 0 1 0 8 2.75a5.25 5.25 0 0 0 0 10.5Zm-1.5-7a1.55 1.55 0 0 1 3 0c0 1.25-1.5 1.4-1.5 2.5M8 10.75h.01",
-    feedback:
-      "M3 11.25v2l2.25-2H11a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11 3.25H4.5A1.5 1.5 0 0 0 3 4.75v6.5Z",
     logout:
       "M6.25 3.25H4.5A1.5 1.5 0 0 0 3 4.75v6.5a1.5 1.5 0 0 0 1.5 1.5h1.75M9.5 5.25 12.25 8 9.5 10.75M12 8H6.5",
   }[name];
@@ -369,7 +537,7 @@ export function useSearchShortcut(onOpen: () => void): void {
   }, [onOpen]);
 }
 
-export function relativeTime(value: string): string {
+function relativeTime(value: string): string {
   const date = new Date(value);
   if (!Number.isFinite(date.valueOf())) return "";
   const now = new Date();

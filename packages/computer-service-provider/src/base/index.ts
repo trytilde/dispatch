@@ -15,7 +15,7 @@ import {
   type ComputerExecResult,
   type ComputerHandle,
   type ComputerInput,
-  type ComputerSeedFile,
+  type ComputerSeedEntry,
   type ComputerImageSpec,
   type ComputerProvider,
   type ComputerSpec,
@@ -221,14 +221,55 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     agentId: string,
     context: ComputerCallContext,
   ): Promise<ComputerVncEndpoint> {
+    const startedAt = Date.now();
     const computerId = context.environment?.COMPUTER_ID?.trim() || process.env.COMPUTER_ID?.trim();
     if (!computerId)
       throw new ComputerProviderError(
         "invalid_configuration",
         "COMPUTER_ID is required to open an agent desktop",
       );
-    await this.ensureAgentDesktop(computerId, agentId, context);
-    return await this.vnc(computerId, { ...context, agentId });
+    console.info("[openbot-vnc] provider preview started", {
+      agentId,
+      computerId,
+      providerId: this.providerId,
+      requestId: context.requestId,
+    });
+    try {
+      const desktop = await this.ensureAgentDesktop(computerId, agentId, context);
+      console.info("[openbot-vnc] provider desktop ready", {
+        agentId,
+        computerId,
+        display: desktop.display,
+        providerId: this.providerId,
+        requestId: context.requestId,
+        vncPort: desktop.vncPort,
+      });
+      const endpoint = await this.vnc(computerId, { ...context, agentId });
+      console.info("[openbot-vnc] provider endpoint ready", {
+        agentId,
+        computerId,
+        elapsedMs: Date.now() - startedAt,
+        endpointOrigin: endpoint.url.origin,
+        endpointPath: endpoint.url.pathname,
+        expiresAt: endpoint.expiresAt.toISOString(),
+        providerId: this.providerId,
+        requestId: context.requestId,
+      });
+      return endpoint;
+    } catch (error) {
+      console.error(
+        "[openbot-vnc] provider preview failed",
+        {
+          agentId,
+          computerId,
+          elapsedMs: Date.now() - startedAt,
+          providerId: this.providerId,
+          requestId: context.requestId,
+        },
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      throw error;
+    }
   }
 
   async deployAgentWorkspaces(
@@ -496,6 +537,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     const options = {
       headers: {
         authorization: `Bearer ${computerServiceApiKey(context.environment?.COMPUTER_SERVICE_API_KEY)}`,
+        "x-openbot-request-id": context.requestId,
       },
       ...(context.signal ? { signal: context.signal } : {}),
     };
@@ -532,7 +574,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
 
   async #writeComputerFiles(
     computerId: string,
-    files: readonly ComputerSeedFile[],
+    files: readonly ComputerSeedEntry[],
     context: ComputerCallContext,
   ): Promise<void> {
     for (const file of files) {
@@ -547,6 +589,19 @@ export abstract class BaseComputerProvider implements ComputerProvider {
           "provider_unavailable",
           `Could not create development source directory: ${result.stderr}`,
         );
+      if ("target" in file) {
+        const link = await this.exec(
+          computerId,
+          { command: "ln", args: ["-sfn", file.target, destination] },
+          context,
+        );
+        if (link.exitCode !== 0)
+          throw new ComputerProviderError(
+            "provider_unavailable",
+            `Could not recreate development source symlink: ${link.stderr}`,
+          );
+        continue;
+      }
       await this.writeFile(computerId, destination, file.content, context);
       if (file.executable) {
         const chmod = await this.exec(

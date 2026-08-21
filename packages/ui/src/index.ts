@@ -107,12 +107,15 @@ export {
 } from "./computer-components.js";
 export { useWorkspaceLayout, type WorkspaceLayout } from "./use-workspace-layout.js";
 export { AgentAvatar, type AgentAvatarProps } from "./agent-avatar.js";
+export { BrandedLoadingState, type BrandedLoadingStateProps } from "./branded-loading-state.js";
 export {
   WorkspaceSidebar,
   type WorkspaceSidebarAgent,
   type WorkspaceSidebarProps,
 } from "./workspace-sidebar.js";
 export {
+  AddAgentDialog,
+  type AddAgentDialogProps,
   AgentListItem,
   type AgentListItemProps,
   AgentSearchDialog,
@@ -122,15 +125,28 @@ export {
   type WorkspaceAccountProps,
 } from "./sidebar-components.js";
 export {
+  BackIcon,
   ClockIcon,
   ComputerIcon,
+  FeedbackIcon,
   ListIcon,
   MoreIcon,
   PlusIcon,
   ReplyIcon,
   SearchIcon,
   SendIcon,
+  SettingsIcon,
+  TrashIcon,
+  WorkspaceIcon,
 } from "./workspace-icons.js";
+export {
+  SelectWorkspaceScreen,
+  WorkspaceAccessScreen,
+  WorkspaceSelector,
+  WorkspaceSelectorDialog,
+  type WorkspaceSelectorDialogProps,
+  type WorkspaceSelectorProps,
+} from "./workspace-selector.js";
 export {
   MessageContent,
   type MessageContentMessage,
@@ -157,8 +173,6 @@ export {
   type ChatHeaderProps,
   ConversationMessage,
   type ConversationMessageProps,
-  EmptyConversation,
-  type EmptyConversationProps,
   ThinkingIndicator,
 } from "./chat-components.js";
 export {
@@ -204,6 +218,7 @@ export {
 export {
   ChatFindBar,
   type ChatFindBarProps,
+  ConversationSkeleton,
   FailedSendActions,
   type FailedSendActionsProps,
   NewMessagesPill,

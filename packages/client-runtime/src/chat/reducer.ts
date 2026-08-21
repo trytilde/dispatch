@@ -118,8 +118,18 @@ export function eventStatus(event: ChatEvent): string {
 }
 
 export function eventBusyState(event: ChatEvent): boolean | undefined {
-  const kind = eventName(event);
+  const kind = normalizedEventName(event);
   const data = record(event.data);
+  // Streaming deltas arrive either flat on `data` or nested under `data.kind.message_streaming`,
+  // so resolve the payload the same way the reducer does before reading its delta type.
+  const streaming =
+    eventKindPayload(event.data, "message_streaming") ??
+    eventKindPayload(event.data, "MessageStreaming") ??
+    (kind.includes("message.streaming") ? data : undefined);
+  if (streaming) {
+    const deltaType = findField(streaming.delta ?? streaming, "type").toLowerCase();
+    return ["finish", "abort", "error"].includes(deltaType) ? false : true;
+  }
   const deltaType = findField(data, "type").toLowerCase();
   if (["finish", "abort", "error"].includes(deltaType)) return false;
   const status = (
@@ -135,9 +145,14 @@ export function eventBusyState(event: ChatEvent): boolean | undefined {
     return false;
   if (/^(busy|working|running|streaming|queued|pending|starting|in_progress)$/.test(status))
     return true;
-  if (kind.includes("message.streaming") || kind.includes("turn.started")) return true;
+  if (kind.includes("turn.started")) return true;
   if (kind.includes("turn.completed") || kind.includes("turn.failed")) return false;
   return undefined;
+}
+
+/** Tilde names events with underscores; the checks below read as dotted paths. */
+function normalizedEventName(event: ChatEvent): string {
+  return eventName(event).toLowerCase().replaceAll("_", ".");
 }
 
 export function eventName(event: ChatEvent): string {
@@ -147,9 +162,29 @@ export function eventName(event: ChatEvent): string {
 }
 
 export function uniqueMessages(messages: ChatMessage[]): ChatMessage[] {
-  return [...new Map(messages.map((message) => [message.id, message])).values()].sort(
-    (left, right) => Date.parse(left.created_at) - Date.parse(right.created_at),
-  );
+  const chronological = [
+    ...new Map(messages.map((message) => [message.id, message])).values(),
+  ].sort((left, right) => Date.parse(left.created_at) - Date.parse(right.created_at));
+  const ids = new Set(chronological.map((message) => message.id));
+  const replies = new Map<string, ChatMessage[]>();
+  for (const message of chronological) {
+    const parentId = message.in_reply_to_message_id;
+    if (!parentId || !ids.has(parentId)) continue;
+    replies.set(parentId, [...(replies.get(parentId) ?? []), message]);
+  }
+  const ordered: ChatMessage[] = [];
+  const visited = new Set<string>();
+  const append = (message: ChatMessage): void => {
+    if (visited.has(message.id)) return;
+    visited.add(message.id);
+    ordered.push(message);
+    for (const reply of replies.get(message.id) ?? []) append(reply);
+  };
+  for (const message of chronological)
+    if (!message.in_reply_to_message_id || !ids.has(message.in_reply_to_message_id))
+      append(message);
+  for (const message of chronological) append(message);
+  return ordered;
 }
 
 export function messageText(message: ChatMessage): string {

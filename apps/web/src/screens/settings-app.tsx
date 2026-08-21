@@ -38,7 +38,7 @@ export function SettingsApp() {
       >
         <button
           aria-label="Back to workspace"
-          className="mb-2 flex h-8 w-full items-center gap-2 rounded-control px-2.5 text-left
+          className="settings-back-button mb-2 flex h-8 w-full items-center gap-2 rounded-control px-2.5 text-left
             text-[12.5px] font-medium text-ink-2 transition-[background-color,color] duration-150
             hover:bg-hover hover:text-ink"
           onClick={() => void navigate({ to: "/" })}

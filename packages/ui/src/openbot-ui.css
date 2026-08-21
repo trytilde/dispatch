@@ -2833,6 +2833,12 @@ body {
   -webkit-app-region: drag;
 }
 
+.settings-back-button {
+  position: relative;
+  z-index: 4;
+  -webkit-app-region: no-drag;
+}
+
 .rich-chat.workspace-shell {
   grid-template-columns:
     var(--sidebar-width, 280px) minmax(424px, 1fr)

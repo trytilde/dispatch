@@ -34,9 +34,12 @@ import type {
 } from "./skills-types.js";
 import { persistEnvironment, type DeploymentContext } from "@tryopenbot/runtime-provider";
 import { AgentProviderError } from "../core.js";
+import { mapWithConcurrency } from "./concurrency.js";
 import { reconciliationSignal } from "./skills-types.js";
 
 export interface TildeSkillReconcilerConfig extends TildePlatformConfig {}
+
+const maxConcurrentRequests = 10;
 
 export class TildeSkillReconciler {
   readonly #config: TildePlatformConfig;
@@ -179,13 +182,13 @@ export class TildeSkillReconciler {
         call,
       );
     }
-    for (const staleSkillId of staleSkillIds) {
-      await deleteSkill({
+    await mapWithConcurrency(staleSkillIds, maxConcurrentRequests, (staleSkillId) =>
+      deleteSkill({
         client: this.#api({ requestId: `agent-lifecycle:${id}:skill:delete` }),
         path: { team_id: this.#config.teamId, id: staleSkillId },
         throwOnError: true,
-      });
-    }
+      }),
+    );
     await persistEnvironment(
       context,
       `${prefix}_SKILL_REGISTRY_ID`,
@@ -209,8 +212,7 @@ export class TildeSkillReconciler {
     const owned = remote.filter(
       (skill) => skill.source_kind === "openbot" && skill.source_path?.startsWith(ownedPrefix),
     );
-    const ids: string[] = [];
-    for (const skill of desired) {
+    const ids = await mapWithConcurrency(desired, maxConcurrentRequests, async (skill) => {
       // Tilde skill names are unique per team, and every agent authors the same
       // shared platform skills, so the stored name is namespaced by agent ID.
       const name = teamSkillName(agentId, skill.name);
@@ -228,27 +230,26 @@ export class TildeSkillReconciler {
           },
           throwOnError: true,
         });
-        ids.push(data.id);
-      } else {
-        if (
-          existing.name !== name ||
-          existing.description !== skill.description ||
-          existing.content !== skill.content
-        ) {
-          await updateSkill({
-            client: this.#api({ requestId: `agent-lifecycle:${agentId}:skill:update` }),
-            path: { team_id: this.#config.teamId, id: existing.id },
-            body: {
-              name,
-              description: skill.description,
-              content: skill.content,
-            },
-            throwOnError: true,
-          });
-        }
-        ids.push(existing.id);
+        return data.id;
       }
-    }
+      if (
+        existing.name !== name ||
+        existing.description !== skill.description ||
+        existing.content !== skill.content
+      ) {
+        await updateSkill({
+          client: this.#api({ requestId: `agent-lifecycle:${agentId}:skill:update` }),
+          path: { team_id: this.#config.teamId, id: existing.id },
+          body: {
+            name,
+            description: skill.description,
+            content: skill.content,
+          },
+          throwOnError: true,
+        });
+      }
+      return existing.id;
+    });
     const desiredPaths = new Set(desired.map((skill) => skill.sourcePath));
     const staleSkillIds = owned
       .filter((stale) => !stale.source_path || !desiredPaths.has(stale.source_path))

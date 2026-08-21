@@ -30,6 +30,7 @@ import type {
   ToolReconciliationContext,
 } from "./tools-types.js";
 import { AgentProviderError } from "../core.js";
+import { mapWithConcurrency } from "./concurrency.js";
 import { reconciliationSignal } from "./tools-types.js";
 
 export type TildeToolReconcilerConfig = { platform: TildePlatform } | { client: Client };
@@ -39,6 +40,8 @@ export const tildeAgentProviderInitialization: ProviderInitialization = {
   label: "Tilde agent resources",
   questions: [],
 };
+
+const maxConcurrentRequests = 10;
 
 export class TildeToolReconciler {
   readonly #client: Client;
@@ -161,9 +164,9 @@ export class TildeToolReconciler {
     const source = catalog.items.find((candidate) => candidate.type_id === "github");
     if (!source) return;
     const enabledIds = new Set(enabled.items.map((tool) => tool.tool_source_type_id));
-    for (const tool of source.tools) {
-      if (enabledIds.has(tool.type_id)) continue;
-      await enableTool({
+    const missing = source.tools.filter((tool) => !enabledIds.has(tool.type_id));
+    await mapWithConcurrency(missing, maxConcurrentRequests, (tool) =>
+      enableTool({
         client: this.#api,
         path: {
           team_id: this.#teamId,
@@ -172,8 +175,8 @@ export class TildeToolReconciler {
         },
         body: {},
         throwOnError: true,
-      });
-    }
+      }),
+    );
   }
 
   async #reconcileTildeControlPlane(
@@ -240,9 +243,9 @@ export class TildeToolReconciler {
     const source = catalog.items.find((candidate) => candidate.type_id === "tilde_control_plane");
     if (!source) throw new Error("Tilde control-plane toolkit is unavailable");
     const enabledIds = new Set(enabled.items.map((tool) => tool.tool_source_type_id));
-    for (const tool of source.tools) {
-      if (enabledIds.has(tool.type_id)) continue;
-      await enableTool({
+    const missing = source.tools.filter((tool) => !enabledIds.has(tool.type_id));
+    await mapWithConcurrency(missing, maxConcurrentRequests, (tool) =>
+      enableTool({
         client: this.#api,
         path: {
           team_id: this.#teamId,
@@ -251,8 +254,8 @@ export class TildeToolReconciler {
         },
         body: {},
         throwOnError: true,
-      });
-    }
+      }),
+    );
     // Enabling a tool on the provider does not expose it to the agent: every
     // function must also be mapped onto the agent's runtime MCP server, where
     // the dynamic registry (SEARCH_TOOLS / MULTI_EXECUTE_TOOL) discovers it.
@@ -266,20 +269,22 @@ export class TildeToolReconciler {
         .filter((tool) => tool.tool_group_instance_id === group.id)
         .map((tool) => tool.tool_source_type_id),
     );
-    for (const tool of source.tools) {
-      if (mapped.has(tool.type_id)) continue;
-      await addMcpServerInstanceFunction({
-        client: this.#api,
-        path: { team_id: this.#teamId, mcp_server_instance_id: serverId },
-        body: {
-          tool_group_instance_id: group.id,
-          tool_group_source_type_id: "tilde_control_plane",
-          tool_name: tool.type_id,
-          tool_source_type_id: tool.type_id,
-        },
-        throwOnError: true,
-      });
-    }
+    await mapWithConcurrency(
+      source.tools.filter((tool) => !mapped.has(tool.type_id)),
+      maxConcurrentRequests,
+      (tool) =>
+        addMcpServerInstanceFunction({
+          client: this.#api,
+          path: { team_id: this.#teamId, mcp_server_instance_id: serverId },
+          body: {
+            tool_group_instance_id: group.id,
+            tool_group_source_type_id: "tilde_control_plane",
+            tool_name: tool.type_id,
+            tool_source_type_id: tool.type_id,
+          },
+          throwOnError: true,
+        }),
+    );
     await persistEnvironment(
       context,
       `${prefix}_TILDE_CONTROL_PLANE_TOOL_GROUP_ID`,

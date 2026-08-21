@@ -39,9 +39,8 @@ COPY packages/computer-service-provider/src/base/assets/development-profile.sh /
 COPY packages/computer-service-provider/src/base/assets/openbot-browser.sh /usr/local/bin/openbot-browser
 COPY packages/computer-service-provider/src/base/assets/openbot-browser.desktop /usr/share/applications/openbot-browser.desktop
 COPY packages/computer-service-provider/src/base/assets/openbot-files.desktop /usr/share/applications/openbot-files.desktop
-COPY packages/computer-service-provider/src/base/assets/openbox-rc.xml /opt/openbot/openbox-rc.xml
 COPY packages/computer-service-provider/src/base/assets/start.sh /usr/local/bin/start-openbot-computer
-COPY packages/computer-service-provider/src/base/assets/tint2rc /opt/openbot/tint2rc
+COPY packages/computer-service-provider/src/base/assets/xfce4-panel.xml /opt/openbot/xfce4-panel.xml
 
 # Install the desktop stack once while building the shared image.
 RUN chmod 0755 /opt/openbot/bootstrap.sh /opt/openbot/desktop-session.sh /opt/openbot/development-profile.sh /usr/local/bin/openbot-browser /usr/local/bin/setup-openbot-development /usr/local/bin/start-openbot-computer \

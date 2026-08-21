@@ -51,6 +51,17 @@ export function registerConnectorRoutes(
   const options = (): ConnectorRouteOptions | undefined =>
     configuredOptions ?? optionsFromEnvironment();
 
+  // Universal OAuth return target. Tilde redirects the authorization tab here
+  // after brokering succeeds; the page carries no state or secrets — clients
+  // learn the outcome by polling the account status — so it stays public. The
+  // desktop flow lands in the system browser and is bounced to the openbot://
+  // deep link, which focuses the app window.
+  app.get("/connectors/authorized", (context) => {
+    const client = context.req.query("client") === "electron" ? "electron" : "web";
+    context.header("cache-control", "no-store");
+    return context.html(connectorAuthorizedPage(client));
+  });
+
   app.get("/api/connectors/providers", async (context) => {
     const resolved = options();
     if (!resolved) return unavailable(context);
@@ -365,6 +376,28 @@ function upstreamFailure(context: Context, error: unknown): Response {
     },
     502,
   );
+}
+
+function connectorAuthorizedPage(client: "electron" | "web"): string {
+  const hint =
+    client === "electron"
+      ? "Returning you to OpenBot… If nothing happens, switch back to the OpenBot app."
+      : "You can close this tab and return to OpenBot.";
+  const redirect =
+    client === "electron"
+      ? '<script>setTimeout(function () { location.replace("openbot://connectors/authorized"); }, 150);</script>'
+      : "";
+  return [
+    "<!doctype html>",
+    '<html lang="en"><head><meta charset="utf-8" /><title>OpenBot</title>',
+    "<style>body{font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:90vh;color:#171718;background:#fafafb}main{text-align:center;max-width:26rem}h1{font-size:1.1rem}p{color:#666;font-size:.9rem}</style>",
+    "</head><body><main>",
+    "<h1>Authorization complete</h1>",
+    `<p>${hint}</p>`,
+    "</main>",
+    redirect,
+    "</body></html>",
+  ].join("");
 }
 
 function optionsFromEnvironment(): ConnectorRouteOptions | undefined {

@@ -12,9 +12,11 @@ import {
   type ChatMessage,
   connectorAccountCreatedMessage,
   connectorAccountSelectionMessage,
+  connectorAuthorizedReturnUrl,
   type ConnectorProvider,
   type CreateConnectorAccountResult,
   errorMessage,
+  waitForConnectorAccountActive,
   latestMessagePreview,
   messageText,
   type QueuedTurn,
@@ -78,6 +80,7 @@ export function OpenBotApp() {
   const [createAgentOpen, setCreateAgentOpen] = useState(false);
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [connectorSetup, setConnectorSetup] = useState<ConnectorSetupState | null>(null);
+  const connectorWatchRef = useRef<AbortController | null>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerInputRef = useRef<HTMLTextAreaElement>(null);
@@ -447,6 +450,7 @@ export function OpenBotApp() {
     if (!connectorSetup) return;
     const selection = connectorSetup.selection;
     setConnectorSetup({ ...connectorSetup, submitting: true, error: undefined });
+    const desktop = navigator.userAgent.includes("Electron");
     try {
       const result = await openBotRuntime.client.createConnectorAccount({
         providerTypeId: selection.providerTypeId,
@@ -454,7 +458,10 @@ export function OpenBotApp() {
         displayName: input.displayName,
         ...(input.resourceServerValues ? { resourceServerValues: input.resourceServerValues } : {}),
         ...(input.userCredentialValues ? { userCredentialValues: input.userCredentialValues } : {}),
-        returnUrl: `${window.location.origin}/?connector_setup=complete`,
+        returnUrl: connectorAuthorizedReturnUrl(
+          window.location.origin,
+          desktop ? "electron" : "web",
+        ),
       });
       if (result.status === "authorize" && result.authorization_url) {
         window.open(result.authorization_url, "_blank", "noopener");
@@ -463,6 +470,19 @@ export function OpenBotApp() {
           submitting: false,
           result,
           authorizationUrl: result.authorization_url,
+        });
+        // Close the loop without a manual "Done": once Tilde flips the account
+        // to active after the OAuth return, hand back to the agent directly.
+        const watcher = new AbortController();
+        connectorWatchRef.current?.abort();
+        connectorWatchRef.current = watcher;
+        void waitForConnectorAccountActive(openBotRuntime.client, {
+          providerTypeId: selection.providerTypeId,
+          accountId: result.account.id,
+          signal: watcher.signal,
+        }).then((account) => {
+          if (!account || watcher.signal.aborted) return;
+          finishConnectorSetup(selection, { ...result, status: "created", account });
         });
         return;
       }
@@ -478,6 +498,8 @@ export function OpenBotApp() {
     selection: ConnectorSelectionView,
     result: CreateConnectorAccountResult,
   ): void {
+    connectorWatchRef.current?.abort();
+    connectorWatchRef.current = null;
     setConnectorSetup(null);
     void openBotRuntime.actions.sendMessage({
       text: connectorAccountCreatedMessage(
@@ -775,6 +797,8 @@ export function OpenBotApp() {
               finishConnectorSetup(connectorSetup.selection, connectorSetup.result);
               return;
             }
+            connectorWatchRef.current?.abort();
+            connectorWatchRef.current = null;
             setConnectorSetup(null);
           }}
         />

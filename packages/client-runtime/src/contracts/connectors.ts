@@ -167,6 +167,69 @@ function asRecordValue(value: unknown): Record<string, unknown> {
 }
 
 /**
+ * The universal OAuth return target served by the control service. Passing the
+ * client kind lets the landing page bounce desktop flows to the openbot://
+ * deep link while browser flows simply close the tab.
+ */
+export function connectorAuthorizedReturnUrl(
+  origin: string,
+  client: "web" | "electron" | "mobile",
+): string {
+  return `${origin.replace(/\/$/, "")}/connectors/authorized?client=${client}`;
+}
+
+export interface WaitForConnectorAccountOptions {
+  providerTypeId: string;
+  accountId: string;
+  signal?: AbortSignal;
+  /** Poll cadence; injectable for tests. */
+  intervalMs?: number;
+  timeoutMs?: number;
+  sleep?: (milliseconds: number, signal?: AbortSignal) => Promise<void>;
+}
+
+/**
+ * Poll the team's connector accounts until the brokered account becomes
+ * active — the client-side half of the OAuth return: once Tilde flips the
+ * instance status, the waiting dialog finishes the hand-back to the agent
+ * without the user clicking anything. Resolves undefined on timeout or abort.
+ */
+export async function waitForConnectorAccountActive(
+  client: {
+    listConnectorAccounts(providerTypeId?: string): Promise<ConnectorAccount[]>;
+  },
+  options: WaitForConnectorAccountOptions,
+): Promise<ConnectorAccount | undefined> {
+  const intervalMs = options.intervalMs ?? 2_000;
+  const timeoutMs = options.timeoutMs ?? 5 * 60_000;
+  const sleep = options.sleep ?? defaultSleep;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline && !options.signal?.aborted) {
+    try {
+      const accounts = await client.listConnectorAccounts(options.providerTypeId);
+      const account = accounts.find((candidate) => candidate.id === options.accountId);
+      if (account && account.status === "active") return account;
+    } catch {
+      // Transient control-service failures should not end the wait.
+    }
+    await sleep(intervalMs, options.signal);
+  }
+  return undefined;
+}
+
+function defaultSleep(milliseconds: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(done, milliseconds);
+    function done(): void {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", done);
+      resolve();
+    }
+    signal?.addEventListener("abort", done, { once: true });
+  });
+}
+
+/**
  * The message a client sends back after the user picks an account. Plain text
  * so it round-trips through the standard ChatKit send-message route, but
  * structured enough for the agent to act without re-asking.

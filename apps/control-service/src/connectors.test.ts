@@ -99,6 +99,18 @@ function catalogResponses(call: UpstreamCall): Response | undefined {
 }
 
 describe("connector routes", () => {
+  it("serves the public OAuth return page and bounces desktop flows to the deep link", async () => {
+    const app = createApp({});
+    const web = await app.request("https://openbot.test/connectors/authorized?client=web");
+    expect(web.status).toBe(200);
+    const webPage = await web.text();
+    expect(webPage).toContain("Authorization complete");
+    expect(webPage).not.toContain("openbot://");
+    const desktop = await app.request("https://openbot.test/connectors/authorized?client=electron");
+    const desktopPage = await desktop.text();
+    expect(desktopPage).toContain("openbot://connectors/authorized");
+  });
+
   it("is unavailable without Tilde credentials", async () => {
     const app = createApp({});
     const response = await app.request("https://openbot.test/api/connectors/providers");

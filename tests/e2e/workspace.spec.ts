@@ -848,6 +848,34 @@ test("configures a connector through the in-chat account picker", async ({ page 
       });
       return;
     }
+    if (new URL(request.url()).pathname.endsWith("/api/connectors/providers")) {
+      await route.fulfill({
+        json: {
+          items: [
+            {
+              type_id: "tavily",
+              name: "Tavily",
+              categories: [],
+              credential_sources: [
+                {
+                  type_id: "tavily_api_key",
+                  name: "Use an API key",
+                  requires_brokering: false,
+                  supports_auto_display_name: false,
+                  resource_server_schema: null,
+                  user_credential_schema: {
+                    type: "object",
+                    required: ["api_key"],
+                    properties: { api_key: { type: "string", format: "password" } },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      });
+      return;
+    }
     await route.fulfill({ json: { items: [] } });
   });
 
@@ -926,8 +954,10 @@ test("configures a connector through the in-chat account picker", async ({ page 
   expect(sentMessages[0]).toContain("tool_group_instance_id=tgi-work");
   expect(sentMessages[0]).toContain("tool_group_source_type_id=tavily");
 
-  // The add-account card opens the schema-driven credential form.
+  // The add-account card opens the schema-driven credential form through a
+  // routable URL so redirects and the back button can target the modal.
   await cards.nth(2).click();
+  await expect(page).toHaveURL(/connector=tavily/);
   const dialog = page.getByRole("dialog", { name: "Add Tavily account" });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("heading", { name: "Add a Tavily account" })).toBeVisible();
@@ -950,6 +980,13 @@ test("configures a connector through the in-chat account picker", async ({ page 
   expect(sentMessages[1]).toContain("tool_group_instance_id=tgi-new");
   expect(sentMessages[1]).not.toContain("tvly-secret");
   await expect(dialog).toHaveCount(0);
+  await expect(page).not.toHaveURL(/connector=/);
+
+  // The modal is directly addressable: loading the URL opens it from the
+  // provider catalog, exactly what an OAuth return or shared link needs.
+  await page.goto("/?connector=tavily");
+  await expect(page.getByRole("dialog", { name: "Add Tavily account" })).toBeVisible();
+  await expect(page.getByRole("dialog").getByPlaceholder("api_key")).toBeVisible();
 });
 
 test("keeps the server healthy", async ({ request }) => {

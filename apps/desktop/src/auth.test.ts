@@ -40,6 +40,7 @@ function withNativeConfiguration(handler: typeof fetch): typeof fetch {
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
   electron.openExternal.mockClear();
+  electron.getSelectedStorageBackend.mockClear();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
   await Promise.all(cleanups.splice(0).map((cleanup) => cleanup()));

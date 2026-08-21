@@ -57,7 +57,9 @@ export function registerConnectorRoutes(
   // desktop flow lands in the system browser and is bounced to the openbot://
   // deep link, which focuses the app window.
   app.get("/connectors/authorized", (context) => {
-    const client = context.req.query("client") === "electron" ? "electron" : "web";
+    const requested = context.req.query("client");
+    const client =
+      requested === "electron" || requested === "mobile" ? requested : ("web" as const);
     context.header("cache-control", "no-store");
     return context.html(connectorAuthorizedPage(client));
   });
@@ -378,15 +380,16 @@ function upstreamFailure(context: Context, error: unknown): Response {
   );
 }
 
-function connectorAuthorizedPage(client: "electron" | "web"): string {
-  const hint =
-    client === "electron"
-      ? "Returning you to OpenBot… If nothing happens, switch back to the OpenBot app."
-      : "You can close this tab and return to OpenBot.";
-  const redirect =
-    client === "electron"
-      ? '<script>setTimeout(function () { location.replace("openbot://connectors/authorized"); }, 150);</script>'
-      : "";
+function connectorAuthorizedPage(client: "electron" | "mobile" | "web"): string {
+  // The desktop and mobile apps both register the openbot:// scheme; bouncing
+  // to it brings the app forward while its dialog polls the account status.
+  const deepLinked = client === "electron" || client === "mobile";
+  const hint = deepLinked
+    ? "Returning you to OpenBot… If nothing happens, switch back to the OpenBot app."
+    : "You can close this tab and return to OpenBot.";
+  const redirect = deepLinked
+    ? '<script>setTimeout(function () { location.replace("openbot://connectors/authorized"); }, 150);</script>'
+    : "";
   return [
     "<!doctype html>",
     '<html lang="en"><head><meta charset="utf-8" /><title>OpenBot</title>',

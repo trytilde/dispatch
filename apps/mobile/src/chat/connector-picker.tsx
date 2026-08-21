@@ -52,6 +52,7 @@ export function ConnectorSelectionPicker({
     return (
       <ConnectorSetupSheet
         client={runtime.client}
+        controlOrigin={runtime.controlOrigin}
         selection={selection}
         onClose={() => setSetupOpen(false)}
         onComplete={(text) => {

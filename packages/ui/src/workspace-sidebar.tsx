@@ -11,6 +11,7 @@ import GlideMenu from "./beautiful-ui/atoms/glide-menu.js";
 import {
   FeedbackIcon,
   PlusIcon,
+  PluginsIcon,
   SearchIcon,
   SettingsIcon,
   WorkspaceIcon,
@@ -37,6 +38,7 @@ export interface WorkspaceSidebarProps {
   onSelectAgent: (id: string) => void;
   onLoadMore?: () => void;
   onCreateAgent?: () => void;
+  onOpenPlugins?: () => void;
   onOpenSettings?: () => void;
   onSwitchWorkspace?: () => void;
   /** Address the "Send Feedback" row opens in the owner's mail client. */
@@ -58,6 +60,7 @@ export function WorkspaceSidebar({
   onSelectAgent,
   onLoadMore,
   onCreateAgent,
+  onOpenPlugins,
   onOpenSettings,
   onSwitchWorkspace,
   feedbackEmail = "opensource@trytilde.ai",
@@ -174,6 +177,12 @@ export function WorkspaceSidebar({
               onClick={onCreateAgent}
             />
           ) : null}
+          <SidebarUtilityRow
+            collapsed={collapsed}
+            icon={<PluginsIcon className={collapsed ? collapsedIcon : expandedIcon} />}
+            label="Plugins"
+            onClick={onOpenPlugins}
+          />
           <SidebarUtilityRow
             collapsed={collapsed}
             icon={<SettingsIcon className={collapsed ? collapsedIcon : expandedIcon} />}

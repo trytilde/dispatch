@@ -11,6 +11,7 @@ import { View } from "@/components/ui/view";
 import { useColor } from "@/hooks/useColor";
 import { SPACING } from "@/theme/globals";
 import type { MobileOpenBotRuntime } from "@/runtime/openbot-runtime";
+import { ConnectorSelectionPicker, connectorSelectionForPart } from "./connector-picker";
 
 export function MobileMessageParts({
   message,
@@ -72,6 +73,10 @@ function MobileMessagePart({
         ) : null}
       </View>
     );
+
+  const connectorSelection = connectorSelectionForPart(part);
+  if (connectorSelection)
+    return <ConnectorSelectionPicker runtime={runtime} selection={connectorSelection} />;
 
   if (part.type === "tool" || part.type.startsWith("tool-"))
     return (

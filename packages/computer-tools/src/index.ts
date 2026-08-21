@@ -1,6 +1,7 @@
 import type { MediaDownloader, MediaUploader } from "./attachments.js";
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-node";
+import type { Tool } from "@ai-sdk/provider-utils";
 import { ComputerService } from "@tryopenbot/computer-service-proto";
 import { jsonSchema, tool, type ToolSet } from "ai";
 import { z } from "zod";
@@ -53,7 +54,7 @@ async function callOptions(options: ComputerToolOptions, signal?: AbortSignal) {
   };
 }
 
-export function createBashTool(options: ComputerToolOptions) {
+export function createBashTool(options: ComputerToolOptions): Tool {
   return tool({
     description:
       "Run a Bash login shell on the shared computer. It starts in this agent's directory by default, but may inspect and administer the wider system.",
@@ -78,7 +79,7 @@ export function createBashTool(options: ComputerToolOptions) {
   });
 }
 
-export function createAwaitShellTool(options: ComputerToolOptions) {
+export function createAwaitShellTool(options: ComputerToolOptions): Tool {
   return tool({
     description: "Wait for a background Bash job and return its current output and status.",
     inputSchema: z.object({
@@ -97,7 +98,7 @@ export function createAwaitShellTool(options: ComputerToolOptions) {
   });
 }
 
-export function createReadFileTool(options: ComputerToolOptions) {
+export function createReadFileTool(options: ComputerToolOptions): Tool {
   return tool({
     description: "Read a UTF-8 file visible to this agent on the computer.",
     inputSchema: z.object({ path: z.string().min(1) }),
@@ -113,7 +114,7 @@ export function createReadFileTool(options: ComputerToolOptions) {
   });
 }
 
-export function createWriteFileTool(options: ComputerToolOptions) {
+export function createWriteFileTool(options: ComputerToolOptions): Tool {
   return tool({
     description: "Write UTF-8 text to a file writable by this agent on the computer.",
     inputSchema: z.object({ path: z.string().min(1), content: z.string() }),
@@ -134,7 +135,7 @@ export function createWriteFileTool(options: ComputerToolOptions) {
   });
 }
 
-export function createCopyToComputerTool(options: DownloadingComputerToolOptions) {
+export function createCopyToComputerTool(options: DownloadingComputerToolOptions): Tool {
   return tool({
     description: "Copy a Tilde session attachment into a file on the shared computer.",
     inputSchema: z.object({ path: z.string().min(1), attachment_id: z.string().uuid() }),
@@ -151,7 +152,7 @@ export function createCopyToComputerTool(options: DownloadingComputerToolOptions
   });
 }
 
-export function createCopyFromComputerTool(options: UploadingComputerToolOptions) {
+export function createCopyFromComputerTool(options: UploadingComputerToolOptions): Tool {
   return tool({
     description: "Copy a binary file from the shared computer into a Tilde session attachment.",
     inputSchema: z.object({ path: z.string().min(1) }),
@@ -172,7 +173,7 @@ export function createCopyFromComputerTool(options: UploadingComputerToolOptions
   });
 }
 
-export function createGlobTool(options: ComputerToolOptions) {
+export function createGlobTool(options: ComputerToolOptions): Tool {
   return tool({
     description:
       "List files matching a glob from any directory visible to this agent on the computer.",
@@ -191,7 +192,7 @@ export function createGlobTool(options: ComputerToolOptions) {
   });
 }
 
-export function createGrepTool(options: ComputerToolOptions) {
+export function createGrepTool(options: ComputerToolOptions): Tool {
   return tool({
     description: "Search file contents under any directory visible to this agent on the computer.",
     inputSchema: z.object({
@@ -224,7 +225,7 @@ export function createGrepTool(options: ComputerToolOptions) {
   });
 }
 
-export function createScreenshotTool(options: UploadingComputerToolOptions) {
+export function createScreenshotTool(options: UploadingComputerToolOptions): Tool {
   return tool({
     description: "Capture the current shared computer desktop as a PNG image.",
     inputSchema: z.object({}),

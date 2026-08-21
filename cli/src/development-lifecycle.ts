@@ -24,6 +24,7 @@ export interface DevelopmentLifecycleOptions {
   environment: NodeJS.ProcessEnv;
   providers: OpenBotConfiguration["providers"];
   report?: DeploymentReporter;
+  interactive?: boolean;
 }
 
 export interface DevelopmentComputerWatcher {
@@ -35,6 +36,16 @@ export async function reconcileDevelopmentInfrastructure(
   options: DevelopmentLifecycleOptions,
 ): Promise<void> {
   await reconcileParticipants(options, [
+    ...(options.providers.inference
+      ? [
+          {
+            id: "inference",
+            implementation: options.providers.inference,
+            providerType: "Inference Provider",
+            provider: options.providers.inference,
+          },
+        ]
+      : []),
     ...(options.providers.git
       ? [
           {
@@ -208,6 +219,7 @@ async function reconcileParticipants(
     dryRun: false,
     repositoryRoot: options.repositoryRoot,
     environment: options.environment,
+    interactive: options.interactive,
     persistence,
     report,
   } as const;
@@ -240,6 +252,8 @@ function deploymentContext(
 ): DeploymentContext {
   return {
     devMode: true,
+    dryRun: false,
+    interactive: options.interactive,
     repositoryRoot: options.repositoryRoot,
     environment: options.environment,
     persistence: repositoryDeploymentPersistence(options),

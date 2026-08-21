@@ -11,6 +11,7 @@ catalogs:
       version: 0.2.9
 
 overrides:
+  '@trytilde/harness-sdk-vercel-ai-node>@ai-sdk/mcp': 2.0.32
   vite: npm:@voidzero-dev/vite-plus-core@0.2.9
   vitest: 4.1.10
 
@@ -20,6 +21,9 @@ importers:
 
   .:
     devDependencies:
+      '@ai-sdk/provider-utils':
+        specifier: 5.0.27
+        version: 5.0.27(zod@4.4.3)
       '@changesets/changelog-github':
         specifier: 0.5.2
         version: 0.5.2
@@ -32,6 +36,9 @@ importers:
       '@connectrpc/connect-node':
         specifier: 2.1.2
         version: 2.1.2(@bufbuild/protobuf@2.11.0)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.11.0))
+      '@openai/codex':
+        specifier: 0.144.1
+        version: 0.144.1
       '@playwright/test':
         specifier: 1.55.0
         version: 1.55.0
@@ -88,7 +95,7 @@ importers:
         version: 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.20.4)(yaml@2.9.0)
       '@trytilde/harness-sdk-vercel-ai-node':
         specifier: 0.2.0
-        version: 0.2.0(@ai-sdk/mcp@1.0.70(zod@4.4.3))(@trytilde/harness-sdk@0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.20.4)(yaml@2.9.0))(ai@6.0.250(zod@4.4.3))
+        version: 0.2.0(@ai-sdk/mcp@2.0.32(zod@4.4.3))(@trytilde/harness-sdk@0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.20.4)(yaml@2.9.0))(ai@7.0.64(zod@4.4.3))
       '@types/node':
         specifier: 24.3.0
         version: 24.3.0
@@ -99,8 +106,11 @@ importers:
         specifier: 3.0.0
         version: 3.0.0
       ai:
-        specifier: 6.0.250
-        version: 6.0.250(zod@4.4.3)
+        specifier: 7.0.64
+        version: 7.0.64(zod@4.4.3)
+      ai-sdk-provider-codex-cli:
+        specifier: 2.1.2
+        version: 2.1.2(zod@4.4.3)
       openbot:
         specifier: workspace:*
         version: link:cli
@@ -516,8 +526,8 @@ importers:
         specifier: 0.1.2
         version: 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0)
       ai:
-        specifier: 6.0.250
-        version: 6.0.250(zod@4.4.3)
+        specifier: 7.0.64
+        version: 7.0.64(zod@4.4.3)
     devDependencies:
       '@types/node':
         specifier: 24.3.0
@@ -662,8 +672,8 @@ importers:
         specifier: 3.0.0
         version: 3.0.0
       ai:
-        specifier: 6.0.250
-        version: 6.0.250(zod@4.4.3)
+        specifier: 7.0.64
+        version: 7.0.64(zod@4.4.3)
       microsandbox:
         specifier: 0.6.8
         version: 0.6.8
@@ -683,6 +693,9 @@ importers:
 
   packages/computer-tools:
     dependencies:
+      '@ai-sdk/provider-utils':
+        specifier: 5.0.27
+        version: 5.0.27(zod@4.4.3)
       '@bufbuild/protobuf':
         specifier: 2.7.0
         version: 2.7.0
@@ -700,10 +713,10 @@ importers:
         version: 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0)
       '@trytilde/harness-sdk-vercel-ai-node':
         specifier: 0.2.0
-        version: 0.2.0(@ai-sdk/mcp@1.0.70(zod@4.4.3))(@trytilde/harness-sdk@0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))(ai@6.0.250(zod@4.4.3))
+        version: 0.2.0(@ai-sdk/mcp@2.0.32(zod@4.4.3))(@trytilde/harness-sdk@0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))(ai@7.0.64(zod@4.4.3))
       ai:
-        specifier: 6.0.250
-        version: 6.0.250(zod@4.4.3)
+        specifier: 7.0.64
+        version: 7.0.64(zod@4.4.3)
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -757,9 +770,12 @@ importers:
 
   packages/connector-tools:
     dependencies:
+      '@ai-sdk/provider-utils':
+        specifier: 5.0.27
+        version: 5.0.27(zod@4.4.3)
       ai:
-        specifier: 6.0.250
-        version: 6.0.250(zod@4.4.3)
+        specifier: 7.0.64
+        version: 7.0.64(zod@4.4.3)
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -835,6 +851,9 @@ importers:
 
   packages/inference-provider:
     dependencies:
+      '@openai/codex':
+        specifier: 0.144.1
+        version: 0.144.1
       '@tryopenbot/platform-integrations':
         specifier: workspace:*
         version: link:../platform-integrations
@@ -910,8 +929,8 @@ importers:
         specifier: workspace:*
         version: link:../client-runtime
       ai:
-        specifier: 6.0.250
-        version: 6.0.250(zod@4.4.3)
+        specifier: 7.0.64
+        version: 7.0.64(zod@4.4.3)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1010,27 +1029,27 @@ packages:
   '@adobe/css-tools@4.5.0':
     resolution: {integrity: sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q==}
 
-  '@ai-sdk/gateway@3.0.170':
-    resolution: {integrity: sha512-w769X09is03N0uJYl82JbJzYiUN/XIOD2oWfYdSkiqoGHMephwXxcDcIO5jCVL7n5ylMBjZ0Ofso53A3ppY4YQ==}
-    engines: {node: '>=18'}
+  '@ai-sdk/gateway@4.0.51':
+    resolution: {integrity: sha512-tQxWGUbg/O3A5EgekJo/C2byLVQ1r+vL6QdEVWmxUSnPhdCupcOeDbQO1tv9Um40VrdwYuSWlYzcbWvtlG5bOA==}
+    engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/mcp@1.0.70':
-    resolution: {integrity: sha512-rgbR+UZQF2DTsYUxgqTFjpFMaqXvQoGo9hS9q27qNpnNu5Pfv0qzUCg41YyED19cv3/LmF4tcpBY0YALsfdMxQ==}
-    engines: {node: '>=18'}
+  '@ai-sdk/mcp@2.0.32':
+    resolution: {integrity: sha512-NkXUnIEUmOmjD42LGpXGdHPULYvAV4SYUojutqw5YVNmQA7g64YRv3NLOaST21b2vIScUAah4qWchi62iUpQdA==}
+    engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils@4.0.45':
-    resolution: {integrity: sha512-7u5B/E2uZmU65SlJhhQGFHZwRCN0xOz4HHtFc4sEGV9PHbX3fGiEiZBpc/SABay1dGeJgK3VD60rvLGoWdWPXA==}
-    engines: {node: '>=18'}
+  '@ai-sdk/provider-utils@5.0.27':
+    resolution: {integrity: sha512-EzAn4pdgG5g0xXtH6lE2zyNmfjDQIDjATkfqzuidEI35g++hh4+07vnjzkT/RmGmIClPZiRj/Q2GMPV2V7mkHw==}
+    engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider@3.0.15':
-    resolution: {integrity: sha512-XeZW1CcDF2GMbH4wejW6xBRI2QCOgnkVYUnxoeDadB1mf85riL2bMUeDoh+6gJ/r4mjNfzUPW8OjLjvwTP0u1Q==}
-    engines: {node: '>=18'}
+  '@ai-sdk/provider@4.0.7':
+    resolution: {integrity: sha512-6or44XprPzKbr8zkmzosowSE0pxkvJcoojBL+mCZvPUt3kvXp3XSNqeVun9golb1acEfSo6yaEBRT18h2VU+1Q==}
+    engines: {node: '>=22'}
 
   '@alcalzone/ansi-tokenize@0.3.0':
     resolution: {integrity: sha512-p+CMKJ93HFmLkjXKlXiVGlMQEuRb6H0MokBSwUsX+S6BRX8eV5naFZpQJFfJHjRZY0Hmnqy1/r6UWl3x+19zYA==}
@@ -2754,6 +2773,47 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@openai/codex@0.144.1':
+    resolution: {integrity: sha512-Xir1zqPfpenhdoAoshN53uonzbBXj18COyzRkFlVZpSNyEl5XtkuYu9oddELePFN7K/0sXUcSO34Ad5IeCXPbw==}
+    engines: {node: '>=16'}
+    hasBin: true
+
+  '@openai/codex@0.144.1-darwin-arm64':
+    resolution: {integrity: sha512-dABeDK+ATqMG54MGBd3VjpKfh5EOoqx9PKVQB2QYDaEXx3F6CdUCXue5QIMfr4OxziUj8pUcLAQyd+KFqiTUFw==}
+    engines: {node: '>=16'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@openai/codex@0.144.1-darwin-x64':
+    resolution: {integrity: sha512-K2g3Q3tNxzFhV0SuzO6HcsYK7EQrp/o4HyeReyhkwVrwwUPoYwyIbB0IRjHIiDzRhbKriDccid2iyF5aPqdTcg==}
+    engines: {node: '>=16'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@openai/codex@0.144.1-linux-arm64':
+    resolution: {integrity: sha512-451o15+XtaXCCb35t/KCyyPqXHnTPxPxtdqEYOnE3e4sH5AfnI/uVJwfdjOksMG6vRLy6R+fLvSDOMguRFLmQw==}
+    engines: {node: '>=16'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@openai/codex@0.144.1-linux-x64':
+    resolution: {integrity: sha512-HNGVI+BulrOaC/0IzBvd6EL62j7LrlbFKibrhw6hZjjCjAeUYzRB2jB4qDzXN1NfqDi6Xrvniof3kwbwab24lg==}
+    engines: {node: '>=16'}
+    cpu: [x64]
+    os: [linux]
+
+  '@openai/codex@0.144.1-win32-arm64':
+    resolution: {integrity: sha512-L4aDVEh9o1u7WYoxpSyv3un9Bz26YZYocOFqE2oHdEQDL2s6/LdtutLQc3oUZruLlEbkNsjSU0HI1OKsP0+Ctg==}
+    engines: {node: '>=16'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@openai/codex@0.144.1-win32-x64':
+    resolution: {integrity: sha512-qv2HOp6v/nVP31p5I5GxYyL0wa79PMzim1+W9CKSV0UldjFV9AMbualA8PeXcYhbvvh9Y1UASXxwjuQdlyfAvw==}
+    engines: {node: '>=16'}
+    cpu: [x64]
+    os: [win32]
 
   '@opentelemetry/api@1.9.1':
     resolution: {integrity: sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q==}
@@ -4964,7 +5024,7 @@ packages:
   '@trytilde/harness-sdk-vercel-ai-node@0.2.0':
     resolution: {integrity: sha512-JTCVeI9ZtRzM25VU+/Zyg4dQSp1aUUwqaKuRnw0QJC3DuZ52r9c7Lkw6lkkj50/ksSeaUWCkRyL2xqzpkGKwPg==}
     peerDependencies:
-      '@ai-sdk/mcp': ^1.0.46
+      '@ai-sdk/mcp': 2.0.32
       '@trytilde/harness-sdk': ^0.1.2
       ai: '>=5 || >=6'
     peerDependenciesMeta:
@@ -5643,6 +5703,9 @@ packages:
   '@webcontainer/env@1.1.1':
     resolution: {integrity: sha512-6aN99yL695Hi9SuIk1oC88l9o0gmxL1nGWWQ/kNy81HigJ0FoaoTXpytCj6ItzgyCEwA9kF1wixsTuv5cjsgng==}
 
+  '@workflow/serde@4.1.0':
+    resolution: {integrity: sha512-pav4F2BoirECWR7Nf1TKt+2eETcBj7jj4cBefQ8VXQCA6NPkaKeLfj/zMgi+3zYV5ZIBT4GuUiphsj0/b9hPQQ==}
+
   '@workflow/serde@4.1.0-beta.2':
     resolution: {integrity: sha512-8kkeoQKLDaKXefjV5dbhBj2aErfKp1Mc4pb6tj8144cF+Em5SPbyMbyLCHp+BVrFfFVCBluCtMx+jjvaFVZGww==}
 
@@ -5952,9 +6015,15 @@ packages:
     engines: {node: '>=18.18'}
     hasBin: true
 
-  ai@6.0.250:
-    resolution: {integrity: sha512-uMaJoCubOqrtdTB7N72/yf1qdyKhlW/WPhTP6lmn4DRISE1qmiPT4z/DlflzQu5i2s9tqpe0LQ3WMsx7Fv5vKQ==}
-    engines: {node: '>=18'}
+  ai-sdk-provider-codex-cli@2.1.2:
+    resolution: {integrity: sha512-pK9iS9YMRAIfb1PiGhiNLhFKoQp765MgoxhVqBOF1cRdy3cVhrOEoKxPUepI+HS4z/4RFS4PFQjc5D/ZLiqXvg==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^4.1.8
+
+  ai@7.0.64:
+    resolution: {integrity: sha512-29Ufm56e53pRzIPueWzZiwJsgxmZStaBFpwEkVM89sqyIIax/pzDm+ez/ksJ/CcY9UCuYzvCQpE2zkFHICvS3w==}
+    engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
@@ -10634,29 +10703,30 @@ snapshots:
 
   '@adobe/css-tools@4.5.0': {}
 
-  '@ai-sdk/gateway@3.0.170(zod@4.4.3)':
+  '@ai-sdk/gateway@4.0.51(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 3.0.15
-      '@ai-sdk/provider-utils': 4.0.45(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.7
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
       '@vercel/oidc': 3.2.0
       zod: 4.4.3
 
-  '@ai-sdk/mcp@1.0.70(zod@4.4.3)':
+  '@ai-sdk/mcp@2.0.32(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 3.0.15
-      '@ai-sdk/provider-utils': 4.0.45(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.7
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
       pkce-challenge: 5.0.1
       zod: 4.4.3
 
-  '@ai-sdk/provider-utils@4.0.45(zod@4.4.3)':
+  '@ai-sdk/provider-utils@5.0.27(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 3.0.15
+      '@ai-sdk/provider': 4.0.7
       '@standard-schema/spec': 1.1.0
+      '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.1
-      undici: 5.29.0
+      undici: 7.29.0
       zod: 4.4.3
 
-  '@ai-sdk/provider@3.0.15':
+  '@ai-sdk/provider@4.0.7':
     dependencies:
       json-schema: 0.4.0
 
@@ -12534,7 +12604,35 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@opentelemetry/api@1.9.1': {}
+  '@openai/codex@0.144.1':
+    optionalDependencies:
+      '@openai/codex-darwin-arm64': '@openai/codex@0.144.1-darwin-arm64'
+      '@openai/codex-darwin-x64': '@openai/codex@0.144.1-darwin-x64'
+      '@openai/codex-linux-arm64': '@openai/codex@0.144.1-linux-arm64'
+      '@openai/codex-linux-x64': '@openai/codex@0.144.1-linux-x64'
+      '@openai/codex-win32-arm64': '@openai/codex@0.144.1-win32-arm64'
+      '@openai/codex-win32-x64': '@openai/codex@0.144.1-win32-x64'
+
+  '@openai/codex@0.144.1-darwin-arm64':
+    optional: true
+
+  '@openai/codex@0.144.1-darwin-x64':
+    optional: true
+
+  '@openai/codex@0.144.1-linux-arm64':
+    optional: true
+
+  '@openai/codex@0.144.1-linux-x64':
+    optional: true
+
+  '@openai/codex@0.144.1-win32-arm64':
+    optional: true
+
+  '@openai/codex@0.144.1-win32-x64':
+    optional: true
+
+  '@opentelemetry/api@1.9.1':
+    optional: true
 
   '@oxc-parser/binding-android-arm-eabi@0.127.0':
     optional: true
@@ -14507,19 +14605,19 @@ snapshots:
       - unrun
       - utf-8-validate
 
-  '@trytilde/harness-sdk-vercel-ai-node@0.2.0(@ai-sdk/mcp@1.0.70(zod@4.4.3))(@trytilde/harness-sdk@0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.20.4)(yaml@2.9.0))(ai@6.0.250(zod@4.4.3))':
+  '@trytilde/harness-sdk-vercel-ai-node@0.2.0(@ai-sdk/mcp@2.0.32(zod@4.4.3))(@trytilde/harness-sdk@0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.20.4)(yaml@2.9.0))(ai@7.0.64(zod@4.4.3))':
     dependencies:
-      '@ai-sdk/mcp': 1.0.70(zod@4.4.3)
+      '@ai-sdk/mcp': 2.0.32(zod@4.4.3)
       '@trytilde/harness-sdk': 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.20.4)(yaml@2.9.0)
     optionalDependencies:
-      ai: 6.0.250(zod@4.4.3)
+      ai: 7.0.64(zod@4.4.3)
 
-  '@trytilde/harness-sdk-vercel-ai-node@0.2.0(@ai-sdk/mcp@1.0.70(zod@4.4.3))(@trytilde/harness-sdk@0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))(ai@6.0.250(zod@4.4.3))':
+  '@trytilde/harness-sdk-vercel-ai-node@0.2.0(@ai-sdk/mcp@2.0.32(zod@4.4.3))(@trytilde/harness-sdk@0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))(ai@7.0.64(zod@4.4.3))':
     dependencies:
-      '@ai-sdk/mcp': 1.0.70(zod@4.4.3)
+      '@ai-sdk/mcp': 2.0.32(zod@4.4.3)
       '@trytilde/harness-sdk': 0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0)
     optionalDependencies:
-      ai: 6.0.250(zod@4.4.3)
+      ai: 7.0.64(zod@4.4.3)
 
   '@trytilde/harness-sdk@0.1.2(esbuild@0.28.2)(jiti@2.7.0)(rollup@4.62.4)(terser@5.50.0)(tsx@4.20.4)(yaml@2.9.0)':
     dependencies:
@@ -15745,6 +15843,8 @@ snapshots:
 
   '@webcontainer/env@1.1.1': {}
 
+  '@workflow/serde@4.1.0': {}
+
   '@workflow/serde@4.1.0-beta.2': {}
 
   '@xmldom/xmldom@0.8.13': {}
@@ -15921,12 +16021,20 @@ snapshots:
 
   agent-cli-detector@0.1.5: {}
 
-  ai@6.0.250(zod@4.4.3):
+  ai-sdk-provider-codex-cli@2.1.2(zod@4.4.3):
     dependencies:
-      '@ai-sdk/gateway': 3.0.170(zod@4.4.3)
-      '@ai-sdk/provider': 3.0.15
-      '@ai-sdk/provider-utils': 4.0.45(zod@4.4.3)
-      '@opentelemetry/api': 1.9.1
+      '@ai-sdk/provider': 4.0.7
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
+      jsonc-parser: 3.3.1
+      zod: 4.4.3
+    optionalDependencies:
+      '@openai/codex': 0.144.1
+
+  ai@7.0.64(zod@4.4.3):
+    dependencies:
+      '@ai-sdk/gateway': 4.0.51(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.7
+      '@ai-sdk/provider-utils': 5.0.27(zod@4.4.3)
       zod: 4.4.3
 
   ajv-draft-04@1.0.0(ajv@8.20.0):

@@ -25,7 +25,7 @@ export interface AppOptions {
   tildeChatProxy?: TildeChatProxyOptions;
   connectors?: ConnectorRouteOptions;
   authProvider?: AuthProvider;
-  agentCreation?: Pick<AgentCreationOptions, "execute">;
+  agentCreation?: Pick<AgentCreationOptions, "execute" | "awaitExecution">;
 }
 
 export function createApp(options: AppOptions = {}): Hono {
@@ -40,6 +40,7 @@ export function createApp(options: AppOptions = {}): Hono {
     app.use("/api/computer/*", middleware);
     app.use("/api/agents", middleware);
     app.use("/api/connectors/*", middleware);
+    app.use("/api/agents/*", middleware);
   } else
     app.get("/auth/native-config", (context) =>
       context.json({ error: "Owner authentication is not configured" }, 503),

@@ -3,6 +3,7 @@ export * from "./chat/client.js";
 export * from "./chat/reducer.js";
 export * from "./chat/sse.js";
 export * from "./contracts/attachments.js";
+export * from "./contracts/agents.js";
 export * from "./contracts/auth.js";
 export * from "./contracts/common.js";
 export * from "./contracts/connectors.js";

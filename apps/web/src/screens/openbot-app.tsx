@@ -585,6 +585,7 @@ export function OpenBotApp() {
         }}
         onLoadMore={() => void loadMoreAgents()}
         onCreateAgent={() => setCreateAgentOpen(true)}
+        onOpenPlugins={() => void navigate({ to: "/settings/plugins" })}
         onOpenSettings={() => void navigate({ to: "/settings" })}
         onSwitchWorkspace={() => clientWorkspace.openWorkspaceSelector()}
         onResize={layout.beginSidebarResize}

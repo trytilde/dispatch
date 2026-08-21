@@ -17,6 +17,9 @@ The package root exports the complete workspace surface:
 - Connectors: `ConnectorAccountGrid`, `ConnectorSetupDialog`,
   `connectorSelectionViewFromPart`, and `isConnectorSelectionPart` render the
   agent's in-chat connector account picker and schema-driven credential setup.
+- Plugins: `PluginsCatalog` renders the current tool and skill assignment
+  catalogue prototype. Its catalogue, connections, and assignments are
+  in-memory presentation data until the provider-backed lifecycle is completed.
 - Rich content: `MarkdownText`, `JsonBlock`, `ReasoningCard`, `ToolCallCard`,
   `ConnectionCard`, `FileCard`, `FileViewer`, `MediaViewer`, `AudioPlayer`,
   `LinkPreviewCard`, `LinkHoverPreview`, `DiagramCard`, `CodeBlock`,

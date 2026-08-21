@@ -25,7 +25,12 @@ export function WorkspaceShell({
 }
 
 export function ChatPane({ children }: { children: ReactNode }) {
-  return <section className="chat-pane">{children}</section>;
+  return (
+    <section className="chat-pane">
+      <div aria-hidden="true" className="chat-window-drag-region" />
+      {children}
+    </section>
+  );
 }
 
 export interface ConversationSurfaceProps {

@@ -2818,6 +2818,17 @@ body {
   background: var(--page);
 }
 
+.settings-shell::before {
+  position: fixed;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 32px;
+  content: "";
+  -webkit-app-region: drag;
+}
+
 .rich-chat.workspace-shell {
   grid-template-columns:
     var(--sidebar-width, 280px) minmax(424px, 1fr)
@@ -2855,6 +2866,38 @@ body.resizing-workspace .rich-chat.workspace-shell {
 }
 
 .sidebar-titlebar button {
+  -webkit-app-region: no-drag;
+}
+
+/* Electron's frameless title bar spans every shell column. These invisible regions keep
+   the full strip draggable even when no chat or Computer header is rendered. */
+.chat-window-drag-region,
+.computer-window-drag-region {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 38px;
+  -webkit-app-region: drag;
+}
+
+.computer-window-drag-region {
+  height: 46px;
+}
+
+.rich-chat .chat-pane > .chat-header,
+.computer-fullscreen-bar {
+  position: relative;
+  z-index: 4;
+  -webkit-app-region: drag;
+}
+
+.rich-chat .chat-pane > .chat-header button,
+.computer-fullscreen-bar button,
+.computer-collapse,
+.sidebar-resize-handle,
+.workspace-resize-handle {
   -webkit-app-region: no-drag;
 }
 
@@ -3244,6 +3287,10 @@ body.resizing-workspace .rich-chat.workspace-shell {
 }
 
 .agent-workspace-pane.fullscreen .computer-collapse {
+  display: none;
+}
+
+.agent-workspace-pane.fullscreen .computer-window-drag-region {
   display: none;
 }
 

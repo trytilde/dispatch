@@ -28,7 +28,7 @@ export function SettingsApp() {
   return (
     <motion.main
       animate={{ opacity: 1 }}
-      className="flex h-screen w-full bg-page text-ink"
+      className="settings-shell flex h-screen w-full bg-page text-ink"
       initial={{ opacity: 0 }}
       transition={pageTransition}
     >

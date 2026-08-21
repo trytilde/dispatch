@@ -318,6 +318,9 @@ export function OpenBotApp() {
   function handleConversationScroll(): void {
     const element = conversationRef.current;
     if (!element || !sessionId) return;
+    // Chromium can dispatch a layout-driven scroll while an Electron window is inactive.
+    // Preserve the owner's visible jump control until an in-focus scroll or explicit jump.
+    if (!document.hasFocus()) return;
     const distance = Math.max(0, element.scrollHeight - element.clientHeight - element.scrollTop);
     stickToBottomRef.current = distance <= 120;
     setShowScrollLatest(distance > 120);

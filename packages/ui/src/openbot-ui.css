@@ -89,6 +89,8 @@ body {
   --bubble-agent: #eeeeee;
   --bubble-user: #070707;
   --bubble-user-ink: #fcfcfc;
+  --skeleton-agent-line: #1414141c;
+  --skeleton-user-line: #fcfcfc3d;
   --scrim: #14141480;
   --shadow-hairline: 0 0 0 1px #1414140d;
   --shadow-btn: 0 0 0 1px var(--line), 0 1px 3px 0 #0000001f;
@@ -131,6 +133,8 @@ body {
   --bubble-agent: #262626;
   --bubble-user: #5a5a5a;
   --bubble-user-ink: #fcfcfc;
+  --skeleton-agent-line: #fcfcfc24;
+  --skeleton-user-line: #fcfcfc3d;
   --scrim: #141414b2;
   --shadow-hairline: 0 0 0 1px var(--line);
   --shadow-btn: 0 0 0 1px var(--line);
@@ -254,7 +258,7 @@ body {
   flex: 1 1 auto;
   flex-direction: column;
   gap: 7px;
-  background: color-mix(in srgb, var(--ink) 6%, var(--page));
+  background: var(--bubble-agent);
 }
 .conversation-skeleton-row.user .conversation-skeleton-bubble {
   background: var(--bubble-user);
@@ -273,13 +277,13 @@ body {
   height: 8px;
   border-radius: 999px;
   display: block;
-  background: color-mix(in srgb, var(--ink) 11%, transparent);
+  background: var(--skeleton-agent-line);
 }
 .conversation-skeleton-bubble > i:last-child {
   width: 62%;
 }
 .conversation-skeleton-row.user .conversation-skeleton-bubble > i {
-  background: color-mix(in srgb, var(--bubble-user-ink) 24%, transparent);
+  background: var(--skeleton-user-line);
 }
 .scroll-latest {
   position: absolute;

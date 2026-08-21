@@ -4,6 +4,10 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { agentIdFromName, materializeFileTemplate } from "@tryopenbot/utilities";
 import {
+  type InferenceAgentTemplateFile,
+  VercelInferenceProvider,
+} from "@tryopenbot/inference-provider";
+import {
   primaryAgentDirectory,
   primaryAgentId,
   subagentDirectory,
@@ -61,6 +65,7 @@ const factoryAgentTemplates = [
 
 const requiredAgentTemplatePaths = [
   "agent.ts.hbs",
+  "inference.ts.hbs",
   "instructions.ts.hbs",
   "tools/await_shell.ts.hbs",
   "tools/bash.ts.hbs",
@@ -85,12 +90,32 @@ export interface ScaffoldedAgent {
 }
 
 /** Seed the fork-owned agent templates once without replacing owner edits. */
-export async function scaffoldAgentTemplates(repositoryRoot: string): Promise<string> {
-  const directory = await seedTemplateDirectory(
-    repositoryRoot,
-    agentTemplateDirectory,
-    defaultAgentTemplates,
-  );
+export async function scaffoldAgentTemplates(
+  repositoryRoot: string,
+  inferenceFiles: readonly InferenceAgentTemplateFile[] = [],
+): Promise<string> {
+  const selectedInferenceFiles = inferenceFiles.length
+    ? inferenceFiles
+    : new VercelInferenceProvider().agentTemplate.files;
+  const reserved = new Set<string>(defaultAgentTemplates.map(([path]) => path));
+  const inferenceTemplates = selectedInferenceFiles.map(({ path, source }) => {
+    if (
+      !path.endsWith(".hbs") ||
+      path.startsWith("/") ||
+      path.includes("\\") ||
+      path.split("/").some((segment) => !segment || segment === "." || segment === "..")
+    )
+      throw new Error(`Invalid inference agent template path: ${path}`);
+    const outputPath = path.slice(0, -".hbs".length);
+    if (reserved.has(outputPath))
+      throw new Error(`Inference agent template conflicts with a default file: ${path}`);
+    reserved.add(outputPath);
+    return [outputPath, source] as const;
+  });
+  const directory = await seedTemplateDirectory(repositoryRoot, agentTemplateDirectory, [
+    ...defaultAgentTemplates,
+    ...inferenceTemplates,
+  ]);
   await seedTemplateDirectory(repositoryRoot, factoryTemplateDirectory, factoryAgentTemplates);
   await seedTemplateDirectory(repositoryRoot, subagentTemplateDirectory, subagentTemplates);
   return directory;

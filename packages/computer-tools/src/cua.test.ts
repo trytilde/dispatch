@@ -88,7 +88,16 @@ describe("Cua runtime tools", () => {
     const call = vi.fn(async () => result());
     const tools = await cuaToolsTesting.buildCuaTools({ definitions, uploadMedia, call });
     const abortController = new AbortController();
-    const execute = tools["click"]?.execute;
+    const execute = tools["click"]?.execute as
+      | ((
+          input: Record<string, unknown>,
+          execution: {
+            toolCallId: string;
+            messages: never[];
+            abortSignal: AbortSignal;
+          },
+        ) => Promise<unknown>)
+      | undefined;
     if (!execute) throw new Error("click tool has no execute function");
 
     const output = await execute(

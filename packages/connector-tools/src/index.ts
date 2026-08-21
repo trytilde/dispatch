@@ -1,3 +1,4 @@
+import type { Tool } from "@ai-sdk/provider-utils";
 import { tool } from "ai";
 import { z } from "zod";
 
@@ -93,7 +94,7 @@ const cardShownNote = [
  * one Tilde tool provider and emits a `connector_selection` payload that the
  * OpenBot clients render as an interactive account-picker card.
  */
-export function createConfigureConnectorTool(options: ConnectorToolOptions) {
+export function createConfigureConnectorTool(options: ConnectorToolOptions): Tool {
   return tool({
     description: [
       "Show the user an in-chat account picker for one connector (Tilde tool provider), so they can choose which account to enable for this bot or add a new one.",

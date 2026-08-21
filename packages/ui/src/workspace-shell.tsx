@@ -49,12 +49,7 @@ export function ConversationSurface({ children, scrollRef, onScroll }: Conversat
 
 export function ScrollToLatestButton({ onClick }: { onClick: () => void }) {
   return (
-    <button
-      className="scroll-latest"
-      onClick={onClick}
-      aria-label="Scroll to bottom"
-      type="button"
-    >
+    <button className="scroll-latest" onClick={onClick} aria-label="Scroll to bottom" type="button">
       <span>Scroll to bottom</span>
       <ArrowDownIcon aria-hidden="true" />
     </button>

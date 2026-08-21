@@ -9,7 +9,6 @@ import type {
   ComputerCallContext,
   ComputerExecRequest,
   ComputerHandle,
-  ComputerInput,
   ComputerSpec,
   ComputerProvider,
 } from "./core/index.js";
@@ -115,8 +114,6 @@ class TestComputerProvider extends BaseComputerProvider {
   );
   readFile = vi.fn(async () => new Uint8Array([1, 2, 3]));
   writeFile = vi.fn(async () => undefined);
-  screenshot = vi.fn(async () => new Uint8Array([137, 80, 78, 71]));
-  input = vi.fn(async (_id: string, _input: ComputerInput) => undefined);
   vnc = vi.fn(async () => ({ url: new URL("https://computer.test/vnc"), expiresAt: new Date(1) }));
 }
 

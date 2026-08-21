@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode, RefObject, UIEventHandler } from "react";
+import { ArrowDownIcon } from "lucide-react";
 
 export interface WorkspaceShellProps {
   sidebarCollapsed: boolean;
@@ -43,8 +44,14 @@ export function ConversationSurface({ children, scrollRef, onScroll }: Conversat
 
 export function ScrollToLatestButton({ onClick }: { onClick: () => void }) {
   return (
-    <button className="scroll-latest" onClick={onClick} aria-label="Scroll to latest">
-      ↓
+    <button
+      className="scroll-latest"
+      onClick={onClick}
+      aria-label="Scroll to bottom"
+      type="button"
+    >
+      <span>Scroll to bottom</span>
+      <ArrowDownIcon aria-hidden="true" />
     </button>
   );
 }

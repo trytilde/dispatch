@@ -227,30 +227,24 @@ body {
   width: 100%;
 }
 .conversation-skeleton {
+  height: 100%;
   min-height: 100%;
-  padding: 24px 0 30px;
+  padding: 12px 0 18px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  justify-content: space-between;
+  gap: 18px;
   pointer-events: none;
 }
 .conversation-skeleton-row {
   width: min(72%, 560px);
   display: flex;
   align-items: flex-end;
-  gap: 9px;
 }
 .conversation-skeleton-row.user {
   width: min(58%, 440px);
   margin-left: auto;
   justify-content: flex-end;
-}
-.conversation-skeleton-avatar {
-  width: 26px;
-  height: 26px;
-  flex: 0 0 26px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--ink) 10%, var(--page));
 }
 .conversation-skeleton-bubble {
   min-width: 0;
@@ -263,13 +257,16 @@ body {
   background: color-mix(in srgb, var(--ink) 6%, var(--page));
 }
 .conversation-skeleton-row.user .conversation-skeleton-bubble {
-  background: color-mix(in srgb, var(--ink) 10%, var(--page));
+  background: var(--bubble-user);
 }
 .conversation-skeleton-bubble.compact {
   flex: 0 1 76%;
 }
 .conversation-skeleton-bubble.medium {
   flex: 0 1 82%;
+}
+.conversation-skeleton-bubble.short {
+  flex: 0 1 48%;
 }
 .conversation-skeleton-bubble > i {
   width: 100%;
@@ -281,18 +278,43 @@ body {
 .conversation-skeleton-bubble > i:last-child {
   width: 62%;
 }
+.conversation-skeleton-row.user .conversation-skeleton-bubble > i {
+  background: color-mix(in srgb, var(--bubble-user-ink) 24%, transparent);
+}
 .scroll-latest {
   position: absolute;
-  z-index: 4;
-  right: 22px;
-  bottom: 142px;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--line-strong);
-  border-radius: 50%;
-  color: var(--ink-2);
+  z-index: 30;
+  bottom: 94px;
+  left: 50%;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  min-height: 29px;
+  padding: 7px 11px;
+  border: 0.5px solid var(--line-strong);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-raised);
+  font-size: 11px;
+  line-height: 15px;
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%);
+}
+.scroll-latest:hover {
+  background: color-mix(in srgb, var(--surface) 92%, var(--ink));
+}
+.scroll-latest > span {
+  white-space: nowrap;
+}
+.scroll-latest > svg {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 11px;
+  stroke-width: 1.8;
 }
 .file-part > img {
   width: 40px;
@@ -2045,6 +2067,7 @@ a {
   box-shadow: 0 0 0 3px var(--green-tint);
 }
 .chat-pane {
+  position: relative;
   min-width: 0;
   /* Grid items default to min-height:auto, which lets the transcript row grow past the
      viewport instead of handing its overflow to the scroll container below. */

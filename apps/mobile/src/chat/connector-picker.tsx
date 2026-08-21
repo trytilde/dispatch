@@ -35,7 +35,8 @@ export function ConnectorSelectionPicker({
   const border = useColor("border");
   const background = useColor("background");
   const prompt =
-    selection.prompt ?? `Select which account to enable for this bot for ${selection.provider_name}`;
+    selection.prompt ??
+    `Select which account to enable for this bot for ${selection.provider_name}`;
 
   const choose = (accountId: string, displayName: string) => {
     void runtime.actions.sendMessage({

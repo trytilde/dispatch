@@ -28,6 +28,7 @@ interface UpstreamProvider {
   documentation?: string;
   categories?: string[];
   credential_sources?: UpstreamCredentialSource[];
+  metadata?: Record<string, unknown>;
 }
 
 interface UpstreamAccount {
@@ -266,10 +267,13 @@ function pageItems(page: Record<string, unknown>): unknown[] {
 }
 
 function serializeProvider(provider: UpstreamProvider) {
+  const iconUrl = provider.metadata?.icon_url;
   return {
     type_id: provider.type_id,
     name: provider.name ?? provider.type_id,
     ...(provider.documentation ? { documentation: provider.documentation } : {}),
+    // Provider branding straight from Tilde catalog metadata.
+    ...(typeof iconUrl === "string" && iconUrl ? { icon_url: iconUrl } : {}),
     categories: provider.categories ?? [],
     credential_sources: (provider.credential_sources ?? []).map((source) => ({
       type_id: source.type_id,

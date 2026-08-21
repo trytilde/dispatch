@@ -42,6 +42,8 @@ export const ConnectorProviderSchema = z
     type_id: z.string().min(1),
     name: z.string(),
     documentation: z.string().optional(),
+    /** Provider branding straight from Tilde catalog metadata (https or data: URI). */
+    icon_url: z.string().optional(),
     categories: z.array(z.string()).optional(),
     credential_sources: z.array(ConnectorCredentialSourceSchema),
   })
@@ -60,6 +62,7 @@ export const ConnectorSelectionSchema = z
   .object({
     provider_type_id: z.string().min(1),
     provider_name: z.string(),
+    icon_url: z.string().optional(),
     prompt: z.string().optional(),
     accounts: z.array(ConnectorAccountSchema),
     credential_sources: z.array(ConnectorCredentialSourceSchema).optional(),

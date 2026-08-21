@@ -6,6 +6,7 @@ import {
   type ChatPart,
   type ConnectorSelection,
 } from "@tryopenbot/client-runtime";
+import { Image } from "@/components/ui/image";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useColor } from "@/hooks/useColor";
@@ -79,7 +80,11 @@ export function ConnectorSelectionPicker({
             ]}
           >
             <View style={[styles.glyph, { borderColor: border }]}>
-              <Text variant="caption">{selection.provider_name.slice(0, 2).toUpperCase()}</Text>
+              {selection.icon_url ? (
+                <Image source={{ uri: selection.icon_url }} style={styles.glyphImage} />
+              ) : (
+                <Text variant="caption">{selection.provider_name.slice(0, 2).toUpperCase()}</Text>
+              )}
             </View>
             <View style={styles.copy}>
               <Text numberOfLines={1} variant="caption">
@@ -140,6 +145,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
+  glyphImage: { width: 24, height: 24 },
   copy: { flex: 1, minWidth: 0 },
 });

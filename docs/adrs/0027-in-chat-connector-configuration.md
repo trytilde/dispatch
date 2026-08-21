@@ -39,3 +39,5 @@ sequenceDiagram
 - New package `@tryopenbot/connector-tools` (Tilde-facing runtime utility for authored agents, sibling of `computer-tools`).
 - Existing forks must migrate `configuration/agent` manually: add `tools/configure_connector.ts`, register it in `agent.ts`, refresh `instructions.ts`, and copy the eight Tilde skills.
 - Mobile renders the same payload natively, including API-key and custom-schema credential forms; brokered OAuth opens the system browser and the user taps Done to hand back to the agent.
+- Provider branding comes from Tilde catalog metadata (`icon_url`, plumbed as `icon_url`/`iconUrl` through the payload, routes, and both clients) with an initials tile as the fallback while the live catalog omits it.
+- Follow-up: accounts are create-only from chat — the setup form blanks secret fields and cannot re-submit an existing account with unchanged secrets; editing credentials stays in the Tilde dashboard for now.

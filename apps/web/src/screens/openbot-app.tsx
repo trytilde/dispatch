@@ -424,6 +424,7 @@ export function OpenBotApp() {
                     ? {
                         selection: {
                           ...selection,
+                          ...(provider.icon_url ? { iconUrl: provider.icon_url } : {}),
                           credentialSources: credentialSourceViews(provider),
                         },
                       }
@@ -755,6 +756,9 @@ export function OpenBotApp() {
       {connectorSetup && !connectorSetup.loading ? (
         <ConnectorSetupDialog
           providerName={connectorSetup.selection.providerName}
+          {...(connectorSetup.selection.iconUrl
+            ? { providerIconUrl: connectorSetup.selection.iconUrl }
+            : {})}
           credentialSources={connectorSetup.selection.credentialSources}
           submitting={connectorSetup.submitting ?? false}
           {...(connectorSetup.error ? { error: connectorSetup.error } : {})}

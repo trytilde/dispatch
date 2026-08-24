@@ -198,6 +198,18 @@ function ordinal(day: number): string {
   }
 }
 
+/** Months are optional; a day selection is not, so the last one cannot be cleared. */
+export function toggleMonth(values: readonly number[], value: number): number[] {
+  return values.includes(value)
+    ? values.filter((candidate) => candidate !== value)
+    : [...values, value];
+}
+
+export function toggleDay(values: readonly number[], value: number): number[] {
+  if (!values.includes(value)) return [...values, value];
+  return values.length === 1 ? [...values] : values.filter((candidate) => candidate !== value);
+}
+
 export function timeOptionsWith(minute: number, hour: number): SelectOption[] {
   const options: SelectOption[] = [];
   for (let slot = 0; slot < 24 * 4; slot += 1) {
@@ -268,14 +280,19 @@ export function ScheduleEditor({ schedule, onChange, initialMode }: ScheduleEdit
     if (next.mode !== "custom") onChange(buildSchedule(next));
   }
 
-  function commitCustom(): void {
-    const trimmed = customText.trim();
+  /**
+   * Commit as soon as the typed expression is valid so an outside dismissal —
+   * which unmounts this input before blur fires — cannot lose it. Invalid input
+   * only flags itself once the field is left.
+   */
+  function commitCustom(text: string, flagInvalid: boolean): void {
+    const trimmed = text.trim();
     if (!isValidTildeSchedule(trimmed)) {
-      setCustomInvalid(true);
+      if (flagInvalid) setCustomInvalid(true);
       return;
     }
     setCustomInvalid(false);
-    setDraft({ ...draft, expression: trimmed });
+    setDraft((current) => ({ ...current, expression: trimmed }));
     onChange(trimmed);
   }
 
@@ -360,8 +377,11 @@ export function ScheduleEditor({ schedule, onChange, initialMode }: ScheduleEdit
             className="h-8 min-w-[180px] flex-1 rounded-control border border-line-strong bg-transparent px-2.5
               text-[12.5px] text-ink outline-none focus-visible:border-accent
               aria-invalid:border-red"
-            onBlur={commitCustom}
-            onChange={(event) => setCustomText(event.target.value)}
+            onBlur={() => commitCustom(customText, true)}
+            onChange={(event) => {
+              setCustomText(event.target.value);
+              commitCustom(event.target.value, false);
+            }}
             spellCheck={false}
             value={customText}
           />
@@ -386,12 +406,6 @@ function AdvancedScheduleFields({
   const daysKind = draft.days.kind;
   const selectedDays = daysKind === "every-day" ? [] : draft.days.days;
 
-  function toggle(values: number[], value: number): number[] {
-    return values.includes(value)
-      ? values.filter((candidate) => candidate !== value)
-      : [...values, value];
-  }
-
   const chip = (selected: boolean) =>
     `h-7 rounded-control px-2 text-[12px] transition-colors ${
       selected ? "bg-hover-2 text-ink" : "text-ink-2 hover:bg-hover"
@@ -413,7 +427,7 @@ function AdvancedScheduleFields({
             <button
               className={chip(draft.months.includes(index + 1))}
               key={name}
-              onClick={() => onCommit({ ...draft, months: toggle(draft.months, index + 1) })}
+              onClick={() => onCommit({ ...draft, months: toggleMonth(draft.months, index + 1) })}
               type="button"
             >
               {name.slice(0, 3)}
@@ -430,7 +444,13 @@ function AdvancedScheduleFields({
               const kind = event.target.value as AdvancedDays["kind"];
               onCommit({
                 ...draft,
-                days: kind === "every-day" ? { kind } : { kind, days: [] },
+                days:
+                  kind === "every-day"
+                    ? { kind }
+                    : {
+                        kind,
+                        days: [kind === "days-of-week" ? draft.dayOfWeek : draft.dayOfMonth],
+                      },
               });
             }}
             options={[
@@ -448,7 +468,10 @@ function AdvancedScheduleFields({
                 className={chip(selectedDays.includes(day))}
                 key={name}
                 onClick={() =>
-                  onCommit({ ...draft, days: { kind: daysKind, days: toggle(selectedDays, day) } })
+                  onCommit({
+                    ...draft,
+                    days: { kind: daysKind, days: toggleDay(selectedDays, day) },
+                  })
                 }
                 type="button"
               >
@@ -464,7 +487,10 @@ function AdvancedScheduleFields({
                 className={chip(selectedDays.includes(day))}
                 key={day}
                 onClick={() =>
-                  onCommit({ ...draft, days: { kind: daysKind, days: toggle(selectedDays, day) } })
+                  onCommit({
+                    ...draft,
+                    days: { kind: daysKind, days: toggleDay(selectedDays, day) },
+                  })
                 }
                 type="button"
               >

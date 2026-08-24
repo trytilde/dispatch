@@ -182,6 +182,28 @@ export function eventEditorConfig(provider: SignalProvider): EventEditorConfig {
   }
 }
 
+/**
+ * Keep a signal type that the curated lists omit selectable, so a rule authored
+ * against any upstream event stays editable.
+ */
+export function configWithSignalType(
+  config: EventEditorConfig,
+  provider: SignalProvider,
+  signalType: string,
+): EventEditorConfig {
+  if (!signalType) return config;
+  const known = config.groups.some((group) =>
+    group.options.some((option) => option.value === signalType),
+  );
+  if (known) return config;
+  const label =
+    provider.signal_types.find((candidate) => candidate.type_id === signalType)?.name ?? signalType;
+  return {
+    ...config,
+    groups: [...config.groups, { label: "Other", options: [{ label, value: signalType }] }],
+  };
+}
+
 /** Fields that apply to a signal type (checks events drop the user filter). */
 export function applicableFilterFields(
   fields: readonly EventFilterField[],
@@ -190,18 +212,35 @@ export function applicableFilterFields(
   return fields.filter((field) => field.appliesTo?.(signalType) ?? true);
 }
 
-/** Map field input values to exact-equality trigger filters, dropping blanks. */
+/**
+ * Map field input values to exact-equality trigger filters, dropping blanks.
+ * `passThrough` filters are appended unchanged so an edit never deletes a
+ * filter this editor does not model.
+ */
 export function filtersFromFieldValues(
   fields: readonly EventFilterField[],
   signalType: string,
   values: Record<string, string>,
+  passThrough: readonly RoutineTriggerFilter[] = [],
 ): RoutineTriggerFilter[] {
-  return applicableFilterFields(fields, signalType).flatMap((field) => {
+  const curated = applicableFilterFields(fields, signalType).flatMap((field) => {
     const raw = (values[field.path] ?? "").trim();
     const value = field.normalize ? field.normalize(raw) : raw;
     if (!value) return [];
     return [{ path: field.path, value }];
   });
+  return [...curated, ...passThrough];
+}
+
+/** Stored filters the curated fields do not model, preserved verbatim across edits. */
+export function unmodeledFilters(
+  fields: readonly EventFilterField[],
+  filters: readonly RoutineTriggerFilter[] | undefined,
+): RoutineTriggerFilter[] {
+  const modeled = new Set(fields.map((field) => field.path));
+  return (filters ?? []).filter(
+    (filter) => !(modeled.has(filter.path) && typeof filter.value === "string"),
+  );
 }
 
 /** Recover field input values from stored trigger filters. */
@@ -248,9 +287,12 @@ export function EventTriggerEditor({
   value,
   onChange,
 }: EventTriggerEditorProps) {
-  const config = eventEditorConfig(provider);
+  const config = configWithSignalType(eventEditorConfig(provider), provider, value.signalType);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
     fieldValuesFromFilters(value.filters),
+  );
+  const [passThrough] = useState<RoutineTriggerFilter[]>(() =>
+    unmodeledFilters(config.fields, value.filters),
   );
 
   function emit(signalType: string, instanceId: string, values: Record<string, string>): void {
@@ -258,7 +300,7 @@ export function EventTriggerEditor({
       {
         instanceId,
         signalType,
-        filters: filtersFromFieldValues(config.fields, signalType, values),
+        filters: filtersFromFieldValues(config.fields, signalType, values, passThrough),
       },
       fieldValuesValid(config.fields, signalType, values),
     );

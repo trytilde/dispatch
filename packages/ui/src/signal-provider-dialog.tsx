@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import type { SignalInstance, SignalProvider } from "@tryopenbot/client-runtime";
 import { DialogSurface } from "./overlay-components.js";
@@ -167,6 +167,8 @@ export function SignalProviderDialog({
 
 export function WebhookUrlField({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
+  const resetRef = useRef(0);
+  useEffect(() => () => window.clearTimeout(resetRef.current), []);
   return (
     <span className="flex items-center gap-1.5">
       <input
@@ -183,7 +185,8 @@ export function WebhookUrlField({ url }: { url: string }) {
         onClick={() => {
           void navigator.clipboard.writeText(url);
           setCopied(true);
-          window.setTimeout(() => setCopied(false), 1500);
+          window.clearTimeout(resetRef.current);
+          resetRef.current = window.setTimeout(() => setCopied(false), 1500);
         }}
         type="button"
       >

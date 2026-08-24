@@ -82,7 +82,6 @@ export interface RoutinesState {
   byAgentId: Record<string, Routine[]>;
   status: "idle" | "loading" | "ready" | "error";
   error: string;
-  pollHandle: ReturnType<typeof setTimeout> | null;
 }
 
 export interface SignalsState {
@@ -198,7 +197,7 @@ const initialState: OpenBotState = {
     error: "",
   },
   agentSetup: idleAgentSetup,
-  routines: { byAgentId: {}, status: "idle", error: "", pollHandle: null },
+  routines: { byAgentId: {}, status: "idle", error: "" },
   signals: {
     providers: [],
     instances: [],
@@ -263,6 +262,18 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       status: "ready",
       error: "",
     });
+  // Providers and instances are fetched concurrently behind one status/error
+  // pair, so each keeps its own error and neither erases the other's.
+  const signalErrors: Record<"providers" | "instances", string> = { providers: "", instances: "" };
+  const settleSignals = (
+    source: "providers" | "instances",
+    patch: Partial<SignalsState>,
+    error: string,
+  ): void => {
+    signalErrors[source] = error;
+    const pending = signalErrors.providers || signalErrors.instances;
+    updateSignals({ ...patch, status: pending ? "error" : "ready", error: pending });
+  };
   let routinePollTimer: ReturnType<typeof setTimeout> | undefined;
   let routinePollGeneration = 0;
 
@@ -879,12 +890,13 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       cancelScheduled(routinePollTimer);
       routinePollTimer = undefined;
     }
-    if (store.getState().routines.pollHandle !== null) updateRoutines({ pollHandle: null });
   }
 
   function startRoutinePolling(agentId: string): void {
     stopRoutinePolling();
     const generation = routinePollGeneration;
+    // The timer handle stays in closure scope: publishing it every cycle would
+    // wake every routines subscriber for a value no surface reads.
     const scheduleNext = (): void => {
       routinePollTimer = schedule(() => {
         void refreshRoutines(agentId)
@@ -893,30 +905,29 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
             if (generation === routinePollGeneration) scheduleNext();
           });
       }, routinePollMs);
-      updateRoutines({ pollHandle: routinePollTimer });
     };
     void refreshRoutines(agentId).catch(() => undefined);
     scheduleNext();
   }
 
   async function refreshSignalProviders(): Promise<void> {
-    updateSignals({ status: "loading", error: "" });
+    updateSignals({ status: "loading" });
     try {
       const providers = await options.client.listSignalProviders();
-      updateSignals({ providers, status: "ready", error: "" });
+      settleSignals("providers", { providers }, "");
     } catch (error) {
-      updateSignals({ status: "error", error: errorMessage(error) });
+      settleSignals("providers", {}, errorMessage(error));
       throw error;
     }
   }
 
   async function refreshSignalInstances(): Promise<void> {
-    updateSignals({ status: "loading", error: "" });
+    updateSignals({ status: "loading" });
     try {
       const instances = await options.client.listSignalInstances();
-      updateSignals({ instances, status: "ready", error: "" });
+      settleSignals("instances", { instances }, "");
     } catch (error) {
-      updateSignals({ status: "error", error: errorMessage(error) });
+      settleSignals("instances", {}, errorMessage(error));
       throw error;
     }
   }

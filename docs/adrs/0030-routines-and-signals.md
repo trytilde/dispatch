@@ -66,6 +66,18 @@ never patch caches.
 - One event trigger maps to exactly one signal rule and one signal type; filters are
   `filter.json_equals` equality on the provider's normalized payload.
 
+### Unpaginated upstream signal lists
+
+Tilde's signals list endpoints return a `next_page_token` that is always null, so
+paging is impossible and the requested page size is a hard cap. Loading a partial
+set is unsafe here: a routine would compose with a missing member, the replace-all
+update would neither see nor delete it, and the enabled fan-out would skip it,
+leaving an invisible rule firing while its card reads Paused. The control service
+therefore requests 100 and fails loudly with a 502 when a page fills, rather than
+truncating silently. A team that legitimately reaches 100 signal rules will see the
+routines surface error until upstream paginates; that is preferred over silently
+corrupting routines on the next edit.
+
 ### Provider connections
 
 Signal provider instances are managed inline from the trigger card and inventoried

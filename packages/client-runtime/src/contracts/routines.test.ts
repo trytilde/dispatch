@@ -109,14 +109,36 @@ describe("isValidTildeSchedule", () => {
     expect(isValidTildeSchedule("0 30 7 1 * * 2026")).toBe(true);
   });
 
-  it("rejects macros, CRON_TZ, wrong field counts, and nonzero seconds", () => {
+  it("accepts ? in the day fields and three-letter day and month names", () => {
+    expect(isValidTildeSchedule("0 7 * * mon")).toBe(true);
+    expect(isValidTildeSchedule("0 7 * * MON-FRI")).toBe(true);
+    expect(isValidTildeSchedule("0 7 1 JAN,jul *")).toBe(true);
+    expect(isValidTildeSchedule("0 7 ? * MON")).toBe(true);
+    expect(isValidTildeSchedule("0 0 7 15 * ?")).toBe(true);
+    expect(isValidTildeSchedule("0 7 1-15/2 * *")).toBe(true);
+  });
+
+  it("rejects out-of-range numbers, including inside ranges, steps, and lists", () => {
+    expect(isValidTildeSchedule("99 99 * * *")).toBe(false);
+    expect(isValidTildeSchedule("0 24 * * *")).toBe(false);
+    expect(isValidTildeSchedule("0 7 0 * *")).toBe(false);
+    expect(isValidTildeSchedule("0 7 * 13 *")).toBe(false);
+    expect(isValidTildeSchedule("0 7 * * 8")).toBe(false);
+    expect(isValidTildeSchedule("0 7 1-40 * *")).toBe(false);
+    expect(isValidTildeSchedule("0,70 7 * * *")).toBe(false);
+    expect(isValidTildeSchedule("*/0 7 * * *")).toBe(false);
+  });
+
+  it("rejects macros, timezone prefixes, wrong field counts, and nonzero seconds", () => {
     expect(isValidTildeSchedule("@hourly")).toBe(false);
     expect(isValidTildeSchedule("CRON_TZ=UTC 0 7 * * *")).toBe(false);
+    expect(isValidTildeSchedule("TZ=Europe/London 0 7 * * *")).toBe(false);
     expect(isValidTildeSchedule("0 7 * *")).toBe(false);
     expect(isValidTildeSchedule("0 0 7 * * * * *")).toBe(false);
     expect(isValidTildeSchedule("30 0 7 * * *")).toBe(false);
     expect(isValidTildeSchedule("")).toBe(false);
-    expect(isValidTildeSchedule("0 7 * * mon")).toBe(false);
+    expect(isValidTildeSchedule("0 7 * * funday")).toBe(false);
+    expect(isValidTildeSchedule("0 7 * * *,")).toBe(false);
   });
 });
 

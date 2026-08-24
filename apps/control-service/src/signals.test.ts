@@ -116,7 +116,7 @@ describe("signal routes", () => {
       name: "GitHub",
       instructions: "Point your webhook at {{webhook_url}}.",
       auth_methods: ["webhook"],
-      requires_signing_key: true,
+      requires_signing_key: false,
       signing_key_description: null,
       route_path: "events",
     });
@@ -144,6 +144,68 @@ describe("signal routes", () => {
         display_name_description: "Name this connection",
       },
     ]);
+  });
+
+  it("only requires a signing key when upstream says the provider signs", async () => {
+    const { app } = signalApp((call) => {
+      if (call.method === "GET" && call.path === "/api/v1/team/team-1/signals/providers")
+        return Response.json({
+          items: [
+            {
+              ...providersPage.items[0],
+              type_id: "firecrawl",
+              webhook_verification: {
+                verification_method: "none",
+                requires_signing_key: false,
+                signing_key_description: null,
+              },
+            },
+            {
+              ...providersPage.items[0],
+              type_id: "sentry",
+              webhook_verification: {
+                verification_method: "hmac_sha256",
+                requires_signing_key: true,
+                signing_key_description: "The client secret",
+              },
+            },
+          ],
+        });
+      return catalogResponses(call);
+    });
+    const response = await app.request("https://openbot.test/api/signals/providers");
+    const body = (await response.json()) as { items: Record<string, unknown>[] };
+    expect(body.items[0]).toMatchObject({
+      type_id: "firecrawl",
+      requires_signing_key: false,
+      signing_key_description: null,
+    });
+    expect(body.items[1]).toMatchObject({
+      type_id: "sentry",
+      requires_signing_key: true,
+      signing_key_description: "The client secret",
+    });
+  });
+
+  it("asks upstream for the largest page and fails when a list endpoint fills it", async () => {
+    const { app, calls } = signalApp((call) => {
+      if (call.method === "GET" && call.path === "/api/v1/team/team-1/signals/instances")
+        return Response.json({
+          items: Array.from({ length: 100 }, (_unused, index) => ({
+            ...upstreamInstance,
+            id: `spi_${index}`,
+          })),
+          next_page_token: null,
+        });
+      return catalogResponses(call);
+    });
+    const response = await app.request("https://openbot.test/api/signals/instances");
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({
+      error: expect.stringContaining("maximum 100 results"),
+    });
+    const list = calls.find((call) => call.path.endsWith("/signals/instances"));
+    expect(list?.query.get("page_size")).toBe("100");
   });
 
   it("lists instances with computed webhook URLs and without configuration", async () => {
@@ -288,7 +350,18 @@ describe("signal routes", () => {
               status: "completed",
               chatkit_session_id: "sess-1",
               error_message: null,
+              matched_rule_ids: ["rule-1", "rule-2"],
               created_at: "2026-08-24T09:00:00Z",
+            },
+            {
+              id: "d-2",
+              signal_provider_instance_id: "spi_existing",
+              signal_type: "github.pull_request.opened",
+              summary: null,
+              status: "pending",
+              chatkit_session_id: null,
+              error_message: null,
+              created_at: "2026-08-24T09:05:00Z",
             },
           ],
           next_page_token: null,
@@ -309,7 +382,19 @@ describe("signal routes", () => {
           status: "completed",
           session_id: "sess-1",
           error_message: null,
+          matched_rule_ids: ["rule-1", "rule-2"],
           created_at: "2026-08-24T09:00:00Z",
+        },
+        {
+          id: "d-2",
+          instance_id: "spi_existing",
+          signal_type: "github.pull_request.opened",
+          summary: null,
+          status: "pending",
+          session_id: null,
+          error_message: null,
+          matched_rule_ids: [],
+          created_at: "2026-08-24T09:05:00Z",
         },
       ],
     });

@@ -560,7 +560,6 @@ describe("OpenBot runtime routines slice", () => {
     runtime.actions.startRoutinePolling("agent-one");
     expect(listRoutines).toHaveBeenCalledTimes(1);
     expect(scheduled).toMatchObject([{ delay: 30_000 }]);
-    expect(runtime.store.getState().routines.pollHandle).toBe(scheduled[0]?.handle);
 
     scheduled[0]?.callback();
     await vi.waitFor(() => expect(listRoutines).toHaveBeenCalledTimes(2));
@@ -568,11 +567,36 @@ describe("OpenBot runtime routines slice", () => {
 
     runtime.actions.stopRoutinePolling();
     expect(cancelled).toEqual([scheduled[1]?.handle]);
-    expect(runtime.store.getState().routines.pollHandle).toBeNull();
 
     scheduled[1]?.callback();
     await vi.waitFor(() => expect(listRoutines).toHaveBeenCalledTimes(3));
     expect(scheduled).toHaveLength(2);
+    runtime.dispose();
+  });
+
+  it("keeps the poll timer out of published state", async () => {
+    const listRoutines = vi.fn(async () => [testRoutine("r-1", "Deploy watchdog")]);
+    const runtime = createRoutineRuntime(
+      { listRoutines },
+      {
+        schedule: (_callback, _delay) => 1 as unknown as ReturnType<typeof setTimeout>,
+        cancelScheduled: () => undefined,
+      },
+    );
+
+    runtime.actions.startRoutinePolling("agent-one");
+    await vi.waitFor(() => expect(runtime.store.getState().routines.status).toBe("ready"));
+    expect(runtime.store.getState().routines).not.toHaveProperty("pollHandle");
+
+    const before = runtime.store.getState().routines;
+    let notifications = 0;
+    const unsubscribe = runtime.store.subscribe(() => {
+      notifications += 1;
+    });
+    runtime.actions.stopRoutinePolling();
+    expect(notifications).toBe(0);
+    expect(runtime.store.getState().routines).toBe(before);
+    unsubscribe();
     runtime.dispose();
   });
 
@@ -636,6 +660,48 @@ describe("OpenBot runtime signals slice", () => {
     expect(signals.providers).toMatchObject([{ type_id: "github" }]);
     expect(signals.instances).toMatchObject([{ id: "spi_1" }]);
     expect(signals.deliveriesByInstanceId.spi_1).toMatchObject([{ id: "del-1" }]);
+    runtime.dispose();
+  });
+
+  it("keeps a provider failure visible when a concurrent instance fetch succeeds", async () => {
+    const runtime = createRoutineRuntime({
+      listSignalProviders: async () => {
+        throw new Error("Providers unavailable");
+      },
+      listSignalInstances: async () => [],
+    });
+
+    const providers = runtime.actions.refreshSignalProviders();
+    const instances = runtime.actions.refreshSignalInstances();
+    await expect(providers).rejects.toThrow("Providers unavailable");
+    await instances;
+
+    const signals = runtime.store.getState().signals;
+    expect(signals.status).toBe("error");
+    expect(signals.error).toBe("Providers unavailable");
+
+    await runtime.actions.refreshSignalProviders().catch(() => undefined);
+    runtime.dispose();
+  });
+
+  it("clears the error once the failing fetch recovers", async () => {
+    let fail = true;
+    const runtime = createRoutineRuntime({
+      listSignalProviders: async () => {
+        if (fail) throw new Error("Providers unavailable");
+        return [];
+      },
+      listSignalInstances: async () => [],
+    });
+
+    await expect(runtime.actions.refreshSignalProviders()).rejects.toThrow();
+    fail = false;
+    await runtime.actions.refreshSignalProviders();
+    await runtime.actions.refreshSignalInstances();
+
+    const signals = runtime.store.getState().signals;
+    expect(signals.status).toBe("ready");
+    expect(signals.error).toBe("");
     runtime.dispose();
   });
 

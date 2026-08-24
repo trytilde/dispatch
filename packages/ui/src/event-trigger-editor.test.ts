@@ -5,6 +5,7 @@ import {
   fieldValuesFromFilters,
   fieldValuesValid,
   filtersFromFieldValues,
+  unmodeledFilters,
 } from "./event-trigger-editor.js";
 
 const github: SignalProvider = {
@@ -90,5 +91,33 @@ describe("fieldValuesFromFilters", () => {
         { path: "ignored.number", value: 4 },
       ]),
     ).toEqual({ "event.channel": "C0123456789" });
+  });
+});
+
+describe("unmodeledFilters", () => {
+  const fields = eventEditorConfig(github).fields;
+
+  it("keeps filters the curated editor does not model", () => {
+    expect(
+      unmodeledFilters(fields, [
+        { path: "repository.full_name", value: "acme/web" },
+        { path: "pull_request.draft", value: false },
+      ]),
+    ).toEqual([{ path: "pull_request.draft", value: false }]);
+  });
+
+  it("survives a round trip through an event-type change", () => {
+    const stored = [
+      { path: "repository.full_name", value: "acme/web" },
+      { path: "pull_request.draft", value: false },
+    ];
+    const values = fieldValuesFromFilters(stored);
+    const passThrough = unmodeledFilters(fields, stored);
+    expect(
+      filtersFromFieldValues(fields, "github.pull_request.reopened", values, passThrough),
+    ).toEqual([
+      { path: "repository.full_name", value: "acme/web" },
+      { path: "pull_request.draft", value: false },
+    ]);
   });
 });

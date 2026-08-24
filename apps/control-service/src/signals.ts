@@ -3,8 +3,8 @@ import {
   defaultTildeBaseUrl,
   tildeJson,
   tildeOptionsFromEnvironment,
-  tildePages,
   tildeUnavailable,
+  tildeUnpagedItems,
   tildeUpstreamFailure,
   pageItems,
   text,
@@ -70,6 +70,7 @@ interface UpstreamSignalDelivery {
   status?: string;
   chatkit_session_id?: string | null;
   error_message?: string | null;
+  matched_rule_ids?: string[];
   created_at?: string;
 }
 
@@ -114,7 +115,7 @@ export function registerSignalRoutes(app: Hono, configuredOptions?: SignalRouteO
     if (!resolved) return tildeUnavailable(context, "Signals");
     try {
       const [instances, providers] = await Promise.all([
-        tildePages(resolved, "/signals/instances", 50) as Promise<UpstreamSignalInstance[]>,
+        tildeUnpagedItems(resolved, "/signals/instances") as Promise<UpstreamSignalInstance[]>,
         listProviders(resolved),
       ]);
       const routes = routePathsByProvider(providers);
@@ -254,6 +255,7 @@ export function registerSignalRoutes(app: Hono, configuredOptions?: SignalRouteO
     const instanceId = context.req.query("instance_id")?.trim();
     if (!instanceId) return context.json({ error: "instance_id is required" }, 400);
     try {
+      // Deliveries are display-only run history: one small unpaginated page.
       const page = (await tildeJson(
         resolved,
         `/signals/deliveries?page_size=20&instance_id=${encodeURIComponent(instanceId)}`,
@@ -267,11 +269,7 @@ export function registerSignalRoutes(app: Hono, configuredOptions?: SignalRouteO
 }
 
 async function listProviders(options: SignalRouteOptions): Promise<UpstreamSignalProvider[]> {
-  const page = (await tildeJson(options, "/signals/providers?page_size=100")) as Record<
-    string,
-    unknown
-  >;
-  return pageItems(page) as UpstreamSignalProvider[];
+  return (await tildeUnpagedItems(options, "/signals/providers")) as UpstreamSignalProvider[];
 }
 
 function serializeProvider(provider: UpstreamSignalProvider) {
@@ -285,7 +283,9 @@ function serializeProvider(provider: UpstreamSignalProvider) {
     documentation: provider.documentation ?? "",
     instructions: provider.instructions ?? "",
     auth_methods: authMethods,
-    requires_signing_key: verification?.requires_signing_key ?? authMethods.includes("webhook"),
+    // Only the upstream descriptor knows whether a provider signs its webhooks;
+    // webhook capability alone does not imply a signing key.
+    requires_signing_key: verification?.requires_signing_key ?? false,
     signing_key_description:
       typeof signingKeyDescription === "string" ? signingKeyDescription : null,
     route_path: provider.route_descriptors?.[0]?.path ?? "",
@@ -371,6 +371,8 @@ function serializeDelivery(delivery: UpstreamSignalDelivery) {
     status: delivery.status ?? "pending",
     session_id: delivery.chatkit_session_id ?? null,
     error_message: delivery.error_message ?? null,
+    // Clients filter run history by rule, so the matched rules must survive.
+    matched_rule_ids: delivery.matched_rule_ids ?? [],
     created_at: delivery.created_at ?? "",
   };
 }

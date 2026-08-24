@@ -42,9 +42,10 @@ export interface TriggerSentence {
 export function triggerSpecSentence(
   spec: RoutineTriggerSpec,
   providers: readonly SignalProvider[],
+  instances: readonly SignalInstance[] = [],
 ): TriggerSentence {
   if (spec.kind === "schedule") return scheduleSpecSentence(spec.schedule);
-  const match = providerForSpec(spec, providers);
+  const match = providerForSpec(spec, providers, instances);
   const config = match ? eventEditorConfig(match) : undefined;
   const option = config?.groups
     .flatMap((group) => group.options)
@@ -59,11 +60,30 @@ export function triggerSpecSentence(
   };
 }
 
-function providerForSpec(
+/**
+ * Resolve the provider from the trigger's own connection first, then the
+ * catalog, so signal types outside the curated option lists stay editable.
+ */
+export function providerForSpec(
   spec: RoutineTriggerSpec,
   providers: readonly SignalProvider[],
+  instances: readonly SignalInstance[] = [],
 ): SignalProvider | undefined {
   if (spec.kind !== "event") return undefined;
+  const providerType = instances.find(
+    (candidate) => candidate.id === spec.instanceId,
+  )?.provider_type;
+  const byInstance = providerType
+    ? providers.find((candidate) => candidate.type_id === providerType)
+    : undefined;
+  if (byInstance) return byInstance;
+  const byCatalog = providers.find((candidate) =>
+    candidate.signal_types.some((signalType) => signalType.type_id === spec.signalType),
+  );
+  if (byCatalog) return byCatalog;
+  const prefix = spec.signalType.split(".")[0];
+  const byPrefix = prefix ? providers.find((candidate) => candidate.type_id === prefix) : undefined;
+  if (byPrefix) return byPrefix;
   return providers.find((candidate) =>
     eventEditorConfig(candidate).groups.some((group) =>
       group.options.some((option) => option.value === spec.signalType),
@@ -120,8 +140,13 @@ export function TriggerCard({
 }: TriggerCardProps) {
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [popover, setPopover] = useState<PopoverState | null>(null);
+  // Emptying the list is held locally: the routine routes require 1..8 triggers,
+  // so an empty list is never persisted.
+  const [cleared, setCleared] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const consumedNonceRef = useRef(0);
+
+  const visible = cleared ? [] : triggers;
 
   const enabledInstances = (providerType: string) =>
     instances.filter(
@@ -139,16 +164,28 @@ export function TriggerCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per connect nonce
   }, [connectedInstance]);
 
+  /** Persist a trigger list, holding an empty one locally instead of saving it. */
+  function applyTriggers(next: EditableTrigger[]): void {
+    if (next.length === 0) {
+      setCleared(true);
+      setAddMenuOpen(true);
+      return;
+    }
+    setCleared(false);
+    onChange(next);
+  }
+
   function commitTrigger(state: PopoverState): void {
     if (state.isNew) {
-      if (state.valid) onChange([...triggers, { key: state.key, spec: state.spec }]);
+      if (state.valid) applyTriggers([...visible, { key: state.key, spec: state.spec }]);
       return;
     }
     if (!state.valid) return;
-    const current = triggers.find((trigger) => trigger.key === state.key);
-    if (current && JSON.stringify(current.spec) === JSON.stringify(state.spec)) return;
-    onChange(
-      triggers.map((trigger) =>
+    const existing = visible.find((trigger) => trigger.key === state.key);
+    if (!existing) return;
+    if (JSON.stringify(existing.spec) === JSON.stringify(state.spec)) return;
+    applyTriggers(
+      visible.map((trigger) =>
         trigger.key === state.key ? { ...trigger, spec: state.spec } : trigger,
       ),
     );
@@ -160,10 +197,10 @@ export function TriggerCard({
   }
 
   function appendSchedule(schedule: string, openEditor?: ScheduleMode): void {
-    if (triggers.length >= MAX_ROUTINE_TRIGGERS) return;
+    if (visible.length >= MAX_ROUTINE_TRIGGERS) return;
     const key = crypto.randomUUID();
     const trigger: EditableTrigger = { key, spec: { kind: "schedule", schedule } };
-    onChange([...triggers, trigger]);
+    applyTriggers([...visible, trigger]);
     setAddMenuOpen(false);
     if (openEditor) {
       setPopover({ key, spec: trigger.spec, isNew: false, valid: true, initialMode: openEditor });
@@ -171,7 +208,7 @@ export function TriggerCard({
   }
 
   function openEventDraft(provider: SignalProvider, instance: SignalInstance): void {
-    if (triggers.length >= MAX_ROUTINE_TRIGGERS) return;
+    if (visible.length >= MAX_ROUTINE_TRIGGERS) return;
     const config = eventEditorConfig(provider);
     const firstEvent = config.groups[0]?.options[0]?.value ?? "";
     setAddMenuOpen(false);
@@ -194,13 +231,12 @@ export function TriggerCard({
   }
 
   function removeTrigger(trigger: EditableTrigger): void {
-    const next = triggers.filter((candidate) => candidate.key !== trigger.key);
-    onChange(next);
-    if (next.length === 0) setAddMenuOpen(true);
+    if (popover?.key === trigger.key) setPopover(null);
+    applyTriggers(visible.filter((candidate) => candidate.key !== trigger.key));
   }
 
   const rows: { trigger: EditableTrigger; pendingNew: boolean }[] = [
-    ...triggers.map((trigger) => ({ trigger, pendingNew: false })),
+    ...visible.map((trigger) => ({ trigger, pendingNew: false })),
     ...(popover?.isNew
       ? [{ trigger: { key: popover.key, spec: popover.spec }, pendingNew: true }]
       : []),
@@ -212,7 +248,11 @@ export function TriggerCard({
         <div aria-label="Triggers" className="flex flex-col gap-0.5" role="list">
           {rows.map(({ trigger, pendingNew }) => {
             const active = popover?.key === trigger.key;
-            const sentence = triggerSpecSentence(active ? popover!.spec : trigger.spec, providers);
+            const sentence = triggerSpecSentence(
+              active ? popover!.spec : trigger.spec,
+              providers,
+              instances,
+            );
             return (
               <div className="group relative" key={trigger.key} role="listitem">
                 <button
@@ -236,7 +276,7 @@ export function TriggerCard({
                     <SignalProviderGlyph
                       className="size-4 shrink-0 text-ink-2"
                       providerType={
-                        providerForSpec(trigger.spec, providers)?.type_id ??
+                        providerForSpec(trigger.spec, providers, instances)?.type_id ??
                         trigger.spec.signalType.split(".")[0] ??
                         ""
                       }
@@ -274,7 +314,7 @@ export function TriggerCard({
         </div>
       ) : null}
 
-      {triggers.length < MAX_ROUTINE_TRIGGERS ? (
+      {visible.length < MAX_ROUTINE_TRIGGERS ? (
         <DropdownMenu onOpenChange={setAddMenuOpen} open={addMenuOpen}>
           <DropdownMenuTrigger asChild>
             <button
@@ -283,7 +323,7 @@ export function TriggerCard({
               type="button"
             >
               <PlusIcon aria-hidden className="size-3.5" />
-              {triggers.length === 0 ? "Add trigger" : "Add another"}
+              {visible.length === 0 ? "Add trigger" : "Add another"}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" aria-label="Trigger source" className="min-w-[240px]">
@@ -377,20 +417,23 @@ function TriggerFieldsPopover({
   instances: readonly SignalInstance[];
 }) {
   const surfaceRef = useRef<HTMLDivElement>(null);
+  // The listener binds once but must always commit the latest buffered state.
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.stopPropagation();
-      onClose(true);
+      closeRef.current(true);
     };
     window.addEventListener("keydown", onKeyDown, true);
     surfaceRef.current?.focus();
     return () => window.removeEventListener("keydown", onKeyDown, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bind once per popover
   }, []);
 
-  const provider = state.spec.kind === "event" ? providerForSpec(state.spec, providers) : undefined;
+  const provider =
+    state.spec.kind === "event" ? providerForSpec(state.spec, providers, instances) : undefined;
   const eventInstances =
     state.spec.kind === "event"
       ? instances.filter(

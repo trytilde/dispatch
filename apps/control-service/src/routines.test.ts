@@ -352,11 +352,10 @@ describe("routine routes", () => {
     const update = calls.find(
       (call) => call.method === "PATCH" && call.path.endsWith("/chatkit/routines/tr-1"),
     );
-    expect(update?.body).toMatchObject({
+    expect(update?.body).toEqual({
       title: "Deploy watchdog",
       prompt: "Check deploy health",
       schedule: "0 8 * * *",
-      enabled: true,
     });
     const create = calls.find(
       (call) => call.method === "POST" && call.path.endsWith("/signals/rules"),
@@ -416,6 +415,54 @@ describe("routine routes", () => {
         openbot: { group: "g1", trigger: "t2", instruction: "Check deploy health" },
       },
     });
+  });
+
+  it("leaves each member's enabled state alone when the edit omits enabled", async () => {
+    const { app, calls } = routineApp((call) => {
+      if (call.method === "PATCH" && call.path === "/api/v1/team/team-1/chatkit/routines/tr-1")
+        return Response.json({ ...stampedRoutine, title: "Renamed" });
+      if (call.method === "PATCH" && call.path === "/api/v1/team/team-1/signals/rules/rule-1")
+        return Response.json({ ...stampedRule, display_name: "Renamed" });
+      return listResponses(call);
+    });
+    const response = await app.request("https://openbot.test/api/routines/g1?agent_id=inbox-1", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Renamed" }),
+    });
+    expect(response.status).toBe(200);
+    const routinePatch = calls.find(
+      (call) => call.method === "PATCH" && call.path.endsWith("/chatkit/routines/tr-1"),
+    );
+    expect(routinePatch?.body).toEqual({ title: "Renamed", prompt: "Check deploy health" });
+    const rulePatch = calls.find(
+      (call) => call.method === "PATCH" && call.path.endsWith("/signals/rules/rule-1"),
+    );
+    expect(rulePatch?.body).toMatchObject({ display_name: "Renamed", status: "disabled" });
+  });
+
+  it("asks for the largest rule page and fails when the unpaginated list fills it", async () => {
+    const { app, calls } = routineApp((call) => {
+      if (call.path === "/api/v1/team/team-1/chatkit/routines")
+        return Response.json({ items: [stampedRoutine], next_page_token: null });
+      if (call.path === "/api/v1/team/team-1/signals/rules")
+        return Response.json({
+          items: Array.from({ length: 100 }, (_unused, index) => ({
+            ...stampedRule,
+            id: `rule-${index}`,
+          })),
+          next_page_token: null,
+        });
+      return undefined;
+    });
+    const response = await app.request("https://openbot.test/api/routines?agent_id=inbox-1");
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({
+      error: expect.stringContaining("maximum 100 results"),
+    });
+    const ruleCalls = calls.filter((call) => call.path.endsWith("/signals/rules"));
+    expect(ruleCalls).toHaveLength(1);
+    expect(ruleCalls[0]?.query.get("page_size")).toBe("100");
   });
 
   it("deletes every member of the group", async () => {

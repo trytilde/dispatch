@@ -4,6 +4,7 @@ import {
   tildeOptionsFromEnvironment,
   tildePages,
   tildeUnavailable,
+  tildeUnpagedItems,
   tildeUpstreamFailure,
   pageItems,
   text,
@@ -172,8 +173,15 @@ export function registerRoutineRoutes(app: Hono, configuredOptions?: RoutineRout
       const current = composeRoutine(groupId, agentId, members);
       const name = body.name ?? current.name;
       const instruction = body.instruction ?? current.instruction;
-      const enabled = body.enabled ?? current.enabled;
-      const shared = { agentId, name, instruction, enabled, group: groupId };
+      // Only an explicit `enabled` fans out; otherwise every member keeps the
+      // enabled state it already has upstream.
+      const shared: SharedContext = {
+        agentId,
+        name,
+        instruction,
+        group: groupId,
+        ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
+      };
       const catalog = new SignalTypeCatalog(resolved);
 
       if (body.triggers) {
@@ -196,6 +204,7 @@ export function registerRoutineRoutes(app: Hono, configuredOptions?: RoutineRout
           if (spec.id !== undefined) continue;
           await createMember(resolved, catalog, spec, {
             ...shared,
+            enabled: shared.enabled ?? current.enabled,
             trigger: crypto.randomUUID(),
           });
         }
@@ -215,7 +224,11 @@ export function registerRoutineRoutes(app: Hono, configuredOptions?: RoutineRout
               `/chatkit/routines/${encodeURIComponent(member.routine.id)}`,
               {
                 method: "PATCH",
-                body: { title: name, prompt: instruction, enabled },
+                body: {
+                  title: name,
+                  prompt: instruction,
+                  ...(shared.enabled !== undefined ? { enabled: shared.enabled } : {}),
+                },
               },
             );
           } else {
@@ -303,7 +316,9 @@ async function listRoutines(options: RoutineRouteOptions, agentId: string) {
 async function loadMembers(options: RoutineRouteOptions, agentId: string): Promise<Member[]> {
   const [routines, rules] = await Promise.all([
     tildePages(options, "/chatkit/routines", 100) as Promise<UpstreamRoutine[]>,
-    tildePages(options, "/signals/rules", 50) as Promise<UpstreamRule[]>,
+    // `/signals/rules` is unpaginated upstream; a partial list would orphan
+    // members from their group on the next replace-all edit.
+    tildeUnpagedItems(options, "/signals/rules") as Promise<UpstreamRule[]>,
   ]);
   const members: Member[] = [];
   for (const routine of routines) {
@@ -422,6 +437,9 @@ interface MemberContext {
   trigger: string;
 }
 
+/** Group-wide edit context. `enabled` is absent unless the request set it. */
+type SharedContext = Omit<MemberContext, "trigger" | "enabled"> & { enabled?: boolean };
+
 /** Lazily fetched provider catalog used to resolve session-policy defaults. */
 class SignalTypeCatalog {
   #options: RoutineRouteOptions;
@@ -538,7 +556,7 @@ async function updateMember(
   catalog: SignalTypeCatalog,
   member: Member,
   spec: TriggerSpec,
-  shared: Omit<MemberContext, "trigger">,
+  shared: SharedContext,
 ): Promise<void> {
   if (member.kind === "schedule" && spec.kind === "schedule") {
     await tildeJson(options, `/chatkit/routines/${encodeURIComponent(member.routine.id)}`, {
@@ -547,7 +565,7 @@ async function updateMember(
         title: shared.name,
         prompt: shared.instruction,
         schedule: spec.schedule,
-        enabled: shared.enabled,
+        ...(shared.enabled !== undefined ? { enabled: shared.enabled } : {}),
       },
     });
     return;
@@ -559,7 +577,11 @@ async function updateMember(
     spec.instanceId !== member.rule.signal_provider_instance_id ||
     spec.signalType !== member.rule.signal_type
   ) {
-    await createMember(options, catalog, spec, { ...shared, trigger: member.stamp.trigger });
+    await createMember(options, catalog, spec, {
+      ...shared,
+      enabled: shared.enabled ?? member.rule.status === "enabled",
+      trigger: member.stamp.trigger,
+    });
     await deleteMember(options, member);
     return;
   }
@@ -572,12 +594,18 @@ async function updateMember(
 function ruleUpdateBody(
   rule: UpstreamRule,
   stamp: OpenbotStamp,
-  shared: { agentId: string; name: string; instruction: string; enabled: boolean; group: string },
+  shared: SharedContext,
   filters?: JsonEqualsPredicate[],
 ): Record<string, unknown> {
+  const status =
+    shared.enabled === undefined
+      ? (rule.status ?? "enabled")
+      : shared.enabled
+        ? "enabled"
+        : "disabled";
   return {
     display_name: shared.name,
-    status: shared.enabled ? "enabled" : "disabled",
+    status,
     filter: { json_equals: filters ?? rule.filter?.json_equals ?? [] },
     session_policy: rule.session_policy ?? {
       type: "new_session_per_delivery",

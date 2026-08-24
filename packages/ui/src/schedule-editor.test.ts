@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
-import { buildSchedule, parseSchedule, scheduleSpecSentence } from "./schedule-editor.js";
+import {
+  buildSchedule,
+  parseSchedule,
+  scheduleSpecSentence,
+  toggleDay,
+  toggleMonth,
+} from "./schedule-editor.js";
 
 describe("parseSchedule", () => {
   it("recognizes the preset modes", () => {
@@ -44,5 +50,26 @@ describe("scheduleSpecSentence", () => {
       rest: "Monday at 1:00 PM UTC",
     });
     expect(scheduleSpecSentence("*/7 * * * *")).toEqual({ lead: "Cron", rest: "*/7 * * * *" });
+  });
+});
+
+describe("toggleDay", () => {
+  it("keeps the last selection so an advanced schedule never means every day", () => {
+    expect(toggleDay([2, 4], 4)).toEqual([2]);
+    expect(toggleDay([4], 4)).toEqual([4]);
+    expect(toggleDay([4], 2)).toEqual([4, 2]);
+    expect(
+      buildSchedule({
+        ...parseSchedule("0 7 * * 4"),
+        mode: "advanced",
+        days: { kind: "days-of-week", days: toggleDay([4], 4) },
+      }),
+    ).toBe("0 7 * * 4");
+  });
+});
+
+describe("toggleMonth", () => {
+  it("allows clearing every month back to any month", () => {
+    expect(toggleMonth([6], 6)).toEqual([]);
   });
 });

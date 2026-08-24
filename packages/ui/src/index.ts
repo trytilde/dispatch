@@ -363,6 +363,7 @@ export {
 export {
   TriggerCard,
   type TriggerCardProps,
+  providerForSpec,
   triggerSpecSentence,
   type EditableTrigger,
 } from "./trigger-card.js";
@@ -374,6 +375,8 @@ export {
   type ScheduleDraft,
   type ScheduleMode,
   scheduleSpecSentence,
+  toggleDay,
+  toggleMonth,
 } from "./schedule-editor.js";
 export {
   applicableFilterFields,
@@ -385,6 +388,7 @@ export {
   fieldValuesFromFilters,
   fieldValuesValid,
   filtersFromFieldValues,
+  unmodeledFilters,
 } from "./event-trigger-editor.js";
 export { SignalProviderGlyph, type SignalProviderGlyphProps } from "./signal-provider-glyph.js";
 export {

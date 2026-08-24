@@ -46,13 +46,21 @@ export function AgentDetailsContainer({
     { instance: SignalInstance; nonce: number } | undefined
   >(undefined);
   const settledRef = useRef(false);
+  const settledAgentRef = useRef(agentId);
   const creatingRef = useRef(false);
+  const createdIdRef = useRef("");
+  const pendingDraftRef = useRef<RoutineDraftCommit | null>(null);
 
   const routines = useMemo(
     () => routinesState.byAgentId[agentId] ?? [],
     [agentId, routinesState.byAgentId],
   );
   const settled = agentId in routinesState.byAgentId;
+  // Each agent's list settles on its own, so the empty state waits per agent.
+  if (settledAgentRef.current !== agentId) {
+    settledAgentRef.current = agentId;
+    settledRef.current = false;
+  }
   if (settled) settledRef.current = true;
 
   useEffect(() => {
@@ -94,6 +102,26 @@ export function AgentDetailsContainer({
     setRunning(false);
   }, [routineParam]);
 
+  // A fresh draft screen always starts unguarded.
+  useEffect(() => {
+    if (routineParam !== "new") return;
+    creatingRef.current = false;
+    createdIdRef.current = "";
+    pendingDraftRef.current = null;
+  }, [routineParam]);
+
+  // The saved routine supersedes the draft: release the guard and flush an edit
+  // that landed between the create resolving and this navigation.
+  useEffect(() => {
+    if (routineParam === "new" || !createdIdRef.current) return;
+    if (!routine || routine.id !== createdIdRef.current) return;
+    const created = createdIdRef.current;
+    createdIdRef.current = "";
+    creatingRef.current = false;
+    void applyPendingDraft(created);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once the draft resolves
+  }, [routine, routineParam]);
+
   async function updateRoutine(input: UpdateRoutineInput): Promise<void> {
     if (!routine) return;
     const toggling = input.enabled !== undefined;
@@ -109,7 +137,12 @@ export function AgentDetailsContainer({
   }
 
   async function createDraft(input: RoutineDraftCommit): Promise<void> {
-    if (creatingRef.current) return;
+    // The guard outlives the request: navigation to the created routine is async,
+    // and a second commit in that window would create a duplicate routine.
+    if (creatingRef.current) {
+      pendingDraftRef.current = input;
+      return;
+    }
     creatingRef.current = true;
     const priorIds = new Set(routines.map((candidate) => candidate.id));
     try {
@@ -124,11 +157,32 @@ export function AgentDetailsContainer({
       const created = (openBotRuntime.store.getState().routines.byAgentId[agentId] ?? []).find(
         (candidate: Routine) => !priorIds.has(candidate.id),
       );
-      if (created) onOpenRoutine(created.id);
+      if (!created) {
+        creatingRef.current = false;
+        return;
+      }
+      createdIdRef.current = created.id;
+      await applyPendingDraft(created.id);
+      onOpenRoutine(created.id);
     } catch {
       setSaveFailed(true);
-    } finally {
       creatingRef.current = false;
+    }
+  }
+
+  /** Fold an edit made while the create was in flight into the saved routine. */
+  async function applyPendingDraft(routineId: string): Promise<void> {
+    const pending = pendingDraftRef.current;
+    pendingDraftRef.current = null;
+    if (!pending) return;
+    try {
+      await openBotRuntime.actions.updateRoutine(routineId, agentId, {
+        name: pending.name,
+        instruction: pending.instruction,
+        triggers: pending.triggers,
+      });
+    } catch {
+      setSaveFailed(true);
     }
   }
 

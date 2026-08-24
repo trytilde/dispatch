@@ -136,20 +136,81 @@ export function cronForPreset(
   }
 }
 
-const cronFieldPattern = /^[\d*,/-]+$/;
+interface CronFieldSpec {
+  min: number;
+  max: number;
+  /** Standard three-letter aliases, lowercase, in value order from `min`. */
+  names?: string[];
+  /** `?` stands for "no specific value" in the two day fields only. */
+  allowsQuestion?: boolean;
+}
+
+const monthNames = [
+  "jan",
+  "feb",
+  "mar",
+  "apr",
+  "may",
+  "jun",
+  "jul",
+  "aug",
+  "sep",
+  "oct",
+  "nov",
+  "dec",
+];
+const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+/** minute, hour, day of month, month, day of week. */
+const cronFieldSpecs: CronFieldSpec[] = [
+  { min: 0, max: 59 },
+  { min: 0, max: 23 },
+  { min: 1, max: 31, allowsQuestion: true },
+  { min: 1, max: 12, names: monthNames },
+  { min: 0, max: 7, names: dayNames, allowsQuestion: true },
+];
+
+function cronValue(value: string, spec: CronFieldSpec): boolean {
+  if (/^\d+$/.test(value)) {
+    const numeric = Number(value);
+    return numeric >= spec.min && numeric <= spec.max;
+  }
+  return spec.names?.includes(value.toLowerCase()) ?? false;
+}
+
+function cronTerm(term: string, spec: CronFieldSpec): boolean {
+  const [base = "", step, ...extraSteps] = term.split("/");
+  if (extraSteps.length > 0) return false;
+  if (step !== undefined && (!/^\d+$/.test(step) || Number(step) < 1)) return false;
+  if (base === "?") return (spec.allowsQuestion ?? false) && step === undefined;
+  if (base === "*") return true;
+  const [from = "", to, ...extraBounds] = base.split("-");
+  if (extraBounds.length > 0) return false;
+  if (!cronValue(from, spec)) return false;
+  return to === undefined || cronValue(to, spec);
+}
+
+function cronField(field: string, spec: CronFieldSpec): boolean {
+  const terms = field.split(",");
+  return terms.length > 0 && terms.every((term) => cronTerm(term, spec));
+}
 
 /**
  * Tilde accepts 5-field cron, or 6/7-field cron whose seconds field is the
- * literal `0`. `@`-macros and `CRON_TZ=` prefixes are rejected.
+ * literal `0`, in UTC. `@`-macros and `CRON_TZ=`/`TZ=` prefixes are rejected,
+ * and every numeric field is range-checked so obvious nonsense fails here
+ * rather than as a generic upstream error.
  */
 export function isValidTildeSchedule(expression: string): boolean {
   const trimmed = expression.trim();
-  if (!trimmed || trimmed.startsWith("@") || trimmed.includes("CRON_TZ")) return false;
+  if (!trimmed || trimmed.startsWith("@") || /^(CRON_)?TZ\s*=/i.test(trimmed)) return false;
   const fields = trimmed.split(/\s+/);
   if (fields.length < 5 || fields.length > 7) return false;
   if (fields.length > 5 && fields[0] !== "0") return false;
-  const cronFields = fields.length > 5 ? fields.slice(1) : fields;
-  return cronFields.every((field) => cronFieldPattern.test(field));
+  const withoutSeconds = fields.length > 5 ? fields.slice(1) : fields;
+  const [year] = withoutSeconds.slice(5);
+  if (year !== undefined && !cronField(year, { min: 1970, max: 2199 })) return false;
+  return cronFieldSpecs.every((spec, index) => cronField(withoutSeconds[index] as string, spec));
 }
 
 export interface TriggerSentence {

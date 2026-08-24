@@ -362,15 +362,26 @@ function SignalsSettingsContainer() {
   const [rowNotices, setRowNotices] = useState<
     Record<string, { text: string; tone: "success" | "danger" }>
   >({});
+  const noticeTimersRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     void openBotRuntime.actions.refreshSignalProviders().catch(() => undefined);
     void openBotRuntime.actions.refreshSignalInstances().catch(() => undefined);
   }, []);
 
+  const timers = noticeTimersRef.current;
+  useEffect(
+    () => () => {
+      for (const timer of Object.values(timers)) window.clearTimeout(timer);
+    },
+    [timers],
+  );
+
   function notice(instanceId: string, text: string, tone: "success" | "danger"): void {
     setRowNotices((current) => ({ ...current, [instanceId]: { text, tone } }));
-    window.setTimeout(() => {
+    window.clearTimeout(timers[instanceId]);
+    timers[instanceId] = window.setTimeout(() => {
+      delete timers[instanceId];
       setRowNotices((current) => {
         const { [instanceId]: _dropped, ...rest } = current;
         return rest;

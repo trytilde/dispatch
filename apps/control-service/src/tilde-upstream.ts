@@ -92,6 +92,36 @@ export async function tildePages(
   return items;
 }
 
+/**
+ * Largest page Tilde list endpoints serve; ChatKit routines clamp to 1..=100
+ * and the signals endpoints apply no clamp of their own.
+ */
+export const maxTildePageSize = 100;
+
+/**
+ * The `/signals/*` list endpoints are unpaginated upstream: they always answer
+ * `next_page_token: null`, so `page_size` is a hard cap rather than a window.
+ * Ask for the largest page and fail loudly when it fills, because silently
+ * truncating orphans routine members from their group.
+ */
+export async function tildeUnpagedItems(
+  options: TildeRouteOptions,
+  teamPath: string,
+): Promise<unknown[]> {
+  const separator = teamPath.includes("?") ? "&" : "?";
+  const response = (await tildeJson(
+    options,
+    `${teamPath}${separator}page_size=${maxTildePageSize}`,
+  )) as Record<string, unknown>;
+  const items = pageItems(response);
+  if (items.length >= maxTildePageSize)
+    throw new TildeUpstreamError(
+      `Tilde returned the maximum ${maxTildePageSize} results for ${teamPath}, which OpenBot cannot page past`,
+      502,
+    );
+  return items;
+}
+
 export function pageItems(page: Record<string, unknown>): unknown[] {
   if (Array.isArray(page.items)) return page.items;
   if (Array.isArray(page.data)) return page.data;

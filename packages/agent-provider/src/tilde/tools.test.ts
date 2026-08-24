@@ -1,4 +1,4 @@
-import { createClient } from "@trytilde/harness-sdk";
+import { createClient } from "@trytilde/sdk";
 import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { TildeToolReconciler } from "./tools.js";

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { type Client, type McpServer } from "@trytilde/harness-sdk";
+import { type Client, type McpServer } from "@trytilde/sdk";
 import { TildePlatform } from "@tryopenbot/platform-integrations";
 import { tildeErrorMessage } from "@tryopenbot/platform-integrations/tilde/errors";
 import type { ProviderInitialization } from "@tryopenbot/runtime-provider";

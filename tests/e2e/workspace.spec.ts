@@ -59,7 +59,10 @@ test("loads the bare workspace without setup", async ({ page }) => {
   if (!chatBounds || !previewBounds) throw new Error("Floating Computer layout is not visible");
   expect(previewBounds.width).toBeGreaterThanOrEqual(240);
   expect(previewBounds.width).toBeLessThanOrEqual(320);
-  expect(previewBounds.x).toBeCloseTo(chatBounds.x + 16, 0);
+  expect(previewBounds.x + previewBounds.width).toBeCloseTo(
+    chatBounds.x + chatBounds.width - 16,
+    0,
+  );
   expect(previewBounds.y + previewBounds.height).toBeCloseTo(704, 0);
 
   await page.reload();
@@ -171,7 +174,7 @@ test("shows authenticated account details and account navigation on hover", asyn
   await expect(page.getByRole("dialog", { name: "Switch workspace" })).toBeVisible();
 });
 
-test("floats the Computer preview at the bottom-left in Electron", async ({ browser }) => {
+test("floats the Computer preview at the bottom-right in Electron", async ({ browser }) => {
   const context = await browser.newContext({
     baseURL: "http://127.0.0.1:14173",
     extraHTTPHeaders: { authorization: "Bearer e2e-owner" },
@@ -212,13 +215,12 @@ test("floats the Computer preview at the bottom-left in Electron", async ({ brow
 
   expect(openChatBounds).toEqual(initialChatBounds);
   expect(openComposerBounds.width).toBeLessThan(initialComposerBounds.width);
-  expect(openComposerBounds.x).toBeGreaterThan(initialComposerBounds.x);
   await expect
     .poll(async () => {
       const bounds = await preview.boundingBox();
-      return bounds?.x;
+      return bounds ? bounds.x + bounds.width : undefined;
     })
-    .toBeCloseTo(openChatBounds.x + 16, 0);
+    .toBeCloseTo(openChatBounds.x + openChatBounds.width - 16, 0);
   await expect
     .poll(async () => {
       const bounds = await preview.boundingBox();
@@ -667,6 +669,14 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   ).toHaveCount(1);
   await expect(page.getByText("Queued follow-up")).toBeVisible();
   await expect(page.getByRole("button", { name: "Steer queued message" })).toBeVisible();
+  const [queueBounds, floatingPreviewBounds] = await Promise.all([
+    page.getByRole("region", { name: "Queued messages" }).boundingBox(),
+    page.getByRole("complementary", { name: "Computer preview" }).boundingBox(),
+  ]);
+  if (!queueBounds || !floatingPreviewBounds) {
+    throw new Error("Queued messages and floating Computer preview are not visible");
+  }
+  expect(queueBounds.x + queueBounds.width).toBeLessThanOrEqual(floatingPreviewBounds.x - 16);
   await page.getByRole("button", { name: "Edit queued message" }).click();
   await expect(page.getByRole("textbox", { name: "Message", exact: true })).toHaveValue(
     "Queued follow-up",

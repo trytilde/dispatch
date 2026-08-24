@@ -8146,9 +8146,9 @@ button.system-event-chip {
 .rich-chat.workspace-shell.computer-floating .agent-workspace-pane.floating:not(.fullscreen) {
   position: absolute;
   z-index: 20;
-  right: auto;
+  right: 16px;
   bottom: 16px;
-  left: calc(var(--sidebar-width, 280px) + 16px);
+  left: auto;
   width: var(--floating-computer-width);
   height: auto;
   padding: 0;
@@ -8203,8 +8203,17 @@ button.system-event-chip {
 
 .rich-chat.workspace-shell.computer-floating.workspace-open .chat-pane > .composer-shell {
   width: min(680px, calc(100% - var(--floating-computer-width) - 64px));
-  margin-right: 16px;
-  margin-left: calc(var(--floating-computer-width) + 32px);
+  margin-right: calc(var(--floating-computer-width) + 32px);
+  margin-left: 16px;
+  transition:
+    width 180ms var(--ob-ease-layout),
+    margin 180ms var(--ob-ease-layout);
+}
+
+.rich-chat.workspace-shell.computer-floating.workspace-open .chat-pane > .queue-panel {
+  width: min(656px, calc(100% - var(--floating-computer-width) - 64px));
+  margin-right: calc(var(--floating-computer-width) + 32px);
+  margin-left: 16px;
   transition:
     width 180ms var(--ob-ease-layout),
     margin 180ms var(--ob-ease-layout);
@@ -8236,5 +8245,11 @@ button.system-event-chip {
     width: calc(100% - 24px);
     max-width: calc(100% - 24px);
     margin: 0 12px 12px;
+  }
+
+  .rich-chat.workspace-shell.computer-floating.workspace-open .chat-pane > .queue-panel {
+    width: calc(100% - 24px);
+    max-width: calc(100% - 24px);
+    margin: 0 12px -12px;
   }
 }

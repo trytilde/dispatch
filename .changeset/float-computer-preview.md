@@ -20,4 +20,4 @@
 "@tryopenbot/git-provider": patch
 ---
 
-Restore the floating bottom-left Computer preview in web and desktop workspaces.
+Restore the floating bottom-right Computer preview in web and desktop workspaces.

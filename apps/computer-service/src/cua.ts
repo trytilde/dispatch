@@ -10,6 +10,7 @@ import {
 import { spawn } from "node:child_process";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { CuaActionCompletion } from "@tryopenbot/computer-service-proto";
+import { isRecord } from "@tryopenbot/utilities/json";
 import { agentDesktopEnvironment, ensureAgentDesktop } from "./desktop.js";
 
 export interface CuaToolCatalogEntry {
@@ -250,10 +251,6 @@ function stringify(value: unknown): string {
     : JSON.stringify(value, (_key, nested) =>
         typeof nested === "bigint" ? nested.toString() : nested,
       );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 async function discardDriver(agentId: string, driver: CuaDriverLike): Promise<void> {

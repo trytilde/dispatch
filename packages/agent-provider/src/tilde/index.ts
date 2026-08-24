@@ -18,7 +18,7 @@ import {
   createTildeApiClient,
   InboxStatus,
   type TildeApiClient,
-} from "@trytilde/harness-sdk/api";
+} from "@trytilde/sdk/api";
 import type { AgentProvider } from "../core.js";
 import { AgentProviderError } from "../core.js";
 import { TildeSkillReconciler } from "./skills.js";

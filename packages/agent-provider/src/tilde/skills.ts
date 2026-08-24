@@ -40,6 +40,8 @@ import { reconciliationSignal } from "./skills-types.js";
 export interface TildeSkillReconcilerConfig extends TildePlatformConfig {}
 
 const maxConcurrentRequests = 10;
+const canonicalCuaRepository = "https://github.com/trycua/cua";
+const canonicalCuaSkillPath = "skills/gui-automation/SKILL.md";
 
 export class TildeSkillReconciler {
   readonly #config: TildePlatformConfig;
@@ -144,10 +146,9 @@ export class TildeSkillReconciler {
       context,
       path,
       id,
-      !managedCua,
     );
     let current = await this.#getRegistryRecord(registry.id, call);
-    if (managedCua && !current.skills.some((skill) => skill.id === managedCua.skillId)) {
+    if (!current.skills.some((skill) => skill.id === managedCua.skillId)) {
       await addProviderSkillsToSkillRegistry({
         client: this.#api({ requestId: `agent-lifecycle:${id}:skill:cua-managed` }),
         path: { team_id: this.#config.teamId, id: registry.id },
@@ -157,13 +158,14 @@ export class TildeSkillReconciler {
       current = await this.#getRegistryRecord(registry.id, call);
     }
     const preservedSkillIds = current.skills
-      .filter((skill) => !ownedSkillIds.has(skill.id) && skill.id !== managedCua?.skillId)
+      .filter(
+        (skill) =>
+          !ownedSkillIds.has(skill.id) &&
+          skill.id !== managedCua.skillId &&
+          !isCanonicalCuaSkill(skill),
+      )
       .map((skill) => skill.id);
-    const desiredRegistrySkillIds = [
-      ...skillIds,
-      ...(managedCua ? [managedCua.skillId] : []),
-      ...preservedSkillIds,
-    ];
+    const desiredRegistrySkillIds = [...skillIds, managedCua.skillId, ...preservedSkillIds];
     if (
       current.name !== name ||
       current.description !== description ||
@@ -201,11 +203,10 @@ export class TildeSkillReconciler {
     context: DeploymentContext,
     agentPath: string,
     agentId: string,
-    includeCuaFallback: boolean,
   ): Promise<{ skillIds: string[]; staleSkillIds: string[]; ownedSkillIds: Set<string> }> {
     const desired = [
       ...(await authoredSkills(context.repositoryRoot, agentPath)),
-      ...(await openBotComputerSkills(context.repositoryRoot, agentPath, includeCuaFallback)),
+      ...(await openBotComputerSkills(context.repositoryRoot, agentPath)),
     ];
     const remote = await this.#listAllSkills({ requestId: `agent-lifecycle:${agentId}:skills` });
     const ownedPrefix = `${agentSourcePrefix(context.repositoryRoot, agentPath)}/skills/`;
@@ -270,12 +271,24 @@ export class TildeSkillReconciler {
     const provider = data.items.find(
       (candidate) =>
         candidate.trust_status === "trusted" &&
-        normalizeRepository(candidate.repository_url) === "https://github.com/trycua/cua",
+        normalizeRepository(candidate.repository_url) === canonicalCuaRepository,
     );
-    const skill = provider?.skills.find(
-      (candidate) => candidate.source_path === "skills/gui-automation/SKILL.md",
+    if (!provider)
+      throw new AgentProviderError(
+        "provider_unavailable",
+        `The trusted managed Cua skill provider ${canonicalCuaRepository} is unavailable`,
+        true,
+      );
+    const skill = provider.skills.find(
+      (candidate) => candidate.source_path === canonicalCuaSkillPath,
     );
-    return provider && skill ? { providerId: provider.id, skillId: skill.id } : undefined;
+    if (!skill)
+      throw new AgentProviderError(
+        "provider_unavailable",
+        `The trusted managed Cua provider does not publish ${canonicalCuaSkillPath}`,
+        true,
+      );
+    return { providerId: provider.id, skillId: skill.id };
   }
 
   async #listAllSkills(context: SkillReconciliationContext): Promise<TildeSkill[]> {
@@ -370,7 +383,6 @@ async function authoredSkills(repositoryRoot: string, agentPath: string): Promis
 async function openBotComputerSkills(
   repositoryRoot: string,
   agentPath: string,
-  includeCuaFallback: boolean,
 ): Promise<AuthoredSkill[]> {
   const assetRoot = resolve(dirname(fileURLToPath(import.meta.url)), "assets");
   const sourcePrefix = `${agentSourcePrefix(repositoryRoot, agentPath)}/skills/.openbot`;
@@ -378,23 +390,13 @@ async function openBotComputerSkills(
     resolve(assetRoot, "openbot-computer-use", "SKILL.md.hbs"),
     "utf8",
   );
-  const skills: AuthoredSkill[] = [
+  return [
     {
       ...skillMetadata(overlayContent, "openbot-computer-use"),
       content: overlayContent,
       sourcePath: `${sourcePrefix}/openbot-computer-use/SKILL.md`,
     },
   ];
-  if (includeCuaFallback) {
-    const content = await readFile(resolve(assetRoot, "cua-driver", "SKILL.md.hbs"), "utf8");
-    skills.push({
-      name: "gui-automation",
-      description: "Canonical Cua GUI automation guidance bundled as a managed-skill fallback.",
-      content,
-      sourcePath: `${sourcePrefix}/cua-driver/SKILL.md`,
-    });
-  }
-  return skills;
 }
 
 function skillMetadata(
@@ -436,6 +438,13 @@ function normalizeRepository(value: string): string {
     .replace(/\.git$/, "")
     .replace(/\/$/, "")
     .toLowerCase();
+}
+
+function isCanonicalCuaSkill(skill: TildeSkill): boolean {
+  return (
+    skill.source_path === canonicalCuaSkillPath &&
+    normalizeRepository(skill.source_repository_url ?? "") === canonicalCuaRepository
+  );
 }
 
 function requireAgent(context: DeploymentContext): { id: string; path: string } {

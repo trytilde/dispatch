@@ -99,16 +99,16 @@ export interface CommandResult {
 }
 
 export interface InitializationCommandRunner {
-  run(
+  run: (
     command: string,
     args: readonly string[],
     options?: { cwd?: string; environment?: NodeJS.ProcessEnv; input?: string },
-  ): Promise<CommandResult>;
-  runWithInputFile?(
+  ) => Promise<CommandResult>;
+  runWithInputFile?: (
     command: string,
     args: readonly string[],
     options: { cwd?: string; environment?: NodeJS.ProcessEnv; input: string },
-  ): Promise<CommandResult>;
+  ) => Promise<CommandResult>;
 }
 
 export interface InitializationOptions {
@@ -2077,11 +2077,11 @@ function convertBits(data: Uint8Array, from: number, to: number): number[] {
 }
 
 function hrpExpand(hrp: string): number[] {
-  return [...hrp]
+  return Array.from(hrp)
     .map((character) => character.charCodeAt(0) >>> 5)
     .concat(
       [0],
-      [...hrp].map((character) => character.charCodeAt(0) & 31),
+      Array.from(hrp).map((character) => character.charCodeAt(0) & 31),
     );
 }
 

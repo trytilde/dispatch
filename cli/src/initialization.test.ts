@@ -1,7 +1,7 @@
-import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CodexInferenceProvider, VercelInferenceProvider } from "@tryopenbot/inference-provider";
 import { renderFileTemplatePath } from "@tryopenbot/utilities";
@@ -906,8 +906,9 @@ export default {
         };
       }),
     };
+    const select = vi.fn(async () => "onepassword");
     const prompts: InitializationPrompts = {
-      select: vi.fn(async () => "onepassword"),
+      select,
       input: vi.fn(async () => "op://Engineering/OpenBot owner identity/password"),
     };
 
@@ -928,7 +929,7 @@ export default {
         },
       },
     });
-    expect(prompts.select).toHaveBeenCalledTimes(1);
+    expect(select).toHaveBeenCalledTimes(1);
   });
 
   it("sets and unsets encrypted secrets by re-using the existing data key", async () => {
@@ -1036,8 +1037,6 @@ function testUserConfigurationPath(repositoryRoot: string): string {
 }
 
 async function writeFixture(root: string, relativePath: string, contents: string): Promise<void> {
-  const { mkdir, writeFile } = await import("node:fs/promises");
-  const { dirname } = await import("node:path");
   const path = join(root, relativePath);
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, contents);

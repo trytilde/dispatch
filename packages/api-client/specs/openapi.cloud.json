@@ -14500,6 +14500,244 @@
         ]
       }
     },
+    "/api/v1/team/{team_id}/mcp/mcp-server/{mcp_server_instance_id}/functions": {
+      "post": {
+        "tags": [
+          "mcp",
+          "v1"
+        ],
+        "summary": "Add MCP server functions in bulk",
+        "description": "Atomically add 1-500 tool mappings from one provider account. Exact existing mappings are idempotent no-ops, including concurrent retries. Any invalid or conflicting item rejects the entire database batch. A 5xx from post-commit reconciliation has unknown commit visibility; retrying the same request is safe.",
+        "operationId": "bulk-add-mcp-server-instance-functions",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mcp_server_instance_id",
+            "in": "path",
+            "description": "MCP server instance ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkAddMcpServerInstanceFunctionsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "All function mappings were added, or already existed unchanged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpServerInstanceSerializedWithFunctions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid batch; no mappings were added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MCP server or tool instance not found; no mappings were added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error. Database write failures roll back the batch; reconciliation failures can occur after commit, and retrying is safe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "mcp",
+          "v1"
+        ],
+        "summary": "Remove MCP server functions in bulk",
+        "description": "Atomically remove 1-500 tool mappings from one provider account. Missing mappings are idempotent no-ops. Any invalid item rejects the entire database batch. A 5xx from post-commit reconciliation has unknown commit visibility; retrying the same request is safe.",
+        "operationId": "bulk-remove-mcp-server-instance-functions",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mcp_server_instance_id",
+            "in": "path",
+            "description": "MCP server instance ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkRemoveMcpServerInstanceFunctionsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "All requested mappings were removed or already absent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpServerInstanceSerializedWithFunctions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid batch; no mappings were removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "MCP server not found; no mappings were removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error. Database write failures roll back the batch; reconciliation failures can occur after commit, and retrying is safe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
     "/api/v1/team/{team_id}/mcp/mcp-server/{mcp_server_instance_id}/mcp": {
       "get": {
         "tags": [
@@ -15124,6 +15362,16 @@
             "required": false,
             "schema": {
               "type": "string"
+            },
+            "style": "form"
+          },
+          {
+            "name": "include_catalog_managed",
+            "in": "query",
+            "description": "Internal portability and control-plane callers can opt into managed entries.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             },
             "style": "form"
           },
@@ -27977,6 +28225,88 @@
           "ap-southeast-1"
         ]
       },
+      "BulkAddMcpServerInstanceFunctionItem": {
+        "type": "object",
+        "description": "One function mapping in a bulk add request.",
+        "required": [
+          "tool_source_type_id",
+          "tool_name"
+        ],
+        "properties": {
+          "configured_params": {
+            "type": "object",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "is_async": {
+            "type": "boolean"
+          },
+          "tool_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tool_name": {
+            "type": "string"
+          },
+          "tool_source_type_id": {
+            "type": "string"
+          }
+        }
+      },
+      "BulkAddMcpServerInstanceFunctionsBody": {
+        "type": "object",
+        "description": "Public body for atomically adding function mappings from one provider account.",
+        "required": [
+          "tool_group_source_type_id",
+          "tool_group_instance_id",
+          "functions"
+        ],
+        "properties": {
+          "functions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkAddMcpServerInstanceFunctionItem"
+            },
+            "maxItems": 500,
+            "minItems": 1
+          },
+          "tool_group_instance_id": {
+            "type": "string"
+          },
+          "tool_group_source_type_id": {
+            "type": "string"
+          }
+        }
+      },
+      "BulkRemoveMcpServerInstanceFunctionsBody": {
+        "type": "object",
+        "description": "Public body for atomically removing function mappings from one provider account.",
+        "required": [
+          "tool_group_source_type_id",
+          "tool_group_instance_id",
+          "tool_source_type_ids"
+        ],
+        "properties": {
+          "tool_group_instance_id": {
+            "type": "string"
+          },
+          "tool_group_source_type_id": {
+            "type": "string"
+          },
+          "tool_source_type_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "minItems": 1
+          }
+        }
+      },
       "CacheConvertedMessagesRequest": {
         "type": "object",
         "description": "Request body for caching converted ChatKit messages.",
@@ -29059,6 +29389,13 @@
         "type": "object",
         "description": "User-controlled values accepted by every automatic catalogue connection.",
         "properties": {
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "User-facing account label. Provider identity and endpoint remain server-authored."
+          },
           "return_url": {
             "type": [
               "string",
@@ -31201,6 +31538,12 @@
           "display_name": {
             "type": "string"
           },
+          "icon_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "id": {
             "type": "string"
           },
@@ -31223,12 +31566,6 @@
             "type": "string"
           },
           "provider_display_name": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "provider_icon_key": {
             "type": [
               "string",
               "null"
@@ -33072,6 +33409,13 @@
             "items": {
               "$ref": "#/components/schemas/McpProviderCatalogEntry"
             }
+          },
+          "oauth_callback_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Server-selected OAuth redirect URI that manual provider apps must register."
           }
         }
       },
@@ -33805,6 +34149,7 @@
           "id",
           "name",
           "description",
+          "icon_url",
           "endpoint_url",
           "categories",
           "connection_method"
@@ -33859,6 +34204,10 @@
           "endpoint_url": {
             "type": "string"
           },
+          "icon_url": {
+            "type": "string",
+            "description": "Static icon served with the deployed frontend."
+          },
           "id": {
             "type": "string"
           },
@@ -33905,6 +34254,10 @@
             "description": "Number of checked-in tools available before credential setup.",
             "minimum": 0
           },
+          "tool_provider_type_id": {
+            "type": "string",
+            "description": "Stable type identity used by the managed tool-provider catalogue UI."
+          },
           "tool_schema_discovery": {
             "type": [
               "string",
@@ -33923,6 +34276,47 @@
               "string",
               "null"
             ]
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/McpProviderCatalogTool"
+            },
+            "description": "Checked-in callable definitions available before credential setup."
+          }
+        }
+      },
+      "McpProviderCatalogTool": {
+        "type": "object",
+        "description": "One callable tool definition published by an official managed MCP provider.",
+        "required": [
+          "type_id",
+          "name",
+          "description",
+          "input_schema"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "input_schema": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "name": {
+            "type": "string"
+          },
+          "output_schema": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedJsonValue"
+              }
+            ]
+          },
+          "type_id": {
+            "type": "string"
           }
         }
       },
@@ -36399,7 +36793,7 @@
               "$ref": "#/components/schemas/ProviderSetupField"
             }
           },
-          "icon_key": {
+          "icon_url": {
             "type": [
               "string",
               "null"
@@ -37039,6 +37433,12 @@
           },
           "description": {
             "type": "string"
+          },
+          "icon_url": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "id": {
             "type": "string"
@@ -38295,7 +38695,7 @@
               "null"
             ]
           },
-          "icon": {
+          "icon_url": {
             "type": [
               "string",
               "null"
@@ -41073,6 +41473,12 @@
           "documentation": {
             "type": "string"
           },
+          "icon_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "metadata": {
             "$ref": "#/components/schemas/Metadata"
           },
@@ -42942,7 +43348,7 @@
             "display_name": {
               "type": "string"
             },
-            "icon": {
+            "icon_url": {
               "type": [
                 "string",
                 "null"

@@ -321,6 +321,37 @@ export enum BrowserbaseRegion {
 }
 
 /**
+ * One function mapping in a bulk add request.
+ */
+export type BulkAddMcpServerInstanceFunctionItem = {
+    configured_params?: {
+        [key: string]: unknown;
+    };
+    is_async?: boolean;
+    tool_description?: string | null;
+    tool_name: string;
+    tool_source_type_id: string;
+};
+
+/**
+ * Public body for atomically adding function mappings from one provider account.
+ */
+export type BulkAddMcpServerInstanceFunctionsBody = {
+    functions: Array<BulkAddMcpServerInstanceFunctionItem>;
+    tool_group_instance_id: string;
+    tool_group_source_type_id: string;
+};
+
+/**
+ * Public body for atomically removing function mappings from one provider account.
+ */
+export type BulkRemoveMcpServerInstanceFunctionsBody = {
+    tool_group_instance_id: string;
+    tool_group_source_type_id: string;
+    tool_source_type_ids: Array<string>;
+};
+
+/**
  * Request body for caching converted ChatKit messages.
  */
 export type CacheConvertedMessagesRequest = {
@@ -679,6 +710,10 @@ export type ConfigurationSchema = {
  * User-controlled values accepted by every automatic catalogue connection.
  */
 export type ConnectMcpProviderCatalogEntryRequestInner = {
+    /**
+     * User-facing account label. Provider identity and endpoint remain server-authored.
+     */
+    display_name?: string | null;
     return_url?: string | null;
 };
 
@@ -1234,6 +1269,7 @@ export type CredentialSetupItem = {
     credential_source_type_id: string;
     desired_enabled: boolean;
     display_name: string;
+    icon_url?: string | null;
     id: string;
     last_error?: string | null;
     metadata: WrappedJsonValue;
@@ -1241,7 +1277,6 @@ export type CredentialSetupItem = {
     owner_id: string;
     owner_type: string;
     provider_display_name?: string | null;
-    provider_icon_key?: string | null;
     provider_id: string;
     resource_server_credential_id?: null | WrappedUuidV4;
     status: CredentialSetupItemStatus;
@@ -1821,6 +1856,10 @@ export type ListApiKeysResponse = {
 
 export type ListMcpProviderCatalogResponse = {
     items: Array<McpProviderCatalogEntry>;
+    /**
+     * Server-selected OAuth redirect URI that manual provider apps must register.
+     */
+    oauth_callback_url?: string | null;
 };
 
 export type ListOpenBotDeploymentsResponse = {
@@ -2051,6 +2090,10 @@ export type McpProviderCatalogEntry = {
     description: string;
     documentation_url?: string | null;
     endpoint_url: string;
+    /**
+     * Static icon served with the deployed frontend.
+     */
+    icon_url: string;
     id: string;
     name: string;
     /**
@@ -2066,11 +2109,30 @@ export type McpProviderCatalogEntry = {
      */
     tool_count?: number;
     /**
+     * Stable type identity used by the managed tool-provider catalogue UI.
+     */
+    tool_provider_type_id?: string;
+    /**
      * How the checked-in tool schemas were obtained.
      */
     tool_schema_discovery?: string | null;
     tool_schema_source_revision?: string | null;
     tool_schema_source_url?: string | null;
+    /**
+     * Checked-in callable definitions available before credential setup.
+     */
+    tools?: Array<McpProviderCatalogTool>;
+};
+
+/**
+ * One callable tool definition published by an official managed MCP provider.
+ */
+export type McpProviderCatalogTool = {
+    description: string;
+    input_schema: WrappedJsonValue;
+    name: string;
+    output_schema?: null | WrappedJsonValue;
+    type_id: string;
 };
 
 export type McpServerInstanceSerializedWithFunctions = {
@@ -2800,7 +2862,7 @@ export type ProviderSetupDescriptor = {
     display_name: string;
     domain: string;
     fields?: Array<ProviderSetupField>;
-    icon_key?: string | null;
+    icon_url?: string | null;
     primary_action_label?: string | null;
     provider_id: string;
     subscription_options?: Array<ProviderSetupOption>;
@@ -2967,6 +3029,7 @@ export type ProxiedSkill = {
 export type ProxiedSkillProvider = {
     branch: string;
     description: string;
+    icon_url?: string | null;
     id: string;
     last_seen_commit_hash?: string | null;
     last_synced_at?: null | WrappedChronoDateTime;
@@ -3362,7 +3425,7 @@ export type ReverseProxyProfilePaginatedResponse = {
 export type ReverseProxyProviderInfo = {
     base_url: string;
     docs_url?: string | null;
-    icon?: string | null;
+    icon_url?: string | null;
     id: string;
     name: string;
     short_description?: string | null;
@@ -4184,6 +4247,7 @@ export type ToolGroupSourceSerialized = {
     categories: Array<string>;
     credential_sources: Array<CredentialSourceSerialized>;
     documentation: string;
+    icon_url?: string | null;
     metadata?: Metadata;
     name: string;
     provisioner_provider_id?: string | null;
@@ -4694,7 +4758,7 @@ export type ValidateStateResponse = {
 export type Vec = Array<{
     description: string;
     display_name: string;
-    icon?: string | null;
+    icon_url?: string | null;
     id: string;
     providers: Array<ChatChannelProvider>;
 }>;
@@ -11300,6 +11364,106 @@ export type UpdateMcpServerInstanceFunctionResponses = {
 
 export type UpdateMcpServerInstanceFunctionResponse = UpdateMcpServerInstanceFunctionResponses[keyof UpdateMcpServerInstanceFunctionResponses];
 
+export type BulkRemoveMcpServerInstanceFunctionsData = {
+    body: BulkRemoveMcpServerInstanceFunctionsBody;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * MCP server instance ID
+         */
+        mcp_server_instance_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/mcp/mcp-server/{mcp_server_instance_id}/functions';
+};
+
+export type BulkRemoveMcpServerInstanceFunctionsErrors = {
+    /**
+     * Invalid batch; no mappings were removed
+     */
+    400: Error;
+    /**
+     * Unauthorized
+     */
+    401: Error;
+    /**
+     * Forbidden
+     */
+    403: Error;
+    /**
+     * MCP server not found; no mappings were removed
+     */
+    404: Error;
+    /**
+     * Internal Server Error. Database write failures roll back the batch; reconciliation failures can occur after commit, and retrying is safe
+     */
+    500: Error;
+};
+
+export type BulkRemoveMcpServerInstanceFunctionsError = BulkRemoveMcpServerInstanceFunctionsErrors[keyof BulkRemoveMcpServerInstanceFunctionsErrors];
+
+export type BulkRemoveMcpServerInstanceFunctionsResponses = {
+    /**
+     * All requested mappings were removed or already absent
+     */
+    200: McpServerInstanceSerializedWithFunctions;
+};
+
+export type BulkRemoveMcpServerInstanceFunctionsResponse = BulkRemoveMcpServerInstanceFunctionsResponses[keyof BulkRemoveMcpServerInstanceFunctionsResponses];
+
+export type BulkAddMcpServerInstanceFunctionsData = {
+    body: BulkAddMcpServerInstanceFunctionsBody;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * MCP server instance ID
+         */
+        mcp_server_instance_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/mcp/mcp-server/{mcp_server_instance_id}/functions';
+};
+
+export type BulkAddMcpServerInstanceFunctionsErrors = {
+    /**
+     * Invalid batch; no mappings were added
+     */
+    400: Error;
+    /**
+     * Unauthorized
+     */
+    401: Error;
+    /**
+     * Forbidden
+     */
+    403: Error;
+    /**
+     * MCP server or tool instance not found; no mappings were added
+     */
+    404: Error;
+    /**
+     * Internal Server Error. Database write failures roll back the batch; reconciliation failures can occur after commit, and retrying is safe
+     */
+    500: Error;
+};
+
+export type BulkAddMcpServerInstanceFunctionsError = BulkAddMcpServerInstanceFunctionsErrors[keyof BulkAddMcpServerInstanceFunctionsErrors];
+
+export type BulkAddMcpServerInstanceFunctionsResponses = {
+    /**
+     * All function mappings were added, or already existed unchanged
+     */
+    200: McpServerInstanceSerializedWithFunctions;
+};
+
+export type BulkAddMcpServerInstanceFunctionsResponse = BulkAddMcpServerInstanceFunctionsResponses[keyof BulkAddMcpServerInstanceFunctionsResponses];
+
 export type McpProtocolDeleteData = {
     body?: never;
     path: {
@@ -11579,6 +11743,10 @@ export type ListProxiedMcpServersData = {
     query: {
         page_size: number;
         next_page_token?: string;
+        /**
+         * Internal portability and control-plane callers can opt into managed entries.
+         */
+        include_catalog_managed?: boolean;
     };
     url: '/api/v1/team/{team_id}/mcp/proxied-mcp-servers';
 };

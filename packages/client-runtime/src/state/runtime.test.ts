@@ -75,7 +75,10 @@ describe("OpenBot runtime", () => {
         const url =
           typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
         if (url === "/auth/session")
-          return Response.json({ authenticated: true, user: { subject: "owner-one" } });
+          return Response.json({
+            authenticated: true,
+            user: { subject: "owner-one", name: "Owner One" },
+          });
         if (url.startsWith("/api/chat/mission-control/sidebar"))
           return Response.json({
             items: [
@@ -110,7 +113,10 @@ describe("OpenBot runtime", () => {
         const url =
           typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
         if (url === "/auth/session")
-          return Response.json({ authenticated: true, user: { subject: "owner-one" } });
+          return Response.json({
+            authenticated: true,
+            user: { subject: "owner-one", name: "Owner One" },
+          });
         return Response.json({ error: "Chat unavailable" }, { status: 503 });
       },
     });
@@ -135,7 +141,10 @@ describe("OpenBot runtime", () => {
     });
     const client: OpenBotClient = {
       ...baseClient,
-      getSession: async () => ({ authenticated: true, user: { subject: "owner-one" } }),
+      getSession: async () => ({
+        authenticated: true,
+        user: { subject: "owner-one", name: "Owner One" },
+      }),
       getSidebar: async () => ({
         items: [
           {
@@ -249,7 +258,10 @@ describe("OpenBot runtime", () => {
     });
     const client: OpenBotClient = {
       ...baseClient,
-      getSession: async () => ({ authenticated: true, user: { subject: "owner-one" } }),
+      getSession: async () => ({
+        authenticated: true,
+        user: { subject: "owner-one", name: "Owner One" },
+      }),
       getSidebar: async () => ({
         items: [
           {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
+  CRON_DAY_NAMES,
   cronForPreset,
   describeEventTrigger,
   isValidTildeSchedule,
@@ -93,11 +94,18 @@ describe("cronForPreset", () => {
     expect(cronForPreset("hourly")).toBe("0 * * * *");
     expect(cronForPreset("hourly", { minute: 15 })).toBe("15 * * * *");
     expect(cronForPreset("daily", { minute: 30, hour: 7 })).toBe("30 7 * * *");
-    expect(cronForPreset("weekdays", { minute: 0, hour: 9 })).toBe("0 9 * * 1-5");
-    expect(cronForPreset("weekly", { minute: 0, hour: 8, dayOfWeek: 5 })).toBe("0 8 * * 5");
     expect(cronForPreset("monthly", { minute: 0, hour: 6, dayOfMonth: 15 })).toBe("0 6 15 * *");
     for (const preset of SCHEDULE_PRESETS)
       expect(isValidTildeSchedule(cronForPreset(preset.id))).toBe(true);
+  });
+
+  it("names days so upstream's Sunday=1 numbering cannot shift them", () => {
+    expect(cronForPreset("weekdays", { minute: 0, hour: 9 })).toBe("0 9 * * MON-FRI");
+    expect(cronForPreset("weekly")).toBe("0 9 * * MON");
+    expect(cronForPreset("weekly", { minute: 0, hour: 8, dayOfWeek: 5 })).toBe("0 8 * * FRI");
+    expect(cronForPreset("weekly", { dayOfWeek: 0 })).toBe("0 9 * * SUN");
+    expect(CRON_DAY_NAMES).toEqual(["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]);
+    for (const day of CRON_DAY_NAMES) expect(isValidTildeSchedule(`0 9 * * ${day}`)).toBe(true);
   });
 });
 
@@ -109,13 +117,24 @@ describe("isValidTildeSchedule", () => {
     expect(isValidTildeSchedule("0 30 7 1 * * 2026")).toBe(true);
   });
 
-  it("accepts ? in the day fields and three-letter day and month names", () => {
+  it("accepts ? in every field and short, long, and irregular day and month names", () => {
     expect(isValidTildeSchedule("0 7 * * mon")).toBe(true);
     expect(isValidTildeSchedule("0 7 * * MON-FRI")).toBe(true);
     expect(isValidTildeSchedule("0 7 1 JAN,jul *")).toBe(true);
     expect(isValidTildeSchedule("0 7 ? * MON")).toBe(true);
     expect(isValidTildeSchedule("0 0 7 15 * ?")).toBe(true);
     expect(isValidTildeSchedule("0 7 1-15/2 * *")).toBe(true);
+    expect(isValidTildeSchedule("? 7 * * *")).toBe(true);
+    expect(isValidTildeSchedule("0 7 * * monday-friday")).toBe(true);
+    expect(isValidTildeSchedule("0 7 1 january,DECEMBER *")).toBe(true);
+    expect(isValidTildeSchedule("0 7 * * tues,thurs")).toBe(true);
+  });
+
+  it("numbers days of the week 1..=7 from Sunday, like upstream", () => {
+    expect(isValidTildeSchedule("0 7 * * 1")).toBe(true);
+    expect(isValidTildeSchedule("0 7 * * 7")).toBe(true);
+    expect(isValidTildeSchedule("0 7 * * 0")).toBe(false);
+    expect(isValidTildeSchedule("0 7 * * 8")).toBe(false);
   });
 
   it("rejects out-of-range numbers, including inside ranges, steps, and lists", () => {
@@ -123,10 +142,13 @@ describe("isValidTildeSchedule", () => {
     expect(isValidTildeSchedule("0 24 * * *")).toBe(false);
     expect(isValidTildeSchedule("0 7 0 * *")).toBe(false);
     expect(isValidTildeSchedule("0 7 * 13 *")).toBe(false);
-    expect(isValidTildeSchedule("0 7 * * 8")).toBe(false);
     expect(isValidTildeSchedule("0 7 1-40 * *")).toBe(false);
     expect(isValidTildeSchedule("0,70 7 * * *")).toBe(false);
     expect(isValidTildeSchedule("*/0 7 * * *")).toBe(false);
+    expect(isValidTildeSchedule("*/60 7 * * *")).toBe(false);
+    expect(isValidTildeSchedule("0 7 * */13 *")).toBe(false);
+    expect(isValidTildeSchedule("0 30 7 1 * * 2150")).toBe(false);
+    expect(isValidTildeSchedule("0 30 7 1 * * 2100")).toBe(true);
   });
 
   it("rejects macros, timezone prefixes, wrong field counts, and nonzero seconds", () => {

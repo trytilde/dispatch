@@ -140,8 +140,8 @@ export function TriggerCard({
 }: TriggerCardProps) {
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [popover, setPopover] = useState<PopoverState | null>(null);
-  // Emptying the list is held locally: the routine routes require 1..8 triggers,
-  // so an empty list is never persisted.
+  // Emptying the list is held locally so the rows disappear even though a saved
+  // routine keeps its stored triggers; the routine routes require 1..8.
   const [cleared, setCleared] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const consumedNonceRef = useRef(0);
@@ -164,14 +164,14 @@ export function TriggerCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per connect nonce
   }, [connectedInstance]);
 
-  /** Persist a trigger list, holding an empty one locally instead of saving it. */
+  /**
+   * Report every trigger list, including an emptied one, so an unsaved draft
+   * cannot commit triggers the user deleted. The owner decides what an empty
+   * list means; it is never persisted.
+   */
   function applyTriggers(next: EditableTrigger[]): void {
-    if (next.length === 0) {
-      setCleared(true);
-      setAddMenuOpen(true);
-      return;
-    }
-    setCleared(false);
+    setCleared(next.length === 0);
+    if (next.length === 0) setAddMenuOpen(true);
     onChange(next);
   }
 
@@ -343,7 +343,9 @@ export function TriggerCard({
                 />
                 <TimeSubmenu
                   label="Weekdays"
-                  onPick={(hour, minute) => appendSchedule(`${minute} ${hour} * * 1-5`)}
+                  onPick={(hour, minute) =>
+                    appendSchedule(cronForPreset("weekdays", { hour, minute }))
+                  }
                 />
                 <DropdownMenuItem
                   onSelect={() => appendSchedule(cronForPreset("weekly"), "weekly")}
@@ -457,11 +459,11 @@ function TriggerFieldsPopover({
         {state.spec.kind === "schedule" ? (
           <ScheduleEditor
             {...(state.initialMode ? { initialMode: state.initialMode } : {})}
-            onChange={(schedule) =>
+            onChange={(schedule, valid) =>
               onStateChange({
                 ...state,
-                spec: { ...state.spec, kind: "schedule", schedule },
-                valid: true,
+                spec: valid ? { ...state.spec, kind: "schedule", schedule } : state.spec,
+                valid,
               })
             }
             schedule={state.spec.schedule}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { Routine, SignalDelivery } from "@tryopenbot/client-runtime";
 import { relativeRunTime } from "./relative-time.js";
-import { editableTriggersFrom, routineRunHistory } from "./routine-editor.js";
+import { editableTriggersFrom, routineDraftCommit, routineRunHistory } from "./routine-editor.js";
 
 const routine: Routine = {
   id: "group-1",
@@ -32,10 +32,12 @@ const routine: Routine = {
   updated_at: "2026-08-20T07:00:00Z",
 };
 
+// The control service always sends matched_rule_ids, empty until rules matched.
 const delivery = (overrides: Partial<SignalDelivery> & { id: string }): SignalDelivery => ({
   instance_id: "spi_1",
   signal_type: "github.pull_request.opened",
   status: "completed",
+  matched_rule_ids: [],
   created_at: "2026-08-22T10:00:00Z",
   ...overrides,
 });
@@ -44,16 +46,14 @@ describe("routineRunHistory", () => {
   it("merges matched deliveries with the schedule snapshot, newest first", () => {
     const history = routineRunHistory(routine, {
       spi_1: [
-        delivery({ id: "d-1", session_id: "session-1" }),
-        Object.assign(delivery({ id: "d-2", status: "failed_terminal" }), {
-          matched_rule_ids: ["other-rule"],
+        delivery({ id: "d-1", session_id: "session-1", matched_rule_ids: ["rule-1"] }),
+        delivery({ id: "d-2", status: "failed_terminal", matched_rule_ids: ["other-rule"] }),
+        delivery({
+          id: "d-3",
+          status: "pending",
+          created_at: "2026-08-23T10:00:00Z",
+          matched_rule_ids: ["rule-1"],
         }),
-        Object.assign(
-          delivery({ id: "d-3", status: "pending", created_at: "2026-08-23T10:00:00Z" }),
-          {
-            matched_rule_ids: ["rule-1"],
-          },
-        ),
       ],
     });
     expect(history.map((entry) => entry.id)).toEqual([
@@ -63,6 +63,15 @@ describe("routineRunHistory", () => {
     ]);
     expect(history[0]?.status).toBe("running");
     expect(history[2]).toMatchObject({ status: "succeeded", sessionId: "session-9" });
+  });
+
+  it("keeps a delivery that has not been matched yet and drops it once it settles", () => {
+    const ids = (deliveries: SignalDelivery[]) =>
+      routineRunHistory(routine, { spi_1: deliveries }).map((entry) => entry.id);
+    expect(ids([delivery({ id: "d-4", status: "pending" })])).toContain("delivery-d-4");
+    expect(ids([delivery({ id: "d-4", status: "processing" })])).toContain("delivery-d-4");
+    expect(ids([delivery({ id: "d-4", status: "completed" })])).not.toContain("delivery-d-4");
+    expect(ids([delivery({ id: "d-4", status: "failed_terminal" })])).not.toContain("delivery-d-4");
   });
 
   it("marks the schedule snapshot failed when a last error exists", () => {
@@ -87,6 +96,33 @@ describe("editableTriggersFrom", () => {
         },
       },
     ]);
+  });
+});
+
+describe("routineDraftCommit", () => {
+  const triggers = [{ key: "k-1", spec: { kind: "schedule", schedule: "0 7 * * *" } as const }];
+
+  it("commits a complete draft with its trigger specs", () => {
+    expect(
+      routineDraftCommit({ name: " Digest ", instruction: " Summarize ", enabled: true, triggers }),
+    ).toEqual({
+      name: "Digest",
+      instruction: "Summarize",
+      enabled: true,
+      triggers: [{ kind: "schedule", schedule: "0 7 * * *" }],
+    });
+  });
+
+  it("holds the draft back while a field or the trigger list is empty", () => {
+    expect(
+      routineDraftCommit({ name: "Digest", instruction: "Summarize", enabled: true, triggers: [] }),
+    ).toBeNull();
+    expect(
+      routineDraftCommit({ name: " ", instruction: "Summarize", enabled: true, triggers }),
+    ).toBeNull();
+    expect(
+      routineDraftCommit({ name: "Digest", instruction: "", enabled: true, triggers }),
+    ).toBeNull();
   });
 });
 

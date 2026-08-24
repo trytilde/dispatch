@@ -187,25 +187,34 @@ describe("signal routes", () => {
     });
   });
 
-  it("asks upstream for the largest page and fails when a list endpoint fills it", async () => {
-    const { app, calls } = signalApp((call) => {
-      if (call.method === "GET" && call.path === "/api/v1/team/team-1/signals/instances")
-        return Response.json({
-          items: Array.from({ length: 100 }, (_unused, index) => ({
-            ...upstreamInstance,
-            id: `spi_${index}`,
-          })),
-          next_page_token: null,
-        });
-      return catalogResponses(call);
-    });
-    const response = await app.request("https://openbot.test/api/signals/instances");
+  it("asks upstream for a large page and fails only when it overflows", async () => {
+    const instancesPage = (length: number) =>
+      Response.json({
+        items: Array.from({ length }, (_unused, index) => ({
+          ...upstreamInstance,
+          id: `spi_${index}`,
+        })),
+        next_page_token: null,
+      });
+    const listApp = (length: number) =>
+      signalApp((call) => {
+        if (call.method === "GET" && call.path === "/api/v1/team/team-1/signals/instances")
+          return instancesPage(length);
+        return catalogResponses(call);
+      });
+
+    // Upstream queries LIMIT page_size + 1, so a full page is 1001 rows.
+    const full = listApp(1000);
+    const complete = await full.app.request("https://openbot.test/api/signals/instances");
+    expect(complete.status).toBe(200);
+    const list = full.calls.find((call) => call.path.endsWith("/signals/instances"));
+    expect(list?.query.get("page_size")).toBe("1000");
+
+    const response = await listApp(1001).app.request("https://openbot.test/api/signals/instances");
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toMatchObject({
-      error: expect.stringContaining("maximum 100 results"),
+      error: expect.stringContaining("maximum 1000 results"),
     });
-    const list = calls.find((call) => call.path.endsWith("/signals/instances"));
-    expect(list?.query.get("page_size")).toBe("100");
   });
 
   it("lists instances with computed webhook URLs and without configuration", async () => {

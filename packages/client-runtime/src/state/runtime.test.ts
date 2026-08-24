@@ -705,6 +705,28 @@ describe("OpenBot runtime signals slice", () => {
     runtime.dispose();
   });
 
+  it("forgets a per-source error on sign out", async () => {
+    let fail = true;
+    const runtime = createRoutineRuntime({
+      logout: async () => undefined,
+      listSignalProviders: async () => {
+        if (fail) throw new Error("Providers unavailable");
+        return [];
+      },
+      listSignalInstances: async () => [],
+    });
+
+    await expect(runtime.actions.refreshSignalProviders()).rejects.toThrow();
+    await runtime.actions.signOut();
+    fail = false;
+    await runtime.actions.refreshSignalInstances();
+
+    const signals = runtime.store.getState().signals;
+    expect(signals.status).toBe("ready");
+    expect(signals.error).toBe("");
+    runtime.dispose();
+  });
+
   it("keeps previous instances when a refresh fails and records the error", async () => {
     let fail = false;
     const runtime = createRoutineRuntime({

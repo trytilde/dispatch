@@ -45,11 +45,20 @@ function deliveryEntry(delivery: SignalDelivery): RunHistoryEntry {
   };
 }
 
-function matchedRuleIds(delivery: SignalDelivery): string[] | undefined {
+function matchedRuleIds(delivery: SignalDelivery): string[] {
   const value = (delivery as Record<string, unknown>)["matched_rule_ids"];
-  return Array.isArray(value)
-    ? value.filter((id): id is string => typeof id === "string")
-    : undefined;
+  return Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : [];
+}
+
+/**
+ * Deliveries are created with no matched rules and filled in after matching, so
+ * an unmatched delivery only proves it belongs to another routine once it has
+ * settled; until then it is the run the history renders as "Running".
+ */
+function belongsToRoutine(delivery: SignalDelivery, ruleIds: ReadonlySet<string>): boolean {
+  const matched = matchedRuleIds(delivery);
+  if (matched.length > 0) return matched.some((id) => ruleIds.has(id));
+  return delivery.status === "pending" || delivery.status === "processing";
 }
 
 /**
@@ -67,8 +76,7 @@ export function routineRunHistory(
   for (const trigger of routine.triggers) {
     if (trigger.kind !== "event") continue;
     for (const delivery of deliveriesByInstanceId[trigger.instance_id] ?? []) {
-      const matched = matchedRuleIds(delivery);
-      if (matched && !matched.some((id) => ruleIds.has(id))) continue;
+      if (!belongsToRoutine(delivery, ruleIds)) continue;
       entries.push(deliveryEntry(delivery));
     }
   }
@@ -110,6 +118,28 @@ export interface RoutineDraftCommit {
   instruction: string;
   enabled: boolean;
   triggers: RoutineTriggerSpec[];
+}
+
+/**
+ * The unsaved draft commits only once it has a name, an instruction, and at
+ * least one trigger, so a trigger deleted before the draft saved is never
+ * created with it.
+ */
+export function routineDraftCommit(fields: {
+  name: string;
+  instruction: string;
+  enabled: boolean;
+  triggers: readonly EditableTrigger[];
+}): RoutineDraftCommit | null {
+  const name = fields.name.trim();
+  const instruction = fields.instruction.trim();
+  if (!name || !instruction || fields.triggers.length === 0) return null;
+  return {
+    name,
+    instruction,
+    enabled: fields.enabled,
+    triggers: fields.triggers.map((trigger) => trigger.spec),
+  };
 }
 
 export interface RoutineEditorProps {
@@ -184,14 +214,13 @@ export function RoutineEditor({
     enabled?: boolean;
     triggers?: EditableTrigger[];
   }): void {
-    const candidate = {
-      name: (next.name ?? name).trim(),
-      instruction: (next.instruction ?? instruction).trim(),
+    const candidate = routineDraftCommit({
+      name: next.name ?? name,
+      instruction: next.instruction ?? instruction,
       enabled: next.enabled ?? draftEnabled,
-      triggers: (next.triggers ?? draftTriggers).map((trigger) => trigger.spec),
-    };
-    if (!candidate.name || !candidate.instruction || candidate.triggers.length === 0) return;
-    onCreateDraft(candidate);
+      triggers: next.triggers ?? draftTriggers,
+    });
+    if (candidate) onCreateDraft(candidate);
   }
 
   function commitName(): void {
@@ -226,6 +255,9 @@ export function RoutineEditor({
       commitDraftIfReady({ triggers: next });
       return;
     }
+    // The routine routes require 1..8 triggers, so an emptied list is only held
+    // in the card until the next trigger is added.
+    if (next.length === 0) return;
     onUpdate({ triggers: next.map((trigger) => trigger.spec) });
   }
 
@@ -315,6 +347,7 @@ export function RoutineEditor({
           <TriggerCard
             connectedInstance={connectedInstance}
             instances={instances}
+            key={routine?.id ?? "draft"}
             onChange={changeTriggers}
             onConnectProvider={onConnectProvider}
             providers={providers}

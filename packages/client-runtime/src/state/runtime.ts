@@ -265,6 +265,10 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
   // Providers and instances are fetched concurrently behind one status/error
   // pair, so each keeps its own error and neither erases the other's.
   const signalErrors: Record<"providers" | "instances", string> = { providers: "", instances: "" };
+  const clearSignalErrors = (): void => {
+    signalErrors.providers = "";
+    signalErrors.instances = "";
+  };
   const settleSignals = (
     source: "providers" | "instances",
     patch: Partial<SignalsState>,
@@ -1004,6 +1008,7 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       missionControlObserver?.abort();
       agentSetupObserver?.abort();
       stopRoutinePolling();
+      clearSignalErrors();
       busySessionIds.clear();
       liveMessagesBySession.clear();
       options.agentSetupPersistence?.save(null);

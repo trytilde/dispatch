@@ -441,28 +441,37 @@ describe("routine routes", () => {
     expect(rulePatch?.body).toMatchObject({ display_name: "Renamed", status: "disabled" });
   });
 
-  it("asks for the largest rule page and fails when the unpaginated list fills it", async () => {
-    const { app, calls } = routineApp((call) => {
-      if (call.path === "/api/v1/team/team-1/chatkit/routines")
-        return Response.json({ items: [stampedRoutine], next_page_token: null });
-      if (call.path === "/api/v1/team/team-1/signals/rules")
-        return Response.json({
-          items: Array.from({ length: 100 }, (_unused, index) => ({
-            ...stampedRule,
-            id: `rule-${index}`,
-          })),
-          next_page_token: null,
-        });
-      return undefined;
-    });
-    const response = await app.request("https://openbot.test/api/routines?agent_id=inbox-1");
+  it("asks for a large rule page and fails only when the unpaginated list overflows", async () => {
+    const rulesApp = (length: number) =>
+      routineApp((call) => {
+        if (call.path === "/api/v1/team/team-1/chatkit/routines")
+          return Response.json({ items: [stampedRoutine], next_page_token: null });
+        if (call.path === "/api/v1/team/team-1/signals/rules")
+          return Response.json({
+            items: Array.from({ length }, (_unused, index) => ({
+              ...stampedRule,
+              id: `rule-${index}`,
+            })),
+            next_page_token: null,
+          });
+        return undefined;
+      });
+
+    // Upstream queries LIMIT page_size + 1, so a full page is 1001 rows.
+    const full = rulesApp(1000);
+    const complete = await full.app.request("https://openbot.test/api/routines?agent_id=inbox-1");
+    expect(complete.status).toBe(200);
+    const ruleCalls = full.calls.filter((call) => call.path.endsWith("/signals/rules"));
+    expect(ruleCalls).toHaveLength(1);
+    expect(ruleCalls[0]?.query.get("page_size")).toBe("1000");
+
+    const response = await rulesApp(1001).app.request(
+      "https://openbot.test/api/routines?agent_id=inbox-1",
+    );
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toMatchObject({
-      error: expect.stringContaining("maximum 100 results"),
+      error: expect.stringContaining("maximum 1000 results"),
     });
-    const ruleCalls = calls.filter((call) => call.path.endsWith("/signals/rules"));
-    expect(ruleCalls).toHaveLength(1);
-    expect(ruleCalls[0]?.query.get("page_size")).toBe("100");
   });
 
   it("deletes every member of the group", async () => {

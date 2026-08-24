@@ -115,6 +115,13 @@ export interface SchedulePresetOptions {
   dayOfMonth?: number;
 }
 
+/**
+ * Three-letter cron day names in JavaScript day order (Sunday=0). Upstream
+ * numbers days 1..7 from Sunday, so expressions are written with names, which
+ * mean the same day under either numbering.
+ */
+export const CRON_DAY_NAMES = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
+
 /** Produce a Tilde-valid 5-field UTC cron expression for a schedule preset. */
 export function cronForPreset(
   preset: SchedulePresetId,
@@ -128,9 +135,9 @@ export function cronForPreset(
     case "daily":
       return `${minute} ${hour} * * *`;
     case "weekdays":
-      return `${minute} ${hour} * * 1-5`;
+      return `${minute} ${hour} * * MON-FRI`;
     case "weekly":
-      return `${minute} ${hour} * * ${options.dayOfWeek ?? 1}`;
+      return `${minute} ${hour} * * ${CRON_DAY_NAMES[options.dayOfWeek ?? 1] ?? "MON"}`;
     case "monthly":
       return `${minute} ${hour} ${options.dayOfMonth ?? 1} * *`;
   }
@@ -139,35 +146,44 @@ export function cronForPreset(
 interface CronFieldSpec {
   min: number;
   max: number;
-  /** Standard three-letter aliases, lowercase, in value order from `min`. */
+  /** Accepted lowercase aliases for this field. */
   names?: string[];
-  /** `?` stands for "no specific value" in the two day fields only. */
-  allowsQuestion?: boolean;
 }
 
 const monthNames = [
-  "jan",
-  "feb",
-  "mar",
-  "apr",
-  "may",
-  "jun",
-  "jul",
-  "aug",
-  "sep",
-  "oct",
-  "nov",
-  "dec",
-];
-const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  ["jan", "january"],
+  ["feb", "february"],
+  ["mar", "march"],
+  ["apr", "april"],
+  ["may"],
+  ["jun", "june"],
+  ["jul", "july"],
+  ["aug", "august"],
+  ["sep", "september"],
+  ["oct", "october"],
+  ["nov", "november"],
+  ["dec", "december"],
+].flat();
+const dayNames = [
+  ["sun", "sunday"],
+  ["mon", "monday"],
+  ["tue", "tues", "tuesday"],
+  ["wed", "wednesday"],
+  ["thu", "thurs", "thursday"],
+  ["fri", "friday"],
+  ["sat", "saturday"],
+].flat();
 
-/** minute, hour, day of month, month, day of week. */
+/**
+ * minute, hour, day of month, month, day of week. Upstream numbers days of the
+ * week 1..=7 from Sunday, not the Unix 0..=6.
+ */
 const cronFieldSpecs: CronFieldSpec[] = [
   { min: 0, max: 59 },
   { min: 0, max: 23 },
-  { min: 1, max: 31, allowsQuestion: true },
+  { min: 1, max: 31 },
   { min: 1, max: 12, names: monthNames },
-  { min: 0, max: 7, names: dayNames, allowsQuestion: true },
+  { min: 1, max: 7, names: dayNames },
 ];
 
 function cronValue(value: string, spec: CronFieldSpec): boolean {
@@ -181,9 +197,10 @@ function cronValue(value: string, spec: CronFieldSpec): boolean {
 function cronTerm(term: string, spec: CronFieldSpec): boolean {
   const [base = "", step, ...extraSteps] = term.split("/");
   if (extraSteps.length > 0) return false;
-  if (step !== undefined && (!/^\d+$/.test(step) || Number(step) < 1)) return false;
-  if (base === "?") return (spec.allowsQuestion ?? false) && step === undefined;
-  if (base === "*") return true;
+  if (step !== undefined && (!/^\d+$/.test(step) || Number(step) < 1 || Number(step) > spec.max))
+    return false;
+  // `?` means "all" in every field upstream, exactly like `*`.
+  if (base === "*" || base === "?") return true;
   const [from = "", to, ...extraBounds] = base.split("-");
   if (extraBounds.length > 0) return false;
   if (!cronValue(from, spec)) return false;
@@ -209,7 +226,7 @@ export function isValidTildeSchedule(expression: string): boolean {
   if (fields.length > 5 && fields[0] !== "0") return false;
   const withoutSeconds = fields.length > 5 ? fields.slice(1) : fields;
   const [year] = withoutSeconds.slice(5);
-  if (year !== undefined && !cronField(year, { min: 1970, max: 2199 })) return false;
+  if (year !== undefined && !cronField(year, { min: 1970, max: 2100 })) return false;
   return cronFieldSpecs.every((spec, index) => cronField(withoutSeconds[index] as string, spec));
 }
 

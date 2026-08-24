@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { isValidTildeSchedule } from "@tryopenbot/client-runtime";
+import { CRON_DAY_NAMES, isValidTildeSchedule } from "@tryopenbot/client-runtime";
 import { clockLabel } from "./relative-time.js";
 import { SelectField, type SelectOption } from "./primitive-components.js";
 
@@ -8,6 +8,9 @@ import { SelectField, type SelectOption } from "./primitive-components.js";
  * all UTC. Parsing keeps externally authored crons editable by injecting
  * off-grid values into the option lists; anything unrepresentable lands in
  * Custom. Pure cron helpers are exported for reuse and tests.
+ *
+ * Days of the week are held as JavaScript day numbers (Sunday=0) and written
+ * as three-letter cron names, because upstream numbers them 1..7 from Sunday.
  */
 
 export type ScheduleMode =
@@ -89,6 +92,41 @@ function asNumberList(field: string, max: number): number[] | undefined {
   return values;
 }
 
+/** A single day-of-week token, by name or upstream number, as a JS day. */
+function asDay(token: string): number | undefined {
+  const name = CRON_DAY_NAMES.indexOf(token.toUpperCase() as (typeof CRON_DAY_NAMES)[number]);
+  if (name >= 0) return name;
+  if (!/^\d+$/.test(token)) return undefined;
+  const value = Number(token);
+  return value >= 1 && value <= 7 ? value - 1 : undefined;
+}
+
+function asDayList(field: string): number[] | undefined {
+  if (field === "*") return [];
+  const values: number[] = [];
+  for (const part of field.split(",")) {
+    const value = asDay(part);
+    if (value === undefined) return undefined;
+    values.push(value);
+  }
+  return values;
+}
+
+/** Monday-to-Friday, written by name or by upstream numbers. */
+function isWeekdayRange(field: string): boolean {
+  const normalized = field.toLowerCase();
+  return normalized === "mon-fri" || normalized === "2-6";
+}
+
+function dayNameList(days: readonly number[]): string {
+  return days.length > 0
+    ? [...days]
+        .sort((a, b) => a - b)
+        .map((day) => CRON_DAY_NAMES[day] ?? "")
+        .join(",")
+    : "*";
+}
+
 /** Parse a 5-field cron into structured schedule fields; "custom" otherwise. */
 export function parseSchedule(expression: string): ScheduleDraft {
   const custom: ScheduleDraft = { ...defaultDraft, mode: "custom", expression };
@@ -106,8 +144,8 @@ export function parseSchedule(expression: string): ScheduleDraft {
   const timed = { ...base, hour };
   if (domField === "*" && monthField === "*") {
     if (dowField === "*") return { ...timed, mode: "daily" };
-    if (dowField === "1-5") return { ...timed, mode: "weekdays" };
-    const dayOfWeek = asNumber(dowField, 6);
+    if (isWeekdayRange(dowField)) return { ...timed, mode: "weekdays" };
+    const dayOfWeek = asDay(dowField);
     if (dayOfWeek !== undefined) return { ...timed, mode: "weekly", dayOfWeek };
   }
   if (monthField === "*" && dowField === "*") {
@@ -118,7 +156,7 @@ export function parseSchedule(expression: string): ScheduleDraft {
   }
   const months = asNumberList(monthField, 12);
   const daysOfMonth = asNumberList(domField, 31);
-  const daysOfWeek = asNumberList(dowField, 6);
+  const daysOfWeek = asDayList(dowField);
   if (
     months &&
     daysOfMonth &&
@@ -146,19 +184,29 @@ export function buildSchedule(draft: ScheduleDraft): string {
     case "daily":
       return `${draft.minute} ${draft.hour} * * *`;
     case "weekdays":
-      return `${draft.minute} ${draft.hour} * * 1-5`;
+      return `${draft.minute} ${draft.hour} * * MON-FRI`;
     case "weekly":
-      return `${draft.minute} ${draft.hour} * * ${draft.dayOfWeek}`;
+      return `${draft.minute} ${draft.hour} * * ${CRON_DAY_NAMES[draft.dayOfWeek] ?? "MON"}`;
     case "monthly":
       return `${draft.minute} ${draft.hour} ${draft.dayOfMonth} * *`;
     case "advanced": {
       const dom = draft.days.kind === "days-of-month" ? list(draft.days.days) : "*";
-      const dow = draft.days.kind === "days-of-week" ? list(draft.days.days) : "*";
+      const dow = draft.days.kind === "days-of-week" ? dayNameList(draft.days.days) : "*";
       return `${draft.minute} ${draft.hour} ${dom} ${list(draft.months)} ${dow}`;
     }
     case "custom":
       return draft.expression;
   }
+}
+
+/**
+ * Buffered commit for the Custom field. Text that cannot be saved withdraws the
+ * value instead of leaving the last valid intermediate committed, so dismissing
+ * the popover never persists a schedule the field no longer shows.
+ */
+export function customScheduleCommit(text: string): { schedule: string; valid: boolean } {
+  const trimmed = text.trim();
+  return { schedule: trimmed, valid: isValidTildeSchedule(trimmed) };
 }
 
 /** Lead/rest sentence for a locally edited cron, without a server description. */
@@ -262,7 +310,8 @@ const dayOfMonthOptions: SelectOption[] = Array.from({ length: 31 }, (_, index) 
 
 export interface ScheduleEditorProps {
   schedule: string;
-  onChange: (schedule: string) => void;
+  /** `valid` is false while the typed custom expression cannot be saved. */
+  onChange: (schedule: string, valid: boolean) => void;
   /** Force the initial Frequency mode (the add menu's Advanced… entry). */
   initialMode?: ScheduleMode;
 }
@@ -277,23 +326,26 @@ export function ScheduleEditor({ schedule, onChange, initialMode }: ScheduleEdit
 
   function commit(next: ScheduleDraft): void {
     setDraft(next);
-    if (next.mode !== "custom") onChange(buildSchedule(next));
+    if (next.mode !== "custom") onChange(buildSchedule(next), true);
   }
 
   /**
    * Commit as soon as the typed expression is valid so an outside dismissal —
-   * which unmounts this input before blur fires — cannot lose it. Invalid input
-   * only flags itself once the field is left.
+   * which unmounts this input before blur fires — cannot lose it. Editing a
+   * committed expression back into an invalid state withdraws it again, so a
+   * close cannot persist a value the field no longer shows. Invalid input only
+   * flags itself once the field is left.
    */
   function commitCustom(text: string, flagInvalid: boolean): void {
-    const trimmed = text.trim();
-    if (!isValidTildeSchedule(trimmed)) {
+    const { schedule, valid } = customScheduleCommit(text);
+    if (!valid) {
       if (flagInvalid) setCustomInvalid(true);
+      onChange(schedule, false);
       return;
     }
     setCustomInvalid(false);
-    setDraft((current) => ({ ...current, expression: trimmed }));
-    onChange(trimmed);
+    setDraft((current) => ({ ...current, expression: schedule }));
+    onChange(schedule, true);
   }
 
   const time = (

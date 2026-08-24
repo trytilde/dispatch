@@ -18,6 +18,16 @@ import type {
 import type { ActivityEvent } from "../contracts/events.js";
 import type { ChatMessage, ChatPart } from "../contracts/messages.js";
 import { QueuedTurnSchema, type QueuedTurn } from "../contracts/queue.js";
+import type { CreateRoutineInput, Routine, UpdateRoutineInput } from "../contracts/routines.js";
+import type {
+  CreateSignalInstanceInput,
+  SignalDelivery,
+  SignalInstance,
+  SignalProvider,
+  TestSignalInstanceInput,
+  TestSignalInstanceResult,
+  UpdateSignalInstanceInput,
+} from "../contracts/signals.js";
 import type {
   AgentSortOrder,
   ChatAgent,
@@ -68,11 +78,28 @@ export interface AgentSetupPersistence {
   save(state: AgentSetupState | null): void;
 }
 
+export interface RoutinesState {
+  byAgentId: Record<string, Routine[]>;
+  status: "idle" | "loading" | "ready" | "error";
+  error: string;
+  pollHandle: ReturnType<typeof setTimeout> | null;
+}
+
+export interface SignalsState {
+  providers: SignalProvider[];
+  instances: SignalInstance[];
+  deliveriesByInstanceId: Record<string, SignalDelivery[]>;
+  status: "idle" | "loading" | "ready" | "error";
+  error: string;
+}
+
 export interface OpenBotState {
   auth: AuthState;
   sidebar: SidebarState;
   conversation: ConversationState;
   agentSetup: AgentSetupState;
+  routines: RoutinesState;
+  signals: SignalsState;
 }
 
 export interface SendMessageInput {
@@ -103,6 +130,23 @@ export interface OpenBotActions {
   steerQueuedTurn(id: string): Promise<void>;
   startAgentSetup(name: string, avatarId?: string): Promise<void>;
   dismissAgentSetup(): void;
+  refreshRoutines(agentId: string): Promise<void>;
+  createRoutine(input: CreateRoutineInput): Promise<void>;
+  updateRoutine(groupId: string, agentId: string, input: UpdateRoutineInput): Promise<void>;
+  deleteRoutine(groupId: string, agentId: string): Promise<void>;
+  runRoutine(groupId: string, agentId: string): Promise<string>;
+  startRoutinePolling(agentId: string): void;
+  stopRoutinePolling(): void;
+  refreshSignalProviders(): Promise<void>;
+  refreshSignalInstances(): Promise<void>;
+  createSignalInstance(input: CreateSignalInstanceInput): Promise<SignalInstance>;
+  updateSignalInstance(id: string, input: UpdateSignalInstanceInput): Promise<SignalInstance>;
+  deleteSignalInstance(id: string): Promise<void>;
+  testSignalInstance(
+    id: string,
+    input?: TestSignalInstanceInput,
+  ): Promise<TestSignalInstanceResult>;
+  refreshSignalDeliveries(instanceId: string): Promise<void>;
   setError(message: string): void;
 }
 
@@ -128,6 +172,7 @@ export interface OpenBotRuntimeOptions {
 const optimisticQueuePrefix = "optimistic-queue-";
 const optimisticQueueGraceMs = 5_000;
 const agentSetupPollMs = 500;
+const routinePollMs = 30_000;
 
 const idleAgentSetup: AgentSetupState = {
   status: "idle",
@@ -153,6 +198,14 @@ const initialState: OpenBotState = {
     error: "",
   },
   agentSetup: idleAgentSetup,
+  routines: { byAgentId: {}, status: "idle", error: "", pollHandle: null },
+  signals: {
+    providers: [],
+    instances: [],
+    deliveriesByInstanceId: {},
+    status: "idle",
+    error: "",
+  },
 };
 
 export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRuntime {
@@ -200,6 +253,18 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     store.setState({ agentSetup: state });
     options.agentSetupPersistence?.save(state.status === "setting_up" ? state : null);
   };
+  const updateRoutines = (patch: Partial<RoutinesState>) =>
+    store.setState((state) => ({ routines: { ...state.routines, ...patch } }));
+  const updateSignals = (patch: Partial<SignalsState>) =>
+    store.setState((state) => ({ signals: { ...state.signals, ...patch } }));
+  const replaceAgentRoutines = (agentId: string, items: Routine[]) =>
+    updateRoutines({
+      byAgentId: { ...store.getState().routines.byAgentId, [agentId]: items },
+      status: "ready",
+      error: "",
+    });
+  let routinePollTimer: ReturnType<typeof setTimeout> | undefined;
+  let routinePollGeneration = 0;
 
   async function checkAuthentication(): Promise<void> {
     updateAuth({ status: "checking", error: "" });
@@ -754,6 +819,158 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     }
   }
 
+  async function refreshRoutines(agentId: string): Promise<void> {
+    // Stale-while-revalidate: keep byAgentId intact while the refresh is in flight.
+    updateRoutines({ status: "loading", error: "" });
+    try {
+      const items = await options.client.listRoutines(agentId);
+      replaceAgentRoutines(agentId, items);
+    } catch (error) {
+      updateRoutines({ status: "error", error: errorMessage(error) });
+      throw error;
+    }
+  }
+
+  async function createRoutine(input: CreateRoutineInput): Promise<void> {
+    try {
+      replaceAgentRoutines(input.agentId, await options.client.createRoutine(input));
+    } catch (error) {
+      updateRoutines({ status: "error", error: errorMessage(error) });
+      throw error;
+    }
+  }
+
+  async function updateRoutine(
+    groupId: string,
+    agentId: string,
+    input: UpdateRoutineInput,
+  ): Promise<void> {
+    try {
+      replaceAgentRoutines(agentId, await options.client.updateRoutine(groupId, agentId, input));
+    } catch (error) {
+      updateRoutines({ status: "error", error: errorMessage(error) });
+      throw error;
+    }
+  }
+
+  async function deleteRoutine(groupId: string, agentId: string): Promise<void> {
+    try {
+      replaceAgentRoutines(agentId, await options.client.deleteRoutine(groupId, agentId));
+    } catch (error) {
+      updateRoutines({ status: "error", error: errorMessage(error) });
+      throw error;
+    }
+  }
+
+  async function runRoutine(groupId: string, agentId: string): Promise<string> {
+    try {
+      const sessionId = await options.client.runRoutine(groupId, agentId);
+      await refreshRoutines(agentId).catch(() => undefined);
+      return sessionId;
+    } catch (error) {
+      updateRoutines({ status: "error", error: errorMessage(error) });
+      throw error;
+    }
+  }
+
+  function stopRoutinePolling(): void {
+    routinePollGeneration += 1;
+    if (routinePollTimer !== undefined) {
+      cancelScheduled(routinePollTimer);
+      routinePollTimer = undefined;
+    }
+    if (store.getState().routines.pollHandle !== null) updateRoutines({ pollHandle: null });
+  }
+
+  function startRoutinePolling(agentId: string): void {
+    stopRoutinePolling();
+    const generation = routinePollGeneration;
+    const scheduleNext = (): void => {
+      routinePollTimer = schedule(() => {
+        void refreshRoutines(agentId)
+          .catch(() => undefined)
+          .finally(() => {
+            if (generation === routinePollGeneration) scheduleNext();
+          });
+      }, routinePollMs);
+      updateRoutines({ pollHandle: routinePollTimer });
+    };
+    void refreshRoutines(agentId).catch(() => undefined);
+    scheduleNext();
+  }
+
+  async function refreshSignalProviders(): Promise<void> {
+    updateSignals({ status: "loading", error: "" });
+    try {
+      const providers = await options.client.listSignalProviders();
+      updateSignals({ providers, status: "ready", error: "" });
+    } catch (error) {
+      updateSignals({ status: "error", error: errorMessage(error) });
+      throw error;
+    }
+  }
+
+  async function refreshSignalInstances(): Promise<void> {
+    updateSignals({ status: "loading", error: "" });
+    try {
+      const instances = await options.client.listSignalInstances();
+      updateSignals({ instances, status: "ready", error: "" });
+    } catch (error) {
+      updateSignals({ status: "error", error: errorMessage(error) });
+      throw error;
+    }
+  }
+
+  async function refreshSignalDeliveries(instanceId: string): Promise<void> {
+    try {
+      const deliveries = await options.client.listSignalDeliveries(instanceId);
+      updateSignals({
+        deliveriesByInstanceId: {
+          ...store.getState().signals.deliveriesByInstanceId,
+          [instanceId]: deliveries,
+        },
+      });
+    } catch (error) {
+      updateSignals({ error: errorMessage(error) });
+      throw error;
+    }
+  }
+
+  async function createSignalInstance(input: CreateSignalInstanceInput): Promise<SignalInstance> {
+    try {
+      const instance = await options.client.createSignalInstance(input);
+      await refreshSignalInstances().catch(() => undefined);
+      return instance;
+    } catch (error) {
+      updateSignals({ status: "error", error: errorMessage(error) });
+      throw error;
+    }
+  }
+
+  async function updateSignalInstance(
+    id: string,
+    input: UpdateSignalInstanceInput,
+  ): Promise<SignalInstance> {
+    try {
+      const instance = await options.client.updateSignalInstance(id, input);
+      await refreshSignalInstances().catch(() => undefined);
+      return instance;
+    } catch (error) {
+      updateSignals({ status: "error", error: errorMessage(error) });
+      throw error;
+    }
+  }
+
+  async function deleteSignalInstance(id: string): Promise<void> {
+    try {
+      await options.client.deleteSignalInstance(id);
+      await refreshSignalInstances().catch(() => undefined);
+    } catch (error) {
+      updateSignals({ status: "error", error: errorMessage(error) });
+      throw error;
+    }
+  }
+
   const actions: OpenBotActions = {
     initialize,
     checkAuthentication,
@@ -775,6 +992,7 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       await options.auth.signOut();
       missionControlObserver?.abort();
       agentSetupObserver?.abort();
+      stopRoutinePolling();
       busySessionIds.clear();
       liveMessagesBySession.clear();
       options.agentSetupPersistence?.save(null);
@@ -803,6 +1021,20 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       agentSetupObserver?.abort();
       updateAgentSetup(idleAgentSetup);
     },
+    refreshRoutines,
+    createRoutine,
+    updateRoutine,
+    deleteRoutine,
+    runRoutine,
+    startRoutinePolling,
+    stopRoutinePolling,
+    refreshSignalProviders,
+    refreshSignalInstances,
+    createSignalInstance,
+    updateSignalInstance,
+    deleteSignalInstance,
+    testSignalInstance: (id, input) => options.client.testSignalInstance(id, input),
+    refreshSignalDeliveries,
     setError(message) {
       updateConversation({ error: message });
     },
@@ -815,6 +1047,7 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     dispose() {
       missionControlObserver?.abort();
       agentSetupObserver?.abort();
+      stopRoutinePolling();
       if (refreshTimer) cancelScheduled(refreshTimer);
       if (sidebarRefreshTimer) cancelScheduled(sidebarRefreshTimer);
       queueRefreshes.clear();

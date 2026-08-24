@@ -55,10 +55,6 @@ export function SignalsSettings({
   const [rotateSecret, setRotateSecret] = useState("");
   const [deleting, setDeleting] = useState<SignalInstance | null>(null);
 
-  function providerFor(instance: SignalInstance): SignalProvider | undefined {
-    return providers.find((candidate) => candidate.type_id === instance.provider_type);
-  }
-
   return (
     <section aria-label="Signals" className="flex flex-col gap-3">
       <div className="flex items-center justify-between">

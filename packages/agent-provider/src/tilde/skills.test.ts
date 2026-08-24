@@ -64,6 +64,7 @@ describe("TildeSkillReconciler", () => {
       id: string;
       skills: Array<Record<string, unknown>>;
     } = { ...registry, skills: [] };
+    let raceComputerOverlayCreation = true;
     let managedProviderId = "provider-cua-v1";
     let managedCuaSkill = {
       id: "managed-cua-skill-v1",
@@ -144,6 +145,13 @@ describe("TildeSkillReconciler", () => {
             ...body,
           };
           remoteSkills = [...remoteSkills, skill];
+          if (raceComputerOverlayCreation && body.name === "hello-world-openbot-computer-use") {
+            raceComputerOverlayCreation = false;
+            return Response.json(
+              { message: "repository error: insert skill: db error" },
+              { status: 500 },
+            );
+          }
           return Response.json(skill);
         }
         if (request.method === "DELETE" && path.includes("/skill/")) {
@@ -168,6 +176,10 @@ describe("TildeSkillReconciler", () => {
     const provider = new TildeSkillReconciler(config);
     try {
       await provider.deploy(context);
+      // Older OpenBot releases used a different source identity. Tilde enforces uniqueness by
+      // team skill name, so a repeated deployment must adopt this record rather than re-insert it.
+      const authoredSkill = remoteSkills.find((skill) => skill.name === "hello-world-hello")!;
+      authoredSkill.source_path = "legacy/agent/skills/hello/SKILL.md";
       await provider.deploy(context);
       expect(mutations).toEqual([
         "create-registry",
@@ -183,7 +195,7 @@ describe("TildeSkillReconciler", () => {
         name: "hello-world-hello",
         description: "Say hello.",
         source_kind: "openbot",
-        source_path: "configuration/agent/skills/hello/SKILL.md",
+        source_path: "legacy/agent/skills/hello/SKILL.md",
       });
       expect(remoteSkills).toContainEqual(
         expect.objectContaining({ name: "hello-world-openbot-computer-use" }),
@@ -227,6 +239,21 @@ describe("TildeSkillReconciler", () => {
       expect(remoteRegistry.skills.map((skill) => skill.id)).not.toContain("managed-cua-skill-v1");
       expect(remoteRegistry.skills.map((skill) => skill.id)).not.toContain("bundled-cua-fallback");
       expect(remoteSkills.map((skill) => skill.id)).not.toContain("bundled-cua-fallback");
+
+      const computerOverlay = remoteSkills.find(
+        (skill) => skill.name === "hello-world-openbot-computer-use",
+      )!;
+      computerOverlay.source_kind = "user";
+      computerOverlay.source_path = "user/openbot-computer-use/SKILL.md";
+      computerOverlay.description = "Do not overwrite me.";
+      await expect(provider.deploy(context)).resolves.toBeUndefined();
+      expect(computerOverlay).toMatchObject({
+        id: expect.any(String),
+        description: "Do not overwrite me.",
+        source_kind: "user",
+        source_path: "user/openbot-computer-use/SKILL.md",
+      });
+      expect(mutations).toHaveLength(8);
     } finally {
       await rm(root, { recursive: true });
     }

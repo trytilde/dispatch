@@ -125,10 +125,13 @@ export class TildeToolReconciler {
       server.id,
       `Tilde MCP server ID for ${id}.`,
     );
-    await this.#reconcileTildeControlPlane(context, id, prefix, server.id);
-    if (context.agentKind === "primary") await this.#reconcileGitHubTools(context);
-    if (context.platformIds?.includes("vercel"))
-      await this.#reconcileVercelMcp(context, id, prefix);
+    await Promise.all([
+      this.#reconcileTildeControlPlane(context, id, prefix, server.id),
+      context.agentKind === "primary" ? this.#reconcileGitHubTools(context) : undefined,
+      context.platformIds?.includes("vercel")
+        ? this.#reconcileVercelMcp(context, id, prefix)
+        : undefined,
+    ]);
   }
 
   /** Enable every GitHub tool on the git-provider's brokered tool group for the primary agent. */

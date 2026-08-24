@@ -37,7 +37,9 @@ import { AgentProviderError } from "../core.js";
 import { mapWithConcurrency } from "./concurrency.js";
 import { reconciliationSignal } from "./skills-types.js";
 
-export interface TildeSkillReconcilerConfig extends TildePlatformConfig {}
+export interface TildeSkillReconcilerConfig extends TildePlatformConfig {
+  fetch?: typeof fetch;
+}
 
 const maxConcurrentRequests = 10;
 const canonicalCuaRepository = "https://github.com/trycua/cua";
@@ -45,12 +47,16 @@ const canonicalCuaSkillPath = "skills/gui-automation/SKILL.md";
 
 export class TildeSkillReconciler {
   readonly #config: TildePlatformConfig;
+  readonly #fetch: typeof fetch;
   constructor(platformOrConfig: TildePlatform | TildeSkillReconcilerConfig) {
-    const platform =
-      platformOrConfig instanceof TildePlatform
-        ? platformOrConfig
-        : new TildePlatform(platformOrConfig);
-    this.#config = platform.connection();
+    if (platformOrConfig instanceof TildePlatform) {
+      this.#config = platformOrConfig.connection();
+      this.#fetch = fetch;
+      return;
+    }
+    const { fetch: configuredFetch, ...config } = platformOrConfig;
+    this.#config = new TildePlatform(config).connection();
+    this.#fetch = configuredFetch ?? fetch;
   }
 
   async listRegistries(
@@ -165,7 +171,9 @@ export class TildeSkillReconciler {
           !isCanonicalCuaSkill(skill),
       )
       .map((skill) => skill.id);
-    const desiredRegistrySkillIds = [...skillIds, managedCua.skillId, ...preservedSkillIds];
+    const desiredRegistrySkillIds = [
+      ...new Set([...skillIds, managedCua.skillId, ...preservedSkillIds]),
+    ];
     if (
       current.name !== name ||
       current.description !== description ||
@@ -210,50 +218,56 @@ export class TildeSkillReconciler {
     ];
     const remote = await this.#listAllSkills({ requestId: `agent-lifecycle:${agentId}:skills` });
     const ownedPrefix = `${agentSourcePrefix(context.repositoryRoot, agentPath)}/skills/`;
-    const owned = remote.filter(
-      (skill) => skill.source_kind === "openbot" && skill.source_path?.startsWith(ownedPrefix),
-    );
+    const ownedNamePrefix = `${agentId}-`;
+    const owned = remote.filter((skill) => isOwnedSkill(skill, ownedPrefix, ownedNamePrefix));
     const ids = await mapWithConcurrency(desired, maxConcurrentRequests, async (skill) => {
       // Tilde skill names are unique per team, and every agent authors the same
       // shared platform skills, so the stored name is namespaced by agent ID.
       const name = teamSkillName(agentId, skill.name);
-      const existing = owned.find((candidate) => candidate.source_path === skill.sourcePath);
+      const existing = matchingSkill(remote, owned, skill.sourcePath, name);
       if (!existing) {
-        const { data } = await createSkill({
-          client: this.#api({ requestId: `agent-lifecycle:${agentId}:skill:create` }),
-          path: { team_id: this.#config.teamId },
-          body: {
-            name,
-            description: skill.description,
-            content: skill.content,
-            source_kind: "openbot",
-            source_path: skill.sourcePath,
-          },
-          throwOnError: true,
-        });
-        return data.id;
+        try {
+          const { data } = await createSkill({
+            client: this.#api({ requestId: `agent-lifecycle:${agentId}:skill:create` }),
+            path: { team_id: this.#config.teamId },
+            body: {
+              name,
+              description: skill.description,
+              content: skill.content,
+              source_kind: "openbot",
+              source_path: skill.sourcePath,
+            },
+            throwOnError: true,
+          });
+          return data.id;
+        } catch (error) {
+          // Another deployment can create the same team-unique skill after our initial list.
+          // Re-read by name and use the winning record's ID.
+          const refreshed = await this.#listAllSkills({
+            requestId: `agent-lifecycle:${agentId}:skill:recover-create`,
+          });
+          const refreshedOwned = refreshed.filter((candidate) =>
+            isOwnedSkill(candidate, ownedPrefix, ownedNamePrefix),
+          );
+          const raced = matchingSkill(refreshed, refreshedOwned, skill.sourcePath, name);
+          if (!raced) throw error;
+          if (isOwnedSkill(raced, ownedPrefix, ownedNamePrefix))
+            await updateSkillContent(this.#api.bind(this), agentId, raced, name, skill);
+          return raced.id;
+        }
       }
-      if (
-        existing.name !== name ||
-        existing.description !== skill.description ||
-        existing.content !== skill.content
-      ) {
-        await updateSkill({
-          client: this.#api({ requestId: `agent-lifecycle:${agentId}:skill:update` }),
-          path: { team_id: this.#config.teamId, id: existing.id },
-          body: {
-            name,
-            description: skill.description,
-            content: skill.content,
-          },
-          throwOnError: true,
-        });
-      }
+      if (isOwnedSkill(existing, ownedPrefix, ownedNamePrefix))
+        await updateSkillContent(this.#api.bind(this), agentId, existing, name, skill);
       return existing.id;
     });
     const desiredPaths = new Set(desired.map((skill) => skill.sourcePath));
+    const desiredNames = new Set(desired.map((skill) => teamSkillName(agentId, skill.name)));
     const staleSkillIds = owned
-      .filter((stale) => !stale.source_path || !desiredPaths.has(stale.source_path))
+      .filter(
+        (stale) =>
+          (!stale.source_path || !desiredPaths.has(stale.source_path)) &&
+          !desiredNames.has(stale.name),
+      )
       .map((stale) => stale.id);
     return {
       skillIds: ids.sort(),
@@ -324,7 +338,7 @@ export class TildeSkillReconciler {
       orgId: this.#config.orgId,
       baseUrl: this.#config.baseUrl ?? "https://api.trytilde.ai",
       headers: { "x-api-key": this.#config.apiKey },
-      fetch: tildeFetch(reconciliationSignal(context)),
+      fetch: tildeFetch(reconciliationSignal(context), this.#fetch),
       throwOnError: true,
     });
   }
@@ -427,6 +441,50 @@ function teamSkillName(agentId: string, skillName: string): string {
 
 function agentSourcePrefix(repositoryRoot: string, agentPath: string): string {
   return relative(repositoryRoot, agentPath).split(sep).join("/");
+}
+
+function isOwnedSkill(skill: TildeSkill, sourcePrefix: string, namePrefix: string): boolean {
+  return (
+    skill.source_kind === "openbot" &&
+    (skill.source_path?.startsWith(sourcePrefix) === true || skill.name.startsWith(namePrefix))
+  );
+}
+
+function matchingSkill(
+  skills: readonly TildeSkill[],
+  ownedSkills: readonly TildeSkill[],
+  sourcePath: string,
+  name: string,
+): TildeSkill | undefined {
+  return (
+    skills.find((candidate) => candidate.name === name) ??
+    ownedSkills.find((candidate) => candidate.source_path === sourcePath)
+  );
+}
+
+async function updateSkillContent(
+  api: (context: SkillReconciliationContext) => ReturnType<typeof createTildeApiClient>,
+  agentId: string,
+  existing: TildeSkill,
+  name: string,
+  desired: AuthoredSkill,
+): Promise<void> {
+  if (
+    existing.name === name &&
+    existing.description === desired.description &&
+    existing.content === desired.content
+  )
+    return;
+  await updateSkill({
+    client: api({ requestId: `agent-lifecycle:${agentId}:skill:update` }),
+    path: { team_id: existing.team_id, id: existing.id },
+    body: {
+      name,
+      description: desired.description,
+      content: desired.content,
+    },
+    throwOnError: true,
+  });
 }
 
 function sameStrings(left: readonly string[], right: readonly string[]): boolean {

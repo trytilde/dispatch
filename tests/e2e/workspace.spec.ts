@@ -32,9 +32,10 @@ test("loads the bare workspace without setup", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "What should OpenBot do?" })).toHaveCount(0);
   await expect(page.locator(".rail")).toHaveCSS("width", "400px");
-  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "0px");
+  await expect(page.locator(".agent-workspace-pane")).toBeHidden();
   await page.getByRole("button", { name: "Toggle Computer pane" }).click();
-  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "320px");
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("position", "absolute");
+  await expect(page.getByRole("separator", { name: "Resize Computer pane" })).toHaveCount(0);
   await expect(page.locator(".chat-pane > header")).toHaveCSS("height", "38px");
   await page.keyboard.press("Control+b");
   await expect(page.locator(".rail")).toHaveCSS("width", "88px");
@@ -53,39 +54,41 @@ test("loads the bare workspace without setup", async ({ page }) => {
   await page.mouse.up();
   await expect(page.locator(".rail")).toHaveCSS("width", "460px");
 
-  const workspaceHandle = await page
-    .getByRole("separator", { name: "Resize Computer pane" })
-    .boundingBox();
-  if (!workspaceHandle) throw new Error("Computer resize handle is not visible");
-  const workspaceHandleX = workspaceHandle.x + workspaceHandle.width / 2;
-  await page.mouse.move(workspaceHandleX, workspaceHandle.y + 120);
-  await page.mouse.down();
-  await page.mouse.move(workspaceHandleX - 40, workspaceHandle.y + 120);
-  await page.mouse.up();
-  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "360px");
+  const chatBounds = await page.locator(".chat-pane").boundingBox();
+  const previewBounds = await page.locator(".agent-workspace-pane").boundingBox();
+  if (!chatBounds || !previewBounds) throw new Error("Floating Computer layout is not visible");
+  expect(previewBounds.width).toBeGreaterThanOrEqual(240);
+  expect(previewBounds.width).toBeLessThanOrEqual(320);
+  expect(previewBounds.x).toBeCloseTo(chatBounds.x + 16, 0);
+  expect(previewBounds.y + previewBounds.height).toBeCloseTo(704, 0);
 
   await page.reload();
   await expect(page.locator(".rail")).toHaveCSS("width", "460px");
-  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "360px");
+  await expect(page.locator(".agent-workspace-pane")).toBeVisible();
   await page.keyboard.press("Control+b");
   await expect(page.locator(".rail")).toHaveCSS("width", "88px");
   await page.keyboard.press("Control+b");
   await expect(page.locator(".rail")).toHaveCSS("width", "460px");
   await page.keyboard.press("Control+Alt+b");
-  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "0px");
+  await expect(page.locator(".agent-workspace-pane")).toBeHidden();
   await page.keyboard.press("Control+Alt+b");
-  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "360px");
+  await expect(page.locator(".agent-workspace-pane")).toBeVisible();
   await expect(page.getByLabel("Setup code")).toHaveCount(0);
 
   await page.setViewportSize({ width: 960, height: 720 });
-  await expect(page.locator(".rail")).toHaveCSS("width", "88px");
-  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("display", "grid");
-  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "360px");
+  await expect(page.locator(".rail")).toHaveCSS("width", "460px");
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("position", "absolute");
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "240px");
   await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 960);
 
   await page.setViewportSize({ width: 820, height: 720 });
-  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("position", "fixed");
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("position", "absolute");
   await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 820);
+
+  await page.setViewportSize({ width: 700, height: 720 });
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("position", "fixed");
+  await expect(page.locator(".agent-workspace-pane")).toHaveCSS("width", "420px");
+  await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 700);
 
   await page.goto("/api/setup/unlock");
   await expect(page.getByRole("heading", { name: "What should OpenBot do?" })).toHaveCount(0);
@@ -168,7 +171,7 @@ test("shows authenticated account details and account navigation on hover", asyn
   await expect(page.getByRole("dialog", { name: "Switch workspace" })).toBeVisible();
 });
 
-test("floats the Computer preview at the bottom-right in Electron", async ({ browser }) => {
+test("floats the Computer preview at the bottom-left in Electron", async ({ browser }) => {
   const context = await browser.newContext({
     baseURL: "http://127.0.0.1:14173",
     extraHTTPHeaders: { authorization: "Bearer e2e-owner" },
@@ -209,12 +212,13 @@ test("floats the Computer preview at the bottom-right in Electron", async ({ bro
 
   expect(openChatBounds).toEqual(initialChatBounds);
   expect(openComposerBounds.width).toBeLessThan(initialComposerBounds.width);
+  expect(openComposerBounds.x).toBeGreaterThan(initialComposerBounds.x);
   await expect
     .poll(async () => {
       const bounds = await preview.boundingBox();
-      return bounds ? bounds.x + bounds.width : undefined;
+      return bounds?.x;
     })
-    .toBeCloseTo(openChatBounds.x + openChatBounds.width - 16, 0);
+    .toBeCloseTo(openChatBounds.x + 16, 0);
   await expect
     .poll(async () => {
       const bounds = await preview.boundingBox();
@@ -630,7 +634,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await expect.poll(() => computerPreviewRequests).toBe(1);
   await expect(page.locator(".agent-workspace-pane")).toHaveCSS(
     "transition-duration",
-    "0.09s, 0.2s, 0s",
+    "0.12s, 0.18s, 0s",
   );
   // ComputerStagePlaceholder is exported but rendered nowhere in apps/web, so the boot
   // message and its progress bar never appear. Held in the pending test below.

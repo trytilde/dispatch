@@ -20,4 +20,4 @@
 "@tryopenbot/git-provider": patch
 ---
 
-Keep newly created bots on the local-runtime tunnel until their complete agent template is ready, reconcile independent Tilde resources concurrently behind a shared ten-request ceiling, and preserve the selected avatar through the compact setup modal.
+Keep newly created bots on the local-runtime tunnel until their complete agent template is ready, reconcile independent Tilde resources concurrently behind a shared request ceiling, and keep managed skill and tool assignments idempotent.

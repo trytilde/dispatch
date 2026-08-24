@@ -27,7 +27,7 @@ deployment cannot hide provisioning behind a managed dashboard.
    `SignalRule` (upstream `trytilde/api` change). OpenBot stamps
    `{"openbot": {"group": "<uuid>", "trigger": "<uuid>"}}` and reconstructs unified
    cards statelessly from list calls. No local DB, no title markers.
-6. **harness-sdk abstractions** (added requirement): the SDK's unprocessed-message
+6. **Tilde SDK abstractions** (added requirement): the SDK's unprocessed-message
    handling must expose a correctly typed shape for every signal provider and signal
    event (e.g. `github.issue.opened`), so agents receive signal-originated messages as
    first-class typed inputs rather than opaque system messages.
@@ -40,10 +40,10 @@ deployment cannot hide provisioning behind a managed dashboard.
   `signals` rules; accepted on create/update, returned on read, no semantics server-side.
 - Regenerate `openapi.cloud.json`.
 
-### Phase 1 — `trytilde/harness-sdk`
+### Phase 1 — Tilde SDK packages in `trytilde/openbot`
 
-- Regenerate `packages/api-client` from the new spec (picks up routines endpoints,
-  which the current OpenBot pin predates, plus `metadata`).
+- Refresh the generated `packages/api-client` from the new spec so routines and
+  metadata remain typed, and expose stable hand-authored behavior from `packages/sdk`.
 - Add typed signal-message support to the unprocessed-message path: a discriminated
   union keyed by `signal_type` covering every published provider event
   (github.issue.*, github.pull_request.*, github.ci_check.*, slack.app_mention,
@@ -51,7 +51,8 @@ deployment cannot hide provisioning behind a managed dashboard.
   signals metadata (`signal_delivery_id`, `signal_provider_instance_id`,
   `signal_rule_id`, `signal_type`) and normalized payload. Exact shape follows the
   SDK's existing unprocessed-message conventions (explored before implementation).
-- OpenBot bumps its pinned commit.
+- Keep generated source internal to `@trytilde/api-client`; do not restore retired
+  Harness package names or a separately pinned SDK repository.
 
 ### Phase 2 — OpenBot backend (`apps/control-service`)
 

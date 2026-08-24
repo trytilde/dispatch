@@ -1,4 +1,4 @@
-# 0030 — Routines and signals as one unified trigger surface
+# ADR-0031: Routines and signals as one unified trigger surface
 
 ## In brief
 
@@ -73,8 +73,8 @@ paging is impossible and the requested page size is a hard cap. Loading a partia
 set is unsafe here: a routine would compose with a missing member, the replace-all
 update would neither see nor delete it, and the enabled fan-out would skip it,
 leaving an invisible rule firing while its card reads Paused. The control service
-therefore requests 100 and fails loudly with a 502 when a page fills, rather than
-truncating silently. A team that legitimately reaches 100 signal rules will see the
+therefore requests 1000 and fails loudly with a 502 when a page fills, rather than
+truncating silently. A team that legitimately exceeds 1000 signal rules will see the
 routines surface error until upstream paginates; that is preferred over silently
 corrupting routines on the next edit.
 
@@ -101,11 +101,9 @@ already bound to the Computer pane.
 - Expo mobile: deferred.
 
 <FOLLOW UP>
-Expo mobile routines: render the routines list, editor, and provider connect flow
-natively against the existing client-runtime contracts, slices, and helpers
-(`routineDetail`, `scheduleTriggerSentence`, `cronForPreset`,
-`describeEventTrigger`) using BNA UI components and RN sheets in place of anchored
-popovers. No new contracts are expected.
+Owner: apps/mobile
+Trigger: this routines and signals capability merges for the web and Electron clients
+Work: render the routines list, editor, and provider connect flow natively against the existing client-runtime contracts, slices, and helpers using BNA UI components and React Native sheets, then prove the workflows on both Android and iOS
 </FOLLOW UP>
 
 ## Upstream dependencies
@@ -114,7 +112,6 @@ popovers. No new contracts are expected.
   `webhook_verification` descriptor in the signals provider catalog. Until deployed,
   the control service falls back to a webhook-auth heuristic for
   `requires_signing_key`, and metadata stamps require the upstream field to persist.
-- `trytilde/harness-sdk`: typed per-provider signal families (slack and fake added;
-  github/sentry/firecrawl pre-existing), `SignalMetadata` delivery/instance/rule
-  ids, and a generic `onUnprocessed.signal` fallback so unknown signal types are no
-  longer dropped silently.
+- `@trytilde/api-client`: generated routines, signals, metadata, and webhook
+  verification contracts. Stable hand-authored behavior remains owned by
+  `@trytilde/sdk`; OpenBot does not reintroduce the retired Harness package names.

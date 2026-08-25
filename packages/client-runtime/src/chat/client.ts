@@ -114,7 +114,11 @@ export interface OpenBotClient {
     attachmentIds?: string[],
   ): Promise<ChatMessagePage>;
   submitTurn(agentId: string, input: SubmitTurnInput): Promise<SubmitTurnResponse>;
-  observeMissionControl(signal: AbortSignal, onEvent: (event: ChatEvent) => void): Promise<void>;
+  observeMissionControl(
+    signal: AbortSignal,
+    onEvent: (event: ChatEvent) => void,
+    afterRevision?: number,
+  ): Promise<void>;
   observeSession(
     sessionId: string,
     signal: AbortSignal,
@@ -369,9 +373,12 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
           }),
         },
       ),
-    async observeMissionControl(signal, onEvent) {
+    async observeMissionControl(signal, onEvent, afterRevision) {
       const response = await request(chatPath("mission-control/events"), {
-        headers: { accept: "text/event-stream" },
+        headers: {
+          accept: "text/event-stream",
+          ...(afterRevision === undefined ? {} : { "last-event-id": String(afterRevision) }),
+        },
         signal,
       });
       if (!response.ok) throw await responseError(response);

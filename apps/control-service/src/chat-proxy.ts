@@ -112,6 +112,9 @@ function streamMissionControlEvents(context: Context, options: TildeChatProxyOpt
       `/api/v1/team/${encodeURIComponent(options.teamId)}/chatkit/mission-control/ws`,
       options.baseUrl ?? "https://api.trytilde.ai",
     );
+    const lastEventId = context.req.header("last-event-id")?.trim();
+    if (lastEventId && /^\d+$/.test(lastEventId))
+      upstreamUrl.searchParams.set("after_revision", lastEventId);
     upstreamUrl.protocol = upstreamUrl.protocol === "http:" ? "ws:" : "wss:";
 
     const socket = new WebSocket(upstreamUrl, {
@@ -181,10 +184,10 @@ function missionControlSocketEvent(
   const eventType = message.params?.event_type;
   if (typeof eventType !== "string" || !eventType) return undefined;
   const id =
-    event && typeof event === "object" && "id" in event && typeof event.id === "string"
-      ? event.id
-      : typeof message.params?.revision === "number"
-        ? String(message.params.revision)
+    typeof message.params?.revision === "number"
+      ? String(message.params.revision)
+      : event && typeof event === "object" && "id" in event && typeof event.id === "string"
+        ? event.id
         : undefined;
   return { type: eventType, ...(id ? { id } : {}), data: event };
 }

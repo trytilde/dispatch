@@ -137,6 +137,46 @@ describe("OpenBot runtime", () => {
     runtime.dispose();
   });
 
+  it("reconnects Mission Control from the last durable revision", async () => {
+    const observedAfter: Array<number | undefined> = [];
+    const baseClient = createOpenBotClient({
+      fetch: async () => {
+        throw new Error("Unexpected HTTP request");
+      },
+    });
+    const client: OpenBotClient = {
+      ...baseClient,
+      getSession: async () => ({
+        authenticated: true,
+        user: { subject: "owner-one", name: "Owner One" },
+      }),
+      getBootstrap: async () => ({ sidebar: { items: [] } }),
+      observeMissionControl: async (signal, onEvent, afterRevision) => {
+        observedAfter.push(afterRevision);
+        if (observedAfter.length === 1) {
+          onEvent({
+            id: "41",
+            type: "chatkit.message.streaming",
+            data: { kind: { kind: "message_streaming", session_id: "session-one" } },
+          });
+          return;
+        }
+        await new Promise<void>((resolve) =>
+          signal.addEventListener("abort", () => resolve(), { once: true }),
+        );
+      },
+    };
+    const runtime = createOpenBotRuntime({
+      client,
+      auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
+      schedule: (callback) => setTimeout(callback, 0),
+    });
+
+    await runtime.actions.initialize();
+    await vi.waitFor(() => expect(observedAfter).toEqual([undefined, 41]));
+    runtime.dispose();
+  });
+
   it("keeps inactive agents busy and reconciles their messages from the team stream", async () => {
     let emitEvent: Parameters<OpenBotClient["observeMissionControl"]>[1] = () => undefined;
     const now = "2026-08-21T08:21:00.000Z";

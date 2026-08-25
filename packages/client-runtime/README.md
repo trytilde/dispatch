@@ -30,6 +30,7 @@ The runtime maintains one team-wide Mission Control observer so inactive session
 preview, unread, and streamed-message state current. Platform-supplied `agentSetupPersistence` may
 restore an in-progress setup job; the runtime polls it to readiness, refreshes the authoritative
 sidebar, and selects the created agent only after it appears there.
+The observer retains the last durable revision and resumes from it after a disconnect.
 
 Initial load, conversation selection, and turn submission consume server-authored aggregate
 responses. Web, Electron, and Expo therefore reconcile identical authoritative snapshots without

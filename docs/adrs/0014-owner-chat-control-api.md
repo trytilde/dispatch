@@ -33,7 +33,8 @@ Tilde publishes the Mission Control WebSocket contract as AsyncAPI generated fro
 types used at runtime. The team-scoped socket is one system channel rather than one channel per chat:
 every connected owner client needs background activity for all accessible conversations. AsyncAPI
 separates client ping, server control frames, and typed domain events into distinct operations while
-retaining the single physical channel.
+retaining the single physical channel. The SSE bridge forwards the browser's last applied durable
+revision as `after_revision`, so a reconnect replays events produced while the client was offline.
 
 ```mermaid
 flowchart LR

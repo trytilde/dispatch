@@ -270,7 +270,9 @@ describe("bare OpenBot server", () => {
     await once(upstream, "listening");
     const port = (upstream.address() as AddressInfo).port;
     let upstreamHeaders: Headers | undefined;
+    let upstreamPath = "";
     upstream.once("connection", (socket, request) => {
+      upstreamPath = request.url ?? "";
       upstreamHeaders = new Headers(
         Object.entries(request.headers).flatMap(([name, value]) =>
           value === undefined ? [] : [[name, Array.isArray(value) ? value.join(", ") : value]],
@@ -306,7 +308,7 @@ describe("bare OpenBot server", () => {
     });
 
     const response = await chatApp.request("https://openbot.test/api/chat/mission-control/events", {
-      headers: { authorization: "Bearer browser-token" },
+      headers: { authorization: "Bearer browser-token", "last-event-id": "41" },
     });
     const body = await response.text();
     await new Promise<void>((resolve) => upstream.close(() => resolve()));
@@ -314,7 +316,10 @@ describe("bare OpenBot server", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/event-stream");
     expect(body).toContain("event: chatkit.message.streaming");
-    expect(body).toContain("id: event-one");
+    expect(body).toContain("id: 1");
+    expect(upstreamPath).toBe(
+      "/api/v1/team/openbot-team/chatkit/mission-control/ws?after_revision=41",
+    );
     expect(upstreamHeaders?.get("x-api-key")).toBe("secret-api-key");
     expect(upstreamHeaders?.get("x-tilde-org-id")).toBe("openbot-org");
     expect(upstreamHeaders?.get("x-tilde-team-id")).toBe("openbot-team");

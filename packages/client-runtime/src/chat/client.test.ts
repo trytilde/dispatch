@@ -75,8 +75,9 @@ describe("OpenBot client", () => {
   it("consumes the team-wide Mission Control event stream", async () => {
     const events: unknown[] = [];
     const client = createOpenBotClient({
-      fetch: async (input) => {
+      fetch: async (input, init) => {
         expect(requestUrl(input)).toBe("/api/chat/mission-control/events");
+        expect(new Headers(init?.headers).get("last-event-id")).toBe("40");
         return new Response(
           'id: event-one\nevent: chatkit.message.streaming\ndata: {"kind":{"kind":"message_streaming","session_id":"session-one"}}\n\n',
           { headers: { "content-type": "text/event-stream" } },
@@ -84,7 +85,11 @@ describe("OpenBot client", () => {
       },
     });
 
-    await client.observeMissionControl(new AbortController().signal, (event) => events.push(event));
+    await client.observeMissionControl(
+      new AbortController().signal,
+      (event) => events.push(event),
+      40,
+    );
 
     expect(events).toEqual([
       {

@@ -26,6 +26,7 @@ describe("TildeAgentProvider", () => {
   it("idempotently reconciles one agent and persists its credentials", async () => {
     const context = await agentContext("scout");
     const requests: Request[] = [];
+    const credentialAvailability: boolean[] = [];
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -33,7 +34,9 @@ describe("TildeAgentProvider", () => {
         requests.push(request.clone());
         const path = new URL(request.url).pathname;
         if (request.method === "PUT" && path.endsWith("/openbot/agents/scout/bundle")) {
-          expect(await request.json()).toMatchObject({
+          const body = (await request.json()) as Record<string, unknown>;
+          credentialAvailability.push(body.endpoint_credentials_available === true);
+          expect(body).toMatchObject({
             display_name: "Scout",
             endpoint_url: "http://127.0.0.1:4100/api/agents/scout",
             local_running_endpoint: true,
@@ -58,6 +61,7 @@ describe("TildeAgentProvider", () => {
       AGENT_SCOUT_MCP_SERVER_ID: "openbot-scout",
     });
     expect(requests.filter((request) => request.method === "PUT")).toHaveLength(2);
+    expect(credentialAvailability).toEqual([false, true]);
   });
 
   it("repairs an existing agent that is not configured to queue turns", async () => {
@@ -80,7 +84,12 @@ describe("TildeAgentProvider", () => {
 
     await new TildeAgentProvider(config).deployable.deploy(context);
 
-    expect(updates).toEqual([expect.objectContaining({ display_name: "Scout" })]);
+    expect(updates).toEqual([
+      expect.objectContaining({
+        display_name: "Scout",
+        endpoint_credentials_available: true,
+      }),
+    ]);
   });
 
   it("reports the Tilde operation, agent, API detail, and HTTP status", async () => {

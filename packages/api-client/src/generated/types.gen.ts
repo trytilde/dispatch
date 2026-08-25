@@ -3281,6 +3281,11 @@ export type ReconcileOpenBotAgentBundleBody = {
     channel_display_name: string;
     channel_id: string;
     display_name: string;
+    /**
+     * Whether the caller still has the agent's one-time endpoint credentials.
+     * `false` replaces an otherwise unrecoverable existing agent before reconciliation.
+     */
+    endpoint_credentials_available?: boolean | null;
     endpoint_url: string;
     local_running_endpoint?: boolean;
     mcp_server_id: string;

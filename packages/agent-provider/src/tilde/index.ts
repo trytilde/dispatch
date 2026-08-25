@@ -128,6 +128,10 @@ export class TildeAgentProvider implements AgentProvider {
         ? missionControlChannelId
         : `${missionControlChannelId}-${slug}`;
     const mcpServerId = context.environment[`${prefix}_MCP_SERVER_ID`]?.trim() || `openbot-${slug}`;
+    const endpointCredentialsAvailable = Boolean(
+      context.environment[`${prefix}_API_KEY`]?.trim() &&
+      context.environment[`${prefix}_WEBHOOK_SIGNING_KEY`]?.trim(),
+    );
     const skills = await desiredOpenBotAgentSkills(context, true);
     const toolGroupInstanceIds = [
       context.environment.GIT_GITHUB_TOOL_GROUP_ID,
@@ -141,6 +145,7 @@ export class TildeAgentProvider implements AgentProvider {
           display_name: displayName,
           endpoint_url: new URL(`/api/agents/${slug}`, `${origin}/`).toString(),
           local_running_endpoint: context.devMode,
+          endpoint_credentials_available: endpointCredentialsAvailable,
           channel_id: channelId,
           channel_display_name:
             context.agentKind === "primary"

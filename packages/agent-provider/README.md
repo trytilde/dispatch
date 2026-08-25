@@ -21,3 +21,4 @@ the control service's allowlisted same-origin bridge.
 - `tildeAgentProviderInitialization`: provider-specific initialization metadata collected with the shared Tilde platform.
 
 Reconciliation guarantees per agent: the Tilde control-plane toolkit is enabled and every one of its functions is mapped onto the agent's runtime MCP server, and authored skills sync into the agent's Tilde skill registry with team-unique names namespaced as `<agent-id>-<skill-name>`. The aggregate operation preserves the same idempotent ownership boundary while avoiding a client-side chain of dependent API calls.
+The provider tells Tilde whether it still holds the endpoint's one-time credentials, allowing a retry to replace an unrecoverable partial agent safely.

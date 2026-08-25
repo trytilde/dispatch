@@ -39563,6 +39563,13 @@
           "display_name": {
             "type": "string"
           },
+          "endpoint_credentials_available": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether the caller still has the agent's one-time endpoint credentials.\n`false` replaces an otherwise unrecoverable existing agent before reconciliation."
+          },
           "endpoint_url": {
             "type": "string"
           },

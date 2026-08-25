@@ -362,11 +362,23 @@ export class TildeSkillReconciler {
   }
 }
 
-interface AuthoredSkill {
+export interface AuthoredSkill {
   name: string;
   description: string;
   content: string;
   sourcePath: string;
+}
+
+/** Read the complete local skill set submitted by the aggregate agent-bundle endpoint. */
+export async function desiredOpenBotAgentSkills(
+  context: DeploymentContext,
+  includeCuaFallback: boolean,
+): Promise<AuthoredSkill[]> {
+  const { path } = requireAgent(context);
+  return [
+    ...(await authoredSkills(context.repositoryRoot, path)),
+    ...(await openBotComputerSkills(context.repositoryRoot, path, includeCuaFallback)),
+  ];
 }
 
 async function authoredSkills(repositoryRoot: string, agentPath: string): Promise<AuthoredSkill[]> {
@@ -397,6 +409,7 @@ async function authoredSkills(repositoryRoot: string, agentPath: string): Promis
 async function openBotComputerSkills(
   repositoryRoot: string,
   agentPath: string,
+  includeCuaFallback = false,
 ): Promise<AuthoredSkill[]> {
   const assetRoot = resolve(dirname(fileURLToPath(import.meta.url)), "assets");
   const sourcePrefix = `${agentSourcePrefix(repositoryRoot, agentPath)}/skills/.openbot`;
@@ -404,13 +417,23 @@ async function openBotComputerSkills(
     resolve(assetRoot, "openbot-computer-use", "SKILL.md.hbs"),
     "utf8",
   );
-  return [
+  const skills: AuthoredSkill[] = [
     {
       ...skillMetadata(overlayContent, "openbot-computer-use"),
       content: overlayContent,
       sourcePath: `${sourcePrefix}/openbot-computer-use/SKILL.md`,
     },
   ];
+  if (includeCuaFallback) {
+    const content = await readFile(resolve(assetRoot, "cua-driver", "SKILL.md.hbs"), "utf8");
+    skills.push({
+      name: "gui-automation",
+      description: "Canonical Cua GUI automation guidance bundled as a managed-skill fallback.",
+      content,
+      sourcePath: `${sourcePrefix}/cua-driver/SKILL.md`,
+    });
+  }
+  return skills;
 }
 
 function skillMetadata(

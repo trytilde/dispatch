@@ -31,6 +31,15 @@ import {
 } from "../contracts/agents.js";
 import { ChatMessagePageSchema, type ChatMessagePage } from "../contracts/messages.js";
 import {
+  ConversationSnapshotSchema,
+  MissionControlBootstrapSchema,
+  SubmitTurnResponseSchema,
+  type ConversationSnapshot,
+  type MissionControlBootstrap,
+  type SubmitTurnInput,
+  type SubmitTurnResponse,
+} from "../contracts/mission-control.js";
+import {
   RoutineListSchema,
   RunRoutineResponseSchema,
   type CreateRoutineInput,
@@ -86,6 +95,8 @@ export interface OpenBotClient {
     sessionSort?: SessionSortOrder,
     nextAgentToken?: string | null,
   ): Promise<SidebarResponse>;
+  getBootstrap(activeSessionId?: string): Promise<MissionControlBootstrap>;
+  getConversationSnapshot(sessionId: string): Promise<ConversationSnapshot>;
   getAgentSessions(
     agentId: string,
     nextPageToken?: string | null,
@@ -102,7 +113,12 @@ export interface OpenBotClient {
     text: string,
     attachmentIds?: string[],
   ): Promise<ChatMessagePage>;
-  observeMissionControl(signal: AbortSignal, onEvent: (event: ChatEvent) => void): Promise<void>;
+  submitTurn(agentId: string, input: SubmitTurnInput): Promise<SubmitTurnResponse>;
+  observeMissionControl(
+    signal: AbortSignal,
+    onEvent: (event: ChatEvent) => void,
+    afterRevision?: number,
+  ): Promise<void>;
   observeSession(
     sessionId: string,
     signal: AbortSignal,
@@ -129,11 +145,17 @@ export interface OpenBotClient {
   listSignalDeliveries(instanceId: string): Promise<SignalDelivery[]>;
   listConnectorProviders(): Promise<ConnectorProvider[]>;
   listConnectorAccounts(providerTypeId?: string): Promise<ConnectorAccount[]>;
+  waitForConnectorAccount(accountId: string): Promise<ConnectorAccount>;
   createConnectorAccount(input: CreateConnectorAccountInput): Promise<CreateConnectorAccountResult>;
+  bindConnector(agentId: string, accountId: string): Promise<void>;
   getPluginsCatalog(agentIds: readonly string[]): Promise<PluginsCatalog>;
   setToolAccountForAgent(accountId: string, agentId: string, enabled: boolean): Promise<void>;
   setSkillForAgent(skillId: string, agentId: string, enabled: boolean): Promise<void>;
   createAttachment(sessionId: string, input: CreateAttachmentInput): Promise<AttachmentUpload>;
+  createAttachments(
+    sessionId: string,
+    inputs: CreateAttachmentInput[],
+  ): Promise<AttachmentUpload[]>;
   completeAttachment(
     sessionId: string,
     attachmentId: string,
@@ -258,6 +280,28 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
       if (nextAgentToken) parameters.set("agent_next_page_token", nextAgentToken);
       return await json(chatPath(`mission-control/sidebar?${parameters}`), SidebarResponseSchema);
     },
+    async getBootstrap(activeSessionId) {
+      const parameters = new URLSearchParams({
+        agent_page_size: "50",
+        session_page_size: "12",
+        message_page_size: "100",
+        queue_page_size: "25",
+        agent_sort: "updated_at",
+        session_sort: "updated_at",
+      });
+      if (activeSessionId) parameters.set("active_session_id", activeSessionId);
+      return await json(
+        chatPath(`mission-control/bootstrap?${parameters}`),
+        MissionControlBootstrapSchema,
+      );
+    },
+    getConversationSnapshot: (sessionId) =>
+      json(
+        chatPath(
+          `mission-control/sessions/${encodeURIComponent(sessionId)}/snapshot?message_page_size=100&queue_page_size=25`,
+        ),
+        ConversationSnapshotSchema,
+      ),
     async getAgentSessions(agentId, nextPageToken, sessionSort = "updated_at") {
       const parameters = new URLSearchParams({ page_size: "25", session_sort: sessionSort });
       if (nextPageToken) parameters.set("next_page_token", nextPageToken);
@@ -311,9 +355,30 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
         ChatMessagePageSchema,
         { method: "POST", body: JSON.stringify({ text, attachment_ids: attachmentIds }) },
       ),
-    async observeMissionControl(signal, onEvent) {
+    submitTurn: (agentId, input) =>
+      json(
+        chatPath(`mission-control/agents/${encodeURIComponent(agentId)}/turns`),
+        SubmitTurnResponseSchema,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            session_id: input.sessionId ?? null,
+            title: input.title ?? null,
+            text: input.text,
+            attachments: (input.attachments ?? []).map((attachment) => ({
+              attachment_id: attachment.attachmentId,
+              size_bytes: attachment.sizeBytes ?? null,
+              sha256: attachment.sha256 ?? null,
+            })),
+          }),
+        },
+      ),
+    async observeMissionControl(signal, onEvent, afterRevision) {
       const response = await request(chatPath("mission-control/events"), {
-        headers: { accept: "text/event-stream" },
+        headers: {
+          accept: "text/event-stream",
+          ...(afterRevision === undefined ? {} : { "last-event-id": String(afterRevision) }),
+        },
         signal,
       });
       if (!response.ok) throw await responseError(response);
@@ -473,6 +538,17 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
       const response = await json(`/api/connectors/accounts${query}`, ConnectorAccountPageSchema);
       return response.items;
     },
+    waitForConnectorAccount: (accountId) =>
+      json(
+        `/api/connectors/accounts/${encodeURIComponent(accountId)}/wait`,
+        z.object({
+          id: z.string(),
+          display_name: z.string(),
+          status: z.string(),
+          provider_type_id: z.string().optional(),
+          credential_source_type_id: z.string().optional(),
+        }),
+      ),
     createConnectorAccount: (input) =>
       json("/api/connectors/accounts", CreateConnectorAccountResultSchema, {
         method: "POST",
@@ -484,6 +560,12 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
           user_credential_values: input.userCredentialValues ?? null,
           return_url: input.returnUrl ?? null,
         }),
+      }),
+    bindConnector: (agentId, accountId) =>
+      empty("/api/connectors/bind", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ agent_id: agentId, account_id: accountId }),
       }),
     getPluginsCatalog(agentIds) {
       const parameters = new URLSearchParams();
@@ -519,6 +601,24 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
           }),
         },
       ),
+    async createAttachments(sessionId, inputs) {
+      const response = await json(
+        chatPath(`session/${encodeURIComponent(sessionId)}/attachments/upload`),
+        z.object({ items: z.array(AttachmentUploadSchema) }),
+        {
+          method: "POST",
+          body: JSON.stringify({
+            items: inputs.map((input) => ({
+              filename: input.filename,
+              media_type: input.mediaType,
+              size_bytes: input.sizeBytes,
+              sha256: input.sha256,
+            })),
+          }),
+        },
+      );
+      return response.items;
+    },
     completeAttachment: (sessionId, attachmentId, input) =>
       json(
         chatPath(

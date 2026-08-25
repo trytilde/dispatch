@@ -17,6 +17,7 @@ import type {
 } from "../contracts/auth.js";
 import type { ActivityEvent } from "../contracts/events.js";
 import type { ChatMessage, ChatPart } from "../contracts/messages.js";
+import type { AttachmentCompletion, ConversationSnapshot } from "../contracts/mission-control.js";
 import { QueuedTurnSchema, type QueuedTurn } from "../contracts/queue.js";
 import type { CreateRoutineInput, Routine, UpdateRoutineInput } from "../contracts/routines.js";
 import type {
@@ -104,6 +105,7 @@ export interface OpenBotState {
 export interface SendMessageInput {
   text: string;
   attachmentIds?: string[];
+  attachmentCompletions?: AttachmentCompletion[];
   optimisticParts?: ChatPart[];
   title?: string;
 }
@@ -222,8 +224,8 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
   const busySessionIds = new Set<string>();
   const liveMessagesBySession = new Map<string, ChatMessage[]>();
   let missionControlObserver: AbortController | undefined;
+  let lastMissionControlRevision: number | undefined;
   let agentSetupObserver: AbortController | undefined;
-  let refreshTimer: ReturnType<typeof setTimeout> | undefined;
   let sidebarRefreshTimer: ReturnType<typeof setTimeout> | undefined;
   const queueRefreshes = new Map<string, Promise<void>>();
   let initializePromise: Promise<void> | undefined;
@@ -298,38 +300,40 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
   async function refreshSidebar(silent = false): Promise<void> {
     if (!silent) updateSidebar({ loading: true, error: "" });
     try {
-      const response = await options.client.getSidebar("", agentSort, sessionSort);
-      const agents = await Promise.all(
-        response.items.map(async (agent) => {
-          const latestSession = agent.sessions.items[0];
-          if (!latestSession) return agent;
-          try {
-            const page = await options.client.getMessages(latestSession.id);
-            return { ...agent, last_message_preview: latestMessagePreview(page.items) };
-          } catch {
-            return agent;
-          }
-        }),
+      const response = await options.client.getBootstrap(
+        store.getState().conversation.selectedSessionId || undefined,
       );
+      const agents = response.sidebar.items;
       const currentAgentId = store.getState().sidebar.selectedAgentId;
       const selectedAgentId = agents.some((agent) => agent.id === currentAgentId)
         ? currentAgentId
         : (agents[0]?.id ?? "");
       updateSidebar({
         agents,
-        nextAgentToken: response.next_page_token,
+        nextAgentToken: response.sidebar.next_page_token,
         selectedAgentId,
         ...(!silent ? { loading: false } : {}),
       });
       syncBusyAgents();
-      if (selectedAgentId && !store.getState().conversation.selectedSessionId) {
-        const session = agents.find((agent) => agent.id === selectedAgentId)?.sessions.items[0];
-        if (session) await selectSession(selectedAgentId, session);
+      if (response.active_session_id && response.active_conversation) {
+        applyConversationSnapshot(response.active_session_id, response.active_conversation);
+        updateConversation({ loading: false });
       }
     } catch (error) {
       updateSidebar({ ...(!silent ? { loading: false } : {}), error: errorMessage(error) });
       throw error;
     }
+  }
+
+  function applyConversationSnapshot(sessionId: string, snapshot: ConversationSnapshot): void {
+    const messages = uniqueMessages(snapshot.messages.items);
+    liveMessagesBySession.set(sessionId, messages);
+    updateConversation({
+      selectedSessionId: sessionId,
+      messages,
+      nextMessageToken: snapshot.messages.next_page_token,
+      queuedTurns: snapshot.queued_turns.items,
+    });
   }
 
   async function initialize(): Promise<void> {
@@ -398,7 +402,6 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     updateConversation({ queuedTurns: previous.filter((turn) => turn.id !== id) });
     try {
       await options.client.deleteQueuedTurn(id);
-      await refreshQueue(sessionId);
     } catch (error) {
       updateConversation({ queuedTurns: previous, error: errorMessage(error) });
       throw error;
@@ -418,7 +421,6 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     });
     try {
       await options.client.reorderQueuedTurn(id, queuePosition);
-      await refreshQueue(sessionId);
     } catch (error) {
       updateConversation({ queuedTurns: previous, error: errorMessage(error) });
       throw error;
@@ -436,7 +438,6 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     setSessionBusy(sessionId, true);
     try {
       await options.client.steerQueuedTurn(id);
-      await refreshQueue(sessionId);
     } catch (error) {
       updateConversation({ queuedTurns: previous, error: errorMessage(error) });
       throw error;
@@ -461,92 +462,84 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       while (!controller.signal.aborted) {
         try {
           updateConversation({ streamStatus: "Live" });
-          await options.client.observeMissionControl(controller.signal, (event) => {
-            if (event.id && seenEventIds.has(event.id)) return;
-            if (event.id) {
-              seenEventIds.add(event.id);
-              if (seenEventIds.size > 1_000) {
-                const oldest = seenEventIds.values().next().value;
-                if (oldest) seenEventIds.delete(oldest);
+          await options.client.observeMissionControl(
+            controller.signal,
+            (event) => {
+              if (event.id && seenEventIds.has(event.id)) return;
+              if (event.id) {
+                const revision = Number(event.id);
+                if (Number.isSafeInteger(revision) && revision >= 0)
+                  lastMissionControlRevision = revision;
+                seenEventIds.add(event.id);
+                if (seenEventIds.size > 1_000) {
+                  const oldest = seenEventIds.values().next().value;
+                  if (oldest) seenEventIds.delete(oldest);
+                }
               }
-            }
-            const sessionId = eventSessionId(event.data);
-            if (!sessionId) {
-              scheduleSidebarRefresh();
-              return;
-            }
-            const state = store.getState();
-            const currentMessages =
-              state.conversation.selectedSessionId === sessionId
-                ? state.conversation.messages
-                : (liveMessagesBySession.get(sessionId) ?? []);
-            const reduction = reduceLiveChatEvent(currentMessages, event, sessionId, now());
-            liveMessagesBySession.set(sessionId, reduction.messages);
-            const name = eventName(event);
-            const busy =
-              eventBusyState(event) ??
-              (name.includes("error") ||
-              (name.includes("message.created") && nestedString(event.data, "role") === "assistant")
-                ? false
-                : undefined);
-            if (busy !== undefined) setSessionBusy(sessionId, busy);
-            if (name.includes("message"))
-              updateSidebarForSessionEvent(
-                store,
-                sessionId,
-                reduction.messages,
-                state.conversation.selectedSessionId !== sessionId,
-                now(),
-              );
-
-            if (state.conversation.selectedSessionId === sessionId) {
-              let queuedTurns = attachPersistedQueuedMessageIds(
-                state.conversation.queuedTurns,
-                state.conversation.messages,
-                reduction.messages,
-              );
-              const dequeued = name.includes("dequeued");
-              const queueItem = name.includes("queue") ? queueEventQueuedTurn(event.data) : null;
-              if (name.includes("queued") && !dequeued && queueItem) {
-                queuedTurns = reconcileQueuedEvent(queuedTurns, queueItem);
+              const sessionId = eventSessionId(event.data);
+              if (!sessionId) {
+                scheduleSidebarRefresh();
+                return;
               }
-              if (dequeued) {
-                const dequeuedTriggerIds = new Set(queueEventTriggerMessageIds(event.data));
-                queuedTurns = queuedTurns.filter(
-                  (turn) =>
-                    turn.id !== queueItem?.id &&
-                    !turn.trigger_message_ids?.some((id) => dequeuedTriggerIds.has(id)),
+              const state = store.getState();
+              const currentMessages =
+                state.conversation.selectedSessionId === sessionId
+                  ? state.conversation.messages
+                  : (liveMessagesBySession.get(sessionId) ?? []);
+              const reduction = reduceLiveChatEvent(currentMessages, event, sessionId, now());
+              liveMessagesBySession.set(sessionId, reduction.messages);
+              const name = eventName(event);
+              const busy =
+                eventBusyState(event) ??
+                (name.includes("error") ||
+                (name.includes("message.created") &&
+                  nestedString(event.data, "role") === "assistant")
+                  ? false
+                  : undefined);
+              if (busy !== undefined) setSessionBusy(sessionId, busy);
+              if (name.includes("message"))
+                updateSidebarForSessionEvent(
+                  store,
+                  sessionId,
+                  reduction.messages,
+                  state.conversation.selectedSessionId !== sessionId,
+                  now(),
                 );
-              }
-              updateConversation({
-                messages: reduction.messages,
-                queuedTurns,
-                activity: [{ ...event, receivedAt: now() }, ...state.conversation.activity].slice(
-                  0,
-                  60,
-                ),
-                turnStatus: eventStatus(event) || state.conversation.turnStatus,
-                ...(busy === undefined ? {} : { agentBusy: busy }),
-              });
-              if (name.includes("queue") && !queueItem)
-                void refreshQueue(sessionId).catch(() => undefined);
-              if (refreshTimer) cancelScheduled(refreshTimer);
-              if (!reduction.streaming) {
-                refreshTimer = schedule(() => {
-                  void refreshMessages(sessionId, true).catch((error) =>
-                    updateConversation({ error: errorMessage(error) }),
+
+              if (state.conversation.selectedSessionId === sessionId) {
+                let queuedTurns = attachPersistedQueuedMessageIds(
+                  state.conversation.queuedTurns,
+                  state.conversation.messages,
+                  reduction.messages,
+                );
+                const dequeued = name.includes("dequeued");
+                const queueItem = name.includes("queue") ? queueEventQueuedTurn(event.data) : null;
+                if (name.includes("queued") && !dequeued && queueItem) {
+                  queuedTurns = reconcileQueuedEvent(queuedTurns, queueItem);
+                }
+                if (dequeued) {
+                  const dequeuedTriggerIds = new Set(queueEventTriggerMessageIds(event.data));
+                  queuedTurns = queuedTurns.filter(
+                    (turn) =>
+                      turn.id !== queueItem?.id &&
+                      !turn.trigger_message_ids?.some((id) => dequeuedTriggerIds.has(id)),
                   );
-                }, 80);
+                }
+                updateConversation({
+                  messages: reduction.messages,
+                  queuedTurns,
+                  activity: [{ ...event, receivedAt: now() }, ...state.conversation.activity].slice(
+                    0,
+                    60,
+                  ),
+                  turnStatus: eventStatus(event) || state.conversation.turnStatus,
+                  ...(busy === undefined ? {} : { agentBusy: busy }),
+                });
               }
-            }
-            if (
-              name.includes("session") ||
-              name.includes("message.created") ||
-              name.includes("message.updated") ||
-              name.includes("queue")
-            )
-              scheduleSidebarRefresh();
-          });
+              if (name.includes("session")) scheduleSidebarRefresh();
+            },
+            lastMissionControlRevision,
+          );
         } catch (error) {
           if (controller.signal.aborted) break;
           updateConversation({ streamStatus: "Reconnecting", error: errorMessage(error) });
@@ -571,7 +564,9 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       error: "",
     });
     try {
-      await Promise.all([refreshMessages(session.id, true), refreshQueue(session.id)]);
+      const snapshot = await options.client.getConversationSnapshot(session.id);
+      if (store.getState().conversation.selectedSessionId === session.id)
+        applyConversationSnapshot(session.id, snapshot);
     } catch (error) {
       updateConversation({ error: errorMessage(error) });
     } finally {
@@ -691,8 +686,7 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     });
     let sessionId = state.conversation.selectedSessionId;
     try {
-      if (!sessionId) sessionId = await ensureSession(input.title || titleFrom(text));
-      if (!activeAtDispatch) {
+      if (!activeAtDispatch && sessionId) {
         const optimistic: ChatMessage = {
           id: `optimistic-${createId()}`,
           type: "ui",
@@ -707,32 +701,26 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
         });
         setSessionBusy(sessionId, true);
       }
-      const responsePromise = options.client.sendMessage(
-        agentId,
-        sessionId,
+      const responsePromise = options.client.submitTurn(agentId, {
+        ...(sessionId ? { sessionId } : {}),
+        title: input.title || titleFrom(text),
         text,
-        input.attachmentIds,
-      );
+        attachments:
+          input.attachmentCompletions ??
+          (input.attachmentIds ?? []).map((attachmentId) => ({ attachmentId })),
+      });
       // Mission Control's send endpoint is the sole durable queue producer. Keep the local queued
       // turn visible while that request is pending; queue SSE events own durable reconciliation.
       updateConversation({ submitting: false });
       const response = await responsePromise;
-      const persistedMessages = store
-        .getState()
-        .conversation.messages.filter((message) => !message.id.startsWith("optimistic-"));
-      const nextMessages = uniqueMessages([...persistedMessages, ...response.items]);
-      liveMessagesBySession.set(sessionId, nextMessages);
+      sessionId = response.session.id;
+      updateSidebar({
+        agents: addSession(store.getState().sidebar.agents, agentId, response.session),
+      });
+      applyConversationSnapshot(sessionId, response.conversation);
       updateConversation({
-        messages: nextMessages,
-        queuedTurns: attachPersistedQueuedMessageIds(
-          store.getState().conversation.queuedTurns,
-          persistedMessages,
-          nextMessages,
-        ),
-        nextMessageToken: response.next_page_token,
         turnStatus: activeAtDispatch ? "Queued" : "Completed",
       });
-      await Promise.all([refreshSidebar(true), refreshQueue(sessionId)]);
     } catch (error) {
       updateConversation({
         error: errorMessage(error),
@@ -1010,6 +998,7 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       stopRoutinePolling();
       clearSignalErrors();
       busySessionIds.clear();
+      lastMissionControlRevision = undefined;
       liveMessagesBySession.clear();
       options.agentSetupPersistence?.save(null);
       store.setState({
@@ -1064,7 +1053,6 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       missionControlObserver?.abort();
       agentSetupObserver?.abort();
       stopRoutinePolling();
-      if (refreshTimer) cancelScheduled(refreshTimer);
       if (sidebarRefreshTimer) cancelScheduled(sidebarRefreshTimer);
       queueRefreshes.clear();
     },

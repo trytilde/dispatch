@@ -7891,6 +7891,213 @@
         ]
       }
     },
+    "/api/v1/team/{team_id}/chatkit/mission-control/agents/{agent_id}/turns": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Submit Mission Control turn",
+        "description": "Creates a session when needed, finalizes uploaded attachments, sends the owner message, and returns canonical conversation state.",
+        "operationId": "chatkit-mission-control-submit-turn",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "description": "Agent inbox ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitMissionControlTurnRequestInner"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Submitted Mission Control turn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitMissionControlTurnResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/mission-control/bootstrap": {
+      "get": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Bootstrap Mission Control",
+        "description": "Returns the sidebar and an optional active conversation snapshot in one request.",
+        "operationId": "chatkit-mission-control-bootstrap",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "session_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "message_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "queue_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "active_session_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/WrappedUuidV4"
+                }
+              ]
+            }
+          },
+          {
+            "name": "agent_sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "session_sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mission Control bootstrap projection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionControlBootstrapResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
     "/api/v1/team/{team_id}/chatkit/mission-control/sessions/{session_id}/interrupt": {
       "post": {
         "tags": [
@@ -8149,6 +8356,85 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/mission-control/sessions/{session_id}/snapshot": {
+      "get": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Get Mission Control conversation snapshot",
+        "description": "Returns messages, pending queued turns, and the durable event revision for one session.",
+        "operationId": "chatkit-mission-control-conversation-snapshot",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "Session ID",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "message_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "queue_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mission Control conversation snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionControlConversationSnapshot"
                 }
               }
             }
@@ -9395,6 +9681,97 @@
           },
           "404": {
             "description": "Attachment Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/session/{session_id}/attachments/upload": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Create attachment uploads",
+        "description": "Creates up to ten ChatKit attachment rows and returns their presigned uploads in one request.",
+        "operationId": "create-attachment-uploads",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "Session ID",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAttachmentUploadsInner"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Create attachment uploads",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateAttachmentUploadsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
               "application/json": {
                 "schema": {
@@ -15771,6 +16148,202 @@
         ]
       }
     },
+    "/api/v1/team/{team_id}/mcp/mcp-server/{mcp_server_instance_id}/tool-group/{tool_group_instance_id}": {
+      "put": {
+        "tags": [
+          "mcp",
+          "v1"
+        ],
+        "summary": "Bind tool group to MCP server",
+        "description": "Enables every tool in a tool-group instance and maps it onto the MCP server idempotently.",
+        "operationId": "bind-tool-group-to-mcp-server",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mcp_server_instance_id",
+            "in": "path",
+            "description": "MCP server instance ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tool_group_instance_id",
+            "in": "path",
+            "description": "Tool group instance ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bound tool group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpServerInstanceSerializedWithFunctions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "mcp",
+          "v1"
+        ],
+        "summary": "Unbind tool group from MCP server",
+        "description": "Removes every mapping for a tool-group instance from the MCP server idempotently.",
+        "operationId": "unbind-tool-group-from-mcp-server",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mcp_server_instance_id",
+            "in": "path",
+            "description": "MCP server instance ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tool_group_instance_id",
+            "in": "path",
+            "description": "Tool group instance ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unbound tool group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpServerInstanceSerializedWithFunctions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
     "/api/v1/team/{team_id}/mcp/provider-catalog": {
       "get": {
         "tags": [
@@ -17378,6 +17951,28 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "wait_for_status",
+            "in": "query",
+            "description": "Hold the request until this status is observed or the timeout expires.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "style": "form"
+          },
+          {
+            "name": "timeout_ms",
+            "in": "query",
+            "description": "Long-poll timeout in milliseconds, clamped to 30 seconds.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            },
+            "style": "form"
           },
           {
             "name": "team_id",
@@ -19307,6 +19902,124 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/team/{team_id}/openbot/agents/{agent_id}/bundle": {
+      "put": {
+        "tags": [
+          "openbot",
+          "v1"
+        ],
+        "summary": "Reconcile OpenBot agent bundle",
+        "description": "Idempotently reconciles the agent, Mission Control channel, authored skills and registry, MCP server, and tool-group bindings in one request.",
+        "operationId": "reconcile-openbot-agent-bundle",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReconcileOpenBotAgentBundleBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconcileOpenBotAgentBundleResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/openbot/plugins/catalog": {
+      "get": {
+        "tags": [
+          "openbot",
+          "v1"
+        ],
+        "summary": "Get the OpenBot plugins catalog",
+        "description": "Returns the MCP providers, accounts, servers, skills, providers, and registries needed by the OpenBot plugins screen in one request.",
+        "operationId": "get-openbot-plugins-catalog",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenBotPluginsCatalogResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
       }
     },
     "/api/v1/team/{team_id}/provider-setup/catalog": {
@@ -30370,6 +31083,36 @@
           }
         }
       },
+      "CreateAttachmentUploadsInner": {
+        "type": "object",
+        "description": "Batch of attachment upload requests for one ChatKit session.",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateAttachmentUploadInner"
+            }
+          }
+        }
+      },
+      "CreateAttachmentUploadsResponse": {
+        "type": "object",
+        "description": "Batch of presigned attachment uploads.",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateAttachmentUploadResponse"
+            }
+          }
+        }
+      },
       "CreateBrowserDefinitionInner": {
         "type": "object",
         "description": "Create-browser body.",
@@ -34436,6 +35179,13 @@
             "items": {
               "$ref": "#/components/schemas/ProviderSetupDescriptor"
             }
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WrappedJsonValue"
+            },
+            "description": "Existing domain resources that can be selected without another list request."
           }
         }
       },
@@ -36063,6 +36813,12 @@
           "id": {
             "type": "string"
           },
+          "last_message_preview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "last_user_message_at": {
             "oneOf": [
               {
@@ -36084,6 +36840,105 @@
           },
           "updated_at": {
             "$ref": "#/components/schemas/WrappedChronoDateTime"
+          }
+        }
+      },
+      "MissionControlAttachmentCompletion": {
+        "type": "object",
+        "description": "Attachment upload details finalized atomically with a submitted turn.",
+        "required": [
+          "attachment_id"
+        ],
+        "properties": {
+          "attachment_id": {
+            "$ref": "#/components/schemas/WrappedUuidV4"
+          },
+          "sha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size_bytes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "MissionControlBootstrapResponse": {
+        "type": "object",
+        "description": "Mission Control bootstrap projection for the sidebar and optional active conversation.",
+        "required": [
+          "sidebar"
+        ],
+        "properties": {
+          "active_conversation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MissionControlConversationSnapshot"
+              }
+            ]
+          },
+          "active_session_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedUuidV4"
+              }
+            ]
+          },
+          "sidebar": {
+            "$ref": "#/components/schemas/MissionControlSidebarResponse"
+          }
+        }
+      },
+      "MissionControlConversationSnapshot": {
+        "type": "object",
+        "description": "Initial messages and pending queue state for one Mission Control session.",
+        "required": [
+          "messages",
+          "queued_turns",
+          "snapshot_revision"
+        ],
+        "properties": {
+          "messages": {
+            "$ref": "#/components/schemas/MessagePaginatedResponse"
+          },
+          "queued_turns": {
+            "$ref": "#/components/schemas/MissionControlQueuedTurns"
+          },
+          "snapshot_revision": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "MissionControlQueuedTurns": {
+        "type": "object",
+        "description": "Concrete pending-turn page used by Mission Control aggregate responses.",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatKitAgentTurnQueueItem"
+            }
+          },
+          "next_page_token": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -36231,6 +37086,29 @@
           }
         }
       },
+      "OpenBotAgentSkillInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "content",
+          "source_path"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "source_path": {
+            "type": "string"
+          }
+        }
+      },
       "OpenBotDeployment": {
         "type": "object",
         "required": [
@@ -36288,6 +37166,63 @@
           },
           "updated_at": {
             "$ref": "#/components/schemas/WrappedChronoDateTime"
+          }
+        }
+      },
+      "OpenBotPluginsCatalogResponse": {
+        "type": "object",
+        "description": "Inputs needed to render and mutate the OpenBot plugins screen.",
+        "required": [
+          "tool_providers",
+          "tool_accounts",
+          "mcp_servers",
+          "proxied_mcp_servers",
+          "skills",
+          "skill_providers",
+          "skill_registries"
+        ],
+        "properties": {
+          "mcp_servers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WrappedJsonValue"
+            }
+          },
+          "proxied_mcp_servers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WrappedJsonValue"
+            }
+          },
+          "skill_providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WrappedJsonValue"
+            }
+          },
+          "skill_registries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WrappedJsonValue"
+            }
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WrappedJsonValue"
+            }
+          },
+          "tool_accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WrappedJsonValue"
+            }
+          },
+          "tool_providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WrappedJsonValue"
+            }
           }
         }
       },
@@ -38603,6 +39538,102 @@
           },
           "query": {
             "type": "string"
+          }
+        }
+      },
+      "ReconcileOpenBotAgentBundleBody": {
+        "type": "object",
+        "required": [
+          "display_name",
+          "endpoint_url",
+          "channel_id",
+          "channel_display_name",
+          "skill_registry_name",
+          "skill_registry_description",
+          "mcp_server_id",
+          "mcp_server_name"
+        ],
+        "properties": {
+          "channel_display_name": {
+            "type": "string"
+          },
+          "channel_id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "endpoint_credentials_available": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether the caller still has the agent's one-time endpoint credentials.\n`false` replaces an otherwise unrecoverable existing agent before reconciliation."
+          },
+          "endpoint_url": {
+            "type": "string"
+          },
+          "local_running_endpoint": {
+            "type": "boolean"
+          },
+          "mcp_server_id": {
+            "type": "string"
+          },
+          "mcp_server_name": {
+            "type": "string"
+          },
+          "skill_registry_description": {
+            "type": "string"
+          },
+          "skill_registry_name": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpenBotAgentSkillInput"
+            }
+          },
+          "tool_group_instance_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ReconcileOpenBotAgentBundleResponse": {
+        "type": "object",
+        "required": [
+          "agent",
+          "channel",
+          "skill_registry",
+          "mcp_server"
+        ],
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/Inbox"
+          },
+          "api_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "channel": {
+            "$ref": "#/components/schemas/Inbox"
+          },
+          "mcp_server": {
+            "$ref": "#/components/schemas/McpServerInstanceSerializedWithFunctions"
+          },
+          "skill_registry": {
+            "$ref": "#/components/schemas/SkillRegistry"
+          },
+          "webhook_signing_key": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -41831,6 +42862,7 @@
         "type": "object",
         "description": "Stored event representation returned by event-history routes.",
         "required": [
+          "revision",
           "id",
           "kind",
           "payload",
@@ -41869,6 +42901,11 @@
           "payload": {
             "$ref": "#/components/schemas/WrappedJsonValue"
           },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Monotonically increasing durable event revision."
+          },
           "session_id": {
             "type": [
               "string",
@@ -41891,6 +42928,56 @@
           },
           "next_page_token": {
             "type": "string"
+          }
+        }
+      },
+      "SubmitMissionControlTurnRequestInner": {
+        "type": "object",
+        "description": "Body for creating a session when needed and submitting one owner turn.",
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MissionControlAttachmentCompletion"
+            }
+          },
+          "session_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedUuidV4"
+              }
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SubmitMissionControlTurnResponse": {
+        "type": "object",
+        "description": "Result of submitting one owner turn with canonical conversation state.",
+        "required": [
+          "session",
+          "conversation"
+        ],
+        "properties": {
+          "conversation": {
+            "$ref": "#/components/schemas/MissionControlConversationSnapshot"
+          },
+          "session": {
+            "$ref": "#/components/schemas/Session"
           }
         }
       },

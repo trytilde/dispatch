@@ -2058,6 +2058,98 @@
         }
       }
     },
+    "/api/v1/identity/organizations/{org_id}/openbot/deployments": {
+      "post": {
+        "tags": [
+          "identity",
+          "v1"
+        ],
+        "summary": "Create a hosted OpenBot instance",
+        "description": "Creates an isolated Tilde team, Vercel control and agent projects, a persistent Vercel Sandbox with local Git and a deterministic Vercel project domain, and OIDC-backed AI Gateway access, then starts deployment. Custom Cloudflare DNS is a follow-up.",
+        "operationId": "create_hosted_openbot_deployment",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "description": "Owning Tilde organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHostedOpenBotDeploymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Hosted OpenBot provisioning started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostedOpenBotDeployment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid title or slug",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not an organization administrator",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Hosted OpenBot provisioning is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
     "/api/v1/identity/organizations/{organization_id}": {
       "get": {
         "tags": [
@@ -12302,6 +12394,559 @@
           },
           "403": {
             "description": "Not a team member",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}": {
+      "get": {
+        "tags": [
+          "identity",
+          "v1"
+        ],
+        "summary": "Get a hosted OpenBot instance",
+        "description": "Returns the server-owned Vercel project, Sandbox, image, hostname, and lifecycle state for one team-isolated OpenBot instance.",
+        "operationId": "get_hosted_openbot_instance",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostedOpenBotInstance"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/computer-image": {
+      "put": {
+        "tags": [
+          "identity",
+          "v1"
+        ],
+        "summary": "Set the hosted OpenBot computer image",
+        "description": "Records an immutable VCR digest owned by this instance's control project for subsequent OIDC-authenticated Sandbox creation.",
+        "operationId": "update_hosted_openbot_computer_image",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHostedOpenBotComputerImageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostedOpenBotInstance"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/configuration": {
+      "put": {
+        "tags": [
+          "identity",
+          "v1"
+        ],
+        "summary": "Configure a hosted OpenBot instance",
+        "description": "Installs allowlisted user-owned OpenBot runtime values into the instance's control and agent projects. Tenant, OAuth, Computer, and platform identity are derived from authenticated server state.",
+        "operationId": "configure_hosted_openbot_instance",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigureHostedOpenBotInstanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostedOpenBotInstance"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases": {
+      "post": {
+        "tags": [
+          "identity",
+          "v1"
+        ],
+        "summary": "Create a hosted OpenBot release",
+        "description": "Creates an uploading release with a content-addressed Build Output API file manifest for either the control or agent project.",
+        "operationId": "create_hosted_openbot_release",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHostedOpenBotReleaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostedOpenBotRelease"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases/{release_id}": {
+      "get": {
+        "tags": [
+          "identity",
+          "v1"
+        ],
+        "summary": "Get a hosted OpenBot release",
+        "description": "Returns upload and deployment status, refreshing an in-progress deployment from Vercel when necessary.",
+        "operationId": "get_hosted_openbot_release",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostedOpenBotRelease"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases/{release_id}/files/{sha1}": {
+      "put": {
+        "tags": [
+          "identity",
+          "v1"
+        ],
+        "summary": "Upload a hosted OpenBot release file",
+        "description": "Validates one declared digest and size, then streams the bytes to Vercel's content-addressed deployment file API without exposing the platform token.",
+        "operationId": "upload_hosted_openbot_release_file",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sha1",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostedOpenBotRelease"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases/{release_id}/finalize": {
+      "post": {
+        "tags": [
+          "identity",
+          "v1"
+        ],
+        "summary": "Finalize a hosted OpenBot release",
+        "description": "Requires every manifest file to be uploaded, derives the bound Vercel project server-side, and creates its production deployment.",
+        "operationId": "finalize_hosted_openbot_release",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostedOpenBotRelease"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -29385,6 +30030,24 @@
           }
         }
       },
+      "ConfigureHostedOpenBotInstanceRequest": {
+        "type": "object",
+        "required": [
+          "environment"
+        ],
+        "properties": {
+          "environment": {
+            "type": "object",
+            "description": "User-owned runtime values installed into both tenant projects. Tilde derives tenant,\ninstance, OAuth, Computer, and platform identity from authenticated server state.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ConnectMcpProviderCatalogEntryRequestInner": {
         "type": "object",
         "description": "User-controlled values accepted by every automatic catalogue connection.",
@@ -29911,6 +30574,70 @@
           },
           "tool_group_instance": {
             "$ref": "#/components/schemas/ToolGroupInstanceSerialized"
+          }
+        }
+      },
+      "CreateHostedOpenBotDeploymentRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "slug"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Globally unique label used for deterministic Tilde and Vercel resources."
+          },
+          "title": {
+            "type": "string",
+            "description": "User-facing title for the isolated OpenBot instance and its Tilde team."
+          }
+        }
+      },
+      "CreateHostedOpenBotReleaseFile": {
+        "type": "object",
+        "required": [
+          "path",
+          "sha1",
+          "size",
+          "mode"
+        ],
+        "properties": {
+          "mode": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "path": {
+            "type": "string"
+          },
+          "sha1": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "CreateHostedOpenBotReleaseRequest": {
+        "type": "object",
+        "required": [
+          "service",
+          "source_revision",
+          "files"
+        ],
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateHostedOpenBotReleaseFile"
+            }
+          },
+          "service": {
+            "$ref": "#/components/schemas/HostedOpenBotReleaseService"
+          },
+          "source_revision": {
+            "type": "string"
           }
         }
       },
@@ -32625,6 +33352,267 @@
             "type": "string"
           }
         }
+      },
+      "HostedOpenBotDeployment": {
+        "type": "object",
+        "required": [
+          "instance_id",
+          "title",
+          "slug",
+          "org_id",
+          "team_id",
+          "hostname",
+          "deployment_url",
+          "status",
+          "vercel_control_project",
+          "vercel_agent_project",
+          "vercel_sandbox",
+          "bootstrap_command_id",
+          "oauth"
+        ],
+        "properties": {
+          "bootstrap_command_id": {
+            "type": "string"
+          },
+          "deployment_url": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "instance_id": {
+            "type": "string"
+          },
+          "oauth": {
+            "$ref": "#/components/schemas/OpenBotDeployment"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "vercel_agent_project": {
+            "type": "string"
+          },
+          "vercel_control_project": {
+            "type": "string"
+          },
+          "vercel_sandbox": {
+            "type": "string"
+          }
+        }
+      },
+      "HostedOpenBotInstance": {
+        "type": "object",
+        "required": [
+          "id",
+          "org_id",
+          "team_id",
+          "title",
+          "slug",
+          "hostname",
+          "status",
+          "vercel_control_project_id",
+          "vercel_control_project_name",
+          "vercel_agent_project_id",
+          "vercel_agent_project_name",
+          "vercel_sandbox_name",
+          "computer_service_url",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "bootstrap_command_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "computer_image": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "computer_service_url": {
+            "type": "string"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HostedOpenBotInstanceStatus"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "vercel_agent_project_id": {
+            "type": "string"
+          },
+          "vercel_agent_project_name": {
+            "type": "string"
+          },
+          "vercel_control_project_id": {
+            "type": "string"
+          },
+          "vercel_control_project_name": {
+            "type": "string"
+          },
+          "vercel_sandbox_name": {
+            "type": "string"
+          }
+        }
+      },
+      "HostedOpenBotInstanceStatus": {
+        "type": "string",
+        "enum": [
+          "provisioning",
+          "active",
+          "error",
+          "deleting"
+        ]
+      },
+      "HostedOpenBotRelease": {
+        "type": "object",
+        "required": [
+          "id",
+          "instance_id",
+          "org_id",
+          "team_id",
+          "service",
+          "source_revision",
+          "status",
+          "files",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "deployment_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "error_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HostedOpenBotReleaseFile"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "instance_id": {
+            "type": "string"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "service": {
+            "$ref": "#/components/schemas/HostedOpenBotReleaseService"
+          },
+          "source_revision": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HostedOpenBotReleaseStatus"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "vercel_deployment_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "HostedOpenBotReleaseFile": {
+        "type": "object",
+        "required": [
+          "path",
+          "sha1",
+          "size",
+          "mode",
+          "uploaded"
+        ],
+        "properties": {
+          "mode": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "path": {
+            "type": "string"
+          },
+          "sha1": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "uploaded": {
+            "type": "boolean"
+          }
+        }
+      },
+      "HostedOpenBotReleaseService": {
+        "type": "string",
+        "enum": [
+          "control",
+          "agents"
+        ]
+      },
+      "HostedOpenBotReleaseStatus": {
+        "type": "string",
+        "enum": [
+          "uploading",
+          "finalizing",
+          "deploying",
+          "ready",
+          "failed"
+        ]
       },
       "Human": {
         "type": "object",
@@ -42292,6 +43280,18 @@
               "boolean",
               "null"
             ]
+          }
+        }
+      },
+      "UpdateHostedOpenBotComputerImageRequest": {
+        "type": "object",
+        "required": [
+          "image"
+        ],
+        "properties": {
+          "image": {
+            "type": "string",
+            "description": "Immutable VCR digest scoped to this instance's control project."
           }
         }
       },

@@ -83,6 +83,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
   const controlService = configuration.providers.controlService;
   const auth = configuration.providers.auth;
   const computer = configuration.providers.computer;
+  const deployComputerLifecycle = computer && !computer.externallyManagedLifecycle;
   const inference = configuration.providers.inference;
   const deployAgents = options.service === "all" || options.service === "agents";
   const computerId = deploymentConfiguration.environment.COMPUTER_ID?.trim() || "openbot-computer";
@@ -100,8 +101,10 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
           },
         ]
       : []),
-    ...(options.service === "all" && computer ? [{ id: "computer", provider: computer }] : []),
-    ...(deployAgents && computer
+    ...(options.service === "all" && deployComputerLifecycle
+      ? [{ id: "computer", provider: computer }]
+      : []),
+    ...(deployAgents && deployComputerLifecycle
       ? [
           {
             id: "agent-workspaces",
@@ -146,7 +149,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
           },
         ]
       : []),
-    ...(options.service === "all" && computer
+    ...(options.service === "all" && deployComputerLifecycle
       ? [
           {
             id: "development-sandbox",

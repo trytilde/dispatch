@@ -17,6 +17,7 @@ import type {
 } from "../contracts/auth.js";
 import type { ActivityEvent } from "../contracts/events.js";
 import type { ChatMessage, ChatPart } from "../contracts/messages.js";
+import type { AttachmentCompletion, ConversationSnapshot } from "../contracts/mission-control.js";
 import { QueuedTurnSchema, type QueuedTurn } from "../contracts/queue.js";
 import type { CreateRoutineInput, Routine, UpdateRoutineInput } from "../contracts/routines.js";
 import type {
@@ -104,6 +105,7 @@ export interface OpenBotState {
 export interface SendMessageInput {
   text: string;
   attachmentIds?: string[];
+  attachmentCompletions?: AttachmentCompletion[];
   optimisticParts?: ChatPart[];
   title?: string;
 }
@@ -223,7 +225,6 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
   const liveMessagesBySession = new Map<string, ChatMessage[]>();
   let missionControlObserver: AbortController | undefined;
   let agentSetupObserver: AbortController | undefined;
-  let refreshTimer: ReturnType<typeof setTimeout> | undefined;
   let sidebarRefreshTimer: ReturnType<typeof setTimeout> | undefined;
   const queueRefreshes = new Map<string, Promise<void>>();
   let initializePromise: Promise<void> | undefined;
@@ -298,38 +299,40 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
   async function refreshSidebar(silent = false): Promise<void> {
     if (!silent) updateSidebar({ loading: true, error: "" });
     try {
-      const response = await options.client.getSidebar("", agentSort, sessionSort);
-      const agents = await Promise.all(
-        response.items.map(async (agent) => {
-          const latestSession = agent.sessions.items[0];
-          if (!latestSession) return agent;
-          try {
-            const page = await options.client.getMessages(latestSession.id);
-            return { ...agent, last_message_preview: latestMessagePreview(page.items) };
-          } catch {
-            return agent;
-          }
-        }),
+      const response = await options.client.getBootstrap(
+        store.getState().conversation.selectedSessionId || undefined,
       );
+      const agents = response.sidebar.items;
       const currentAgentId = store.getState().sidebar.selectedAgentId;
       const selectedAgentId = agents.some((agent) => agent.id === currentAgentId)
         ? currentAgentId
         : (agents[0]?.id ?? "");
       updateSidebar({
         agents,
-        nextAgentToken: response.next_page_token,
+        nextAgentToken: response.sidebar.next_page_token,
         selectedAgentId,
         ...(!silent ? { loading: false } : {}),
       });
       syncBusyAgents();
-      if (selectedAgentId && !store.getState().conversation.selectedSessionId) {
-        const session = agents.find((agent) => agent.id === selectedAgentId)?.sessions.items[0];
-        if (session) await selectSession(selectedAgentId, session);
+      if (response.active_session_id && response.active_conversation) {
+        applyConversationSnapshot(response.active_session_id, response.active_conversation);
+        updateConversation({ loading: false });
       }
     } catch (error) {
       updateSidebar({ ...(!silent ? { loading: false } : {}), error: errorMessage(error) });
       throw error;
     }
+  }
+
+  function applyConversationSnapshot(sessionId: string, snapshot: ConversationSnapshot): void {
+    const messages = uniqueMessages(snapshot.messages.items);
+    liveMessagesBySession.set(sessionId, messages);
+    updateConversation({
+      selectedSessionId: sessionId,
+      messages,
+      nextMessageToken: snapshot.messages.next_page_token,
+      queuedTurns: snapshot.queued_turns.items,
+    });
   }
 
   async function initialize(): Promise<void> {
@@ -398,7 +401,6 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     updateConversation({ queuedTurns: previous.filter((turn) => turn.id !== id) });
     try {
       await options.client.deleteQueuedTurn(id);
-      await refreshQueue(sessionId);
     } catch (error) {
       updateConversation({ queuedTurns: previous, error: errorMessage(error) });
       throw error;
@@ -418,7 +420,6 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     });
     try {
       await options.client.reorderQueuedTurn(id, queuePosition);
-      await refreshQueue(sessionId);
     } catch (error) {
       updateConversation({ queuedTurns: previous, error: errorMessage(error) });
       throw error;
@@ -436,7 +437,6 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     setSessionBusy(sessionId, true);
     try {
       await options.client.steerQueuedTurn(id);
-      await refreshQueue(sessionId);
     } catch (error) {
       updateConversation({ queuedTurns: previous, error: errorMessage(error) });
       throw error;
@@ -528,24 +528,8 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
                 turnStatus: eventStatus(event) || state.conversation.turnStatus,
                 ...(busy === undefined ? {} : { agentBusy: busy }),
               });
-              if (name.includes("queue") && !queueItem)
-                void refreshQueue(sessionId).catch(() => undefined);
-              if (refreshTimer) cancelScheduled(refreshTimer);
-              if (!reduction.streaming) {
-                refreshTimer = schedule(() => {
-                  void refreshMessages(sessionId, true).catch((error) =>
-                    updateConversation({ error: errorMessage(error) }),
-                  );
-                }, 80);
-              }
             }
-            if (
-              name.includes("session") ||
-              name.includes("message.created") ||
-              name.includes("message.updated") ||
-              name.includes("queue")
-            )
-              scheduleSidebarRefresh();
+            if (name.includes("session")) scheduleSidebarRefresh();
           });
         } catch (error) {
           if (controller.signal.aborted) break;
@@ -571,7 +555,9 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       error: "",
     });
     try {
-      await Promise.all([refreshMessages(session.id, true), refreshQueue(session.id)]);
+      const snapshot = await options.client.getConversationSnapshot(session.id);
+      if (store.getState().conversation.selectedSessionId === session.id)
+        applyConversationSnapshot(session.id, snapshot);
     } catch (error) {
       updateConversation({ error: errorMessage(error) });
     } finally {
@@ -691,8 +677,7 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     });
     let sessionId = state.conversation.selectedSessionId;
     try {
-      if (!sessionId) sessionId = await ensureSession(input.title || titleFrom(text));
-      if (!activeAtDispatch) {
+      if (!activeAtDispatch && sessionId) {
         const optimistic: ChatMessage = {
           id: `optimistic-${createId()}`,
           type: "ui",
@@ -707,32 +692,26 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
         });
         setSessionBusy(sessionId, true);
       }
-      const responsePromise = options.client.sendMessage(
-        agentId,
-        sessionId,
+      const responsePromise = options.client.submitTurn(agentId, {
+        ...(sessionId ? { sessionId } : {}),
+        title: input.title || titleFrom(text),
         text,
-        input.attachmentIds,
-      );
+        attachments:
+          input.attachmentCompletions ??
+          (input.attachmentIds ?? []).map((attachmentId) => ({ attachmentId })),
+      });
       // Mission Control's send endpoint is the sole durable queue producer. Keep the local queued
       // turn visible while that request is pending; queue SSE events own durable reconciliation.
       updateConversation({ submitting: false });
       const response = await responsePromise;
-      const persistedMessages = store
-        .getState()
-        .conversation.messages.filter((message) => !message.id.startsWith("optimistic-"));
-      const nextMessages = uniqueMessages([...persistedMessages, ...response.items]);
-      liveMessagesBySession.set(sessionId, nextMessages);
+      sessionId = response.session.id;
+      updateSidebar({
+        agents: addSession(store.getState().sidebar.agents, agentId, response.session),
+      });
+      applyConversationSnapshot(sessionId, response.conversation);
       updateConversation({
-        messages: nextMessages,
-        queuedTurns: attachPersistedQueuedMessageIds(
-          store.getState().conversation.queuedTurns,
-          persistedMessages,
-          nextMessages,
-        ),
-        nextMessageToken: response.next_page_token,
         turnStatus: activeAtDispatch ? "Queued" : "Completed",
       });
-      await Promise.all([refreshSidebar(true), refreshQueue(sessionId)]);
     } catch (error) {
       updateConversation({
         error: errorMessage(error),
@@ -1064,7 +1043,6 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       missionControlObserver?.abort();
       agentSetupObserver?.abort();
       stopRoutinePolling();
-      if (refreshTimer) cancelScheduled(refreshTimer);
       if (sidebarRefreshTimer) cancelScheduled(sidebarRefreshTimer);
       queueRefreshes.clear();
     },

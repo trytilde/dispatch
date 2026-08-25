@@ -810,6 +810,20 @@ export type CreateAttachmentUploadResponse = {
 };
 
 /**
+ * Batch of attachment upload requests for one ChatKit session.
+ */
+export type CreateAttachmentUploadsInner = {
+    items: Array<CreateAttachmentUploadInner>;
+};
+
+/**
+ * Batch of presigned attachment uploads.
+ */
+export type CreateAttachmentUploadsResponse = {
+    items: Array<CreateAttachmentUploadResponse>;
+};
+
+/**
  * Create-browser body.
  */
 export type CreateBrowserDefinitionInner = {
@@ -1983,6 +1997,10 @@ export type ListOpenBotDeploymentsResponse = {
 export type ListProviderSetupCatalogResponse = {
     domain: string;
     providers: Array<ProviderSetupDescriptor>;
+    /**
+     * Existing domain resources that can be selected without another list request.
+     */
+    resources?: Array<WrappedJsonValue>;
 };
 
 export type ListProxiedSkillProvidersResponse = {
@@ -2501,11 +2519,47 @@ export type MissionControlAgentSummary = {
     endpoint_url?: string | null;
     has_vercel_ui_endpoint: boolean;
     id: string;
+    last_message_preview?: string | null;
     last_user_message_at?: null | WrappedChronoDateTime;
     provider_id: string;
     sessions: MissionControlAgentSessionsResponse;
     status: string;
     updated_at: WrappedChronoDateTime;
+};
+
+/**
+ * Attachment upload details finalized atomically with a submitted turn.
+ */
+export type MissionControlAttachmentCompletion = {
+    attachment_id: WrappedUuidV4;
+    sha256?: string | null;
+    size_bytes?: number | null;
+};
+
+/**
+ * Mission Control bootstrap projection for the sidebar and optional active conversation.
+ */
+export type MissionControlBootstrapResponse = {
+    active_conversation?: null | MissionControlConversationSnapshot;
+    active_session_id?: null | WrappedUuidV4;
+    sidebar: MissionControlSidebarResponse;
+};
+
+/**
+ * Initial messages and pending queue state for one Mission Control session.
+ */
+export type MissionControlConversationSnapshot = {
+    messages: MessagePaginatedResponse;
+    queued_turns: MissionControlQueuedTurns;
+    snapshot_revision: number;
+};
+
+/**
+ * Concrete pending-turn page used by Mission Control aggregate responses.
+ */
+export type MissionControlQueuedTurns = {
+    items: Array<ChatKitAgentTurnQueueItem>;
+    next_page_token?: string | null;
 };
 
 /**
@@ -2557,6 +2611,13 @@ export type OntologyRelationshipTypeDefinition = {
     target_page_type_keys: Array<string>;
 };
 
+export type OpenBotAgentSkillInput = {
+    content: string;
+    description: string;
+    name: string;
+    source_path: string;
+};
+
 export type OpenBotDeployment = {
     audience: string;
     authorization_endpoint: string;
@@ -2570,6 +2631,19 @@ export type OpenBotDeployment = {
     scope: string;
     token_endpoint: string;
     updated_at: WrappedChronoDateTime;
+};
+
+/**
+ * Inputs needed to render and mutate the OpenBot plugins screen.
+ */
+export type OpenBotPluginsCatalogResponse = {
+    mcp_servers: Array<WrappedJsonValue>;
+    proxied_mcp_servers: Array<WrappedJsonValue>;
+    skill_providers: Array<WrappedJsonValue>;
+    skill_registries: Array<WrappedJsonValue>;
+    skills: Array<WrappedJsonValue>;
+    tool_accounts: Array<WrappedJsonValue>;
+    tool_providers: Array<WrappedJsonValue>;
 };
 
 export type OrgOidcProvider = {
@@ -3201,6 +3275,29 @@ export type ReasoningUiPart = {
 export type RecallMemoryBody = {
     max_tokens?: number | null;
     query: string;
+};
+
+export type ReconcileOpenBotAgentBundleBody = {
+    channel_display_name: string;
+    channel_id: string;
+    display_name: string;
+    endpoint_url: string;
+    local_running_endpoint?: boolean;
+    mcp_server_id: string;
+    mcp_server_name: string;
+    skill_registry_description: string;
+    skill_registry_name: string;
+    skills?: Array<OpenBotAgentSkillInput>;
+    tool_group_instance_ids?: Array<string>;
+};
+
+export type ReconcileOpenBotAgentBundleResponse = {
+    agent: Inbox;
+    api_key?: string | null;
+    channel: Inbox;
+    mcp_server: McpServerInstanceSerializedWithFunctions;
+    skill_registry: SkillRegistry;
+    webhook_signing_key?: string | null;
 };
 
 export type ReflectMemoryBody = {
@@ -4175,12 +4272,34 @@ export type StoredEvent = {
     kind: string;
     parent_session_id?: string | null;
     payload: WrappedJsonValue;
+    /**
+     * Monotonically increasing durable event revision.
+     */
+    revision: number;
     session_id?: string | null;
 };
 
 export type StoredEventPaginatedResponse = {
     items: Array<StoredEvent>;
     next_page_token?: string;
+};
+
+/**
+ * Body for creating a session when needed and submitting one owner turn.
+ */
+export type SubmitMissionControlTurnRequestInner = {
+    attachments?: Array<MissionControlAttachmentCompletion>;
+    session_id?: null | WrappedUuidV4;
+    text: string;
+    title?: string | null;
+};
+
+/**
+ * Result of submitting one owner turn with canonical conversation state.
+ */
+export type SubmitMissionControlTurnResponse = {
+    conversation: MissionControlConversationSnapshot;
+    session: Session;
 };
 
 /**
@@ -8786,6 +8905,61 @@ export type ChatkitMissionControlSendMessageResponses = {
 
 export type ChatkitMissionControlSendMessageResponse = ChatkitMissionControlSendMessageResponses[keyof ChatkitMissionControlSendMessageResponses];
 
+export type ChatkitMissionControlSubmitTurnData = {
+    body: SubmitMissionControlTurnRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Agent inbox ID
+         */
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/mission-control/agents/{agent_id}/turns';
+};
+
+export type ChatkitMissionControlSubmitTurnResponses = {
+    /**
+     * Submitted Mission Control turn
+     */
+    200: SubmitMissionControlTurnResponse;
+};
+
+export type ChatkitMissionControlSubmitTurnResponse = ChatkitMissionControlSubmitTurnResponses[keyof ChatkitMissionControlSubmitTurnResponses];
+
+export type ChatkitMissionControlBootstrapData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: {
+        agent_page_size?: number;
+        session_page_size?: number;
+        message_page_size?: number;
+        queue_page_size?: number;
+        active_session_id?: null | WrappedUuidV4;
+        agent_sort?: string | null;
+        session_sort?: string | null;
+        q?: string | null;
+    };
+    url: '/api/v1/team/{team_id}/chatkit/mission-control/bootstrap';
+};
+
+export type ChatkitMissionControlBootstrapResponses = {
+    /**
+     * Mission Control bootstrap projection
+     */
+    200: MissionControlBootstrapResponse;
+};
+
+export type ChatkitMissionControlBootstrapResponse = ChatkitMissionControlBootstrapResponses[keyof ChatkitMissionControlBootstrapResponses];
+
 export type ChatkitMissionControlInterruptSessionData = {
     body?: never;
     path: {
@@ -8888,6 +9062,34 @@ export type ChatkitMissionControlRenameThreadResponses = {
 };
 
 export type ChatkitMissionControlRenameThreadResponse = ChatkitMissionControlRenameThreadResponses[keyof ChatkitMissionControlRenameThreadResponses];
+
+export type ChatkitMissionControlConversationSnapshotData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Session ID
+         */
+        session_id: WrappedUuidV4;
+    };
+    query?: {
+        message_page_size?: number;
+        queue_page_size?: number;
+    };
+    url: '/api/v1/team/{team_id}/chatkit/mission-control/sessions/{session_id}/snapshot';
+};
+
+export type ChatkitMissionControlConversationSnapshotResponses = {
+    /**
+     * Mission Control conversation snapshot
+     */
+    200: MissionControlConversationSnapshot;
+};
+
+export type ChatkitMissionControlConversationSnapshotResponse = ChatkitMissionControlConversationSnapshotResponses[keyof ChatkitMissionControlConversationSnapshotResponses];
 
 export type ChatkitMissionControlSidebarData = {
     body?: never;
@@ -9398,6 +9600,44 @@ export type GetAttachmentDownloadUrlResponses = {
 };
 
 export type GetAttachmentDownloadUrlResponse2 = GetAttachmentDownloadUrlResponses[keyof GetAttachmentDownloadUrlResponses];
+
+export type CreateAttachmentUploadsData = {
+    body: CreateAttachmentUploadsInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Session ID
+         */
+        session_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/session/{session_id}/attachments/upload';
+};
+
+export type CreateAttachmentUploadsErrors = {
+    /**
+     * Bad Request
+     */
+    400: Error;
+    /**
+     * Internal Server Error
+     */
+    500: Error;
+};
+
+export type CreateAttachmentUploadsError = CreateAttachmentUploadsErrors[keyof CreateAttachmentUploadsErrors];
+
+export type CreateAttachmentUploadsResponses = {
+    /**
+     * Create attachment uploads
+     */
+    200: CreateAttachmentUploadsResponse;
+};
+
+export type CreateAttachmentUploadsResponse2 = CreateAttachmentUploadsResponses[keyof CreateAttachmentUploadsResponses];
 
 export type GetSessionEventHistoryData = {
     body?: never;
@@ -11986,6 +12226,98 @@ export type McpServerPlaygroundChatResponses = {
     200: unknown;
 };
 
+export type UnbindToolGroupFromMcpServerData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * MCP server instance ID
+         */
+        mcp_server_instance_id: string;
+        /**
+         * Tool group instance ID
+         */
+        tool_group_instance_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/mcp/mcp-server/{mcp_server_instance_id}/tool-group/{tool_group_instance_id}';
+};
+
+export type UnbindToolGroupFromMcpServerErrors = {
+    /**
+     * Bad Request
+     */
+    400: Error;
+    /**
+     * Not Found
+     */
+    404: Error;
+    /**
+     * Internal Server Error
+     */
+    500: Error;
+};
+
+export type UnbindToolGroupFromMcpServerError = UnbindToolGroupFromMcpServerErrors[keyof UnbindToolGroupFromMcpServerErrors];
+
+export type UnbindToolGroupFromMcpServerResponses = {
+    /**
+     * Unbound tool group
+     */
+    200: McpServerInstanceSerializedWithFunctions;
+};
+
+export type UnbindToolGroupFromMcpServerResponse = UnbindToolGroupFromMcpServerResponses[keyof UnbindToolGroupFromMcpServerResponses];
+
+export type BindToolGroupToMcpServerData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * MCP server instance ID
+         */
+        mcp_server_instance_id: string;
+        /**
+         * Tool group instance ID
+         */
+        tool_group_instance_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/mcp/mcp-server/{mcp_server_instance_id}/tool-group/{tool_group_instance_id}';
+};
+
+export type BindToolGroupToMcpServerErrors = {
+    /**
+     * Bad Request
+     */
+    400: Error;
+    /**
+     * Not Found
+     */
+    404: Error;
+    /**
+     * Internal Server Error
+     */
+    500: Error;
+};
+
+export type BindToolGroupToMcpServerError = BindToolGroupToMcpServerErrors[keyof BindToolGroupToMcpServerErrors];
+
+export type BindToolGroupToMcpServerResponses = {
+    /**
+     * Bound tool group
+     */
+    200: McpServerInstanceSerializedWithFunctions;
+};
+
+export type BindToolGroupToMcpServerResponse = BindToolGroupToMcpServerResponses[keyof BindToolGroupToMcpServerResponses];
+
 export type ListMcpProviderCatalogData = {
     body?: never;
     path: {
@@ -12671,7 +13003,16 @@ export type UpdateToolGroupInstanceData = {
          */
         tool_group_instance_id: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Hold the request until this status is observed or the timeout expires.
+         */
+        wait_for_status?: string;
+        /**
+         * Long-poll timeout in milliseconds, clamped to 30 seconds.
+         */
+        timeout_ms?: number;
+    };
     url: '/api/v1/team/{team_id}/mcp/tool-group/{tool_group_instance_id}';
 };
 
@@ -13392,6 +13733,43 @@ export type RetryMemorySourceSyncResponses = {
 };
 
 export type RetryMemorySourceSyncResponse = RetryMemorySourceSyncResponses[keyof RetryMemorySourceSyncResponses];
+
+export type ReconcileOpenbotAgentBundleData = {
+    body: ReconcileOpenBotAgentBundleBody;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/openbot/agents/{agent_id}/bundle';
+};
+
+export type ReconcileOpenbotAgentBundleResponses = {
+    200: ReconcileOpenBotAgentBundleResponse;
+};
+
+export type ReconcileOpenbotAgentBundleResponse = ReconcileOpenbotAgentBundleResponses[keyof ReconcileOpenbotAgentBundleResponses];
+
+export type GetOpenbotPluginsCatalogData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/openbot/plugins/catalog';
+};
+
+export type GetOpenbotPluginsCatalogResponses = {
+    200: OpenBotPluginsCatalogResponse;
+};
+
+export type GetOpenbotPluginsCatalogResponse = GetOpenbotPluginsCatalogResponses[keyof GetOpenbotPluginsCatalogResponses];
 
 export type ProviderSetupCatalogData = {
     body?: never;

@@ -4,8 +4,6 @@ import { join } from "node:path";
 import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { TildeAgentProvider } from "./index.js";
-import { TildeSkillReconciler } from "./skills.js";
-import { TildeToolReconciler } from "./tools.js";
 
 const config = {
   apiKey: "secret",
@@ -26,11 +24,7 @@ describe("TildeAgentProvider", () => {
   });
 
   it("idempotently reconciles one agent and persists its credentials", async () => {
-    const skills = vi.spyOn(TildeSkillReconciler.prototype, "deploy").mockResolvedValue();
-    const tools = vi.spyOn(TildeToolReconciler.prototype, "deploy").mockResolvedValue();
     const context = await agentContext("scout");
-    let created = false;
-    let channelCreated = false;
     const requests: Request[] = [];
     vi.stubGlobal(
       "fetch",
@@ -38,53 +32,15 @@ describe("TildeAgentProvider", () => {
         const request = input instanceof Request ? input : new Request(input, init);
         requests.push(request.clone());
         const path = new URL(request.url).pathname;
-        if (request.method === "GET" && path.endsWith("/agents/scout")) {
-          if (!created) return Response.json({ message: "missing" }, { status: 404 });
-          return Response.json(agent());
-        }
-        if (request.method === "POST" && path.endsWith("/agents/http-vercel-ai-sdk")) {
-          created = true;
+        if (request.method === "PUT" && path.endsWith("/openbot/agents/scout/bundle")) {
           expect(await request.json()).toMatchObject({
-            id: "scout",
             display_name: "Scout",
             endpoint_url: "http://127.0.0.1:4100/api/agents/scout",
             local_running_endpoint: true,
-            concurrency_policy: "queue",
+            mcp_server_id: "openbot-scout",
           });
-          return Response.json({
-            agent: agent(),
-            api_key: "agent-api-key",
-            webhook_signing_key: "signing-key",
-          });
+          return Response.json(bundleResponse());
         }
-        if (request.method === "GET" && path.endsWith("/channels")) {
-          return Response.json({
-            items: channelCreated
-              ? [
-                  {
-                    id: "openbot-mission-control-scout",
-                    provider_id: "chatkit.vercel-ui",
-                    status: "enabled",
-                    configuration: { default_agent_inbox_id: "scout" },
-                  },
-                ]
-              : [],
-          });
-        }
-        if (request.method === "POST" && path.endsWith("/channels/vercel-ui")) {
-          channelCreated = true;
-          expect(await request.json()).toMatchObject({
-            id: "openbot-mission-control-scout",
-            display_name: "OpenBot Mission Control: scout",
-            default_agent_inbox_id: "scout",
-          });
-          return Response.json({
-            id: "openbot-mission-control-scout",
-            provider_id: "chatkit.vercel-ui",
-            status: "enabled",
-          });
-        }
-        if (request.method === "PATCH") return Response.json(agent());
         throw new Error(`Unexpected request: ${request.method} ${path}`);
       }),
     );
@@ -98,16 +54,13 @@ describe("TildeAgentProvider", () => {
       AGENT_SCOUT_PROVIDER_ID: "chatkit.http-vercel-ai-sdk",
       AGENT_SCOUT_API_KEY: "agent-api-key",
       AGENT_SCOUT_WEBHOOK_SIGNING_KEY: "signing-key",
+      AGENT_SCOUT_SKILL_REGISTRY_ID: "registry-one",
+      AGENT_SCOUT_MCP_SERVER_ID: "openbot-scout",
     });
-    expect(requests.filter((request) => request.method === "POST")).toHaveLength(2);
-    expect(requests.filter((request) => request.method === "PATCH")).toHaveLength(0);
-    expect(skills).toHaveBeenCalledTimes(2);
-    expect(tools).toHaveBeenCalledTimes(2);
+    expect(requests.filter((request) => request.method === "PUT")).toHaveLength(2);
   });
 
   it("repairs an existing agent that is not configured to queue turns", async () => {
-    vi.spyOn(TildeSkillReconciler.prototype, "deploy").mockResolvedValue();
-    vi.spyOn(TildeToolReconciler.prototype, "deploy").mockResolvedValue();
     const context = await agentContext("scout");
     context.environment.AGENT_SCOUT_API_KEY = "existing-key";
     context.environment.AGENT_SCOUT_WEBHOOK_SIGNING_KEY = "existing-signing-key";
@@ -117,88 +70,20 @@ describe("TildeAgentProvider", () => {
       vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
         const request = input instanceof Request ? input : new Request(input, init);
         const path = new URL(request.url).pathname;
-        if (request.method === "GET" && path.endsWith("/agents/scout"))
-          return Response.json(agent("interrupt"));
-        if (request.method === "PATCH" && path.endsWith("/agents/scout")) {
+        if (request.method === "PUT" && path.endsWith("/openbot/agents/scout/bundle")) {
           updates.push((await request.json()) as Record<string, unknown>);
-          return Response.json(agent());
+          return Response.json(bundleResponse({ api_key: null, webhook_signing_key: null }));
         }
-        if (request.method === "GET" && path.endsWith("/channels"))
-          return Response.json({
-            items: [
-              {
-                id: "openbot-mission-control-scout",
-                provider_id: "chatkit.vercel-ui",
-                status: "enabled",
-                configuration: { default_agent_inbox_id: "scout" },
-              },
-            ],
-          });
         throw new Error(`Unexpected request: ${request.method} ${path}`);
       }),
     );
 
     await new TildeAgentProvider(config).deployable.deploy(context);
 
-    expect(updates).toEqual([expect.objectContaining({ concurrency_policy: "queue" })]);
-  });
-
-  it("reconciles the channel, skills, tools, and persistence concurrently", async () => {
-    let releaseChannel!: () => void;
-    const channelGate = new Promise<void>((resolve) => {
-      releaseChannel = resolve;
-    });
-    const skills = vi.spyOn(TildeSkillReconciler.prototype, "deploy").mockResolvedValue();
-    const tools = vi.spyOn(TildeToolReconciler.prototype, "deploy").mockResolvedValue();
-    skills.mockClear();
-    tools.mockClear();
-    const context = await agentContext("scout");
-    context.environment.AGENT_SCOUT_API_KEY = "existing-key";
-    context.environment.AGENT_SCOUT_WEBHOOK_SIGNING_KEY = "existing-signing-key";
-    const persisted: string[] = [];
-    context.persistence = {
-      setEnvironment: async (name) => {
-        persisted.push(name);
-      },
-      setSecret: async () => undefined,
-      unsetEnvironment: async () => undefined,
-      unsetSecret: async () => undefined,
-    };
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-        const request = input instanceof Request ? input : new Request(input, init);
-        const path = new URL(request.url).pathname;
-        if (request.method === "GET" && path.endsWith("/agents/scout"))
-          return Response.json(agent());
-        if (request.method === "GET" && path.endsWith("/channels")) {
-          await channelGate;
-          return Response.json({
-            items: [
-              {
-                id: "openbot-mission-control-scout",
-                configuration: { default_agent_inbox_id: "scout" },
-              },
-            ],
-          });
-        }
-        throw new Error(`Unexpected request: ${request.method} ${path}`);
-      }),
-    );
-
-    const deployment = new TildeAgentProvider(config).deployable.deploy(context);
-    await vi.waitFor(() => {
-      expect(skills).toHaveBeenCalledOnce();
-      expect(tools).toHaveBeenCalledOnce();
-      expect(persisted).toEqual(["AGENT_SCOUT_AGENT_ID", "AGENT_SCOUT_PROVIDER_ID"]);
-    });
-    releaseChannel();
-    await deployment;
+    expect(updates).toEqual([expect.objectContaining({ display_name: "Scout" })]);
   });
 
   it("reports the Tilde operation, agent, API detail, and HTTP status", async () => {
-    vi.spyOn(TildeSkillReconciler.prototype, "deploy").mockResolvedValue();
-    vi.spyOn(TildeToolReconciler.prototype, "deploy").mockResolvedValue();
     const context = await agentContext("scout");
     vi.stubGlobal(
       "fetch",
@@ -208,7 +93,7 @@ describe("TildeAgentProvider", () => {
     );
 
     await expect(new TildeAgentProvider(config).deployable.deploy(context)).rejects.toThrow(
-      'Unable to get agent "scout": organization does not own this team (HTTP 403)',
+      "Unable to reconcile OpenBot agent bundle: organization does not own this team (HTTP 403)",
     );
   });
 });
@@ -244,5 +129,17 @@ function agent(concurrencyPolicy = "queue") {
       concurrency_policy: concurrencyPolicy,
     },
     status: "enabled",
+  };
+}
+
+function bundleResponse(overrides: Record<string, unknown> = {}) {
+  return {
+    agent: agent(),
+    api_key: "agent-api-key",
+    webhook_signing_key: "signing-key",
+    channel: { id: "openbot-mission-control-scout" },
+    skill_registry: { id: "registry-one" },
+    mcp_server: { id: "openbot-scout" },
+    ...overrides,
   };
 }

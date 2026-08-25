@@ -10,6 +10,7 @@ Framework-neutral client behavior shared by OpenBot web, Electron, and Expo clie
 - `contracts/agents` owns the durable background agent-setup start and status payloads.
 - `contracts/messages` owns conversation messages and parts.
 - `contracts/events` owns ChatKit SSE event envelopes.
+- `contracts/mission-control` owns aggregate bootstrap, conversation snapshot, and turn-submission responses plus the durable event revision used to reconnect the team-wide observer.
 - `contracts/installation` owns control-service health, public native-auth discovery, and the selected installation.
 - `contracts/attachments` owns attachment metadata and upload handshakes.
 - `contracts/queue` owns queued agent turns.
@@ -29,3 +30,7 @@ The runtime maintains one team-wide Mission Control observer so inactive session
 preview, unread, and streamed-message state current. Platform-supplied `agentSetupPersistence` may
 restore an in-progress setup job; the runtime polls it to readiness, refreshes the authoritative
 sidebar, and selects the created agent only after it appears there.
+
+Initial load, conversation selection, and turn submission consume server-authored aggregate
+responses. Web, Electron, and Expo therefore reconcile identical authoritative snapshots without
+issuing per-session fan-out reads after each user action or realtime event.

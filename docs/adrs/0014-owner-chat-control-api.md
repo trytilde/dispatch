@@ -29,10 +29,11 @@ heartbeats, and reconnection remain server-side; clients receive only the same a
 events used to reconcile sidebar previews, unread state, and busy indicators. This is not an arbitrary
 WebSocket proxy.
 
-The Mission Control path and event schema are not yet published in Tilde's OpenAPI description. OpenBot
-accepts that dependency temporarily because background owner state otherwise cannot converge, but keeps
-it isolated in the control-service adapter so a documented contract can replace it without changing the
-client runtime.
+Tilde publishes the Mission Control WebSocket contract as AsyncAPI generated from the same Rust event
+types used at runtime. The team-scoped socket is one system channel rather than one channel per chat:
+every connected owner client needs background activity for all accessible conversations. AsyncAPI
+separates client ping, server control frames, and typed domain events into distinct operations while
+retaining the single physical channel.
 
 ```mermaid
 flowchart LR
@@ -52,17 +53,12 @@ flowchart LR
 - Control deployments route `/api/*` to the Hono Function and keep credentials server-side.
 - Tilde status codes, JSON bodies, attachment bytes, and SSE frames cross without an OpenBot projection layer.
 - The bridge is intentionally Tilde-specific; a second chat backend requires a new product decision rather than a generic provider contract in advance.
-- The undocumented Mission Control dependency is narrow, server-only, reconnecting, and replaceable at
-  one adapter boundary.
-
-<FOLLOW UP>
-Owner: Tilde API and OpenBot control-service maintainers
-Trigger: before the Mission Control endpoint or event schema changes, or when its public contract is available
-Work: publish and version the WebSocket path, authentication, heartbeat, and event schema in Tilde documentation/OpenAPI; add a compatibility contract test; migrate OpenBot to the documented contract if it differs
-</FOLLOW UP>
+- The Mission Control dependency is narrow, server-only, reconnecting, and checked against Tilde's
+  generated AsyncAPI contract at one adapter boundary.
 
 ## Updates
 
 - 2026-08-16T15:08:39+02:00: Replaced the initial ConnectRPC and Chat Provider projection with the allowlisted Tilde REST/SSE bridge, removed `control-service-proto`, and made the browser's existing ChatKit client the sole owner-chat contract.
 - 2026-08-17T18:00:00+02:00: Added mobile as an owner client and moved parsing, transport, and live-state reconciliation into a shared framework-neutral client runtime without introducing a second server contract.
 - 2026-08-21T12:00:00+01:00: Added the server-side Mission Control WebSocket to background SSE adapter for team-wide agent activity, with the undocumented dependency isolated behind one allowlisted control-service boundary.
+- 2026-08-25T12:00:00+02:00: Replaced the undocumented event dependency with Tilde's Rust-derived AsyncAPI contract, retained one team-wide physical channel, and adopted durable event revisions plus aggregate REST snapshots for reconnect convergence.

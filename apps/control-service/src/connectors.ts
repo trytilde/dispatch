@@ -1,7 +1,6 @@
 import type { Context, Hono } from "hono";
 
 const defaultBaseUrl = "https://api.trytilde.ai";
-const defaultDekAlias = "default";
 
 export interface ConnectorRouteOptions {
   apiKey: string;
@@ -163,6 +162,25 @@ export function registerConnectorRoutes(
     }
   });
 
+  app.get("/api/connectors/accounts/:id/wait", async (context) => {
+    const resolved = options();
+    if (!resolved) return unavailable(context);
+    try {
+      const response = valueRecord(
+        await tildeJson(
+          resolved,
+          `/mcp/tool-group/${encodeURIComponent(context.req.param("id"))}?wait_for_status=active&timeout_ms=30000`,
+        ),
+      );
+      const account = valueRecord(response?.tool_group_instance);
+      if (!account?.id)
+        throw new ConnectorUpstreamError("Tilde returned no connector account", 502);
+      return context.json(serializeAccount(account as unknown as UpstreamAccount));
+    } catch (error) {
+      return upstreamFailure(context, error);
+    }
+  });
+
   app.post("/api/connectors/accounts", async (context) => {
     const resolved = options();
     if (!resolved) return unavailable(context);
@@ -173,57 +191,24 @@ export function registerConnectorRoutes(
       return context.json({ error: error instanceof Error ? error.message : "Invalid body" }, 400);
     }
     try {
-      const providers = await listProviders(resolved);
-      const provider = providers.find((candidate) => candidate.type_id === body.providerTypeId);
-      const credentialSource = provider?.credential_sources?.find(
-        (candidate) => candidate.type_id === body.credentialSourceTypeId,
+      const setup = valueRecord(
+        await tildeJson(resolved, "/provider-setup/start", {
+          domain: "mcp",
+          provider_id: body.providerTypeId,
+          auth_method_id: body.credentialSourceTypeId,
+          form_values: {
+            displayName: body.displayName,
+            ...body.resourceServerValues,
+            ...body.userCredentialValues,
+          },
+          return_url: body.returnUrl ?? null,
+        }),
       );
-      if (!provider || !credentialSource)
-        return context.json({ error: "Unknown connector provider or credential source" }, 404);
-
-      const resourceServerCredentialId = await maybeCreateCredential(
-        resolved,
-        credentialSource.type_id,
-        "resource-server",
-        credentialSource.configuration_schema?.resource_server,
-        body.resourceServerValues,
-      );
-      const userCredentialId = credentialSource.requires_brokering
-        ? undefined
-        : await maybeCreateCredential(
-            resolved,
-            credentialSource.type_id,
-            "user-credential",
-            credentialSource.configuration_schema?.user_credential,
-            body.userCredentialValues,
-          );
-
-      const account = (await tildeJson(
-        resolved,
-        `/mcp/available-tool-groups/${encodeURIComponent(body.providerTypeId)}/available-credentials/${encodeURIComponent(body.credentialSourceTypeId)}`,
-        {
-          display_name: body.displayName,
-          resource_server_credential_id: resourceServerCredentialId ?? null,
-          user_credential_id: userCredentialId ?? null,
-          return_on_successful_brokering: body.returnUrl
-            ? { type: "url", url: body.returnUrl }
-            : null,
-        },
-      )) as UpstreamAccount;
-
-      if (!credentialSource.requires_brokering)
-        return context.json({ status: "created", account: serializeAccount(account) }, 201);
-
-      const brokered = (await tildeJson(
-        resolved,
-        `/credential/source/${encodeURIComponent(body.credentialSourceTypeId)}/user-credential/broker`,
-        {
-          owner_type: "tool_group_instance",
-          owner_id: account.id,
-          resource_server_credential_id: resourceServerCredentialId ?? null,
-        },
-      )) as Record<string, unknown>;
-      const authorizationUrl = brokerRedirectUrl(brokered);
+      const account = valueRecord(setup?.resource) as UpstreamAccount | undefined;
+      if (!account?.id)
+        throw new ConnectorUpstreamError("Tilde returned no connector account", 502);
+      const nextAction = valueRecord(setup?.next_action);
+      const authorizationUrl = nextAction?.type === "redirect" ? text(nextAction.url) : "";
       if (!authorizationUrl)
         return context.json({ status: "created", account: serializeAccount(account) }, 201);
       return context.json(
@@ -246,23 +231,14 @@ export function registerConnectorRoutes(
       ...new Set((context.req.queries("agent_id") ?? []).map((id) => id.trim()).filter(Boolean)),
     ];
     try {
-      const [
-        providers,
-        accounts,
-        servers,
-        proxiedServers,
-        skills,
-        trustedSkillProviders,
-        registries,
-      ] = await Promise.all([
-        listProviders(resolved, context.req.raw.signal),
-        listAccounts(resolved, context.req.raw.signal),
-        listMcpServers(resolved, context.req.raw.signal),
-        listProxiedMcpServers(resolved, context.req.raw.signal),
-        listSkills(resolved, context.req.raw.signal),
-        listTrustedSkillProviders(resolved, context.req.raw.signal),
-        listSkillRegistries(resolved, context.req.raw.signal),
-      ]);
+      const catalog = await listOpenBotPluginsCatalog(resolved, context.req.raw.signal);
+      const providers = catalog.tool_providers as UpstreamProvider[];
+      const accounts = catalog.tool_accounts as UpstreamAccount[];
+      const servers = catalog.mcp_servers as UpstreamMcpServer[];
+      const proxiedServers = catalog.proxied_mcp_servers as UpstreamProxiedMcpServerListItem[];
+      const skills = catalog.skills as UpstreamSkill[];
+      const trustedSkillProviders = catalog.skill_providers as UpstreamTrustedSkillProvider[];
+      const registries = catalog.skill_registries as UpstreamSkillRegistry[];
       const agentServers = new Map(
         agentIds.map((agentId) => [agentId, resolveMcpServer(resolved, servers, agentId)]),
       );
@@ -356,6 +332,22 @@ export function registerConnectorRoutes(
       return upstreamFailure(context, error);
     }
   });
+
+  app.post("/api/connectors/bind", async (context) => {
+    const resolved = options();
+    if (!resolved) return unavailable(context);
+    const body = valueRecord(await context.req.json().catch(() => undefined));
+    const agentId = text(body?.agent_id);
+    const accountId = text(body?.account_id);
+    if (!agentId || !accountId)
+      return context.json({ error: "agent_id and account_id are required" }, 400);
+    try {
+      await assignToolAccount(resolved, accountId, agentId, context.req.raw.signal);
+      return context.json({ bound: true });
+    } catch (error) {
+      return upstreamFailure(context, error);
+    }
+  });
 }
 
 interface CreateAccountBody {
@@ -398,38 +390,6 @@ function valueRecord(value: unknown): Record<string, unknown> | undefined {
     : undefined;
 }
 
-/** Encrypt then persist one credential; skipped when its schema declares no fields. */
-async function maybeCreateCredential(
-  options: ConnectorRouteOptions,
-  credentialSourceTypeId: string,
-  kind: "resource-server" | "user-credential",
-  schema: unknown,
-  values: Record<string, unknown> | undefined,
-): Promise<string | undefined> {
-  if (!schemaHasProperties(schema)) return undefined;
-  if (!values || Object.keys(values).length === 0) {
-    throw new ConnectorUpstreamError(
-      `The ${kind === "resource-server" ? "app" : "account"} credential form is required for this connector`,
-      400,
-    );
-  }
-  const basePath = `/credential/source/${encodeURIComponent(credentialSourceTypeId)}/${kind}`;
-  const encrypted = await tildeJson(options, `${basePath}/encrypt`, {
-    dek_alias: defaultDekAlias,
-    value: values,
-  });
-  const bodyKey =
-    kind === "resource-server" ? "resource_server_configuration" : "user_credential_configuration";
-  const created = (await tildeJson(options, basePath, {
-    dek_alias: defaultDekAlias,
-    [bodyKey]: encrypted,
-    metadata: null,
-  })) as { id?: unknown };
-  const id = typeof created.id === "string" ? created.id : undefined;
-  if (!id) throw new ConnectorUpstreamError("Tilde returned no credential id", 502);
-  return id;
-}
-
 export function schemaHasProperties(schema: unknown): boolean {
   if (typeof schema !== "object" || schema === null) return false;
   const properties = (schema as { properties?: unknown }).properties;
@@ -450,53 +410,94 @@ async function listProviders(
   options: ConnectorRouteOptions,
   signal?: AbortSignal,
 ): Promise<UpstreamProvider[]> {
-  // Tilde requires both query fields; omitting deployment_alias is a 400.
-  const page = (await tildeJson(
-    options,
-    "/mcp/available-tool-groups?page_size=500&deployment_alias=latest&include_global=true",
-    undefined,
-    signal,
-  )) as Record<string, unknown>;
-  return pageItems(page) as UpstreamProvider[];
+  const catalog = valueRecord(
+    await tildeJson(options, "/provider-setup/catalog?domain=mcp", undefined, signal),
+  );
+  const providers = Array.isArray(catalog?.providers)
+    ? catalog.providers.map(valueRecord).filter((item): item is Record<string, unknown> => !!item)
+    : [];
+  return providers.map((provider) => ({
+    type_id: text(provider.provider_id),
+    name: text(provider.display_name),
+    documentation: text(provider.description),
+    categories: Array.isArray(provider.categories)
+      ? provider.categories.filter((value): value is string => typeof value === "string")
+      : [],
+    metadata: {
+      ...(text(provider.icon_url) ? { icon_url: text(provider.icon_url) } : {}),
+      ...(text(provider.icon_slug) ? { icon_slug: text(provider.icon_slug) } : {}),
+    },
+    credential_sources: (Array.isArray(provider.auth_methods) ? provider.auth_methods : [])
+      .map(valueRecord)
+      .filter((item): item is Record<string, unknown> => !!item)
+      .map((source) => ({
+        type_id: text(source.credential_source_type_id) || text(source.id),
+        display_name: text(source.display_name),
+        documentation: text(source.description),
+        requires_brokering: text(source.setup_kind).includes("oauth"),
+        supports_auto_display_name: source.supports_auto_display_name === true,
+        configuration_schema: {
+          resource_server: setupFieldsSchema(source.fields),
+          user_credential: null,
+        },
+      })),
+  }));
+}
+
+async function listOpenBotPluginsCatalog(
+  options: ConnectorRouteOptions,
+  signal?: AbortSignal,
+): Promise<{
+  tool_providers: unknown[];
+  tool_accounts: unknown[];
+  mcp_servers: unknown[];
+  proxied_mcp_servers: unknown[];
+  skills: unknown[];
+  skill_providers: unknown[];
+  skill_registries: unknown[];
+}> {
+  return (await tildeJson(options, "/openbot/plugins/catalog", undefined, signal)) as {
+    tool_providers: unknown[];
+    tool_accounts: unknown[];
+    mcp_servers: unknown[];
+    proxied_mcp_servers: unknown[];
+    skills: unknown[];
+    skill_providers: unknown[];
+    skill_registries: unknown[];
+  };
 }
 
 async function listAccounts(
   options: ConnectorRouteOptions,
   signal?: AbortSignal,
 ): Promise<UpstreamAccount[]> {
-  const page = (await tildeJson(
-    options,
-    "/mcp/tool-group?page_size=500",
-    undefined,
-    signal,
-  )) as Record<string, unknown>;
-  return pageItems(page) as UpstreamAccount[];
+  const catalog = valueRecord(
+    await tildeJson(options, "/provider-setup/catalog?domain=mcp", undefined, signal),
+  );
+  return (Array.isArray(catalog?.resources) ? catalog.resources : [])
+    .map(valueRecord)
+    .filter((item): item is Record<string, unknown> => !!item)
+    .map((item) => item as unknown as UpstreamAccount);
 }
 
-async function listMcpServers(
-  options: ConnectorRouteOptions,
-  signal?: AbortSignal,
-): Promise<UpstreamMcpServer[]> {
-  const page = (await tildeJson(
-    options,
-    "/mcp/mcp-server?page_size=500&include_global=false",
-    undefined,
-    signal,
-  )) as Record<string, unknown>;
-  return pageItems(page) as UpstreamMcpServer[];
-}
-
-async function listProxiedMcpServers(
-  options: ConnectorRouteOptions,
-  signal?: AbortSignal,
-): Promise<UpstreamProxiedMcpServerListItem[]> {
-  const page = (await tildeJson(
-    options,
-    "/mcp/proxied-mcp-servers?page_size=500",
-    undefined,
-    signal,
-  )) as Record<string, unknown>;
-  return pageItems(page) as UpstreamProxiedMcpServerListItem[];
+function setupFieldsSchema(value: unknown): Record<string, unknown> | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const fields = value.map(valueRecord).filter((item): item is Record<string, unknown> => !!item);
+  return {
+    type: "object",
+    properties: Object.fromEntries(
+      fields.map((field) => [
+        text(field.name),
+        {
+          type: "string",
+          title: text(field.label) || text(field.name),
+          ...(text(field.help_text) ? { description: text(field.help_text) } : {}),
+          ...(text(field.field_type) === "password" ? { format: "password" } : {}),
+        },
+      ]),
+    ),
+    required: fields.filter((field) => field.required === true).map((field) => text(field.name)),
+  };
 }
 
 async function listSkills(
@@ -824,62 +825,17 @@ async function assignToolAccount(
   agentId: string,
   signal?: AbortSignal,
 ): Promise<void> {
-  const [providers, accounts, servers] = await Promise.all([
-    listProviders(options, signal),
-    listAccounts(options, signal),
-    listMcpServers(options, signal),
-  ]);
-  const account = accounts.find((candidate) => candidate.id === accountId);
-  if (!account?.tool_group_source_type_id)
-    throw new ConnectorUpstreamError("Unknown tool account", 404);
-  const provider = providers.find(
-    (candidate) => candidate.type_id === account.tool_group_source_type_id,
-  );
-  if (!provider) throw new ConnectorUpstreamError("Unknown tool provider", 404);
-  const server = resolveMcpServer(options, servers, agentId);
-  if (!server) throw new ConnectorUpstreamError("This bot has no Tilde MCP server", 404);
-
-  const enabledPage = (await tildeJson(
+  const serverId =
+    (options.environment ?? process.env)[
+      `${agentEnvironmentPrefix(agentId)}_MCP_SERVER_ID`
+    ]?.trim() || `openbot-${agentId}`;
+  await tildeRequest(
     options,
-    `/mcp/tools?page_size=500&tool_group_instance_id=${encodeURIComponent(accountId)}&include_global=false`,
-    undefined,
+    `/mcp/mcp-server/${encodeURIComponent(serverId)}/tool-group/${encodeURIComponent(accountId)}`,
+    "PUT",
+    {},
     signal,
-  )) as Record<string, unknown>;
-  const enabled = new Set(
-    (pageItems(enabledPage) as UpstreamMappedTool[]).map((tool) => tool.tool_source_type_id),
   );
-  for (const tool of provider.tools ?? []) {
-    if (!enabled.has(tool.type_id)) {
-      await tildeRequest(
-        options,
-        `/mcp/tool-group/${encodeURIComponent(accountId)}/tool/${encodeURIComponent(tool.type_id)}/enable`,
-        "POST",
-        {},
-        signal,
-      );
-    }
-  }
-
-  const mapped = new Set(
-    (server.tools ?? [])
-      .filter((tool) => tool.tool_group_instance_id === accountId)
-      .map((tool) => tool.tool_source_type_id),
-  );
-  for (const tool of provider.tools ?? []) {
-    if (mapped.has(tool.type_id)) continue;
-    await tildeRequest(
-      options,
-      `/mcp/mcp-server/${encodeURIComponent(server.id)}/function`,
-      "POST",
-      {
-        tool_group_instance_id: accountId,
-        tool_group_source_type_id: provider.type_id,
-        tool_name: tool.type_id,
-        tool_source_type_id: tool.type_id,
-      },
-      signal,
-    );
-  }
 }
 
 async function removeToolAccount(
@@ -888,20 +844,17 @@ async function removeToolAccount(
   agentId: string,
   signal?: AbortSignal,
 ): Promise<void> {
-  const servers = await listMcpServers(options, signal);
-  const server = resolveMcpServer(options, servers, agentId);
-  if (!server) throw new ConnectorUpstreamError("This bot has no Tilde MCP server", 404);
-  for (const tool of (server.tools ?? []).filter(
-    (candidate) => candidate.tool_group_instance_id === accountId,
-  )) {
-    await tildeRequest(
-      options,
-      `/mcp/mcp-server/${encodeURIComponent(server.id)}/function/${encodeURIComponent(tool.tool_source_type_id)}/${encodeURIComponent(tool.tool_group_source_type_id)}/${encodeURIComponent(tool.tool_group_instance_id)}`,
-      "DELETE",
-      undefined,
-      signal,
-    );
-  }
+  const serverId =
+    (options.environment ?? process.env)[
+      `${agentEnvironmentPrefix(agentId)}_MCP_SERVER_ID`
+    ]?.trim() || `openbot-${agentId}`;
+  await tildeRequest(
+    options,
+    `/mcp/mcp-server/${encodeURIComponent(serverId)}/tool-group/${encodeURIComponent(accountId)}`,
+    "DELETE",
+    undefined,
+    signal,
+  );
 }
 
 async function setSkillAssignment(
@@ -1175,7 +1128,7 @@ async function tildeJson(
 async function tildeRequest(
   options: ConnectorRouteOptions,
   teamPath: string,
-  method: "DELETE" | "GET" | "PATCH" | "POST",
+  method: "DELETE" | "GET" | "PATCH" | "POST" | "PUT",
   body?: unknown,
   signal?: AbortSignal,
 ): Promise<unknown> {

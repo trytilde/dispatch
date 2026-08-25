@@ -279,8 +279,10 @@ describe("bare OpenBot server", () => {
       socket.send(
         JSON.stringify({
           jsonrpc: "2.0",
-          method: "chatkit.message.streaming",
+          method: "mission_control.event",
           params: {
+            event_type: "chatkit.message.streaming",
+            revision: 1,
             event: {
               id: "event-one",
               kind: {

@@ -8,10 +8,9 @@ import {
   useState,
 } from "react";
 import {
+  type AttachmentCompletion,
   type ChatAgent,
   type ChatMessage,
-  connectorAccountCreatedMessage,
-  connectorAccountSelectionMessage,
   connectorAuthorizedReturnUrl,
   type ConnectorProvider,
   type CreateConnectorAccountResult,
@@ -54,7 +53,7 @@ import {
 import type { WorkspaceSearch } from "../router.js";
 import { AgentDetailsContainer } from "./agent-details.js";
 import { openBotRuntime } from "../runtime.js";
-import { optimisticParts, type PendingFile, uploadAttachment } from "../web-attachments.js";
+import { optimisticParts, type PendingFile, uploadAttachments } from "../web-attachments.js";
 import { useClientWorkspace } from "../workspaces.js";
 import { shouldExpandComposer } from "./composer-layout.js";
 
@@ -209,37 +208,42 @@ export function OpenBotApp() {
     const outgoingFiles = files;
     let activeSessionId = sessionId;
     try {
-      activeSessionId = await openBotRuntime.actions.ensureSession(titleFrom(text, outgoingFiles));
+      if (outgoingFiles.length > 0)
+        activeSessionId = await openBotRuntime.actions.ensureSession(
+          titleFrom(text, outgoingFiles),
+        );
       setDraft("");
       setReplyingTo(null);
       setThreadRootId("");
       clearFiles();
 
       const attachmentIds: string[] = [];
-      for (const pending of outgoingFiles) {
-        setFiles((current) => [...current, { ...pending, status: "uploading", progress: 0 }]);
-        try {
-          const attachment = await uploadAttachment(
-            openBotRuntime.client,
-            activeSessionId,
-            pending.file,
-            (progress) => setFileState(pending.id, { progress }),
-          );
-          attachmentIds.push(attachment.id);
+      const attachmentCompletions: AttachmentCompletion[] = [];
+      if (outgoingFiles.length > 0 && activeSessionId) {
+        for (const pending of outgoingFiles)
+          setFiles((current) => [...current, { ...pending, status: "uploading", progress: 0 }]);
+        const uploaded = await uploadAttachments(
+          openBotRuntime.client,
+          activeSessionId,
+          outgoingFiles.map((pending) => pending.file),
+          (index, progress) => setFileState(outgoingFiles[index]!.id, { progress }),
+        );
+        for (const [index, result] of uploaded.entries()) {
+          const pending = outgoingFiles[index]!;
+          attachmentIds.push(result.attachment.id);
+          attachmentCompletions.push(result.completion);
           setFileState(pending.id, {
             status: "uploaded",
             progress: 1,
-            attachmentId: attachment.id,
+            attachmentId: result.attachment.id,
           });
-        } catch (reason) {
-          setFileState(pending.id, { status: "error", error: errorMessage(reason) });
-          throw reason;
         }
       }
 
       await openBotRuntime.actions.sendMessage({
         text,
         attachmentIds,
+        attachmentCompletions,
         optimisticParts: optimisticParts(text, outgoingFiles),
         title: titleFrom(text, outgoingFiles),
       });
@@ -334,7 +338,6 @@ export function OpenBotApp() {
     if (!sessionId) return;
     try {
       await operation();
-      await openBotRuntime.actions.refreshQueue(sessionId);
     } catch (reason) {
       openBotRuntime.actions.setError(errorMessage(reason));
     }
@@ -433,12 +436,9 @@ export function OpenBotApp() {
   const connectorActions: ConnectorPartActions = {
     busy: Boolean(connectorSetup?.submitting),
     onSelectAccount: (selection, account) => {
-      void openBotRuntime.actions.sendMessage({
-        text: connectorAccountSelectionMessage(
-          { provider_type_id: selection.providerTypeId, provider_name: selection.providerName },
-          { id: account.id, display_name: account.displayName },
-        ),
-      });
+      void openBotRuntime.client
+        .bindConnector(agentId, account.id)
+        .catch((reason) => openBotRuntime.actions.setError(errorMessage(reason)));
     },
     onAddAccount: (selection) => {
       // Route the modal open through the URL so back/close and redirects work.
@@ -552,11 +552,11 @@ export function OpenBotApp() {
           signal: watcher.signal,
         }).then((account) => {
           if (!account || watcher.signal.aborted) return;
-          finishConnectorSetup(selection, { ...result, status: "created", account });
+          void finishConnectorSetup({ ...result, status: "created", account });
         });
         return;
       }
-      finishConnectorSetup(selection, result);
+      await finishConnectorSetup(result);
     } catch (reason) {
       setConnectorSetup((current) =>
         current ? { ...current, submitting: false, error: errorMessage(reason) } : current,
@@ -564,18 +564,10 @@ export function OpenBotApp() {
     }
   }
 
-  function finishConnectorSetup(
-    selection: ConnectorSelectionView,
-    result: CreateConnectorAccountResult,
-  ): void {
+  async function finishConnectorSetup(result: CreateConnectorAccountResult): Promise<void> {
+    await openBotRuntime.client.bindConnector(agentId, result.account.id);
     closeConnectorSetup();
     setConnectorRoute(undefined);
-    void openBotRuntime.actions.sendMessage({
-      text: connectorAccountCreatedMessage(
-        { provider_type_id: selection.providerTypeId, provider_name: selection.providerName },
-        result,
-      ),
-    });
   }
 
   return (
@@ -905,7 +897,7 @@ export function OpenBotApp() {
           }}
           onClose={() => {
             if (connectorSetup.result && connectorSetup.authorizationUrl) {
-              finishConnectorSetup(connectorSetup.selection, connectorSetup.result);
+              void finishConnectorSetup(connectorSetup.result);
               return;
             }
             setConnectorRoute(undefined);

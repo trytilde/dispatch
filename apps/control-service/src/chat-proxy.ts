@@ -172,14 +172,21 @@ function missionControlSocketEvent(
     return undefined;
   }
   if (!parsed || typeof parsed !== "object") return undefined;
-  const message = parsed as { method?: unknown; params?: { event?: unknown } };
+  const message = parsed as {
+    method?: unknown;
+    params?: { event?: unknown; event_type?: unknown; revision?: unknown };
+  };
   const event = message.params?.event;
-  if (typeof message.method !== "string" || event === undefined) return undefined;
+  if (message.method !== "mission_control.event" || event === undefined) return undefined;
+  const eventType = message.params?.event_type;
+  if (typeof eventType !== "string" || !eventType) return undefined;
   const id =
     event && typeof event === "object" && "id" in event && typeof event.id === "string"
       ? event.id
-      : undefined;
-  return { type: message.method, ...(id ? { id } : {}), data: event };
+      : typeof message.params?.revision === "number"
+        ? String(message.params.revision)
+        : undefined;
+  return { type: eventType, ...(id ? { id } : {}), data: event };
 }
 
 async function logUpstreamFailure(

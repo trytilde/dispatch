@@ -31,18 +31,20 @@ describe("OpenBot runtime", () => {
           agent: { id: "reviewer", name: "Reviewer" },
         } as const;
       },
-      getSidebar: async () => ({
-        items: ready
-          ? [
-              {
-                id: "reviewer",
-                display_name: "Reviewer",
-                provider_id: "tilde",
-                status: "enabled",
-                sessions: { items: [] },
-              },
-            ]
-          : [],
+      getBootstrap: async () => ({
+        sidebar: {
+          items: ready
+            ? [
+                {
+                  id: "reviewer",
+                  display_name: "Reviewer",
+                  provider_id: "tilde",
+                  status: "enabled",
+                  sessions: { items: [] },
+                },
+              ]
+            : [],
+        },
       }),
     };
     const runtime = createOpenBotRuntime({
@@ -81,17 +83,19 @@ describe("OpenBot runtime", () => {
             authenticated: true,
             user: { subject: "owner-one", name: "Owner One" },
           });
-        if (url.startsWith("/api/chat/mission-control/sidebar"))
+        if (url.startsWith("/api/chat/mission-control/bootstrap"))
           return Response.json({
-            items: [
-              {
-                id: "agent-one",
-                display_name: "Agent One",
-                provider_id: "tilde",
-                status: "ready",
-                sessions: { items: [] },
-              },
-            ],
+            sidebar: {
+              items: [
+                {
+                  id: "agent-one",
+                  display_name: "Agent One",
+                  provider_id: "tilde",
+                  status: "ready",
+                  sessions: { items: [] },
+                },
+              ],
+            },
           });
         throw new Error(`Unexpected request: ${url}`);
       },
@@ -147,27 +151,40 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getSidebar: async () => ({
-        items: [
-          {
-            id: "agent-one",
-            display_name: "Agent One",
-            provider_id: "tilde",
-            status: "ready",
-            sessions: {
-              items: [{ id: "session-one", created_at: now, updated_at: now }],
+      getBootstrap: async () => ({
+        sidebar: {
+          items: [
+            {
+              id: "agent-one",
+              display_name: "Agent One",
+              provider_id: "tilde",
+              status: "ready",
+              sessions: {
+                items: [{ id: "session-one", created_at: now, updated_at: now }],
+              },
             },
-          },
-          {
-            id: "agent-two",
-            display_name: "Agent Two",
-            provider_id: "tilde",
-            status: "ready",
-            sessions: {
-              items: [{ id: "session-two", created_at: now, updated_at: now }],
+            {
+              id: "agent-two",
+              display_name: "Agent Two",
+              provider_id: "tilde",
+              status: "ready",
+              sessions: {
+                items: [{ id: "session-two", created_at: now, updated_at: now }],
+              },
             },
-          },
-        ],
+          ],
+        },
+        active_session_id: "session-one",
+        active_conversation: {
+          messages: { items: [], next_page_token: null },
+          queued_turns: { items: [], next_page_token: null },
+          snapshot_revision: 0,
+        },
+      }),
+      getConversationSnapshot: async () => ({
+        messages: { items: [], next_page_token: null },
+        queued_turns: { items: [], next_page_token: null },
+        snapshot_revision: 0,
       }),
       getMessages: async () => ({ items: [], next_page_token: null }),
       getQueuedTurns: async () => ({ items: [], next_page_token: null }),
@@ -237,7 +254,7 @@ describe("OpenBot runtime", () => {
 
   it("shows an active-turn send in the queue and coalesces queue refreshes", async () => {
     let emitEvent: Parameters<OpenBotClient["observeMissionControl"]>[1] = () => undefined;
-    let resolveSend!: (value: Awaited<ReturnType<OpenBotClient["sendMessage"]>>) => void;
+    let resolveSend!: (value: Awaited<ReturnType<OpenBotClient["submitTurn"]>>) => void;
     let releaseQueueRefresh!: () => void;
     let holdQueueRefresh = false;
     const currentTime = new Date("2026-08-20T12:00:00Z");
@@ -248,7 +265,7 @@ describe("OpenBot runtime", () => {
       if (holdQueueRefresh) await queueRefreshBarrier;
       return { items: [], next_page_token: null };
     });
-    const sendResponse = new Promise<Awaited<ReturnType<OpenBotClient["sendMessage"]>>>(
+    const sendResponse = new Promise<Awaited<ReturnType<OpenBotClient["submitTurn"]>>>(
       (resolve) => {
         resolveSend = resolve;
       },
@@ -264,25 +281,38 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getSidebar: async () => ({
-        items: [
-          {
-            id: "agent-one",
-            display_name: "Agent One",
-            provider_id: "tilde",
-            status: "ready",
-            sessions: {
-              items: [
-                {
-                  id: "session-one",
-                  title: "Queue",
-                  created_at: currentTime.toISOString(),
-                  updated_at: currentTime.toISOString(),
-                },
-              ],
+      getBootstrap: async () => ({
+        sidebar: {
+          items: [
+            {
+              id: "agent-one",
+              display_name: "Agent One",
+              provider_id: "tilde",
+              status: "ready",
+              sessions: {
+                items: [
+                  {
+                    id: "session-one",
+                    title: "Queue",
+                    created_at: currentTime.toISOString(),
+                    updated_at: currentTime.toISOString(),
+                  },
+                ],
+              },
             },
-          },
-        ],
+          ],
+        },
+        active_session_id: "session-one",
+        active_conversation: {
+          messages: { items: [], next_page_token: null },
+          queued_turns: { items: [], next_page_token: null },
+          snapshot_revision: 0,
+        },
+      }),
+      getConversationSnapshot: async () => ({
+        messages: { items: [], next_page_token: null },
+        queued_turns: { items: [], next_page_token: null },
+        snapshot_revision: 0,
       }),
       getMessages: async () => ({ items: [], next_page_token: null }),
       getQueuedTurns,
@@ -292,7 +322,7 @@ describe("OpenBot runtime", () => {
           signal.addEventListener("abort", () => resolve(), { once: true }),
         );
       },
-      sendMessage: vi.fn(() => sendResponse),
+      submitTurn: vi.fn(() => sendResponse),
     };
     const runtime = createOpenBotRuntime({
       client,
@@ -362,14 +392,29 @@ describe("OpenBot runtime", () => {
     );
 
     resolveSend({
-      items: runtime.store.getState().conversation.messages,
-      next_page_token: null,
+      session: {
+        id: "session-one",
+        title: "Queue",
+        created_at: currentTime.toISOString(),
+        updated_at: currentTime.toISOString(),
+      },
+      conversation: {
+        messages: {
+          items: runtime.store.getState().conversation.messages,
+          next_page_token: null,
+        },
+        queued_turns: {
+          items: runtime.store.getState().conversation.queuedTurns,
+          next_page_token: null,
+        },
+        snapshot_revision: 1,
+      },
     });
     await sending;
     holdQueueRefresh = true;
     const firstRefresh = runtime.actions.refreshQueue();
     const secondRefresh = runtime.actions.refreshQueue();
-    expect(getQueuedTurns).toHaveBeenCalledTimes(3);
+    expect(getQueuedTurns).toHaveBeenCalledTimes(1);
     releaseQueueRefresh();
     await Promise.all([firstRefresh, secondRefresh]);
     emitEvent({

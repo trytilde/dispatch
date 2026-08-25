@@ -8,7 +8,7 @@ authored agent code and not as a chat API.
 implementation discovers authored agents; creates or repairs ChatKit agents;
 synchronizes authored skills and registry membership; adds the OpenBot computer-use overlay and the trusted managed canonical Cua skill without removing user-owned skills; and reconciles the
 dynamic MCP server, Tilde control-plane tools, and deployment-platform MCP
-connections. Repeated deployments and retries after partial failure converge
+connections through one typed Tilde bundle operation. Repeated deployments and retries after partial failure converge
 without duplicate resources or unnecessary updates. It exposes no vendor CRUD
 to the CLI. Owner conversation traffic uses Tilde's REST/SSE contract through
 the control service's allowlisted same-origin bridge.
@@ -20,4 +20,4 @@ the control service's allowlisted same-origin bridge.
 - `TildeAgentProvider` and `TildeAgentProviderConfig`: typed Tilde implementation and configuration.
 - `tildeAgentProviderInitialization`: provider-specific initialization metadata collected with the shared Tilde platform.
 
-Reconciliation guarantees per agent: the Tilde control-plane toolkit is enabled and every one of its functions is mapped onto the agent's runtime MCP server, and authored skills sync into the agent's Tilde skill registry with team-unique names namespaced as `<agent-id>-<skill-name>`.
+Reconciliation guarantees per agent: the Tilde control-plane toolkit is enabled and every one of its functions is mapped onto the agent's runtime MCP server, and authored skills sync into the agent's Tilde skill registry with team-unique names namespaced as `<agent-id>-<skill-name>`. The aggregate operation preserves the same idempotent ownership boundary while avoiding a client-side chain of dependent API calls.

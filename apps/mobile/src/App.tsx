@@ -22,6 +22,7 @@ import {
   errorMessage,
   loadOnboarding,
   queuedTurnText,
+  type AttachmentCompletion,
   type ChatAgent,
   type ClientInstallation,
   type ChatMessage,
@@ -47,7 +48,7 @@ import {
   optimisticNativeParts,
   pickNativeAttachments,
   type PendingNativeAttachment,
-  uploadNativeAttachment,
+  uploadNativeAttachments,
 } from "./chat/native-attachments";
 import { MobilePromptBar } from "./chat/prompt-bar";
 import { MobileQueuePanel } from "./chat/queue-panel";
@@ -601,32 +602,38 @@ function ChatScreen({
       if ((!text && !files.length) || submitting || uploading) return;
       setUploading(true);
       try {
-        const activeSessionId = await runtime.actions.ensureSession(
-          text || files[0]?.name || "New chat",
-        );
+        const activeSessionId = files.length
+          ? await runtime.actions.ensureSession(text || files[0]?.name || "New chat")
+          : sessionId;
         const attachmentIds: string[] = [];
-        for (const pending of files) {
-          if (pending.attachmentId) {
-            attachmentIds.push(pending.attachmentId);
-            continue;
-          }
-          setFileState(pending.id, { status: "uploading", progress: 0, error: "" });
-          const attachment = await uploadNativeAttachment(
+        const attachmentCompletions: AttachmentCompletion[] = [];
+        const pendingUploads = files.filter((pending) => !pending.attachmentId);
+        if (pendingUploads.length > 0 && activeSessionId) {
+          for (const pending of pendingUploads)
+            setFileState(pending.id, { status: "uploading", progress: 0, error: "" });
+          const uploaded = await uploadNativeAttachments(
             runtime.client,
             activeSessionId,
-            pending,
-            (progress) => setFileState(pending.id, { progress }),
+            pendingUploads,
+            (index, progress) => setFileState(pendingUploads[index]!.id, { progress }),
           );
-          attachmentIds.push(attachment.id);
-          setFileState(pending.id, {
-            attachmentId: attachment.id,
-            progress: 1,
-            status: "uploaded",
-          });
+          for (const [index, result] of uploaded.entries()) {
+            const pending = pendingUploads[index]!;
+            attachmentIds.push(result.attachment.id);
+            attachmentCompletions.push(result.completion);
+            setFileState(pending.id, {
+              attachmentId: result.attachment.id,
+              progress: 1,
+              status: "uploaded",
+            });
+          }
         }
+        for (const pending of files)
+          if (pending.attachmentId) attachmentIds.push(pending.attachmentId);
         await runtime.actions.sendMessage({
           text,
           attachmentIds,
+          attachmentCompletions,
           optimisticParts: optimisticNativeParts(text, files),
           title: text || files[0]?.name,
         });

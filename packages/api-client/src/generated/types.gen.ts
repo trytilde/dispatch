@@ -706,6 +706,16 @@ export type ConfigurationSchema = {
     user_credential: JsonSchema;
 };
 
+export type ConfigureHostedOpenBotInstanceRequest = {
+    /**
+     * User-owned runtime values installed into both tenant projects. Tilde derives tenant,
+     * instance, OAuth, Computer, and platform identity from authenticated server state.
+     */
+    environment: {
+        [key: string]: string;
+    };
+};
+
 /**
  * User-controlled values accepted by every automatic catalogue connection.
  */
@@ -850,6 +860,30 @@ export type CreateCustomToolProviderResponse = {
     signing_key: string;
     signing_key_metadata: WebhookSigningKeyMetadata;
     tool_group_instance: ToolGroupInstanceSerialized;
+};
+
+export type CreateHostedOpenBotDeploymentRequest = {
+    /**
+     * Globally unique label used for deterministic Tilde and Vercel resources.
+     */
+    slug: string;
+    /**
+     * User-facing title for the isolated OpenBot instance and its Tilde team.
+     */
+    title: string;
+};
+
+export type CreateHostedOpenBotReleaseFile = {
+    mode: number;
+    path: string;
+    sha1: string;
+    size: number;
+};
+
+export type CreateHostedOpenBotReleaseRequest = {
+    files: Array<CreateHostedOpenBotReleaseFile>;
+    service: HostedOpenBotReleaseService;
+    source_revision: string;
 };
 
 export type CreateHumanApprovalActionRequestInner = {
@@ -1608,6 +1642,86 @@ export type HashedApiKey = {
 export type HealthCheckResponse = {
     status: string;
 };
+
+export type HostedOpenBotDeployment = {
+    bootstrap_command_id: string;
+    deployment_url: string;
+    hostname: string;
+    instance_id: string;
+    oauth: OpenBotDeployment;
+    org_id: string;
+    slug: string;
+    status: string;
+    team_id: string;
+    title: string;
+    vercel_agent_project: string;
+    vercel_control_project: string;
+    vercel_sandbox: string;
+};
+
+export type HostedOpenBotInstance = {
+    bootstrap_command_id?: string | null;
+    computer_image?: string | null;
+    computer_service_url: string;
+    created_at: WrappedChronoDateTime;
+    hostname: string;
+    id: string;
+    org_id: string;
+    slug: string;
+    status: HostedOpenBotInstanceStatus;
+    team_id: string;
+    title: string;
+    updated_at: WrappedChronoDateTime;
+    vercel_agent_project_id: string;
+    vercel_agent_project_name: string;
+    vercel_control_project_id: string;
+    vercel_control_project_name: string;
+    vercel_sandbox_name: string;
+};
+
+export enum HostedOpenBotInstanceStatus {
+    PROVISIONING = 'provisioning',
+    ACTIVE = 'active',
+    ERROR = 'error',
+    DELETING = 'deleting'
+}
+
+export type HostedOpenBotRelease = {
+    created_at: WrappedChronoDateTime;
+    deployment_url?: string | null;
+    error_message?: string | null;
+    files: Array<HostedOpenBotReleaseFile>;
+    id: string;
+    instance_id: string;
+    org_id: string;
+    service: HostedOpenBotReleaseService;
+    source_revision: string;
+    status: HostedOpenBotReleaseStatus;
+    team_id: string;
+    updated_at: WrappedChronoDateTime;
+    vercel_deployment_id?: string | null;
+};
+
+export type HostedOpenBotReleaseFile = {
+    mode: number;
+    path: string;
+    sha1: string;
+    size: number;
+    uploaded: boolean;
+};
+
+export enum HostedOpenBotReleaseService {
+    CONTROL = 'control',
+    AGENTS = 'agents'
+}
+
+export enum HostedOpenBotReleaseStatus {
+    UPLOADING = 'uploading',
+    FINALIZING = 'finalizing',
+    DEPLOYING = 'deploying',
+    READY = 'ready',
+    FAILED = 'failed'
+}
 
 /**
  * Authenticated human identity.
@@ -4465,6 +4579,13 @@ export type UpdateCustomToolProviderRequestInner = {
     local_running_endpoint?: boolean | null;
 };
 
+export type UpdateHostedOpenBotComputerImageRequest = {
+    /**
+     * Immutable VCR digest scoped to this instance's control project.
+     */
+    image: string;
+};
+
 /**
  * Request body for updating a registered HTTP Vercel AI SDK agent.
  */
@@ -6173,6 +6294,48 @@ export type CreateOrganizationResponses = {
 };
 
 export type CreateOrganizationResponse = CreateOrganizationResponses[keyof CreateOrganizationResponses];
+
+export type CreateHostedOpenbotDeploymentData = {
+    body: CreateHostedOpenBotDeploymentRequest;
+    path: {
+        /**
+         * Owning Tilde organization ID
+         */
+        org_id: string;
+    };
+    query?: never;
+    url: '/api/v1/identity/organizations/{org_id}/openbot/deployments';
+};
+
+export type CreateHostedOpenbotDeploymentErrors = {
+    /**
+     * Invalid title or slug
+     */
+    400: Error;
+    /**
+     * Unauthorized
+     */
+    401: Error;
+    /**
+     * Not an organization administrator
+     */
+    403: Error;
+    /**
+     * Hosted OpenBot provisioning is unavailable
+     */
+    503: Error;
+};
+
+export type CreateHostedOpenbotDeploymentError = CreateHostedOpenbotDeploymentErrors[keyof CreateHostedOpenbotDeploymentErrors];
+
+export type CreateHostedOpenbotDeploymentResponses = {
+    /**
+     * Hosted OpenBot provisioning started
+     */
+    200: HostedOpenBotDeployment;
+};
+
+export type CreateHostedOpenbotDeploymentResponse = CreateHostedOpenbotDeploymentResponses[keyof CreateHostedOpenbotDeploymentResponses];
 
 export type DeleteOrganizationData = {
     body?: never;
@@ -10473,6 +10636,185 @@ export type RegisterOpenbotDeploymentResponses = {
 };
 
 export type RegisterOpenbotDeploymentResponse = RegisterOpenbotDeploymentResponses[keyof RegisterOpenbotDeploymentResponses];
+
+export type GetHostedOpenbotInstanceData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        instance_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}';
+};
+
+export type GetHostedOpenbotInstanceErrors = {
+    404: Error;
+};
+
+export type GetHostedOpenbotInstanceError = GetHostedOpenbotInstanceErrors[keyof GetHostedOpenbotInstanceErrors];
+
+export type GetHostedOpenbotInstanceResponses = {
+    200: HostedOpenBotInstance;
+};
+
+export type GetHostedOpenbotInstanceResponse = GetHostedOpenbotInstanceResponses[keyof GetHostedOpenbotInstanceResponses];
+
+export type UpdateHostedOpenbotComputerImageData = {
+    body: UpdateHostedOpenBotComputerImageRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        instance_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/computer-image';
+};
+
+export type UpdateHostedOpenbotComputerImageErrors = {
+    400: Error;
+};
+
+export type UpdateHostedOpenbotComputerImageError = UpdateHostedOpenbotComputerImageErrors[keyof UpdateHostedOpenbotComputerImageErrors];
+
+export type UpdateHostedOpenbotComputerImageResponses = {
+    200: HostedOpenBotInstance;
+};
+
+export type UpdateHostedOpenbotComputerImageResponse = UpdateHostedOpenbotComputerImageResponses[keyof UpdateHostedOpenbotComputerImageResponses];
+
+export type ConfigureHostedOpenbotInstanceData = {
+    body: ConfigureHostedOpenBotInstanceRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        instance_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/configuration';
+};
+
+export type ConfigureHostedOpenbotInstanceErrors = {
+    400: Error;
+};
+
+export type ConfigureHostedOpenbotInstanceError = ConfigureHostedOpenbotInstanceErrors[keyof ConfigureHostedOpenbotInstanceErrors];
+
+export type ConfigureHostedOpenbotInstanceResponses = {
+    200: HostedOpenBotInstance;
+};
+
+export type ConfigureHostedOpenbotInstanceResponse = ConfigureHostedOpenbotInstanceResponses[keyof ConfigureHostedOpenbotInstanceResponses];
+
+export type CreateHostedOpenbotReleaseData = {
+    body: CreateHostedOpenBotReleaseRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        instance_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases';
+};
+
+export type CreateHostedOpenbotReleaseErrors = {
+    400: Error;
+};
+
+export type CreateHostedOpenbotReleaseError = CreateHostedOpenbotReleaseErrors[keyof CreateHostedOpenbotReleaseErrors];
+
+export type CreateHostedOpenbotReleaseResponses = {
+    200: HostedOpenBotRelease;
+};
+
+export type CreateHostedOpenbotReleaseResponse = CreateHostedOpenbotReleaseResponses[keyof CreateHostedOpenbotReleaseResponses];
+
+export type GetHostedOpenbotReleaseData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        instance_id: string;
+        release_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases/{release_id}';
+};
+
+export type GetHostedOpenbotReleaseErrors = {
+    404: Error;
+};
+
+export type GetHostedOpenbotReleaseError = GetHostedOpenbotReleaseErrors[keyof GetHostedOpenbotReleaseErrors];
+
+export type GetHostedOpenbotReleaseResponses = {
+    200: HostedOpenBotRelease;
+};
+
+export type GetHostedOpenbotReleaseResponse = GetHostedOpenbotReleaseResponses[keyof GetHostedOpenbotReleaseResponses];
+
+export type UploadHostedOpenbotReleaseFileData = {
+    body: Array<number>;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        instance_id: string;
+        release_id: string;
+        sha1: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases/{release_id}/files/{sha1}';
+};
+
+export type UploadHostedOpenbotReleaseFileErrors = {
+    400: Error;
+};
+
+export type UploadHostedOpenbotReleaseFileError = UploadHostedOpenbotReleaseFileErrors[keyof UploadHostedOpenbotReleaseFileErrors];
+
+export type UploadHostedOpenbotReleaseFileResponses = {
+    200: HostedOpenBotRelease;
+};
+
+export type UploadHostedOpenbotReleaseFileResponse = UploadHostedOpenbotReleaseFileResponses[keyof UploadHostedOpenbotReleaseFileResponses];
+
+export type FinalizeHostedOpenbotReleaseData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        instance_id: string;
+        release_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases/{release_id}/finalize';
+};
+
+export type FinalizeHostedOpenbotReleaseErrors = {
+    400: Error;
+};
+
+export type FinalizeHostedOpenbotReleaseError = FinalizeHostedOpenbotReleaseErrors[keyof FinalizeHostedOpenbotReleaseErrors];
+
+export type FinalizeHostedOpenbotReleaseResponses = {
+    200: HostedOpenBotRelease;
+};
+
+export type FinalizeHostedOpenbotReleaseResponse = FinalizeHostedOpenbotReleaseResponses[keyof FinalizeHostedOpenbotReleaseResponses];
 
 export type ListManagedUserCredentialsData = {
     body?: never;

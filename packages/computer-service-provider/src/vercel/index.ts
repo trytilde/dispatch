@@ -49,6 +49,10 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
   #registryIdentity: Promise<VercelRegistryIdentity> | undefined;
   #sandboxCredentials: Promise<VercelProjectCredentials> | undefined;
 
+  get externallyManagedLifecycle(): boolean {
+    return this.platform.managed;
+  }
+
   constructor(options: VercelSandboxComputerProviderOptions = {}) {
     const { platform, request, developmentProvider, ...imageDeployment } = options;
     super(imageDeployment, {
@@ -116,7 +120,10 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
     }));
   }
 
-  #vercelSandboxCredentials(context?: ComputerCallContext): Promise<VercelProjectCredentials> {
+  #vercelSandboxCredentials(
+    context?: ComputerCallContext,
+  ): Promise<VercelProjectCredentials | Record<string, never>> {
+    if (this.platform.managed) return Promise.resolve({});
     const environment = context?.environment ?? process.env;
     return (this.#sandboxCredentials ??= resolveVercelProjectCredentials({
       token: environment.VERCEL_TOKEN,
@@ -135,7 +142,10 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
     if (this.#handles.has(id))
       throw new ComputerProviderError("invalid_configuration", `Computer ${id} already exists`);
     const { Sandbox } = await import("@vercel/sandbox");
-    const image = spec.image ?? process.env.VERCEL_COMPUTER_IMAGE;
+    const image =
+      spec.image ??
+      process.env.VERCEL_COMPUTER_IMAGE ??
+      (this.platform.managed ? "vercel/sandbox/universal:latest" : undefined);
     if (!image)
       throw new ComputerProviderError(
         "invalid_configuration",

@@ -2065,7 +2065,7 @@
           "v1"
         ],
         "summary": "Create a hosted OpenBot instance",
-        "description": "Creates an isolated Tilde team, Vercel control and agent projects, a persistent Vercel Sandbox with local Git and a deterministic Vercel project domain, and OIDC-backed AI Gateway access, then starts deployment. Custom Cloudflare DNS is a follow-up.",
+        "description": "Creates an isolated Tilde team, one Vercel runtime project containing the web app, control API, and agent functions, a persistent Vercel Sandbox with local Git and a deterministic Vercel project domain, and OIDC-backed AI Gateway access, then starts deployment. Deprecated control and agent project response fields mirror the runtime project for compatibility. Custom Cloudflare DNS is a follow-up.",
         "operationId": "create_hosted_openbot_deployment",
         "parameters": [
           {
@@ -4454,6 +4454,724 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/team/{team_id}/automations": {
+      "get": {
+        "tags": [
+          "automations",
+          "v1"
+        ],
+        "summary": "List unified automations",
+        "description": "Lists authoritative automation roots, filterable by agent and reconciliation status.",
+        "operationId": "automations-list",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/AutomationStatus"
+                }
+              ]
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "next_page_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutomationPaginatedResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/automations/{automation_id}": {
+      "get": {
+        "tags": [
+          "automations",
+          "v1"
+        ],
+        "summary": "Get a unified automation",
+        "description": "Gets the persisted root, trigger membership, generation, and reconciliation status.",
+        "operationId": "automations-get",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Automation"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "automations",
+          "v1"
+        ],
+        "summary": "Create or replace a unified automation",
+        "description": "Persists and serially reconciles desired schedule and event triggers. Reconciliation failure remains observable on the root.",
+        "operationId": "automations-put",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutAutomationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Automation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "automations",
+          "v1"
+        ],
+        "summary": "Delete a unified automation",
+        "description": "Deletes all materialized members before deleting the authoritative root.",
+        "operationId": "automations-delete",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteAutomationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/automations/{automation_id}/ownership": {
+      "post": {
+        "tags": [
+          "automations",
+          "v1"
+        ],
+        "summary": "Set automation ownership",
+        "description": "Sets the persisted ownership mode and preserves an effective-user grant when made private.",
+        "operationId": "automations-set-ownership",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetResourceAccessModeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceAuthorization"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/automations/{automation_id}/run": {
+      "post": {
+        "tags": [
+          "automations",
+          "v1"
+        ],
+        "summary": "Run a unified automation",
+        "description": "Runs once for the supplied durable run ID and returns the existing result on retry.",
+        "operationId": "automations-run",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunAutomationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunAutomationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/automations/{automation_id}/visibility": {
+      "post": {
+        "tags": [
+          "automations",
+          "v1"
+        ],
+        "summary": "Set automation visibility",
+        "description": "Sets the persisted visibility mode and preserves an effective-user grant when made private.",
+        "operationId": "automations-set-visibility",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetResourceAccessModeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceAuthorization"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/automations/{automation_id}/{plane}/grants": {
+      "get": {
+        "tags": [
+          "automations",
+          "v1"
+        ],
+        "summary": "List automation grants",
+        "description": "Lists grants on the selected automation authorization plane.",
+        "operationId": "automations-list-grants",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "plane",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ResourceGrantPlane"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ResourceGrant"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "automations",
+          "v1"
+        ],
+        "summary": "Add an automation grant",
+        "description": "Validates and adds a principal grant on the selected authorization plane.",
+        "operationId": "automations-add-grant",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "plane",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ResourceGrantPlane"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateResourcePlaneGrantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceGrant"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/automations/{automation_id}/{plane}/grants/{principal_type}/{principal_id}": {
+      "delete": {
+        "tags": [
+          "automations",
+          "v1"
+        ],
+        "summary": "Remove an automation grant",
+        "description": "Idempotently removes a principal grant while retaining at least one private ownership grant.",
+        "operationId": "automations-remove-grant",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "plane",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ResourceGrantPlane"
+            }
+          },
+          {
+            "name": "principal_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ResourcePrincipalType"
+            }
+          },
+          {
+            "name": "principal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
       }
     },
     "/api/v1/team/{team_id}/chatkit/agent": {
@@ -15321,7 +16039,7 @@
           "v1"
         ],
         "summary": "Get a hosted OpenBot instance",
-        "description": "Returns the server-owned Vercel project, Sandbox, image, hostname, and lifecycle state for one team-isolated OpenBot instance.",
+        "description": "Returns the server-owned canonical Vercel runtime project, Sandbox, image, hostname, and lifecycle state for one team-isolated OpenBot instance. Pre-consolidation instances have no runtime project and retain their readable deprecated split control and agent project fields.",
         "operationId": "get_hosted_openbot_instance",
         "parameters": [
           {
@@ -15389,7 +16107,7 @@
           "v1"
         ],
         "summary": "Set the hosted OpenBot computer image",
-        "description": "Records an immutable VCR digest owned by this instance's control project for subsequent OIDC-authenticated Sandbox creation.",
+        "description": "Records an immutable VCR digest owned by this instance's canonical runtime project, or by its legacy control project for a pre-consolidation instance, for subsequent OIDC-authenticated Sandbox creation.",
         "operationId": "update_hosted_openbot_computer_image",
         "parameters": [
           {
@@ -15467,7 +16185,7 @@
           "v1"
         ],
         "summary": "Configure a hosted OpenBot instance",
-        "description": "Installs allowlisted user-owned OpenBot runtime values into the instance's control and agent projects. Tenant, OAuth, Computer, and platform identity are derived from authenticated server state.",
+        "description": "Installs allowlisted user-owned OpenBot runtime values into the instance's canonical runtime project and derives VERCEL_RUNTIME_PROJECT server-side. Pre-consolidation instances continue to receive values in both existing split projects. Tenant, OAuth, Computer, and platform identity are derived from authenticated server state.",
         "operationId": "configure_hosted_openbot_instance",
         "parameters": [
           {
@@ -15545,7 +16263,7 @@
           "v1"
         ],
         "summary": "Create a hosted OpenBot release",
-        "description": "Creates an uploading release with a content-addressed Build Output API file manifest for either the control or agent project.",
+        "description": "Creates an uploading content-addressed Build Output API release. Consolidated instances require service=runtime and deploy the combined web, control, and agent artifact to the canonical runtime project. Pre-consolidation instances continue to accept the deprecated control and agents services.",
         "operationId": "create_hosted_openbot_release",
         "parameters": [
           {
@@ -15798,7 +16516,7 @@
           "v1"
         ],
         "summary": "Finalize a hosted OpenBot release",
-        "description": "Requires every manifest file to be uploaded, derives the bound Vercel project server-side, and creates its production deployment.",
+        "description": "Requires every manifest file to be uploaded, derives the canonical runtime project or legacy service-specific project server-side, and idempotently creates its production deployment.",
         "operationId": "finalize_hosted_openbot_release",
         "parameters": [
           {
@@ -15861,6 +16579,85 @@
           {
             "api_key": []
           },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/identity/openbot/mission-control-ticket": {
+      "post": {
+        "tags": [
+          "identity",
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Issue an OpenBot Mission Control socket ticket",
+        "description": "Exchanges an installation-audience OpenBot bearer token for a 60-second credential accepted only by the requested team's Mission Control WebSocket. Present it as the `tilde.mission-control.ticket.<ticket>` WebSocket subprotocol; the long-lived access token never enters a URL or browser JavaScript.",
+        "operationId": "issue_openbot_mission_control_ticket",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Tilde team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueMissionControlSocketTicketRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Short-lived Mission Control socket ticket",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionControlSocketTicket"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid OpenBot access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Token is not bound to this team",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
           {
             "bearer_token": []
           }
@@ -21046,6 +21843,126 @@
           },
           "500": {
             "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/mcp/tool-group/{tool_group_instance_id}/tools/enable-and-bind": {
+      "post": {
+        "tags": [
+          "mcp",
+          "v1"
+        ],
+        "summary": "Enable provider tools and bind them to MCP servers",
+        "description": "Idempotently enables either every provider tool or an explicit set, then adds those enabled tools to each of 1-50 MCP servers. Invalid selections and provider-account authorization fail before writes. Runtime enablement and server-binding failures are returned per item so partial progress is observable and the same request can be retried safely. Each individual MCP-server mapping batch remains atomic.",
+        "operationId": "enable-and-bind-provider-tools",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tool_group_instance_id",
+            "in": "path",
+            "description": "Provider account / tool-group instance ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnableAndBindToolsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Per-tool enablement and per-server binding results. The complete field is false when any item failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnableAndBindToolsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or duplicate tool/server selection; no mutations were attempted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized; no mutations were attempted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Caller cannot manage the provider account; no mutations were attempted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Provider account or explicitly selected tool not found; no mutations were attempted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed before an observable per-item result could be returned",
             "content": {
               "application/json": {
                 "schema": {
@@ -28545,6 +29462,312 @@
         }
       }
     },
+    "/api/v1/team/{team_id}/tilde-pay/onboarding": {
+      "post": {
+        "tags": [
+          "tilde-pay",
+          "v1"
+        ],
+        "summary": "Provision Tilde Pay",
+        "description": "Idempotently enroll billing, create a customer when details are supplied, create a wallet after KYC, configure the wallet MCP server and tools, and optionally configure browser tools when enabled.",
+        "operationId": "tilde-pay-provision",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProvisionTildePayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Fully reconciled Tilde Pay onboarding state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvisionTildePayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/tilde-pay/payments/mpp": {
+      "post": {
+        "tags": [
+          "tilde-pay",
+          "v1"
+        ],
+        "summary": "Make MPP payment",
+        "description": "Make an MPP payment from a Tilde Pay wallet.",
+        "operationId": "tilde-pay-payment-mpp",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayPaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Tilde Pay payment response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/tilde-pay/payments/x402": {
+      "post": {
+        "tags": [
+          "tilde-pay",
+          "v1"
+        ],
+        "summary": "Make x402 payment",
+        "description": "Make an x402 payment from a Tilde Pay wallet.",
+        "operationId": "tilde-pay-payment-x402",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayPaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Tilde Pay payment response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/tilde-pay/wallet": {
+      "get": {
+        "tags": [
+          "tilde-pay",
+          "v1"
+        ],
+        "summary": "Get Tilde Pay wallet summary",
+        "description": "Return wallet, balances, fiat deposit information, and crypto deposit information for Tilde Pay.",
+        "operationId": "tilde-pay-wallet-summary",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tilde Pay wallet summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayWalletSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "tilde-pay",
+          "v1"
+        ],
+        "summary": "Create Tilde Pay wallet",
+        "description": "Create a Tilde Pay wallet after KYC and return product-shaped wallet details.",
+        "operationId": "tilde-pay-wallet-create",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePayWalletRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Tilde Pay wallet summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayWalletSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/tilde-pay/wallet/wait-until-balance": {
+      "post": {
+        "tags": [
+          "tilde-pay",
+          "v1"
+        ],
+        "summary": "Wait for Tilde Pay balance",
+        "description": "Poll wallet balances until the requested asset reaches the requested minimum.",
+        "operationId": "tilde-pay-wallet-wait-until-balance",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaitForPayBalanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Tilde Pay balance wait result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitUntilBalanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/team/{team_id}/trusted-runtime": {
       "get": {
         "tags": [
@@ -28869,6 +30092,1009 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet": {
+      "get": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "List wallets",
+        "description": "List wallets for the current org/team.",
+        "operationId": "wallet-list",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "owner_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List wallets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletPaginatedResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Create wallet",
+        "description": "Create a Tilde wallet by provisioning a Privy EVM wallet, Compose virtual IBAN, and Compose crypto deposit wallet.",
+        "operationId": "wallet-create",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWalletBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Created wallet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Wallet"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream provider error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/customer": {
+      "get": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "List wallet customers",
+        "description": "List wallet customers for the current org/team.",
+        "operationId": "wallet-customer-list",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "owner_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List wallet customers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletCustomerPaginatedResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Create wallet customer",
+        "description": "Create a Compose customer and return a KYC verification link for wallet onboarding.",
+        "operationId": "wallet-customer-create",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWalletCustomerBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Created wallet customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletCustomer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/customer/{customer_id}": {
+      "get": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Get wallet customer",
+        "description": "Get a wallet customer by local id.",
+        "operationId": "wallet-customer-get",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customer_id",
+            "in": "path",
+            "description": "Wallet customer ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet customer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletCustomer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/customer/{customer_id}/kyc": {
+      "get": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Get wallet customer KYC details",
+        "description": "Return the stored Compose KYC verification status and KYC flow URL for a wallet customer.",
+        "operationId": "wallet-customer-kyc-get",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customer_id",
+            "in": "path",
+            "description": "Wallet customer ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet customer KYC details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetWalletCustomerKycResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/{wallet_id}": {
+      "get": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Get wallet",
+        "description": "Get a wallet by id.",
+        "operationId": "wallet-get",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "description": "Wallet ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Wallet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/balances": {
+      "get": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Get wallet balances",
+        "description": "Refresh and return Compose balances for this wallet.",
+        "operationId": "wallet-get-balances",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "description": "Wallet ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet balances",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBalancesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/crypto": {
+      "get": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Get wallet crypto deposit information",
+        "description": "Return crypto deposit information for this wallet.",
+        "operationId": "wallet-get-crypto-deposit-information",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "description": "Wallet ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet crypto deposit information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetCryptoDepositInformationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/fiat": {
+      "get": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Get wallet fiat deposit information",
+        "description": "Refresh and return Compose fiat deposit information for this wallet.",
+        "operationId": "wallet-get-fiat-deposit-information",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "description": "Wallet ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet fiat deposit information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetFiatDepositInformationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/payments/mpp": {
+      "post": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Make MPP payment",
+        "description": "Make an MPP payment from the wallet using the configured payment adapter.",
+        "operationId": "wallet-make-mpp-payment",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "description": "Wallet ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MakeMppPaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Payment response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/payments/x402": {
+      "post": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Make x402 payment",
+        "description": "Make an x402 payment from the wallet using the configured payment adapter.",
+        "operationId": "wallet-make-x402-payment",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "description": "Wallet ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MakeX402PaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Payment response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history": {
+      "get": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "List wallet transaction history",
+        "description": "Return cached transaction history for this wallet without scanning the chain.",
+        "operationId": "wallet-transaction-history-list",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "description": "Wallet ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "next_page_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet transaction history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletTransactionHistoryItemPaginatedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history/refresh": {
+      "post": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Refresh wallet transaction history",
+        "description": "Scan configured chains for wallet-linked USDC transfers and upsert cached transaction history.",
+        "operationId": "wallet-transaction-history-refresh",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "description": "Wallet ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet transaction history refresh result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshWalletTransactionHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/virtual-account": {
+      "post": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Create wallet virtual account",
+        "description": "Create a currency-denominated Compose virtual account for an existing wallet.",
+        "operationId": "wallet-virtual-account-create",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "description": "Wallet ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWalletVirtualAccountBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Created wallet virtual account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletVirtualAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream provider error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/wait-until-balance": {
+      "post": {
+        "tags": [
+          "wallet",
+          "v1"
+        ],
+        "summary": "Wait until wallet balance",
+        "description": "Poll the local wallet balance cache until an asset reaches the requested minimum.",
+        "operationId": "wallet-wait-until-balance",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "description": "Wallet ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaitUntilBalanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Wait result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitUntilBalanceResponse"
                 }
               }
             }
@@ -39440,6 +41666,298 @@
           }
         }
       },
+      "Automation": {
+        "type": "object",
+        "required": [
+          "id",
+          "org_id",
+          "team_id",
+          "authorization",
+          "created_by_user_id",
+          "agent_id",
+          "name",
+          "instruction",
+          "enabled",
+          "status",
+          "generation",
+          "applied_generation",
+          "triggers",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "agent_id": {
+            "type": "string"
+          },
+          "applied_generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "authorization": {
+            "$ref": "#/components/schemas/ResourceAuthorizationModes"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "created_by_user_id": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "error_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "$ref": "#/components/schemas/WrappedUuidV4"
+          },
+          "instruction": {
+            "type": "string"
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Execution error paired with the latest materialized schedule execution."
+          },
+          "last_run_at": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedChronoDateTime",
+                "description": "Latest materialized schedule execution, independent of reconciliation status."
+              }
+            ]
+          },
+          "last_session_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedUuidV4",
+                "description": "Session created by `last_run_at`, when one was recorded."
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AutomationStatus"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "triggers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AutomationTrigger"
+            }
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          }
+        }
+      },
+      "AutomationPaginatedResponse": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Automation"
+            }
+          },
+          "next_page_token": {
+            "type": "string"
+          }
+        }
+      },
+      "AutomationStatus": {
+        "type": "string",
+        "enum": [
+          "reconciling",
+          "active",
+          "error",
+          "deleting"
+        ]
+      },
+      "AutomationTrigger": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AutomationTriggerSpec"
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "created_at": {
+                "$ref": "#/components/schemas/WrappedChronoDateTime"
+              },
+              "id": {
+                "$ref": "#/components/schemas/WrappedUuidV4"
+              },
+              "last_error": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Schedule-only live projection from the materialized ChatKit routine."
+              },
+              "last_run_at": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WrappedChronoDateTime",
+                    "description": "Schedule-only live projection from the materialized ChatKit routine."
+                  }
+                ]
+              },
+              "last_session_id": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WrappedUuidV4",
+                    "description": "Schedule-only live projection from the materialized ChatKit routine."
+                  }
+                ]
+              },
+              "materialized_resource_id": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WrappedUuidV4"
+                  }
+                ]
+              },
+              "next_run_at": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WrappedChronoDateTime",
+                    "description": "Schedule-only live projection from the materialized ChatKit routine."
+                  }
+                ]
+              },
+              "schedule_description": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Schedule-only live projection from the materialized ChatKit routine."
+              },
+              "updated_at": {
+                "$ref": "#/components/schemas/WrappedChronoDateTime"
+              }
+            }
+          }
+        ]
+      },
+      "AutomationTriggerInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AutomationTriggerSpec"
+          },
+          {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/WrappedUuidV4"
+              }
+            }
+          }
+        ]
+      },
+      "AutomationTriggerSpec": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "schedule",
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "schedule"
+                ]
+              },
+              "schedule": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "signal_provider_instance_id",
+              "signal_type",
+              "kind"
+            ],
+            "properties": {
+              "filter": {
+                "$ref": "#/components/schemas/SignalRuleFilter"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "event"
+                ]
+              },
+              "session_policy": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SignalSessionPolicy",
+                    "description": "Omitted policies are resolved by Tilde to a new session per delivery."
+                  }
+                ]
+              },
+              "signal_provider_instance_id": {
+                "type": "string"
+              },
+              "signal_type": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
       "BillingContext": {
         "type": "object",
         "description": "Typed billing bootstrap response for the selected organization.",
@@ -41031,7 +43549,7 @@
         "properties": {
           "environment": {
             "type": "object",
-            "description": "User-owned runtime values installed into both tenant projects. Tilde derives tenant,\ninstance, OAuth, Computer, and platform identity from authenticated server state.",
+            "description": "User-owned runtime values installed into the canonical runtime project. Legacy split\ninstances continue to receive the values in both existing projects. Tilde derives tenant,\ninstance, OAuth, Computer, project, and platform identity from authenticated server state.",
             "additionalProperties": {
               "type": "string"
             },
@@ -41984,6 +44502,27 @@
         ],
         "properties": {
           "schema": {}
+        }
+      },
+      "CreatePayWalletRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "wallet_customer_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "wallet_customer_id": {
+            "type": "string"
+          }
         }
       },
       "CreatePersonalToolGroupInstanceBody": {
@@ -43226,6 +45765,58 @@
           }
         }
       },
+      "CreateWalletBody": {
+        "type": "object",
+        "required": [
+          "name",
+          "wallet_customer_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "wallet_customer_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateWalletCustomerBody": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "account_type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CreateWalletVirtualAccountBody": {
+        "type": "object",
+        "required": [
+          "currency"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
       "CreateWikiAssetBody": {
         "type": "object",
         "required": [
@@ -43847,6 +46438,17 @@
           }
         }
       },
+      "DeleteAutomationResponse": {
+        "type": "object",
+        "required": [
+          "deleted"
+        ],
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          }
+        }
+      },
       "DeleteChatKitAgentTurnQueueItemResponse": {
         "type": "object",
         "required": [
@@ -43935,6 +46537,46 @@
           }
         }
       },
+      "DirectTokenPayment": {
+        "type": "object",
+        "required": [
+          "destination_address",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "asset": {
+            "type": "string"
+          },
+          "chain": {
+            "type": "string"
+          },
+          "destination_address": {
+            "type": "string"
+          },
+          "destination_asset": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "destination_chain": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "slippage_bps": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
       "DownloadSkillPackageFileRequest": {
         "type": "object",
         "description": "Selects one package file for a lazy download URL.",
@@ -43943,6 +46585,139 @@
         ],
         "properties": {
           "path": {
+            "type": "string"
+          }
+        }
+      },
+      "EnableAndBindMcpServerResult": {
+        "type": "object",
+        "description": "Per-server result for an enable-and-bind operation.",
+        "required": [
+          "mcp_server_instance_id",
+          "succeeded",
+          "bound_tool_source_type_ids",
+          "already_bound_tool_source_type_ids"
+        ],
+        "properties": {
+          "already_bound_tool_source_type_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bound_tool_source_type_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mcp_server_instance_id": {
+            "type": "string"
+          },
+          "succeeded": {
+            "type": "boolean"
+          }
+        }
+      },
+      "EnableAndBindToolFailure": {
+        "type": "object",
+        "description": "A tool that could not be enabled. Other selected tools may still be bound.",
+        "required": [
+          "tool_source_type_id",
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "tool_source_type_id": {
+            "type": "string"
+          }
+        }
+      },
+      "EnableAndBindToolsBody": {
+        "type": "object",
+        "description": "Public body for enabling provider tools and binding them to MCP servers.",
+        "required": [
+          "mcp_server_instance_ids"
+        ],
+        "properties": {
+          "all_tools": {
+            "type": "boolean",
+            "description": "Select every tool exposed by the provider account. Must be false when\n`tool_source_type_ids` is non-empty."
+          },
+          "mcp_server_instance_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1
+          },
+          "tool_source_type_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Explicit tools to enable when `all_tools` is false.",
+            "maxItems": 500
+          }
+        }
+      },
+      "EnableAndBindToolsResponse": {
+        "type": "object",
+        "description": "Observable result of enabling tools and binding them to one or more MCP servers.",
+        "required": [
+          "tool_group_instance_id",
+          "selected_tool_source_type_ids",
+          "enabled_tool_source_type_ids",
+          "already_enabled_tool_source_type_ids",
+          "failed_tools",
+          "mcp_servers",
+          "complete"
+        ],
+        "properties": {
+          "already_enabled_tool_source_type_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "complete": {
+            "type": "boolean",
+            "description": "True only when every selected tool was enabled and every server binding succeeded."
+          },
+          "enabled_tool_source_type_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "failed_tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnableAndBindToolFailure"
+            }
+          },
+          "mcp_servers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnableAndBindMcpServerResult"
+            }
+          },
+          "selected_tool_source_type_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tool_group_instance_id": {
             "type": "string"
           }
         }
@@ -44278,6 +47053,80 @@
           }
         }
       },
+      "GetBalancesResponse": {
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "balances"
+        ],
+        "properties": {
+          "balances": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "wallet_id": {
+            "type": "string"
+          }
+        }
+      },
+      "GetCryptoDepositInformationResponse": {
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "crypto"
+        ],
+        "properties": {
+          "crypto": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "wallet_id": {
+            "type": "string"
+          }
+        }
+      },
+      "GetFiatDepositInformationResponse": {
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "currency",
+          "fiat"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "fiat": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "wallet_id": {
+            "type": "string"
+          }
+        }
+      },
+      "GetWalletCustomerKycResponse": {
+        "type": "object",
+        "required": [
+          "wallet_customer_id",
+          "compose_customer_id",
+          "kyc_verified"
+        ],
+        "properties": {
+          "compose_customer_id": {
+            "type": "string"
+          },
+          "kyc_flow_link": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kyc_verified": {
+            "type": "boolean"
+          },
+          "wallet_customer_id": {
+            "type": "string"
+          }
+        }
+      },
       "HashedApiKey": {
         "type": "object",
         "required": [
@@ -44385,10 +47234,21 @@
             "type": "string"
           },
           "vercel_agent_project": {
-            "type": "string"
+            "type": "string",
+            "description": "Deprecated compatibility projection. New instances mirror the runtime project here.",
+            "deprecated": true
           },
           "vercel_control_project": {
-            "type": "string"
+            "type": "string",
+            "description": "Deprecated compatibility projection. New instances mirror the runtime project here.",
+            "deprecated": true
+          },
+          "vercel_runtime_project": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Canonical Vercel project for combined web, control, and agent runtime releases.\nThis is absent only for pre-consolidation instances that still use split projects."
           },
           "vercel_sandbox": {
             "type": "string"
@@ -44458,16 +47318,38 @@
             "$ref": "#/components/schemas/WrappedChronoDateTime"
           },
           "vercel_agent_project_id": {
-            "type": "string"
+            "type": "string",
+            "description": "Deprecated compatibility projection. New instances mirror the runtime project here.",
+            "deprecated": true
           },
           "vercel_agent_project_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Deprecated compatibility projection. New instances mirror the runtime project here.",
+            "deprecated": true
           },
           "vercel_control_project_id": {
-            "type": "string"
+            "type": "string",
+            "description": "Deprecated compatibility projection. New instances mirror the runtime project here.",
+            "deprecated": true
           },
           "vercel_control_project_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Deprecated compatibility projection. New instances mirror the runtime project here.",
+            "deprecated": true
+          },
+          "vercel_runtime_project_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Canonical Vercel project ID for combined web, control, and agent runtime releases.\nThis is absent on legacy instances that retain split control and agent projects."
+          },
+          "vercel_runtime_project_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Canonical Vercel project name for combined web, control, and agent runtime releases.\nThis is absent on legacy instances that retain split control and agent projects."
           },
           "vercel_sandbox_name": {
             "type": "string"
@@ -44583,6 +47465,7 @@
       "HostedOpenBotReleaseService": {
         "type": "string",
         "enum": [
+          "runtime",
           "control",
           "agents"
         ]
@@ -45311,6 +48194,24 @@
           }
         }
       },
+      "IssueMissionControlSocketTicketRequest": {
+        "type": "object",
+        "required": [
+          "transport"
+        ],
+        "properties": {
+          "origin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Required for browser tickets and forbidden for native tickets. Browser\norigins must match this OpenBot registration."
+          },
+          "transport": {
+            "$ref": "#/components/schemas/MissionControlTicketTransport"
+          }
+        }
+      },
       "JsonEqualsPredicate": {
         "type": "object",
         "required": [
@@ -45596,6 +48497,233 @@
           "sub": {
             "type": "string",
             "description": "Subject identifier (user ID) of the machine account"
+          }
+        }
+      },
+      "MakeMppPaymentRequest": {
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "url"
+        ],
+        "properties": {
+          "body": {},
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "max_amount": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "max_amount_atomic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payment": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DirectTokenPayment"
+              }
+            ]
+          },
+          "preferred_assets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "preferred_channels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Payment-channel contract addresses the caller explicitly permits.\nStateful methods that sign a server-selected channel, such as the\nStellar `channel` intent, require this pin on their first use. A\nvalidated `session_snapshot` pins subsequent requests."
+          },
+          "preferred_networks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "preferred_recipients": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "session_action": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Session lifecycle action (`open`, `voucher`, `commit`, `topUp`, or\n`close`). Omit to open when no snapshot is supplied and voucher\notherwise."
+          },
+          "session_amount_atomic": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Incremental session amount in atomic units. Required for voucher and\ncommit actions unless the challenge pins an increment."
+          },
+          "session_delivery_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Delivery identifier required by a metered `commit` action."
+          },
+          "session_snapshot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PaymentSessionSnapshot",
+                "description": "Previously returned client session state for restart-safe continuation."
+              }
+            ]
+          },
+          "settlement_mode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Preferred method-specific settlement mode. Methods that negotiate\nclient versus server broadcast currently accept `push` or `pull`."
+          },
+          "transport": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Payment transport. Defaults to `http`; use `mcp` for MCP's nested\npayment metadata or `jsonrpc` for the generic root `_meta` binding.\nTempo session challenges also support `sse` and `websocket` (`ws`) for\nmetered streaming with in-band voucher and receipt handling."
+          },
+          "url": {
+            "type": "string"
+          },
+          "wallet_id": {
+            "type": "string"
+          }
+        }
+      },
+      "MakeX402PaymentRequest": {
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "url"
+        ],
+        "properties": {
+          "body": {},
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "max_amount": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "max_amount_atomic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payment": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DirectTokenPayment"
+              }
+            ]
+          },
+          "preferred_assets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "preferred_networks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "preferred_recipients": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "session_action": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Stateful scheme action (`open`, `voucher`, or `refund`). Omit to open\nwhen no snapshot is supplied and voucher otherwise."
+          },
+          "session_amount_atomic": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Incremental amount for voucher/close actions, in atomic units."
+          },
+          "session_snapshot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PaymentSessionSnapshot",
+                "description": "Previously returned client session state for restart-safe continuation."
+              }
+            ]
+          },
+          "transport": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Payment transport. Defaults to `http`; use `mcp` when `body` is the\nJSON-RPC MCP tool-call request that should be retried with x402 metadata."
+          },
+          "url": {
+            "type": "string"
+          },
+          "wallet_id": {
+            "type": "string"
           }
         }
       },
@@ -47178,6 +50306,34 @@
           }
         }
       },
+      "MissionControlSocketTicket": {
+        "type": "object",
+        "required": [
+          "ticket",
+          "protocol",
+          "expires_at"
+        ],
+        "properties": {
+          "expires_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "protocol": {
+            "type": "string",
+            "description": "Stable subprotocol prefix. Append `.` and the returned ticket."
+          },
+          "ticket": {
+            "type": "string",
+            "description": "Short-lived credential presented through the WebSocket subprotocol header."
+          }
+        }
+      },
+      "MissionControlTicketTransport": {
+        "type": "string",
+        "enum": [
+          "browser",
+          "native"
+        ]
+      },
       "MoveWikiPageBody": {
         "type": "object",
         "required": [
@@ -47654,6 +50810,264 @@
           "streaming",
           "done"
         ]
+      },
+      "PayOnboardingStep": {
+        "type": "string",
+        "enum": [
+          "enter_details",
+          "complete_kyc",
+          "ready"
+        ]
+      },
+      "PayPaymentRequest": {
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "url"
+        ],
+        "properties": {
+          "body": {},
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "max_amount": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "max_amount_atomic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payment": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DirectTokenPayment"
+              }
+            ]
+          },
+          "preferred_assets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "preferred_channels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "preferred_networks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "preferred_recipients": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "session_action": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "session_amount_atomic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "session_delivery_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "session_snapshot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PaymentSessionSnapshot"
+              }
+            ]
+          },
+          "settlement_mode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "transport": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "wallet_id": {
+            "type": "string"
+          }
+        }
+      },
+      "PayWalletSummaryError": {
+        "type": "object",
+        "required": [
+          "field",
+          "message"
+        ],
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PayWalletSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "balances": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GetBalancesResponse"
+              }
+            ]
+          },
+          "crypto_deposit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GetCryptoDepositInformationResponse"
+              }
+            ]
+          },
+          "fiat_deposit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GetFiatDepositInformationResponse"
+              }
+            ]
+          },
+          "summary_errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayWalletSummaryError"
+            }
+          },
+          "wallet": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Wallet"
+              }
+            ]
+          }
+        }
+      },
+      "PaymentResponse": {
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "protocol",
+          "response"
+        ],
+        "properties": {
+          "protocol": {
+            "type": "string"
+          },
+          "response": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "wallet_id": {
+            "type": "string"
+          }
+        }
+      },
+      "PaymentSessionSnapshot": {
+        "type": "object",
+        "description": "Opaque-enough client state needed to safely resume a stateful payment\nscheme after a process restart. Every field is authenticated again against\nthe next server challenge before it is used.",
+        "required": [
+          "protocol",
+          "method",
+          "network",
+          "channel_id",
+          "cumulative_amount",
+          "nonce",
+          "expires_at",
+          "deposit_amount",
+          "authorized_signer"
+        ],
+        "properties": {
+          "authorized_signer": {
+            "type": "string"
+          },
+          "channel_id": {
+            "type": "string"
+          },
+          "cumulative_amount": {
+            "type": "string"
+          },
+          "deposit_amount": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "metadata": {},
+          "method": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string"
+          },
+          "nonce": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "protocol": {
+            "type": "string"
+          }
+        }
       },
       "PersonalMcpServerInstanceSerialized": {
         "type": "object",
@@ -49180,6 +52594,108 @@
           }
         }
       },
+      "ProvisionPayBrowserResponse": {
+        "type": "object",
+        "required": [
+          "browser_definition_id",
+          "enabled_tool_ids"
+        ],
+        "properties": {
+          "browser_definition_id": {
+            "type": "string"
+          },
+          "enabled_tool_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ProvisionTildePayRequest": {
+        "type": "object",
+        "properties": {
+          "account_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "owner_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ProvisionTildePayResponse": {
+        "type": "object",
+        "required": [
+          "next_step"
+        ],
+        "properties": {
+          "browser": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProvisionPayBrowserResponse"
+              }
+            ]
+          },
+          "customer": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WalletCustomer"
+              }
+            ]
+          },
+          "kyc": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GetWalletCustomerKycResponse"
+              }
+            ]
+          },
+          "mcp": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SetupPayMcpResponse"
+              }
+            ]
+          },
+          "next_step": {
+            "$ref": "#/components/schemas/PayOnboardingStep"
+          },
+          "wallet": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Wallet"
+              }
+            ]
+          }
+        }
+      },
       "ProvisionedProviderApp": {
         "type": "object",
         "description": "App credentials and metadata created by a provider provisioner.",
@@ -49606,6 +53122,44 @@
         ],
         "description": "How a stored credential is materialized into HTTP request shape when the\nproxy forwards a request upstream."
       },
+      "PutAutomationBody": {
+        "type": "object",
+        "required": [
+          "agent_id",
+          "name",
+          "instruction",
+          "triggers"
+        ],
+        "properties": {
+          "agent_id": {
+            "type": "string"
+          },
+          "authorization": {
+            "$ref": "#/components/schemas/ResourceAuthorizationModes"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "initial_grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceGrantRequest"
+            }
+          },
+          "instruction": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "triggers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AutomationTriggerInput"
+            }
+          }
+        }
+      },
       "ReasoningUIPart": {
         "type": "object",
         "description": "Reasoning UI part - represents model reasoning/thinking",
@@ -49812,6 +53366,34 @@
               "null"
             ],
             "description": "The refresh token. If not provided, will be read from cookie."
+          }
+        }
+      },
+      "RefreshWalletTransactionHistoryResponse": {
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "scanned_chains",
+          "inserted_or_updated",
+          "linked_transactions"
+        ],
+        "properties": {
+          "inserted_or_updated": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "linked_transactions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scanned_chains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "wallet_id": {
+            "type": "string"
           }
         }
       },
@@ -51182,6 +54764,37 @@
           }
         }
       },
+      "RunAutomationBody": {
+        "type": "object",
+        "required": [
+          "run_id"
+        ],
+        "properties": {
+          "run_id": {
+            "$ref": "#/components/schemas/WrappedUuidV4",
+            "description": "Stable client run identity used for deduplication."
+          }
+        }
+      },
+      "RunAutomationResponse": {
+        "type": "object",
+        "required": [
+          "run_id",
+          "session_id",
+          "duplicate"
+        ],
+        "properties": {
+          "duplicate": {
+            "type": "boolean"
+          },
+          "run_id": {
+            "$ref": "#/components/schemas/WrappedUuidV4"
+          },
+          "session_id": {
+            "$ref": "#/components/schemas/WrappedUuidV4"
+          }
+        }
+      },
       "RuntimeConfig": {
         "type": "object",
         "required": [
@@ -51417,6 +55030,32 @@
         "properties": {
           "mode": {
             "$ref": "#/components/schemas/ResourceAccessMode"
+          }
+        }
+      },
+      "SetupPayMcpResponse": {
+        "type": "object",
+        "required": [
+          "mcp_server_id",
+          "tool_group_instance_id",
+          "enabled_tool_ids",
+          "mcp_path"
+        ],
+        "properties": {
+          "enabled_tool_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mcp_path": {
+            "type": "string"
+          },
+          "mcp_server_id": {
+            "type": "string"
+          },
+          "tool_group_instance_id": {
+            "type": "string"
           }
         }
       },
@@ -54773,7 +58412,7 @@
         "properties": {
           "image": {
             "type": "string",
-            "description": "Immutable VCR digest scoped to this instance's control project."
+            "description": "Immutable VCR digest scoped to this instance's runtime project, or its legacy control\nproject for a pre-consolidation instance."
           }
         }
       },
@@ -56005,6 +59644,553 @@
                 "$ref": "#/components/schemas/UserToolFederationSelection"
               }
             }
+          }
+        }
+      },
+      "WaitForPayBalanceRequest": {
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "asset",
+          "minimum_amount"
+        ],
+        "properties": {
+          "asset": {
+            "type": "string"
+          },
+          "minimum_amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "poll_interval_secs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "timeout_secs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "wallet_id": {
+            "type": "string"
+          }
+        }
+      },
+      "WaitUntilBalanceRequest": {
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "asset",
+          "minimum_amount"
+        ],
+        "properties": {
+          "asset": {
+            "type": "string"
+          },
+          "minimum_amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "poll_interval_secs": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "timeout_secs": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "wallet_id": {
+            "type": "string"
+          }
+        }
+      },
+      "WaitUntilBalanceResponse": {
+        "type": "object",
+        "required": [
+          "wallet_id",
+          "satisfied",
+          "observed_amount"
+        ],
+        "properties": {
+          "observed_amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "satisfied": {
+            "type": "boolean"
+          },
+          "wallet_id": {
+            "type": "string"
+          }
+        }
+      },
+      "Wallet": {
+        "type": "object",
+        "required": [
+          "id",
+          "org_id",
+          "team_id",
+          "name",
+          "status",
+          "wallet_customer_id",
+          "privy_wallet_id",
+          "privy_evm_address",
+          "compose_customer_id",
+          "compose_deposit_currency",
+          "compose_deposit_chain",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "cached_compose_balances": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedJsonValue"
+              }
+            ]
+          },
+          "compose_customer_id": {
+            "type": "string"
+          },
+          "compose_deposit_chain": {
+            "type": "string"
+          },
+          "compose_deposit_currency": {
+            "type": "string"
+          },
+          "compose_deposit_wallet_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_compose_sync_at": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedChronoDateTime"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "privy_evm_address": {
+            "type": "string"
+          },
+          "privy_wallet_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "wallet_customer_id": {
+            "type": "string"
+          }
+        }
+      },
+      "WalletCustomer": {
+        "type": "object",
+        "required": [
+          "id",
+          "org_id",
+          "team_id",
+          "name",
+          "account_type",
+          "compose_customer_id",
+          "kyc_verified",
+          "compose_customer_payload",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "account_type": {
+            "type": "string"
+          },
+          "compose_customer_id": {
+            "type": "string"
+          },
+          "compose_customer_payload": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "compose_kyc_payload": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedJsonValue"
+              }
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kyc_flow_link": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kyc_verified": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          }
+        }
+      },
+      "WalletCustomerPaginatedResponse": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WalletCustomer"
+            }
+          },
+          "next_page_token": {
+            "type": "string"
+          }
+        }
+      },
+      "WalletMerchant": {
+        "type": "object",
+        "required": [
+          "id",
+          "org_id",
+          "team_id",
+          "origin",
+          "merchant_url",
+          "raw_metadata",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "favicon_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "icon_fetched_at": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedChronoDateTime"
+              }
+            ]
+          },
+          "icon_media_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "icon_sha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "merchant_url": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "raw_metadata": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          }
+        }
+      },
+      "WalletPaginatedResponse": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Wallet"
+            }
+          },
+          "next_page_token": {
+            "type": "string"
+          }
+        }
+      },
+      "WalletTransactionHistoryItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "org_id",
+          "team_id",
+          "wallet_id",
+          "item_type",
+          "direction",
+          "status",
+          "occurred_at",
+          "raw_payload",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "amount": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "amount_decimals": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "amount_raw": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "asset": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "chain": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counterparty_address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "item_type": {
+            "type": "string"
+          },
+          "merchant": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WalletMerchant"
+              }
+            ]
+          },
+          "merchant_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "occurred_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "raw_payload": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "scanned_at": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedChronoDateTime"
+              }
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "wallet_id": {
+            "type": "string"
+          }
+        }
+      },
+      "WalletTransactionHistoryItemPaginatedResponse": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WalletTransactionHistoryItem"
+            }
+          },
+          "next_page_token": {
+            "type": "string"
+          }
+        }
+      },
+      "WalletVirtualAccount": {
+        "type": "object",
+        "required": [
+          "id",
+          "org_id",
+          "team_id",
+          "wallet_id",
+          "wallet_customer_id",
+          "compose_customer_id",
+          "compose_virtual_account_id",
+          "currency",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "cached_compose_deposit_info": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedJsonValue"
+              }
+            ]
+          },
+          "compose_customer_id": {
+            "type": "string"
+          },
+          "compose_virtual_account_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "wallet_customer_id": {
+            "type": "string"
+          },
+          "wallet_id": {
+            "type": "string"
           }
         }
       },

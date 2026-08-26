@@ -82,7 +82,7 @@ export const SignalDeliverySchema = z
     session_id: z.string().nullable().optional(),
     error_message: z.string().nullable().optional(),
     /** Rules this delivery fired; run history filters on it. */
-    matched_rule_ids: z.array(z.string()).optional(),
+    matched_trigger_ids: z.array(z.string()).optional(),
     created_at: z.string(),
   })
   .passthrough();

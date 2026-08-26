@@ -70,7 +70,7 @@ interface UpstreamSignalDelivery {
   status?: string;
   chatkit_session_id?: string | null;
   error_message?: string | null;
-  matched_rule_ids?: string[];
+  matched_trigger_ids?: string[];
   created_at?: string;
 }
 
@@ -372,7 +372,7 @@ function serializeDelivery(delivery: UpstreamSignalDelivery) {
     session_id: delivery.chatkit_session_id ?? null,
     error_message: delivery.error_message ?? null,
     // Clients filter run history by rule, so the matched rules must survive.
-    matched_rule_ids: delivery.matched_rule_ids ?? [],
+    matched_trigger_ids: delivery.matched_trigger_ids ?? [],
     created_at: delivery.created_at ?? "",
   };
 }

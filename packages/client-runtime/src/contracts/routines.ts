@@ -2,9 +2,8 @@ import { z } from "zod";
 import type { SignalProvider } from "./signals.js";
 
 /**
- * Unified routine contracts shared by every client surface. A routine groups
- * 1..MAX_ROUTINE_TRIGGERS OR'd triggers — schedule triggers backed by Tilde
- * ChatKit routines and event triggers backed by Tilde signal rules — behind
+ * Unified routine contracts shared by every client surface. A routine owns
+ * 1..MAX_ROUTINE_TRIGGERS OR'd native Tilde schedule and event triggers behind
  * the control-service `/api/routines` routes.
  */
 

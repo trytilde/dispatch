@@ -1,64 +1,22 @@
 import type { Hono } from "hono";
 import {
+  pageItems,
+  text,
   tildeJson,
   tildeOptionsFromEnvironment,
   tildePages,
   tildeUnavailable,
-  tildeUnpagedItems,
   tildeUpstreamFailure,
-  pageItems,
-  text,
   valueRecord,
   type TildeRouteOptions,
 } from "./tilde-upstream.js";
 
 export type RoutineRouteOptions = TildeRouteOptions;
 
-interface OpenbotStamp {
-  group: string;
-  trigger: string;
-  instruction?: string;
-}
-
-interface UpstreamRoutine {
-  id: string;
-  agent_inbox_id?: string;
-  title?: string;
-  prompt?: string;
-  schedule?: string;
-  schedule_description?: string;
-  enabled?: boolean;
-  next_run_at?: string | null;
-  last_run_at?: string | null;
-  last_session_id?: string | null;
-  last_error?: string | null;
-  created_at?: string;
-  updated_at?: string;
-  metadata?: Record<string, unknown> | null;
-}
-
 interface JsonEqualsPredicate {
   path: string;
   value: unknown;
 }
-
-interface UpstreamRule {
-  id: string;
-  signal_provider_instance_id?: string;
-  display_name?: string;
-  status?: string;
-  signal_type?: string;
-  filter?: { json_equals?: JsonEqualsPredicate[] } | null;
-  session_policy?: Record<string, unknown> | null;
-  action?: Record<string, unknown> | null;
-  created_at?: string;
-  updated_at?: string;
-  metadata?: Record<string, unknown> | null;
-}
-
-type Member =
-  | { kind: "schedule"; stamp: OpenbotStamp; routine: UpstreamRoutine }
-  | { kind: "event"; stamp: OpenbotStamp; rule: UpstreamRule };
 
 interface ScheduleTriggerSpec {
   kind: "schedule";
@@ -96,11 +54,34 @@ interface SignalTypeCatalogEntry {
   default_session_title_template?: string | null;
 }
 
-/**
- * Owner-facing unified routines. A routine is a group of Tilde ChatKit
- * routines (schedule triggers) and signal rules (event triggers) stamped with
- * `metadata.openbot = { group, trigger }`, reconstructed statelessly on read.
- */
+interface UpstreamTrigger {
+  id: string;
+  kind: "schedule" | "event";
+  enabled?: boolean;
+  schedule?: string;
+  schedule_description?: string | null;
+  next_run_at?: string | null;
+  last_run_at?: string | null;
+  last_session_id?: string | null;
+  last_error?: string | null;
+  signal_provider_instance_id?: string;
+  signal_type?: string;
+  filter?: { json_equals?: JsonEqualsPredicate[] };
+}
+
+interface UpstreamRoutine {
+  id: string;
+  agent_inbox_id?: string | null;
+  title?: string;
+  prompt?: string | null;
+  enabled?: boolean;
+  version?: number;
+  triggers?: UpstreamTrigger[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** Owner-facing routes backed directly by Tilde's native unified Routine API. */
 export function registerRoutineRoutes(app: Hono, configuredOptions?: RoutineRouteOptions): void {
   const options = (): RoutineRouteOptions | undefined =>
     configuredOptions ?? tildeOptionsFromEnvironment();
@@ -126,39 +107,31 @@ export function registerRoutineRoutes(app: Hono, configuredOptions?: RoutineRout
     } catch (error) {
       return context.json({ error: error instanceof Error ? error.message : "Invalid body" }, 400);
     }
-    const group = crypto.randomUUID();
-    const created: Array<{ kind: "schedule" | "event"; id: string }> = [];
     try {
       const catalog = new SignalTypeCatalog(resolved);
-      for (const spec of body.triggers) {
-        created.push(
-          await createMember(resolved, catalog, spec, {
-            agentId: body.agentId,
-            name: body.name,
-            instruction: body.instruction,
-            enabled: body.enabled,
-            group,
-            trigger: crypto.randomUUID(),
-          }),
-        );
-      }
-    } catch (error) {
-      await rollbackMembers(resolved, created);
-      return tildeUpstreamFailure(context, "routines", error);
-    }
-    try {
+      await tildeJson(resolved, "/routines", {
+        method: "POST",
+        body: {
+          agent_inbox_id: body.agentId,
+          title: body.name,
+          prompt: body.instruction,
+          enabled: body.enabled,
+          triggers: await Promise.all(
+            body.triggers.map((trigger) => upstreamTrigger(catalog, trigger, body)),
+          ),
+        },
+      });
       return context.json({ items: await listRoutines(resolved, body.agentId) }, 201);
     } catch (error) {
       return tildeUpstreamFailure(context, "routines", error);
     }
   });
 
-  app.patch("/api/routines/:groupId", async (context) => {
+  app.patch("/api/routines/:routineId", async (context) => {
     const resolved = options();
     if (!resolved) return tildeUnavailable(context, "Routines");
     const agentId = context.req.query("agent_id")?.trim();
     if (!agentId) return context.json({ error: "agent_id is required" }, 400);
-    const groupId = context.req.param("groupId");
     let body: UpdateRoutineBody;
     try {
       body = parseUpdateRoutineBody(await context.req.json());
@@ -166,127 +139,76 @@ export function registerRoutineRoutes(app: Hono, configuredOptions?: RoutineRout
       return context.json({ error: error instanceof Error ? error.message : "Invalid body" }, 400);
     }
     try {
-      const members = (await loadMembers(resolved, agentId)).filter(
-        (member) => member.stamp.group === groupId,
-      );
-      if (members.length === 0) return context.json({ error: "Routine not found" }, 404);
-      const current = composeRoutine(groupId, agentId, members);
-      const name = body.name ?? current.name;
-      const instruction = body.instruction ?? current.instruction;
-      // Only an explicit `enabled` fans out; otherwise every member keeps the
-      // enabled state it already has upstream.
-      const shared: SharedContext = {
-        agentId,
-        name,
-        instruction,
-        group: groupId,
-        ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
-      };
+      const routineId = context.req.param("routineId");
+      const current = (await tildeJson(
+        resolved,
+        `/routines/${encodeURIComponent(routineId)}`,
+      )) as UpstreamRoutine;
+      if (current.agent_inbox_id !== agentId)
+        return context.json({ error: "Routine not found" }, 404);
       const catalog = new SignalTypeCatalog(resolved);
-
-      if (body.triggers) {
-        const existing = new Map(members.map((member) => [member.stamp.trigger, member]));
-        for (const spec of body.triggers) {
-          if (spec.id === undefined) continue;
-          const member = existing.get(spec.id);
-          if (!member) return context.json({ error: `Unknown trigger id "${spec.id}"` }, 400);
-          if (member.kind !== spec.kind)
-            return context.json({ error: "A trigger's kind cannot change" }, 400);
-        }
-        const kept = new Set<string>();
-        for (const spec of body.triggers) {
-          if (spec.id === undefined) continue;
-          kept.add(spec.id);
-          const member = existing.get(spec.id) as Member;
-          await updateMember(resolved, catalog, member, spec, shared);
-        }
-        for (const spec of body.triggers) {
-          if (spec.id !== undefined) continue;
-          await createMember(resolved, catalog, spec, {
-            ...shared,
-            enabled: shared.enabled ?? current.enabled,
-            trigger: crypto.randomUUID(),
-          });
-        }
-        for (const member of members) {
-          if (kept.has(member.stamp.trigger)) continue;
-          await deleteMember(resolved, member);
-        }
-      } else if (
-        body.name !== undefined ||
-        body.instruction !== undefined ||
-        body.enabled !== undefined
-      ) {
-        for (const member of members) {
-          if (member.kind === "schedule") {
-            await tildeJson(
-              resolved,
-              `/chatkit/routines/${encodeURIComponent(member.routine.id)}`,
-              {
-                method: "PATCH",
-                body: {
-                  title: name,
-                  prompt: instruction,
-                  ...(shared.enabled !== undefined ? { enabled: shared.enabled } : {}),
-                },
-              },
-            );
-          } else {
-            await tildeJson(resolved, `/signals/rules/${encodeURIComponent(member.rule.id)}`, {
-              method: "PATCH",
-              body: ruleUpdateBody(member.rule, member.stamp, shared),
-            });
-          }
-        }
-      }
+      await tildeJson(resolved, `/routines/${encodeURIComponent(routineId)}`, {
+        method: "PATCH",
+        body: {
+          ...(body.name !== undefined ? { title: body.name } : {}),
+          ...(body.instruction !== undefined ? { prompt: body.instruction } : {}),
+          ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
+          ...(body.triggers !== undefined
+            ? {
+                triggers: await Promise.all(
+                  body.triggers.map((trigger) =>
+                    upstreamTrigger(catalog, trigger, {
+                      agentId,
+                      name: body.name ?? current.title ?? "",
+                      instruction: body.instruction ?? current.prompt ?? "",
+                      enabled: body.enabled ?? current.enabled ?? true,
+                      triggers: body.triggers ?? [],
+                    }),
+                  ),
+                ),
+              }
+            : {}),
+          expected_version: current.version,
+        },
+      });
       return context.json({ items: await listRoutines(resolved, agentId) });
     } catch (error) {
       return tildeUpstreamFailure(context, "routines", error);
     }
   });
 
-  app.delete("/api/routines/:groupId", async (context) => {
+  app.delete("/api/routines/:routineId", async (context) => {
     const resolved = options();
     if (!resolved) return tildeUnavailable(context, "Routines");
     const agentId = context.req.query("agent_id")?.trim();
     if (!agentId) return context.json({ error: "agent_id is required" }, 400);
-    const groupId = context.req.param("groupId");
     try {
-      const members = (await loadMembers(resolved, agentId)).filter(
-        (member) => member.stamp.group === groupId,
-      );
-      if (members.length === 0) return context.json({ error: "Routine not found" }, 404);
-      for (const member of members) await deleteMember(resolved, member);
+      await tildeJson(resolved, `/routines/${encodeURIComponent(context.req.param("routineId"))}`, {
+        method: "DELETE",
+      });
       return context.json({ items: await listRoutines(resolved, agentId) });
     } catch (error) {
       return tildeUpstreamFailure(context, "routines", error);
     }
   });
 
-  app.post("/api/routines/:groupId/run", async (context) => {
+  app.post("/api/routines/:routineId/run", async (context) => {
     const resolved = options();
     if (!resolved) return tildeUnavailable(context, "Routines");
     const agentId = context.req.query("agent_id")?.trim();
     if (!agentId) return context.json({ error: "agent_id is required" }, 400);
-    const groupId = context.req.param("groupId");
     try {
-      const members = (await loadMembers(resolved, agentId)).filter(
-        (member) => member.stamp.group === groupId,
+      const execution = valueRecord(
+        await tildeJson(
+          resolved,
+          `/routines/${encodeURIComponent(context.req.param("routineId"))}/run`,
+          {
+            method: "POST",
+          },
+        ),
       );
-      if (members.length === 0) return context.json({ error: "Routine not found" }, 404);
-      const routine = composeRoutine(groupId, agentId, members);
-      const session = (await tildeJson(
-        resolved,
-        `/chatkit/mission-control/agents/${encodeURIComponent(agentId)}/sessions`,
-        { method: "POST", body: { title: routine.name } },
-      )) as Record<string, unknown>;
-      const sessionId = sessionIdFrom(session);
+      const sessionId = text(execution?.session_id);
       if (!sessionId) return context.json({ error: "Tilde returned no session id" }, 502);
-      await tildeJson(
-        resolved,
-        `/chatkit/mission-control/agents/${encodeURIComponent(agentId)}/sessions/${encodeURIComponent(sessionId)}/messages`,
-        { method: "POST", body: { text: routine.instruction, attachment_ids: [] } },
-      );
       return context.json({ session_id: sessionId });
     } catch (error) {
       return tildeUpstreamFailure(context, "routines", error);
@@ -294,153 +216,53 @@ export function registerRoutineRoutes(app: Hono, configuredOptions?: RoutineRout
   });
 }
 
-function sessionIdFrom(response: Record<string, unknown>): string | undefined {
-  const session = valueRecord(response.session);
-  const id = session?.id ?? response.id;
-  return typeof id === "string" && id ? id : undefined;
-}
-
 async function listRoutines(options: RoutineRouteOptions, agentId: string) {
-  const members = await loadMembers(options, agentId);
-  const groups = new Map<string, Member[]>();
-  for (const member of members) {
-    const list = groups.get(member.stamp.group);
-    if (list) list.push(member);
-    else groups.set(member.stamp.group, [member]);
-  }
-  return [...groups.entries()]
-    .map(([group, grouped]) => composeRoutine(group, agentId, grouped))
+  const routines = (await tildePages(options, "/routines", 100)) as UpstreamRoutine[];
+  return routines
+    .filter((routine) => routine.agent_inbox_id === agentId)
+    .map(serializeRoutine)
     .sort((left, right) => left.created_at.localeCompare(right.created_at));
 }
 
-async function loadMembers(options: RoutineRouteOptions, agentId: string): Promise<Member[]> {
-  const [routines, rules] = await Promise.all([
-    tildePages(options, "/chatkit/routines", 100) as Promise<UpstreamRoutine[]>,
-    // `/signals/rules` is unpaginated upstream; a partial list would orphan
-    // members from their group on the next replace-all edit.
-    tildeUnpagedItems(options, "/signals/rules") as Promise<UpstreamRule[]>,
-  ]);
-  const members: Member[] = [];
-  for (const routine of routines) {
-    const stamp = openbotStamp(routine.metadata);
-    if (!stamp || routine.agent_inbox_id !== agentId) continue;
-    members.push({ kind: "schedule", stamp, routine });
-  }
-  for (const rule of rules) {
-    const stamp = openbotStamp(rule.metadata);
-    if (!stamp || valueRecord(rule.action)?.agent_inbox_id !== agentId) continue;
-    members.push({ kind: "event", stamp, rule });
-  }
-  return members;
-}
-
-function openbotStamp(
-  metadata: Record<string, unknown> | null | undefined,
-): OpenbotStamp | undefined {
-  const openbot = valueRecord(valueRecord(metadata ?? undefined)?.openbot);
-  const group = text(openbot?.group);
-  const trigger = text(openbot?.trigger);
-  if (!group || !trigger) return undefined;
-  const instruction = openbot?.instruction;
+function serializeRoutine(routine: UpstreamRoutine) {
+  const triggers = routine.triggers ?? [];
+  const latest = [...triggers]
+    .filter((trigger) => trigger.last_run_at)
+    .sort((left, right) => (right.last_run_at ?? "").localeCompare(left.last_run_at ?? ""))[0];
   return {
-    group,
-    trigger,
-    ...(typeof instruction === "string" ? { instruction } : {}),
+    id: routine.id,
+    agent_id: routine.agent_inbox_id ?? "",
+    name: routine.title ?? "",
+    instruction: routine.prompt ?? "",
+    enabled: routine.enabled === true,
+    triggers: triggers.map((trigger) =>
+      trigger.kind === "schedule"
+        ? {
+            id: trigger.id,
+            kind: "schedule" as const,
+            schedule: trigger.schedule ?? "",
+            description: trigger.schedule_description ?? "",
+            next_run_at: trigger.next_run_at ?? null,
+            routine_id: routine.id,
+          }
+        : {
+            id: trigger.id,
+            kind: "event" as const,
+            instance_id: trigger.signal_provider_instance_id ?? "",
+            provider_type: (trigger.signal_type ?? "").split(".")[0] ?? "",
+            signal_type: trigger.signal_type ?? "",
+            filters: trigger.filter?.json_equals ?? [],
+            rule_id: trigger.id,
+          },
+    ),
+    last_run_at: latest?.last_run_at ?? null,
+    last_session_id: latest?.last_session_id ?? null,
+    last_error: latest?.last_error ?? null,
+    created_at: routine.created_at ?? "",
+    updated_at: routine.updated_at ?? "",
   };
 }
 
-function composeRoutine(groupId: string, agentId: string, members: Member[]) {
-  const ordered = [...members].sort(
-    (left, right) =>
-      memberCreatedAt(left).localeCompare(memberCreatedAt(right)) ||
-      left.stamp.trigger.localeCompare(right.stamp.trigger),
-  );
-  const latestFirst = [...members].sort((left, right) =>
-    memberUpdatedAt(right).localeCompare(memberUpdatedAt(left)),
-  );
-  const newest = latestFirst[0] as Member;
-  const name = (newest.kind === "schedule" ? newest.routine.title : newest.rule.display_name) ?? "";
-  const latestSchedule = latestFirst.find(
-    (member): member is Member & { kind: "schedule" } => member.kind === "schedule",
-  );
-  const instruction =
-    latestSchedule?.routine.prompt ??
-    latestFirst.find((member) => member.stamp.instruction !== undefined)?.stamp.instruction ??
-    "";
-  const enabled = members.some((member) =>
-    member.kind === "schedule" ? member.routine.enabled === true : member.rule.status === "enabled",
-  );
-  let lastRunAt: string | null = null;
-  let lastSessionId: string | null = null;
-  for (const member of members) {
-    if (member.kind !== "schedule" || !member.routine.last_run_at) continue;
-    if (lastRunAt !== null && member.routine.last_run_at.localeCompare(lastRunAt) <= 0) continue;
-    lastRunAt = member.routine.last_run_at;
-    lastSessionId = member.routine.last_session_id ?? null;
-  }
-  const latestErrored = latestFirst.find(
-    (member): member is Member & { kind: "schedule" } =>
-      member.kind === "schedule" && typeof member.routine.last_error === "string",
-  );
-  return {
-    id: groupId,
-    agent_id: agentId,
-    name,
-    instruction,
-    enabled,
-    triggers: ordered.map(serializeTrigger),
-    last_run_at: lastRunAt,
-    last_session_id: lastSessionId,
-    last_error: latestErrored?.routine.last_error ?? null,
-    created_at: memberCreatedAt(ordered[0] as Member),
-    updated_at: memberUpdatedAt(newest),
-  };
-}
-
-function memberCreatedAt(member: Member): string {
-  return (member.kind === "schedule" ? member.routine.created_at : member.rule.created_at) ?? "";
-}
-
-function memberUpdatedAt(member: Member): string {
-  return (member.kind === "schedule" ? member.routine.updated_at : member.rule.updated_at) ?? "";
-}
-
-function serializeTrigger(member: Member) {
-  if (member.kind === "schedule") {
-    return {
-      id: member.stamp.trigger,
-      kind: "schedule" as const,
-      schedule: member.routine.schedule ?? "",
-      description: member.routine.schedule_description ?? "",
-      next_run_at: member.routine.next_run_at ?? null,
-      routine_id: member.routine.id,
-    };
-  }
-  const signalType = member.rule.signal_type ?? "";
-  return {
-    id: member.stamp.trigger,
-    kind: "event" as const,
-    instance_id: member.rule.signal_provider_instance_id ?? "",
-    provider_type: signalType.split(".")[0] ?? "",
-    signal_type: signalType,
-    filters: member.rule.filter?.json_equals ?? [],
-    rule_id: member.rule.id,
-  };
-}
-
-interface MemberContext {
-  agentId: string;
-  name: string;
-  instruction: string;
-  enabled: boolean;
-  group: string;
-  trigger: string;
-}
-
-/** Group-wide edit context. `enabled` is absent unless the request set it. */
-type SharedContext = Omit<MemberContext, "trigger" | "enabled"> & { enabled?: boolean };
-
-/** Lazily fetched provider catalog used to resolve session-policy defaults. */
 class SignalTypeCatalog {
   #options: RoutineRouteOptions;
   #entries: Promise<Map<string, SignalTypeCatalogEntry>> | undefined;
@@ -473,175 +295,41 @@ class SignalTypeCatalog {
   }
 }
 
-async function sessionPolicyFor(
+async function upstreamTrigger(
   catalog: SignalTypeCatalog,
-  signalType: string,
-  name: string,
+  trigger: TriggerSpec,
+  routine: CreateRoutineBody,
 ): Promise<Record<string, unknown>> {
-  const entry = await catalog.find(signalType);
+  if (trigger.kind === "schedule") {
+    return {
+      ...(trigger.id ? { id: trigger.id } : {}),
+      kind: "schedule",
+      enabled: routine.enabled,
+      schedule: trigger.schedule,
+    };
+  }
+  const entry = await catalog.find(trigger.signalType);
   const template = text(entry?.default_session_key_template);
-  if (!template) return { type: "new_session_per_delivery", title_template: name };
+  const sessionPolicy = template
+    ? {
+        type: "session_key_template",
+        namespace: "openbot",
+        template,
+        create_if_missing: true,
+        title_template: entry?.default_session_title_template ?? routine.name,
+      }
+    : { type: "new_session_per_delivery", title_template: routine.name };
   return {
-    type: "session_key_template",
-    namespace: "openbot",
-    template,
-    create_if_missing: true,
-    title_template: entry?.default_session_title_template ?? name,
-  };
-}
-
-async function createMember(
-  options: RoutineRouteOptions,
-  catalog: SignalTypeCatalog,
-  spec: TriggerSpec,
-  member: MemberContext,
-): Promise<{ kind: "schedule" | "event"; id: string }> {
-  if (spec.kind === "schedule") {
-    const routine = (await tildeJson(options, "/chatkit/routines", {
-      method: "POST",
-      body: {
-        agent_inbox_id: member.agentId,
-        title: member.name,
-        prompt: member.instruction,
-        schedule: spec.schedule,
-        enabled: member.enabled,
-        metadata: { openbot: { group: member.group, trigger: member.trigger } },
-      },
-    })) as UpstreamRoutine;
-    return { kind: "schedule", id: routine.id };
-  }
-  const sessionPolicy = await sessionPolicyFor(catalog, spec.signalType, member.name);
-  const body = {
-    signal_provider_instance_id: spec.instanceId,
-    display_name: member.name,
-    signal_type: spec.signalType,
-    filter: { json_equals: spec.filters ?? [] },
+    ...(trigger.id ? { id: trigger.id } : {}),
+    kind: "event",
+    enabled: routine.enabled,
+    signal_provider_instance_id: trigger.instanceId,
+    signal_type: trigger.signalType,
+    filter: { json_equals: trigger.filters ?? [] },
     session_policy: sessionPolicy,
-    action: { type: "invoke_chatkit_agent", agent_inbox_id: member.agentId },
-    metadata: {
-      openbot: { group: member.group, trigger: member.trigger, instruction: member.instruction },
-    },
+    action: { type: "invoke_chatkit_agent", agent_inbox_id: routine.agentId },
+    instruction_policy: "signal_and_instruction",
   };
-  const rule = (await tildeJson(options, "/signals/rules", {
-    method: "POST",
-    body,
-  })) as UpstreamRule;
-  // Rule creation is forced enabled upstream; a disabled unified routine must
-  // immediately flip the fresh rule off.
-  if (!member.enabled) {
-    try {
-      await tildeJson(options, `/signals/rules/${encodeURIComponent(rule.id)}`, {
-        method: "PATCH",
-        body: {
-          display_name: member.name,
-          status: "disabled",
-          filter: body.filter,
-          session_policy: sessionPolicy,
-          action: body.action,
-          metadata: body.metadata,
-        },
-      });
-    } catch (error) {
-      await tildeJson(options, `/signals/rules/${encodeURIComponent(rule.id)}`, {
-        method: "DELETE",
-      }).catch(() => undefined);
-      throw error;
-    }
-  }
-  return { kind: "event", id: rule.id };
-}
-
-async function updateMember(
-  options: RoutineRouteOptions,
-  catalog: SignalTypeCatalog,
-  member: Member,
-  spec: TriggerSpec,
-  shared: SharedContext,
-): Promise<void> {
-  if (member.kind === "schedule" && spec.kind === "schedule") {
-    await tildeJson(options, `/chatkit/routines/${encodeURIComponent(member.routine.id)}`, {
-      method: "PATCH",
-      body: {
-        title: shared.name,
-        prompt: shared.instruction,
-        schedule: spec.schedule,
-        ...(shared.enabled !== undefined ? { enabled: shared.enabled } : {}),
-      },
-    });
-    return;
-  }
-  if (member.kind !== "event" || spec.kind !== "event") return;
-  // Upstream rule updates cannot move a rule to another instance or signal
-  // type; recreate under the same trigger id instead.
-  if (
-    spec.instanceId !== member.rule.signal_provider_instance_id ||
-    spec.signalType !== member.rule.signal_type
-  ) {
-    await createMember(options, catalog, spec, {
-      ...shared,
-      enabled: shared.enabled ?? member.rule.status === "enabled",
-      trigger: member.stamp.trigger,
-    });
-    await deleteMember(options, member);
-    return;
-  }
-  await tildeJson(options, `/signals/rules/${encodeURIComponent(member.rule.id)}`, {
-    method: "PATCH",
-    body: ruleUpdateBody(member.rule, member.stamp, shared, spec.filters),
-  });
-}
-
-function ruleUpdateBody(
-  rule: UpstreamRule,
-  stamp: OpenbotStamp,
-  shared: SharedContext,
-  filters?: JsonEqualsPredicate[],
-): Record<string, unknown> {
-  const status =
-    shared.enabled === undefined
-      ? (rule.status ?? "enabled")
-      : shared.enabled
-        ? "enabled"
-        : "disabled";
-  return {
-    display_name: shared.name,
-    status,
-    filter: { json_equals: filters ?? rule.filter?.json_equals ?? [] },
-    session_policy: rule.session_policy ?? {
-      type: "new_session_per_delivery",
-      title_template: shared.name,
-    },
-    action: rule.action ?? { type: "invoke_chatkit_agent", agent_inbox_id: shared.agentId },
-    metadata: {
-      ...rule.metadata,
-      openbot: { group: shared.group, trigger: stamp.trigger, instruction: shared.instruction },
-    },
-  };
-}
-
-async function deleteMember(options: RoutineRouteOptions, member: Member): Promise<void> {
-  if (member.kind === "schedule") {
-    await tildeJson(options, `/chatkit/routines/${encodeURIComponent(member.routine.id)}`, {
-      method: "DELETE",
-    });
-    return;
-  }
-  await tildeJson(options, `/signals/rules/${encodeURIComponent(member.rule.id)}`, {
-    method: "DELETE",
-  });
-}
-
-async function rollbackMembers(
-  options: RoutineRouteOptions,
-  created: Array<{ kind: "schedule" | "event"; id: string }>,
-): Promise<void> {
-  for (const member of [...created].reverse()) {
-    const path =
-      member.kind === "schedule"
-        ? `/chatkit/routines/${encodeURIComponent(member.id)}`
-        : `/signals/rules/${encodeURIComponent(member.id)}`;
-    await tildeJson(options, path, { method: "DELETE" }).catch(() => undefined);
-  }
 }
 
 function parseCreateRoutineBody(value: unknown): CreateRoutineBody {
@@ -695,27 +383,25 @@ function parseTriggerSpec(value: unknown, allowIds: boolean): TriggerSpec {
   if (record.kind === "schedule") {
     const schedule = text(record.schedule);
     if (!schedule) throw new Error("A schedule trigger requires a schedule");
-    return { kind: "schedule", schedule, ...(id !== undefined ? { id } : {}) };
+    return { kind: "schedule", schedule, ...(id ? { id } : {}) };
   }
   if (record.kind === "event") {
     const instanceId = text(record.instance_id);
     const signalType = text(record.signal_type);
     if (!instanceId || !signalType)
       throw new Error("An event trigger requires instance_id and signal_type");
-    const filters = parseFilters(record.filters);
     return {
       kind: "event",
       instanceId,
       signalType,
-      ...(filters !== undefined ? { filters } : {}),
-      ...(id !== undefined ? { id } : {}),
+      ...(record.filters !== undefined ? { filters: parseFilters(record.filters) } : {}),
+      ...(id ? { id } : {}),
     };
   }
   throw new Error('Trigger kind must be "schedule" or "event"');
 }
 
-function parseFilters(value: unknown): JsonEqualsPredicate[] | undefined {
-  if (value === undefined) return undefined;
+function parseFilters(value: unknown): JsonEqualsPredicate[] {
   if (!Array.isArray(value)) throw new Error("filters must be an array");
   return value.map((entry) => {
     const record = valueRecord(entry);

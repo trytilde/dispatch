@@ -359,7 +359,7 @@ describe("signal routes", () => {
               status: "completed",
               chatkit_session_id: "sess-1",
               error_message: null,
-              matched_rule_ids: ["rule-1", "rule-2"],
+              matched_trigger_ids: ["rule-1", "rule-2"],
               created_at: "2026-08-24T09:00:00Z",
             },
             {
@@ -391,7 +391,7 @@ describe("signal routes", () => {
           status: "completed",
           session_id: "sess-1",
           error_message: null,
-          matched_rule_ids: ["rule-1", "rule-2"],
+          matched_trigger_ids: ["rule-1", "rule-2"],
           created_at: "2026-08-24T09:00:00Z",
         },
         {
@@ -402,7 +402,7 @@ describe("signal routes", () => {
           status: "pending",
           session_id: null,
           error_message: null,
-          matched_rule_ids: [],
+          matched_trigger_ids: [],
           created_at: "2026-08-24T09:05:00Z",
         },
       ],

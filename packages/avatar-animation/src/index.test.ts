@@ -4,6 +4,14 @@ import { avatarAssetUrl, createAvatarIcon, createSpring, stepSpring } from "./in
 describe("avatar animation", () => {
   it("selects a stable catalog descriptor", () => {
     expect(createAvatarIcon("agent-123")).toEqual(createAvatarIcon("agent-123"));
+    expect(createAvatarIcon("agent-123")).toEqual({
+      type: "icon",
+      version: "v1",
+      shape: "wedge",
+      eyes: "30",
+      shade: "3",
+      background: "teal",
+    });
   });
 
   it("builds versioned hosted asset URLs", () => {

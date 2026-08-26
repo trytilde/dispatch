@@ -131,8 +131,8 @@ export function createAvatarIcon(seed: string): AvatarIconDescriptor {
     version: "v1",
     shape: shapes[pick(seed, "shape", shapes.length)] ?? "blob",
     eyes: avatarEyeIds[pick(seed, "eyes", avatarEyeIds.length)] ?? "1",
-    shade: lightShades[pick(seed, "shade", lightShades.length)] ?? "1",
-    background: backgrounds[pick(seed, "background", backgrounds.length)] ?? "coral",
+    shade: lightShades[pick(seed, "tone", lightShades.length)] ?? "1",
+    background: backgrounds[fnv1a(`${seed}/bg`) % backgrounds.length] ?? "coral",
   };
 }
 

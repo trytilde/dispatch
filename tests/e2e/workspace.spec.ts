@@ -1138,6 +1138,25 @@ test("queues another turn while the agent is busy", async ({ page }) => {
       });
       return;
     }
+    if (path.endsWith("/mission-control/search")) {
+      await route.fulfill({
+        json: {
+          items: [
+            {
+              kind: "agent",
+              session: {
+                id: "busy-session",
+                title: "Busy session",
+                created_at: now,
+                updated_at: now,
+              },
+              agent: { id: "busy-agent", display_name: "Busy Agent" },
+            },
+          ],
+        },
+      });
+      return;
+    }
     if (path.endsWith("/mission-control/events")) {
       await route.fulfill({
         contentType: "text/event-stream",

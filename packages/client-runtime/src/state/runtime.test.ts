@@ -167,7 +167,11 @@ describe("OpenBot runtime", () => {
 
   it("selects the authenticated user's stable session instead of the newest thread", async () => {
     const now = "2026-08-25T10:00:00.000Z";
-    const getMessages = vi.fn(async () => ({ items: [], next_page_token: null }));
+    const getConversationSnapshot = vi.fn(async () => ({
+      messages: { items: [], next_page_token: null },
+      queued_turns: { items: [], next_page_token: null },
+      snapshot_revision: 0,
+    }));
     const getAgentSessions = vi.fn(async () => ({
       items: [
         {
@@ -190,35 +194,37 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getSidebar: async () => ({
-        items: [
-          {
-            id: "agent-one",
-            display_name: "Agent One",
-            provider_id: "tilde",
-            status: "ready",
-            sessions: {
-              next_page_token: "page-two",
-              items: [
-                {
-                  id: "newest-thread",
-                  title: "Deployment investigation",
-                  created_at: now,
-                  updated_at: now,
-                },
-                {
-                  id: "owner-default",
-                  lookup_key: "openbot:user:owner-one:agent:agent-one",
-                  created_at: "2026-08-24T10:00:00.000Z",
-                  updated_at: "2026-08-24T10:00:00.000Z",
-                },
-              ],
+      getBootstrap: async () => ({
+        sidebar: {
+          items: [
+            {
+              id: "agent-one",
+              display_name: "Agent One",
+              provider_id: "tilde",
+              status: "ready",
+              sessions: {
+                next_page_token: "page-two",
+                items: [
+                  {
+                    id: "newest-thread",
+                    title: "Deployment investigation",
+                    created_at: now,
+                    updated_at: now,
+                  },
+                  {
+                    id: "owner-default",
+                    lookup_key: "openbot:user:owner-one:agent:agent-one",
+                    created_at: "2026-08-24T10:00:00.000Z",
+                    updated_at: "2026-08-24T10:00:00.000Z",
+                  },
+                ],
+              },
             },
-          },
-        ],
+          ],
+        },
       }),
       getAgentSessions,
-      getMessages,
+      getConversationSnapshot,
       getQueuedTurns: async () => ({ items: [], next_page_token: null }),
       observeMissionControl: async (signal) => {
         await new Promise<void>((resolve) =>
@@ -236,7 +242,7 @@ describe("OpenBot runtime", () => {
     expect(runtime.store.getState().conversation.selectedSessionId).toBe("owner-default");
     expect(runtime.store.getState().sidebar.agents[0]?.sessions.items).toHaveLength(3);
     expect(getAgentSessions).toHaveBeenCalledWith("agent-one", "page-two", "updated_at");
-    expect(getMessages).toHaveBeenCalledWith("owner-default");
+    expect(getConversationSnapshot).toHaveBeenCalledWith("owner-default");
     runtime.dispose();
   });
 
@@ -259,16 +265,18 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getSidebar: async () => ({
-        items: [
-          {
-            id: "agent-one",
-            display_name: "Agent One",
-            provider_id: "tilde",
-            status: "ready",
-            sessions: { items: [] },
-          },
-        ],
+      getBootstrap: async () => ({
+        sidebar: {
+          items: [
+            {
+              id: "agent-one",
+              display_name: "Agent One",
+              provider_id: "tilde",
+              status: "ready",
+              sessions: { items: [] },
+            },
+          ],
+        },
       }),
       createSession,
       getMessages: async () => ({ items: [], next_page_token: null }),
@@ -309,18 +317,20 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getSidebar: async () => ({
-        items: [
-          {
-            id: "agent-one",
-            display_name: "Agent One",
-            provider_id: "tilde",
-            status: "ready",
-            sessions: {
-              items: [{ id: "session-one", created_at: now, updated_at: now }],
+      getBootstrap: async () => ({
+        sidebar: {
+          items: [
+            {
+              id: "agent-one",
+              display_name: "Agent One",
+              provider_id: "tilde",
+              status: "ready",
+              sessions: {
+                items: [{ id: "session-one", created_at: now, updated_at: now }],
+              },
             },
-          },
-        ],
+          ],
+        },
       }),
       getMessages,
       observeMissionControl,
@@ -350,7 +360,7 @@ describe("OpenBot runtime", () => {
             authenticated: true,
             user: { subject: "owner-one", name: "Owner One" },
           });
-        if (url.includes("/mission-control/sidebar")) sidebarRequests += 1;
+        if (url.includes("/mission-control/bootstrap")) sidebarRequests += 1;
         return Response.json({ error: "Chat unavailable" }, { status: 503 });
       },
     });

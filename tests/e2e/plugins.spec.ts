@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { seedCompletedOnboarding } from "./onboarding-state.js";
 
+function missionControlBootstrap(sidebar: { items: unknown[]; next_page_token?: string | null }) {
+  return { sidebar };
+}
+
 test.beforeEach(async ({ page }) => {
   await seedCompletedOnboarding(page);
   await page.route("https://thesvg.org/icons/**", async (route) => {
@@ -66,6 +70,22 @@ test.beforeEach(async ({ page }) => {
             credential_source_type_id: "google_mail_managed_oauth",
           },
           authorization_url: "about:blank",
+        },
+      });
+      return;
+    }
+    if (
+      path.endsWith("/api/connectors/accounts/google-mail-work/wait") &&
+      request.method() === "GET"
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      await route.fulfill({
+        json: {
+          id: "google-mail-work",
+          display_name: "Work Gmail",
+          status: "active",
+          provider_type_id: "google_mail",
+          credential_source_type_id: "google_mail_managed_oauth",
         },
       });
       return;
@@ -384,10 +404,10 @@ test.beforeEach(async ({ page }) => {
   });
   await page.route("**/api/chat/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith("/mission-control/sidebar")) {
+    if (path.endsWith("/mission-control/bootstrap")) {
       const now = new Date().toISOString();
       await route.fulfill({
-        json: {
+        json: missionControlBootstrap({
           items: [
             {
               id: "hello-world",
@@ -409,7 +429,7 @@ test.beforeEach(async ({ page }) => {
             },
           ],
           next_page_token: null,
-        },
+        }),
       });
       return;
     }
@@ -795,7 +815,7 @@ test("loads plugin settings without hydrating agent messages", async ({ page }) 
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;
     if (path.endsWith("/messages")) messageRequests.push(path);
-    if (path.endsWith("/mission-control/sidebar")) sidebarRequests += 1;
+    if (path.endsWith("/mission-control/bootstrap")) sidebarRequests += 1;
   });
 
   await page.goto("/settings/plugins/tools");

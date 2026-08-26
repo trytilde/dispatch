@@ -200,6 +200,10 @@ export function OpenBotApp() {
         badge: "bot" | "thread",
       ) => {
         const selected = agent.id === agentId && session?.id === sessionId;
+        const cachedPreview =
+          badge === "bot" && session?.id === agent.sessions.items[0]?.id
+            ? agent.last_message_preview || ""
+            : "";
         return {
           id: session ? `session:${session.id}` : `user:${agent.id}`,
           avatarId: agent.id,
@@ -207,10 +211,8 @@ export function OpenBotApp() {
           name: badge === "bot" ? agent.display_name : session?.title?.trim() || "Untitled thread",
           lastMessage:
             selected || (agent.id === agentId && !session && !sessionId)
-              ? latestMessagePreview(messages)
-              : badge === "bot" && session?.id === agent.sessions.items[0]?.id
-                ? agent.last_message_preview || ""
-                : "",
+              ? latestMessagePreview(messages) || cachedPreview
+              : cachedPreview,
           updatedAt: session?.last_user_message_at || session?.updated_at,
           unread: session?.unread,
           busy: session ? sidebar.busySessionIds.includes(session.id) : false,

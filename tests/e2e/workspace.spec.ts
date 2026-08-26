@@ -1,6 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedCompletedOnboarding } from "./onboarding-state.js";
 
+function missionControlBootstrap(items: unknown[]) {
+  return { sidebar: { items } };
+}
+
 // Every test but the first-run one wants the workspace, so skip onboarding by seeding
 // the persisted state the client runtime reads.
 test.beforeEach(async ({ page }) => {
@@ -103,41 +107,39 @@ test("lists the user's continuous chat and the agent's named threads", async ({ 
   const defaultUpdatedAt = "2026-08-25T08:00:00.000Z";
   await page.route("**/api/chat/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith("/mission-control/sidebar")) {
+    if (path.endsWith("/mission-control/bootstrap")) {
       await route.fulfill({
-        json: {
-          items: [
-            {
-              id: "hello-world",
-              display_name: "Hello World",
-              provider_id: "chatkit.http-vercel-ai-sdk",
-              status: "enabled",
-              sessions: {
-                items: [
-                  {
-                    id: "older-thread",
-                    title: "Older investigation",
-                    created_at: "2026-08-23T08:00:00.000Z",
-                    updated_at: "2026-08-23T08:00:00.000Z",
-                  },
-                  {
-                    id: "user-session",
-                    lookup_key: "openbot:user:e2e-owner:agent:hello-world",
-                    title: "Legacy title is not shown",
-                    created_at: defaultUpdatedAt,
-                    updated_at: defaultUpdatedAt,
-                  },
-                  {
-                    id: "newer-thread",
-                    title: "Release planning",
-                    created_at: "2026-08-24T08:00:00.000Z",
-                    updated_at: "2026-08-24T08:00:00.000Z",
-                  },
-                ],
-              },
+        json: missionControlBootstrap([
+          {
+            id: "hello-world",
+            display_name: "Hello World",
+            provider_id: "chatkit.http-vercel-ai-sdk",
+            status: "enabled",
+            sessions: {
+              items: [
+                {
+                  id: "older-thread",
+                  title: "Older investigation",
+                  created_at: "2026-08-23T08:00:00.000Z",
+                  updated_at: "2026-08-23T08:00:00.000Z",
+                },
+                {
+                  id: "user-session",
+                  lookup_key: "openbot:user:e2e-owner:agent:hello-world",
+                  title: "Legacy title is not shown",
+                  created_at: defaultUpdatedAt,
+                  updated_at: defaultUpdatedAt,
+                },
+                {
+                  id: "newer-thread",
+                  title: "Release planning",
+                  created_at: "2026-08-24T08:00:00.000Z",
+                  updated_at: "2026-08-24T08:00:00.000Z",
+                },
+              ],
             },
-          ],
-        },
+          },
+        ]),
       });
       return;
     }
@@ -148,6 +150,29 @@ test("lists the user's continuous chat and the agent's named threads", async ({ 
     }
     if (path.endsWith("/agent-turn-queue")) {
       await route.fulfill({ json: { items: [] } });
+      return;
+    }
+    if (path.endsWith("/snapshot")) {
+      const sessionId = path.split("/").at(-2) ?? "";
+      messageRequests.push(sessionId);
+      await route.fulfill({
+        json: {
+          messages: {
+            items: [
+              {
+                id: `message-${sessionId}`,
+                type: "ui",
+                role: "assistant",
+                session_id: sessionId,
+                created_at: defaultUpdatedAt,
+                parts: [{ type: "text", text: `Opened ${sessionId}` }],
+              },
+            ],
+          },
+          queued_turns: { items: [] },
+          snapshot_revision: 0,
+        },
+      });
       return;
     }
     if (path.endsWith("/messages")) {
@@ -420,49 +445,62 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await page.route("**/api/chat/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
-    if (path.endsWith("/mission-control/sidebar")) {
+    if (path.endsWith("/mission-control/bootstrap")) {
       await route.fulfill({
-        json: {
-          items: [
-            {
-              id: "hello-world",
-              display_name: "Hello World",
-              provider_id: "chatkit.http-vercel-ai-sdk",
-              status: "enabled",
-              sessions: {
-                items: [
-                  {
-                    id: "session-one",
-                    title: "Working session",
-                    created_at: now,
-                    updated_at: now,
-                    unread: true,
-                  },
-                ],
-              },
+        json: missionControlBootstrap([
+          {
+            id: "hello-world",
+            display_name: "Hello World",
+            provider_id: "chatkit.http-vercel-ai-sdk",
+            status: "enabled",
+            sessions: {
+              items: [
+                {
+                  id: "session-one",
+                  title: "Working session",
+                  created_at: now,
+                  updated_at: now,
+                  unread: true,
+                },
+              ],
             },
-            {
-              id: "researcher",
-              display_name: "Researcher",
-              provider_id: "chatkit.http-vercel-ai-sdk",
-              status: "enabled",
-              sessions: {
-                items: [
-                  {
-                    id: "research-session",
-                    title: "Research session",
-                    created_at: now,
-                    updated_at: now,
-                  },
-                ],
-              },
+          },
+          {
+            id: "researcher",
+            display_name: "Researcher",
+            provider_id: "chatkit.http-vercel-ai-sdk",
+            status: "enabled",
+            last_message_preview: "Research cached preview",
+            sessions: {
+              items: [
+                {
+                  id: "research-session",
+                  title: "Research session",
+                  created_at: now,
+                  updated_at: now,
+                },
+              ],
             },
-          ],
-        },
+          },
+        ]),
       });
       return;
     }
     if (path.endsWith("/mission-control/events")) {
+      if (!messages.some((message) => message.id === "stream-one")) {
+        messages = [
+          ...messages,
+          {
+            id: "stream-one",
+            type: "ui",
+            role: "assistant",
+            session_id: "session-one",
+            user_display_name: "Hello World",
+            created_at: now,
+            parts: [{ type: "text", text: "Streaming preview" }],
+          },
+        ];
+      }
       await route.fulfill({
         contentType: "text/event-stream",
         body:
@@ -496,6 +534,55 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
       await route.fulfill({ status: 204 });
       return;
     }
+    if (path.endsWith("/snapshot")) {
+      if (path.includes("/research-session/")) {
+        researchMessageRequests += 1;
+        await researchMessagesReady;
+        await route.fulfill({
+          json: {
+            messages: {
+              items: [
+                {
+                  id: "research-message",
+                  type: "ui",
+                  role: "assistant",
+                  session_id: "research-session",
+                  user_display_name: "Researcher",
+                  created_at: now,
+                  parts: [{ type: "text", text: "Research cached preview" }],
+                },
+              ],
+            },
+            queued_turns: { items: [] },
+            snapshot_revision: 0,
+          },
+        });
+        return;
+      }
+      await route.fulfill({
+        json: {
+          messages: { items: messages },
+          queued_turns: {
+            items: [
+              {
+                id: "queue-one",
+                session_id: "session-one",
+                queue_position: 1,
+                status: "pending",
+                chat_request: {
+                  messages: [
+                    { role: "user", content: [{ type: "text", text: "Queued follow-up" }] },
+                  ],
+                },
+                created_at: now,
+              },
+            ],
+          },
+          snapshot_revision: 0,
+        },
+      });
+      return;
+    }
     if (path.endsWith("/messages") && request.method() === "GET") {
       if (path.includes("/research-session/")) {
         researchMessageRequests += 1;
@@ -520,13 +607,17 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
       await route.fulfill({ json: { items: messages } });
       return;
     }
-    if (path.endsWith("/attachment/upload")) {
+    if (path.endsWith("/attachments/upload")) {
       await route.fulfill({
         json: {
-          attachment: { id: "attachment-one", media_type: "text/plain", status: "pending" },
-          upload_url:
-            "https://api.trytilde.ai/api/v1/team/e2e-team/chatkit/session/session-one/attachment/attachment-one/content",
-          upload_headers: { "content-type": "text/plain" },
+          items: [
+            {
+              attachment: { id: "attachment-one", media_type: "text/plain", status: "pending" },
+              upload_url:
+                "https://api.trytilde.ai/api/v1/team/e2e-team/chatkit/session/session-one/attachment/attachment-one/content",
+              upload_headers: { "content-type": "text/plain" },
+            },
+          ],
         },
       });
       return;
@@ -541,7 +632,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
       });
       return;
     }
-    if (path.endsWith("/messages") && request.method() === "POST") {
+    if (path.endsWith("/turns") && request.method() === "POST") {
       messages = [
         ...messages,
         {
@@ -602,7 +693,21 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
           ],
         },
       ];
-      await route.fulfill({ json: { items: messages } });
+      await route.fulfill({
+        json: {
+          session: {
+            id: "session-one",
+            title: "Working session",
+            created_at: now,
+            updated_at: now,
+          },
+          conversation: {
+            messages: { items: messages },
+            queued_turns: { items: [] },
+            snapshot_revision: 0,
+          },
+        },
+      });
       return;
     }
     await route.fulfill({ status: 404, json: { error: `Unhandled ${request.method()} ${path}` } });
@@ -713,7 +818,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await expect(page.locator(".rail")).toHaveCSS("width", "400px");
   await expect(page.locator("[data-menu-row] strong").first()).toBeVisible();
   await expect(page.getByText("Working session")).toHaveCount(0);
-  await expect(page.getByText("Ready when you are.")).toBeVisible();
+  await expect(page.locator(".message-list").getByText("Ready when you are.")).toBeVisible();
   await expect(page.locator(".message-list")).toHaveCSS("width", /\d+px/);
   const conversationWidth = await page.locator(".conversation").evaluate((element) => {
     const style = getComputedStyle(element);
@@ -873,55 +978,53 @@ test("creates a bot and sends its first message", async ({ page }) => {
   await page.route("**/api/chat/**", async (route) => {
     const request = route.request();
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith("/mission-control/sidebar")) {
+    if (path.endsWith("/mission-control/bootstrap")) {
       await route.fulfill({
-        json: {
-          items: [
-            {
-              id: "hello-world",
-              display_name: "Hello World",
-              provider_id: "chatkit.http-vercel-ai-sdk",
-              status: "enabled",
-              sessions: {
-                items: [
-                  {
-                    id: "hello-session",
-                    title: "Hello session",
-                    created_at: now,
-                    updated_at: now,
-                  },
-                ],
-              },
+        json: missionControlBootstrap([
+          {
+            id: "hello-world",
+            display_name: "Hello World",
+            provider_id: "chatkit.http-vercel-ai-sdk",
+            status: "enabled",
+            sessions: {
+              items: [
+                {
+                  id: "hello-session",
+                  title: "Hello session",
+                  created_at: now,
+                  updated_at: now,
+                },
+              ],
             },
-            {
-              id: "researcher",
-              display_name: "Researcher",
-              provider_id: "chatkit.http-vercel-ai-sdk",
-              status: "enabled",
-              sessions: {
-                items: [
-                  {
-                    id: "research-session",
-                    title: "Research session",
-                    created_at: now,
-                    updated_at: now,
-                  },
-                ],
-              },
+          },
+          {
+            id: "researcher",
+            display_name: "Researcher",
+            provider_id: "chatkit.http-vercel-ai-sdk",
+            status: "enabled",
+            sessions: {
+              items: [
+                {
+                  id: "research-session",
+                  title: "Research session",
+                  created_at: now,
+                  updated_at: now,
+                },
+              ],
             },
-            ...(created
-              ? [
-                  {
-                    id: "reviewer",
-                    display_name: "Reviewer",
-                    provider_id: "chatkit.http-vercel-ai-sdk",
-                    status: "enabled",
-                    sessions: { items: [] },
-                  },
-                ]
-              : []),
-          ],
-        },
+          },
+          ...(created
+            ? [
+                {
+                  id: "reviewer",
+                  display_name: "Reviewer",
+                  provider_id: "chatkit.http-vercel-ai-sdk",
+                  status: "enabled",
+                  sessions: { items: [] },
+                },
+              ]
+            : []),
+        ]),
       });
       return;
     }
@@ -946,25 +1049,35 @@ test("creates a bot and sends its first message", async ({ page }) => {
       });
       return;
     }
-    if (path.endsWith("/messages")) {
-      if (request.method() === "POST") {
-        const body = request.postDataJSON() as { text?: string };
-        firstMessage = body.text ?? "";
-        await route.fulfill({
-          json: {
-            items: [
-              {
-                id: "reviewer-message",
-                type: "message",
-                role: "user",
-                session_id: "reviewer-session",
-                text: firstMessage,
-                created_at: now,
-              },
-            ],
+    if (path.endsWith("/turns") && request.method() === "POST") {
+      const body = request.postDataJSON() as { text?: string };
+      firstMessage = body.text ?? "";
+      await route.fulfill({
+        json: {
+          session: {
+            id: "reviewer-session",
+            title: "Hello from the test",
+            created_at: now,
+            updated_at: now,
           },
-        });
-      } else await route.fulfill({ json: { items: [] } });
+          conversation: {
+            messages: {
+              items: [
+                {
+                  id: "reviewer-message",
+                  type: "message",
+                  role: "user",
+                  session_id: "reviewer-session",
+                  text: firstMessage,
+                  created_at: now,
+                },
+              ],
+            },
+            queued_turns: { items: [] },
+            snapshot_revision: 0,
+          },
+        },
+      });
       return;
     }
     await route.fulfill({ json: {} });
@@ -1007,23 +1120,21 @@ test("queues another turn while the agent is busy", async ({ page }) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname;
-    if (path.endsWith("/mission-control/sidebar")) {
+    if (path.endsWith("/mission-control/bootstrap")) {
       await route.fulfill({
-        json: {
-          items: [
-            {
-              id: "busy-agent",
-              display_name: "Busy Agent",
-              provider_id: "chatkit.http-vercel-ai-sdk",
-              status: "enabled",
-              sessions: {
-                items: [
-                  { id: "busy-session", title: "Busy session", created_at: now, updated_at: now },
-                ],
-              },
+        json: missionControlBootstrap([
+          {
+            id: "busy-agent",
+            display_name: "Busy Agent",
+            provider_id: "chatkit.http-vercel-ai-sdk",
+            status: "enabled",
+            sessions: {
+              items: [
+                { id: "busy-session", title: "Busy session", created_at: now, updated_at: now },
+              ],
             },
-          ],
-        },
+          },
+        ]),
       });
       return;
     }
@@ -1087,7 +1198,7 @@ test("queues another turn while the agent is busy", async ({ page }) => {
 test("configures a connector through the in-chat account picker", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("openbot.onboarding-seen", "true"));
   const now = new Date().toISOString();
-  const sentMessages: string[] = [];
+  const connectorBindRequests: Array<Record<string, unknown>> = [];
   const transcript: Array<Record<string, unknown>> = [
     {
       id: "message-picker",
@@ -1139,7 +1250,13 @@ test("configures a connector through the in-chat account picker", async ({ page 
 
   await page.route("**/api/connectors/**", async (route) => {
     const request = route.request();
-    if (request.method() === "POST") {
+    const path = new URL(request.url()).pathname;
+    if (path.endsWith("/api/connectors/bind") && request.method() === "POST") {
+      connectorBindRequests.push(request.postDataJSON() as Record<string, unknown>);
+      await route.fulfill({ json: { bound: true } });
+      return;
+    }
+    if (path.endsWith("/api/connectors/accounts") && request.method() === "POST") {
       connectorAccountRequests.push(request.postDataJSON() as Record<string, unknown>);
       await route.fulfill({
         status: 201,
@@ -1156,7 +1273,7 @@ test("configures a connector through the in-chat account picker", async ({ page 
       });
       return;
     }
-    if (new URL(request.url()).pathname.endsWith("/api/connectors/providers")) {
+    if (path.endsWith("/api/connectors/providers")) {
       await route.fulfill({
         json: {
           items: [
@@ -1190,23 +1307,19 @@ test("configures a connector through the in-chat account picker", async ({ page 
   await page.route("**/api/chat/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
-    if (path.endsWith("/mission-control/sidebar")) {
+    if (path.endsWith("/mission-control/bootstrap")) {
       await route.fulfill({
-        json: {
-          items: [
-            {
-              id: "hello-world",
-              display_name: "Hello World",
-              provider_id: "chatkit.http-vercel-ai-sdk",
-              status: "enabled",
-              sessions: {
-                items: [
-                  { id: "session-one", title: "Connectors", created_at: now, updated_at: now },
-                ],
-              },
+        json: missionControlBootstrap([
+          {
+            id: "hello-world",
+            display_name: "Hello World",
+            provider_id: "chatkit.http-vercel-ai-sdk",
+            status: "enabled",
+            sessions: {
+              items: [{ id: "session-one", title: "Connectors", created_at: now, updated_at: now }],
             },
-          ],
-        },
+          },
+        ]),
       });
       return;
     }
@@ -1218,21 +1331,17 @@ test("configures a connector through the in-chat account picker", async ({ page 
       await route.fulfill({ json: { items: [] } });
       return;
     }
-    if (path.endsWith("/messages") && request.method() === "GET") {
-      await route.fulfill({ json: { items: transcript } });
+    if (path.endsWith("/snapshot")) {
+      await route.fulfill({
+        json: {
+          messages: { items: transcript },
+          queued_turns: { items: [] },
+          snapshot_revision: 0,
+        },
+      });
       return;
     }
-    if (path.endsWith("/messages") && request.method() === "POST") {
-      const body = request.postDataJSON() as { text?: string };
-      sentMessages.push(body.text ?? "");
-      transcript.push({
-        id: `message-user-${sentMessages.length}`,
-        type: "ui",
-        role: "user",
-        session_id: "session-one",
-        created_at: now,
-        parts: [{ type: "text", text: body.text ?? "" }],
-      });
+    if (path.endsWith("/messages") && request.method() === "GET") {
       await route.fulfill({ json: { items: transcript } });
       return;
     }
@@ -1255,12 +1364,10 @@ test("configures a connector through the in-chat account picker", async ({ page 
   await expect(cards.nth(0)).toHaveCSS("cursor", "pointer");
   await expect(page.getByText("Configure connector", { exact: true })).toHaveCount(0);
 
-  // Selecting an account hands the structured choice back to the agent.
+  // Selecting an account binds it directly to the agent.
   await cards.nth(0).click();
-  await expect.poll(() => sentMessages.length).toBe(1);
-  expect(sentMessages[0]).toContain('"Work account"');
-  expect(sentMessages[0]).toContain("tool_group_instance_id=tgi-work");
-  expect(sentMessages[0]).toContain("tool_group_source_type_id=tavily");
+  await expect.poll(() => connectorBindRequests.length).toBe(1);
+  expect(connectorBindRequests[0]).toEqual({ agent_id: "hello-world", account_id: "tgi-work" });
 
   // The add-account card opens the schema-driven credential form through a
   // routable URL so redirects and the back button can target the modal.
@@ -1269,14 +1376,14 @@ test("configures a connector through the in-chat account picker", async ({ page 
   const dialog = page.getByRole("dialog", { name: "Add a Tavily account" });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("heading", { name: "Add a Tavily account" })).toBeVisible();
-  const secret = dialog.getByPlaceholder("api_key");
+  const secret = dialog.getByRole("textbox", { name: "Api key" });
   await expect(secret).toHaveAttribute("type", "password");
   await expect(dialog.getByRole("button", { name: "Connect" })).toBeDisabled();
-  await dialog.getByPlaceholder("Label this account — e.g. work, personal").fill("Research key");
+  await dialog.getByRole("textbox", { name: /Account name/ }).fill("Research key");
   await secret.fill("tvly-secret");
   await dialog.getByRole("button", { name: "Connect" }).click();
 
-  // Credentials go to the control service; the agent gets only the new instance id.
+  // Credentials go to the control service; only the new account id is bound to the agent.
   await expect.poll(() => connectorAccountRequests.length).toBe(1);
   expect(connectorAccountRequests[0]).toMatchObject({
     provider_type_id: "tavily",
@@ -1284,9 +1391,9 @@ test("configures a connector through the in-chat account picker", async ({ page 
     display_name: "Research key",
     user_credential_values: { api_key: "tvly-secret" },
   });
-  await expect.poll(() => sentMessages.length).toBe(2);
-  expect(sentMessages[1]).toContain("tool_group_instance_id=tgi-new");
-  expect(sentMessages[1]).not.toContain("tvly-secret");
+  await expect.poll(() => connectorBindRequests.length).toBe(2);
+  expect(connectorBindRequests[1]).toEqual({ agent_id: "hello-world", account_id: "tgi-new" });
+  expect(JSON.stringify(connectorBindRequests[1])).not.toContain("tvly-secret");
   await expect(dialog).toHaveCount(0);
   await expect(page).not.toHaveURL(/connector=/);
 
@@ -1294,7 +1401,7 @@ test("configures a connector through the in-chat account picker", async ({ page 
   // provider catalog, exactly what an OAuth return or shared link needs.
   await page.goto("/?connector=tavily");
   await expect(page.getByRole("dialog", { name: "Add a Tavily account" })).toBeVisible();
-  await expect(page.getByRole("dialog").getByPlaceholder("api_key")).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("textbox", { name: "Api key" })).toBeVisible();
 });
 
 test("keeps the server healthy", async ({ request }) => {
@@ -1317,28 +1424,26 @@ async function routeDefaultWorkspace(page: Page): Promise<void> {
   const now = new Date().toISOString();
   await page.route("**/api/chat/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith("/mission-control/sidebar")) {
+    if (path.endsWith("/mission-control/bootstrap")) {
       await route.fulfill({
-        json: {
-          items: [
-            {
-              id: "hello-world",
-              display_name: "Hello World",
-              provider_id: "chatkit.http-vercel-ai-sdk",
-              status: "enabled",
-              sessions: {
-                items: [
-                  {
-                    id: "session-one",
-                    title: "Working session",
-                    created_at: now,
-                    updated_at: now,
-                  },
-                ],
-              },
+        json: missionControlBootstrap([
+          {
+            id: "hello-world",
+            display_name: "Hello World",
+            provider_id: "chatkit.http-vercel-ai-sdk",
+            status: "enabled",
+            sessions: {
+              items: [
+                {
+                  id: "session-one",
+                  title: "Working session",
+                  created_at: now,
+                  updated_at: now,
+                },
+              ],
             },
-          ],
-        },
+          },
+        ]),
       });
       return;
     }

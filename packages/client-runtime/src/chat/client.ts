@@ -32,9 +32,11 @@ import {
 import { ChatMessagePageSchema, type ChatMessagePage } from "../contracts/messages.js";
 import {
   ConversationSnapshotSchema,
+  ChatKitSearchPageSchema,
   MissionControlBootstrapSchema,
   SubmitTurnResponseSchema,
   type ConversationSnapshot,
+  type ChatKitSearchPage,
   type MissionControlBootstrap,
   type SubmitTurnInput,
   type SubmitTurnResponse,
@@ -97,6 +99,11 @@ export interface OpenBotClient {
   ): Promise<SidebarResponse>;
   getBootstrap(activeSessionId?: string): Promise<MissionControlBootstrap>;
   getConversationSnapshot(sessionId: string): Promise<ConversationSnapshot>;
+  searchChatKit(
+    query: string,
+    sessionId?: string,
+    nextPageToken?: string | null,
+  ): Promise<ChatKitSearchPage>;
   getAgentSessions(
     agentId: string,
     nextPageToken?: string | null,
@@ -302,6 +309,12 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
         ),
         ConversationSnapshotSchema,
       ),
+    async searchChatKit(query, sessionId, nextPageToken) {
+      const parameters = new URLSearchParams({ q: query.trim(), page_size: "25" });
+      if (sessionId) parameters.set("session_id", sessionId);
+      if (nextPageToken) parameters.set("next_page_token", nextPageToken);
+      return await json(chatPath(`mission-control/search?${parameters}`), ChatKitSearchPageSchema);
+    },
     async getAgentSessions(agentId, nextPageToken, sessionSort = "updated_at") {
       const parameters = new URLSearchParams({ page_size: "25", session_sort: sessionSort });
       if (nextPageToken) parameters.set("next_page_token", nextPageToken);

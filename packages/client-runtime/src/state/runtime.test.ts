@@ -5,6 +5,58 @@ import type { Routine } from "../contracts/routines.js";
 import { createOpenBotRuntime, type OpenBotRuntimeOptions } from "./runtime.js";
 
 describe("OpenBot runtime", () => {
+  it("ignores stale search responses and opens a result through its associated bot", async () => {
+    const baseClient = createOpenBotClient({
+      fetch: async () => {
+        throw new Error("Unexpected HTTP request");
+      },
+    });
+    let resolveFirst: ((value: { items: [] }) => void) | undefined;
+    const first = new Promise<{ items: [] }>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const client: OpenBotClient = {
+      ...baseClient,
+      searchChatKit: async (query) =>
+        query === "first"
+          ? first
+          : {
+              items: [
+                {
+                  kind: "agent" as const,
+                  session: {
+                    id: "session-one",
+                    title: "Planning",
+                    created_at: "2026-08-01T10:00:00Z",
+                    updated_at: "2026-08-02T10:00:00Z",
+                  },
+                  agent: { id: "agent-one", display_name: "Agent One" },
+                },
+              ],
+            },
+      getConversationSnapshot: async () => ({
+        messages: { items: [] },
+        queued_turns: { items: [] },
+        snapshot_revision: 1,
+      }),
+    };
+    const runtime = createOpenBotRuntime({
+      client,
+      auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
+    });
+
+    const stale = runtime.actions.searchChatKit("first");
+    await runtime.actions.searchChatKit("planning");
+    resolveFirst?.({ items: [] });
+    await stale;
+    expect(runtime.store.getState().search.items).toHaveLength(1);
+
+    await runtime.actions.selectSearchHit(runtime.store.getState().search.items[0]!);
+    expect(runtime.store.getState().sidebar.selectedAgentId).toBe("agent-one");
+    expect(runtime.store.getState().conversation.selectedSessionId).toBe("session-one");
+    expect(runtime.store.getState().search.status).toBe("idle");
+  });
+
   it("owns agent setup through readiness and selects the newly surfaced agent", async () => {
     const jobId = "55555555-5555-4555-8555-555555555555";
     let ready = false;

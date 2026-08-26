@@ -114,12 +114,22 @@ export function AgentListItem({ agent, selected, onSelect }: AgentListItemProps)
 
 export interface AgentSearchDialogProps {
   agents: readonly SidebarAgent[];
+  results?: readonly WorkspaceSearchResult[];
+  searching?: boolean;
   loading: boolean;
   open: boolean;
   value: string;
   onChange: (value: string) => void;
   onClose: () => void;
   onSelect: (id: string) => void;
+  onSelectResult?: (id: string) => void;
+}
+
+export interface WorkspaceSearchResult {
+  id: string;
+  kind: "agent" | "session_title" | "message";
+  title: string;
+  subtitle?: string;
 }
 
 const themeActions: readonly {
@@ -134,12 +144,15 @@ const themeActions: readonly {
 
 export function AgentSearchDialog({
   agents,
+  results = [],
+  searching = false,
   loading,
   open,
   value,
   onChange,
   onClose,
   onSelect,
+  onSelectResult,
 }: AgentSearchDialogProps) {
   const [modHeld, setModHeld] = useState(false);
   const [themePreference, setLocalTheme] = useState<ThemePreference>(() => getThemePreference());
@@ -156,12 +169,15 @@ export function AgentSearchDialog({
   );
 
   // Row order for Cmd/Ctrl+1..9 quick activation: agents first, then actions.
+  const visibleResults = query ? results : [];
   const quickRows = useMemo(
     () => [
-      ...agents.map((agent) => ({ kind: "agent" as const, id: agent.id })),
+      ...(query
+        ? visibleResults.map((result) => ({ kind: "result" as const, id: result.id }))
+        : agents.map((agent) => ({ kind: "agent" as const, id: agent.id }))),
       ...matchingActions.map((action) => ({ kind: "theme" as const, id: action.preference })),
     ],
-    [agents, matchingActions],
+    [agents, matchingActions, query, visibleResults],
   );
 
   const pickTheme = (preference: ThemePreference) => {
@@ -180,6 +196,7 @@ export function AgentSearchDialog({
         event.preventDefault();
         onClose();
         if (row.kind === "agent") onSelect(row.id);
+        else if (row.kind === "result") onSelectResult?.(row.id);
         else pickTheme(row.id);
       }
     };
@@ -217,30 +234,58 @@ export function AgentSearchDialog({
     >
       <CommandInput autoFocus placeholder="Search" value={value} onValueChange={onChange} />
       <CommandList>
-        {!loading ? <CommandEmpty>{query ? "No results" : "No bots yet"}</CommandEmpty> : null}
-        {agents.map((agent, index) => (
+        {!loading && !searching ? (
+          <CommandEmpty>{query ? "No matching chats or messages" : "No bots yet"}</CommandEmpty>
+        ) : null}
+        {query && searching ? (
+          <CommandItem disabled value="searching">
+            <span className="text-[13px] text-ink-3">Searching…</span>
+          </CommandItem>
+        ) : null}
+        {visibleResults.map((result, index) => (
           <CommandItem
-            key={agent.id}
-            value={`${agent.name} ${agent.id}`}
-            onSelect={() => {
-              onClose();
-              onSelect(agent.id);
-            }}
+            key={result.id}
+            value={`${result.title} ${result.subtitle ?? ""}`}
+            onSelect={() => onSelectResult?.(result.id)}
           >
-            <AgentAvatar id={agent.id} />
             <span className="min-w-0 flex-1">
               <strong className="block truncate text-[13px] font-medium leading-tight text-ink">
-                {agent.name}
+                {result.title}
               </strong>
-              {agent.lastMessage ? (
+              {result.subtitle ? (
                 <small className="block truncate text-[12px] leading-snug text-ink-3">
-                  {agent.lastMessage}
+                  {result.subtitle}
                 </small>
               ) : null}
             </span>
             {shortcutHint(index)}
           </CommandItem>
         ))}
+        {!query
+          ? agents.map((agent, index) => (
+              <CommandItem
+                key={agent.id}
+                value={`${agent.name} ${agent.id}`}
+                onSelect={() => {
+                  onClose();
+                  onSelect(agent.id);
+                }}
+              >
+                <AgentAvatar id={agent.id} />
+                <span className="min-w-0 flex-1">
+                  <strong className="block truncate text-[13px] font-medium leading-tight text-ink">
+                    {agent.name}
+                  </strong>
+                  {agent.lastMessage ? (
+                    <small className="block truncate text-[12px] leading-snug text-ink-3">
+                      {agent.lastMessage}
+                    </small>
+                  ) : null}
+                </span>
+                {shortcutHint(index)}
+              </CommandItem>
+            ))
+          : null}
         {matchingActions.length > 0 ? (
           <CommandGroup heading="Actions">
             {matchingActions.map((action, index) => (
@@ -256,7 +301,7 @@ export function AgentSearchDialog({
                     ✓
                   </span>
                 ) : null}
-                {shortcutHint(agents.length + index)}
+                {shortcutHint((query ? visibleResults.length : agents.length) + index)}
               </CommandItem>
             ))}
           </CommandGroup>

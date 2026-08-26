@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { ChatMessagePageSchema } from "./messages.js";
+import { pageSchema } from "./common.js";
+import { ChatMessagePageSchema, ChatMessageSchema } from "./messages.js";
 import { QueuedTurnPageSchema } from "./queue.js";
 import { ChatSessionSchema, SidebarResponseSchema } from "./sidebar.js";
 
@@ -22,6 +23,32 @@ export const SubmitTurnResponseSchema = z.object({
   conversation: ConversationSnapshotSchema,
 });
 export type SubmitTurnResponse = z.infer<typeof SubmitTurnResponseSchema>;
+
+export const ChatKitSearchHitKindSchema = z.enum(["session_title", "agent", "message"]);
+export type ChatKitSearchHitKind = z.infer<typeof ChatKitSearchHitKindSchema>;
+
+export const ChatKitSearchSessionSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().nullable().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const ChatKitSearchAgentSchema = z.object({
+  id: z.string().min(1),
+  display_name: z.string(),
+});
+
+export const ChatKitSearchHitSchema = z.object({
+  kind: ChatKitSearchHitKindSchema,
+  session: ChatKitSearchSessionSchema,
+  agent: ChatKitSearchAgentSchema.nullable().optional(),
+  message: ChatMessageSchema.nullable().optional(),
+});
+export type ChatKitSearchHit = z.infer<typeof ChatKitSearchHitSchema>;
+
+export const ChatKitSearchPageSchema = pageSchema(ChatKitSearchHitSchema);
+export type ChatKitSearchPage = z.infer<typeof ChatKitSearchPageSchema>;
 
 export interface AttachmentCompletion {
   attachmentId: string;

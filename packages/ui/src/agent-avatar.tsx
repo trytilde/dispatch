@@ -1,5 +1,20 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { avatarEyeMasks, avatarEyeMeta, avatarShapes, avatarTones } from "./agent-avatar-assets.js";
+import {
+  avatarAssetUrl,
+  avatarBackgrounds,
+  avatarEyeMeta,
+  avatarShadeCoverage,
+  avatarShapes,
+  backgroundColor,
+  createAvatarIcon,
+  createSpring,
+  isBusyAvatarState,
+  pick,
+  stepSpring,
+  type AgentAvatarState,
+  type AvatarIconDescriptor,
+  type AvatarShapeId,
+} from "@tryopenbot/avatar-animation";
 
 /* ─────────────────────────────────────────────────────────
  * AGENT AVATAR
@@ -9,34 +24,15 @@ import { avatarEyeMasks, avatarEyeMeta, avatarShapes, avatarTones } from "./agen
  * orbit of ribbons around the body.
  * ───────────────────────────────────────────────────────── */
 
-export type AgentAvatarState =
-  | "idle"
-  | "listening"
-  | "thinking"
-  | "working"
-  | "loading"
-  | "waiting"
-  | "sleeping"
-  | "happy";
+export type { AgentAvatarState } from "@tryopenbot/avatar-animation";
 
 export const shapeNames = Object.keys(avatarShapes) as readonly string[];
-export type AgentAvatarShapeName = string;
+export type AgentAvatarShapeName = AvatarShapeId;
 
 /** Body colours, keyed off the agent id so an agent keeps its colour.
  * Bright, saturated hues with a wide spread — each stays legible once the
  * halftone field multiplies over it, so avatars read as colour, not mud. */
-export const agentAvatarPalette = [
-  "#FF5A5F",
-  "#FF8A3D",
-  "#FFC53D",
-  "#7ED957",
-  "#2FD07A",
-  "#22D3C5",
-  "#38BDF8",
-  "#4F7CFF",
-  "#A66BFF",
-  "#FF5FA8",
-] as const;
+export const agentAvatarPalette = Object.values(avatarBackgrounds);
 
 const ORBIT_YELLOW = "#FFD34D";
 const INK = "#191919";
@@ -55,16 +51,6 @@ const FACE: Record<string, { eyeY: number; gap: number }> = {
   teardrop: { eyeY: 124, gap: 42 },
 };
 
-const eyeKeys = Object.keys(avatarEyeMasks).sort((a, b) => Number(a) - Number(b));
-/* Only the lighter fields: at 36px the dense ones go sub-pixel and read as
- * a dark wash rather than texture. */
-const toneKeys = Object.keys(avatarTones)
-  .sort()
-  .filter((key) => (avatarTones[key]?.cov ?? 0) <= 0.25);
-
-/** States that spin the orbit: the agent is busy and the user is waiting. */
-const BUSY_STATES = new Set<AgentAvatarState>(["thinking", "working", "loading", "waiting"]);
-
 export interface AgentAvatarProps {
   id: string;
   state?: AgentAvatarState;
@@ -74,6 +60,8 @@ export interface AgentAvatarProps {
   color?: string;
   /** Explicit silhouette; defaults to the id-derived shape. */
   shape?: AgentAvatarShapeName;
+  /** Persisted catalog descriptor; defaults to a deterministic id-derived icon. */
+  icon?: AvatarIconDescriptor;
   /** Retained for call-site compatibility; the eyes drift on their own. */
   emphasis?: boolean;
 }
@@ -85,23 +73,26 @@ export function AgentAvatar({
   className,
   color: colorOverride,
   shape: shapeOverride,
+  icon,
 }: AgentAvatarProps) {
   // SVG url(#id) references must be plain ASCII, so mint our own ids.
   const [uid] = useState(nextAvatarUid);
-  const busy = BUSY_STATES.has(state);
+  const busy = isBusyAvatarState(state);
 
   const look = useMemo(() => {
-    const shapeName = shapeOverride ?? shapeNames[pick(id, "shape", shapeNames.length)] ?? "blob";
+    const descriptor = icon ?? createAvatarIcon(id);
+    const shapeName = shapeOverride ?? descriptor.shape;
     const shape = avatarShapes[shapeName] ?? avatarShapes.blob;
     return {
       shapeName,
       shape,
       face: FACE[shapeName] ?? FACE.blob,
-      color: colorOverride ?? agentAvatarPalette[fnv1a(`${id}/bg`) % agentAvatarPalette.length],
-      tone: avatarTones[toneKeys[pick(id, "tone", toneKeys.length)] ?? "1"],
-      eyeMask: avatarEyeMasks[eyeKeys[pick(id, "eyes", eyeKeys.length)] ?? eyeKeys[0]],
+      color: colorOverride ?? backgroundColor(descriptor.background),
+      toneCoverage: avatarShadeCoverage[descriptor.shade],
+      toneUrl: avatarAssetUrl("shades", descriptor.shade),
+      eyeMaskUrl: avatarAssetUrl("eyes", descriptor.eyes),
     };
-  }, [id, colorOverride, shapeOverride]);
+  }, [id, colorOverride, shapeOverride, icon]);
 
   const eyesRef = useRef<SVGGElement>(null);
   const orbitBackRef = useRef<SVGGElement>(null);
@@ -128,9 +119,9 @@ export function AgentAvatar({
     const eyes = eyesRef.current;
     if (!eyes) return;
 
-    const gazeX = spring(0);
-    const gazeY = spring(0);
-    const lid = spring(0);
+    const gazeX = createSpring(0);
+    const gazeY = createSpring(0);
+    const lid = createSpring(0);
     let nextWander = performance.now() + randomBetween(600, 3200);
     let nextBlink = performance.now() + randomBetween(1400, 4200);
     let raf = 0;
@@ -208,11 +199,7 @@ export function AgentAvatar({
             <path d={look.shape.d} fillRule="evenodd" />
           </clipPath>
           <mask id={maskId} maskUnits="userSpaceOnUse" {...eyeBox}>
-            <image
-              href={`data:image/png;base64,${look.eyeMask}`}
-              preserveAspectRatio="none"
-              {...eyeBox}
-            />
+            <image href={look.eyeMaskUrl} preserveAspectRatio="none" {...eyeBox} />
           </mask>
         </defs>
         <g transform={look.shape.transform} style={{ isolation: "isolate" }}>
@@ -225,10 +212,10 @@ export function AgentAvatar({
             strokeLinejoin="round"
             strokeWidth="4"
           />
-          {look.tone && look.tone.cov > 0 ? (
+          {look.toneCoverage > 0 ? (
             <g clipPath={`url(#${clipId})`} style={{ mixBlendMode: "multiply" }}>
               <image
-                href={`data:image/png;base64,${look.tone.png}`}
+                href={look.toneUrl}
                 x={-30}
                 y={-30}
                 width={300}
@@ -345,44 +332,10 @@ function nextAvatarUid(): string {
 }
 
 /* ── springs ───────────────────────────────────────────── */
-interface Spring {
-  x: number;
-  v: number;
-  t: number;
-}
-
-const spring = (value: number): Spring => ({ x: value, v: 0, t: value });
-
-function stepSpring(s: Spring, freq: number, damp: number, dt: number): void {
-  s.v += (-2 * damp * freq * s.v - freq * freq * (s.x - s.t)) * dt;
-  s.x += s.v * dt;
-  if (!Number.isFinite(s.x) || !Number.isFinite(s.v)) {
-    s.x = s.t;
-    s.v = 0;
-  }
-}
-
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
 function randomBetween(min: number, max: number): number {
   return min + Math.random() * (max - min);
-}
-
-/* ── deterministic pickers ─────────────────────────────── */
-function pick(seed: string, salt: string, n: number): number {
-  let h = fnv1a(`${seed}/${salt}`);
-  h = Math.imul(h ^ (h >>> 16), 73_244_475);
-  h = Math.imul(h ^ (h >>> 13), 3_266_489_909);
-  return ((h ^ (h >>> 16)) >>> 0) % n;
-}
-
-function fnv1a(value: string): number {
-  let hash = 2_166_136_261;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16_777_619);
-  }
-  return hash >>> 0;
 }

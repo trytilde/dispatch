@@ -5582,6 +5582,162 @@
         ]
       }
     },
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/avatar/icon": {
+      "get": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Get a ChatKit agent avatar icon",
+        "description": "Returns the versioned composable icon descriptor for an agent that uses a catalog avatar.",
+        "operationId": "chatkit-get-agent-avatar-icon",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatKitAgentAvatar"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Select a ChatKit agent avatar icon",
+        "description": "Stores a validated descriptor from the versioned trytilde.ai avatar catalog and replaces any uploaded image avatar.",
+        "operationId": "chatkit-update-agent-avatar-icon",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserAvatar"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatKitAgentAvatar"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
     "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/ownership": {
       "post": {
         "tags": [
@@ -41146,7 +41302,7 @@
       },
       "ChatKitAgentAvatar": {
         "type": "object",
-        "description": "Uploaded avatar metadata for one ChatKit agent principal.",
+        "description": "Canonical image or composable-icon avatar for one ChatKit agent principal.",
         "required": [
           "principal_user_id",
           "avatar"
@@ -57528,33 +57684,80 @@
         }
       },
       "UserAvatar": {
-        "type": "object",
-        "description": "Uploaded profile image metadata for a human or machine user.",
-        "required": [
-          "bucket",
-          "object_key",
-          "media_type",
-          "size_bytes",
-          "sha256"
-        ],
-        "properties": {
-          "bucket": {
-            "type": "string"
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Uploaded image stored in the configured object store.",
+            "required": [
+              "bucket",
+              "object_key",
+              "media_type",
+              "size_bytes",
+              "sha256",
+              "type"
+            ],
+            "properties": {
+              "bucket": {
+                "type": "string"
+              },
+              "media_type": {
+                "type": "string"
+              },
+              "object_key": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string"
+              },
+              "size_bytes": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "image"
+                ]
+              }
+            }
           },
-          "media_type": {
-            "type": "string"
-          },
-          "object_key": {
-            "type": "string"
-          },
-          "sha256": {
-            "type": "string"
-          },
-          "size_bytes": {
-            "type": "integer",
-            "format": "int64"
+          {
+            "type": "object",
+            "description": "Composable icon referencing the versioned trytilde.ai avatar catalog.",
+            "required": [
+              "version",
+              "shape",
+              "eyes",
+              "shade",
+              "background",
+              "type"
+            ],
+            "properties": {
+              "background": {
+                "type": "string"
+              },
+              "eyes": {
+                "type": "string"
+              },
+              "shade": {
+                "type": "string"
+              },
+              "shape": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "icon"
+                ]
+              },
+              "version": {
+                "type": "string"
+              }
+            }
           }
-        }
+        ],
+        "description": "Canonical profile avatar for a human or machine user."
       },
       "UserCredentialBrokeringResponse": {
         "oneOf": [

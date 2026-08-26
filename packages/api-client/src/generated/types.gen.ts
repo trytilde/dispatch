@@ -381,7 +381,7 @@ export type ChatKitAgent = Inbox & {
 };
 
 /**
- * Uploaded avatar metadata for one ChatKit agent principal.
+ * Canonical image or composable-icon avatar for one ChatKit agent principal.
  */
 export type ChatKitAgentAvatar = {
     avatar: UserAvatar;
@@ -5208,7 +5208,7 @@ export type UpsertWikiPageBody = {
 };
 
 /**
- * Uploaded profile image metadata for a human or machine user.
+ * Canonical profile avatar for a human or machine user.
  */
 export type UserAvatar = {
     bucket: string;
@@ -5216,6 +5216,14 @@ export type UserAvatar = {
     object_key: string;
     sha256: string;
     size_bytes: number;
+    type: 'image';
+} | {
+    background: string;
+    eyes: string;
+    shade: string;
+    shape: string;
+    type: 'icon';
+    version: string;
 };
 
 export type UserCredentialBrokeringResponse = (BrokerState & {
@@ -8350,6 +8358,57 @@ export type ChatkitUpdateAgentAvatarResponses = {
 };
 
 export type ChatkitUpdateAgentAvatarResponse = ChatkitUpdateAgentAvatarResponses[keyof ChatkitUpdateAgentAvatarResponses];
+
+export type ChatkitGetAgentAvatarIconData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/avatar/icon';
+};
+
+export type ChatkitGetAgentAvatarIconErrors = {
+    404: Error;
+};
+
+export type ChatkitGetAgentAvatarIconError = ChatkitGetAgentAvatarIconErrors[keyof ChatkitGetAgentAvatarIconErrors];
+
+export type ChatkitGetAgentAvatarIconResponses = {
+    200: ChatKitAgentAvatar;
+};
+
+export type ChatkitGetAgentAvatarIconResponse = ChatkitGetAgentAvatarIconResponses[keyof ChatkitGetAgentAvatarIconResponses];
+
+export type ChatkitUpdateAgentAvatarIconData = {
+    body: UserAvatar;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/avatar/icon';
+};
+
+export type ChatkitUpdateAgentAvatarIconErrors = {
+    400: Error;
+    404: Error;
+};
+
+export type ChatkitUpdateAgentAvatarIconError = ChatkitUpdateAgentAvatarIconErrors[keyof ChatkitUpdateAgentAvatarIconErrors];
+
+export type ChatkitUpdateAgentAvatarIconResponses = {
+    200: ChatKitAgentAvatar;
+};
+
+export type ChatkitUpdateAgentAvatarIconResponse = ChatkitUpdateAgentAvatarIconResponses[keyof ChatkitUpdateAgentAvatarIconResponses];
 
 export type ChatkitUpdateAgentOwnershipData = {
     body: SetResourceAccessModeRequest;

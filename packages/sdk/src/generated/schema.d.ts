@@ -1256,6 +1256,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/avatar/icon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a ChatKit agent avatar icon
+         * @description Returns the versioned composable icon descriptor for an agent that uses a catalog avatar.
+         */
+        get: operations["chatkit-get-agent-avatar-icon"];
+        /**
+         * Select a ChatKit agent avatar icon
+         * @description Stores a validated descriptor from the versioned trytilde.ai avatar catalog and replaces any uploaded image avatar.
+         */
+        put: operations["chatkit-update-agent-avatar-icon"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/ownership": {
         parameters: {
             query?: never;
@@ -9117,7 +9141,7 @@ export interface components {
             api_key_id?: string | null;
             principal_user_id?: string | null;
         };
-        /** @description Uploaded avatar metadata for one ChatKit agent principal. */
+        /** @description Canonical image or composable-icon avatar for one ChatKit agent principal. */
         ChatKitAgentAvatar: {
             avatar: components["schemas"]["UserAvatar"];
             principal_user_id: string;
@@ -13052,7 +13076,7 @@ export interface components {
             tags?: string[];
             title: string;
         };
-        /** @description Uploaded profile image metadata for a human or machine user. */
+        /** @description Canonical profile avatar for a human or machine user. */
         UserAvatar: {
             bucket: string;
             media_type: string;
@@ -13060,6 +13084,16 @@ export interface components {
             sha256: string;
             /** Format: int64 */
             size_bytes: number;
+            /** @enum {string} */
+            type: "image";
+        } | {
+            background: string;
+            eyes: string;
+            shade: string;
+            shape: string;
+            /** @enum {string} */
+            type: "icon";
+            version: string;
         };
         UserCredentialBrokeringResponse: (components["schemas"]["BrokerState"] & {
             /** @enum {string} */
@@ -17104,6 +17138,80 @@ export interface operations {
         requestBody: {
             content: {
                 "application/octet-stream": number[];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitAgentAvatar"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-get-agent-avatar-icon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitAgentAvatar"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-update-agent-avatar-icon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserAvatar"];
             };
         };
         responses: {

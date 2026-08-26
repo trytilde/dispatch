@@ -136,6 +136,7 @@ export {
   type WorkspaceLayoutOptions,
 } from "./use-workspace-layout.js";
 export { AgentAvatar, type AgentAvatarProps } from "./agent-avatar.js";
+export type { AvatarIconDescriptor } from "@tryopenbot/avatar-animation";
 export { AgentSetupDialog, type AgentSetupDialogProps } from "./agent-setup-dialog.js";
 export { BrandedLoadingState, type BrandedLoadingStateProps } from "./branded-loading-state.js";
 export {

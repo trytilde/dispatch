@@ -11,6 +11,7 @@ import {
   type AttachmentCompletion,
   type ChatAgent,
   type ChatMessage,
+  type ChatKitSearchHit,
   connectorAuthorizedReturnUrl,
   type ConnectorProvider,
   type CreateConnectorAccountResult,
@@ -47,6 +48,7 @@ import {
   ThinkingIndicator,
   ThreadOverlay,
   WorkspaceSidebar,
+  type WorkspaceSearchResult,
   WorkspaceShell,
   useWorkspaceLayout,
 } from "@tryopenbot/ui";
@@ -62,6 +64,7 @@ export function OpenBotApp() {
   const sidebar = useStore(openBotRuntime.store, (state) => state.sidebar);
   const conversation = useStore(openBotRuntime.store, (state) => state.conversation);
   const agentSetup = useStore(openBotRuntime.store, (state) => state.agentSetup);
+  const chatSearch = useStore(openBotRuntime.store, (state) => state.search);
   const { agents, nextAgentToken, selectedAgentId: agentId, loading } = sidebar;
   const {
     selectedSessionId: sessionId,
@@ -189,6 +192,38 @@ export function OpenBotApp() {
       ? agents.filter((agent) => agent.display_name.toLowerCase().includes(query))
       : agents;
   }, [agents, search]);
+
+  useEffect(() => {
+    if (!searchOpen || !search.trim()) {
+      openBotRuntime.actions.clearSearch();
+      return;
+    }
+    const handle = window.setTimeout(() => void openBotRuntime.actions.searchChatKit(search), 250);
+    return () => window.clearTimeout(handle);
+  }, [search, searchOpen]);
+
+  const searchHitsById = useMemo(
+    () => new Map(chatSearch.items.map((hit) => [searchHitId(hit), hit])),
+    [chatSearch.items],
+  );
+  const searchResults = useMemo<WorkspaceSearchResult[]>(
+    () =>
+      chatSearch.items.map((hit) => ({
+        id: searchHitId(hit),
+        kind: hit.kind === "agent" ? "agent" : hit.kind,
+        title:
+          hit.kind === "agent"
+            ? hit.agent?.display_name || hit.agent?.id || "Bot"
+            : hit.session.title || "Untitled conversation",
+        subtitle:
+          hit.kind === "message"
+            ? (hit.message ? messageText(hit.message).trim() : "") || "Matching message"
+            : hit.kind === "session_title"
+              ? "Conversation title"
+              : hit.agent?.id,
+      })),
+    [chatSearch.items],
+  );
 
   function selectAgent(agent: ChatAgent): void {
     clearFiles();
@@ -378,6 +413,7 @@ export function OpenBotApp() {
   function closeSearch(): void {
     setSearchOpen(false);
     setSearch("");
+    openBotRuntime.actions.clearSearch();
   }
 
   const composer = (
@@ -613,9 +649,19 @@ export function OpenBotApp() {
         hasMore={Boolean(nextAgentToken)}
         searchOpen={searchOpen}
         searchValue={search}
+        searchResults={searchResults}
+        searching={chatSearch.status === "loading"}
         onSearchChange={setSearch}
         onSearchOpen={openSearch}
         onSearchClose={closeSearch}
+        onSelectSearchResult={(id) => {
+          const hit = searchHitsById.get(id);
+          if (!hit) return;
+          void openBotRuntime.actions
+            .selectSearchHit(hit)
+            .then(closeSearch)
+            .catch((reason) => openBotRuntime.actions.setError(errorMessage(reason)));
+        }}
         onSelectAgent={(id) => {
           const agent = agents.find((candidate) => candidate.id === id);
           if (agent) {
@@ -931,6 +977,10 @@ export function OpenBotApp() {
       />
     </WorkspaceShell>
   );
+}
+
+function searchHitId(hit: ChatKitSearchHit): string {
+  return `${hit.kind}:${hit.session.id}:${hit.message?.id ?? hit.agent?.id ?? hit.session.id}`;
 }
 
 const SCROLL_STORAGE_KEY = "openbot:chat-scroll";

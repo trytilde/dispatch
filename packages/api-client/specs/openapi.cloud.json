@@ -8070,6 +8070,121 @@
         ]
       }
     },
+    "/api/v1/team/{team_id}/chatkit/mission-control/search": {
+      "get": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Search ChatKit",
+        "description": "Searches visible session titles, participating agents, and messages across the team. When session_id is provided, searches messages only within that visible session.",
+        "operationId": "chatkit-search",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/WrappedUuidV4"
+                }
+              ]
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "next_page_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Consolidated ChatKit search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatKitSearchHitPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or pagination cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Scoped session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
     "/api/v1/team/{team_id}/chatkit/mission-control/sessions/{session_id}/interrupt": {
       "post": {
         "tags": [
@@ -28430,312 +28545,6 @@
         }
       }
     },
-    "/api/v1/team/{team_id}/tilde-pay/onboarding": {
-      "post": {
-        "tags": [
-          "tilde-pay",
-          "v1"
-        ],
-        "summary": "Provision Tilde Pay",
-        "description": "Idempotently enroll billing, create a customer when details are supplied, create a wallet after KYC, configure the wallet MCP server and tools, and optionally configure browser tools when enabled.",
-        "operationId": "tilde-pay-provision",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProvisionTildePayRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Fully reconciled Tilde Pay onboarding state",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProvisionTildePayResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/tilde-pay/payments/mpp": {
-      "post": {
-        "tags": [
-          "tilde-pay",
-          "v1"
-        ],
-        "summary": "Make MPP payment",
-        "description": "Make an MPP payment from a Tilde Pay wallet.",
-        "operationId": "tilde-pay-payment-mpp",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PayPaymentRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Tilde Pay payment response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/tilde-pay/payments/x402": {
-      "post": {
-        "tags": [
-          "tilde-pay",
-          "v1"
-        ],
-        "summary": "Make x402 payment",
-        "description": "Make an x402 payment from a Tilde Pay wallet.",
-        "operationId": "tilde-pay-payment-x402",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PayPaymentRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Tilde Pay payment response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/tilde-pay/wallet": {
-      "get": {
-        "tags": [
-          "tilde-pay",
-          "v1"
-        ],
-        "summary": "Get Tilde Pay wallet summary",
-        "description": "Return wallet, balances, fiat deposit information, and crypto deposit information for Tilde Pay.",
-        "operationId": "tilde-pay-wallet-summary",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Tilde Pay wallet summary",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PayWalletSummaryResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "tilde-pay",
-          "v1"
-        ],
-        "summary": "Create Tilde Pay wallet",
-        "description": "Create a Tilde Pay wallet after KYC and return product-shaped wallet details.",
-        "operationId": "tilde-pay-wallet-create",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreatePayWalletRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Tilde Pay wallet summary",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PayWalletSummaryResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/tilde-pay/wallet/wait-until-balance": {
-      "post": {
-        "tags": [
-          "tilde-pay",
-          "v1"
-        ],
-        "summary": "Wait for Tilde Pay balance",
-        "description": "Poll wallet balances until the requested asset reaches the requested minimum.",
-        "operationId": "tilde-pay-wallet-wait-until-balance",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WaitForPayBalanceRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Tilde Pay balance wait result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WaitUntilBalanceResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/team/{team_id}/trusted-runtime": {
       "get": {
         "tags": [
@@ -29060,1009 +28869,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet": {
-      "get": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "List wallets",
-        "description": "List wallets for the current org/team.",
-        "operationId": "wallet-list",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page_size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "owner_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List wallets",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletPaginatedResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Create wallet",
-        "description": "Create a Tilde wallet by provisioning a Privy EVM wallet, Compose virtual IBAN, and Compose crypto deposit wallet.",
-        "operationId": "wallet-create",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateWalletBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Created wallet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Wallet"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "Upstream provider error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/customer": {
-      "get": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "List wallet customers",
-        "description": "List wallet customers for the current org/team.",
-        "operationId": "wallet-customer-list",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page_size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "owner_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List wallet customers",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletCustomerPaginatedResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Create wallet customer",
-        "description": "Create a Compose customer and return a KYC verification link for wallet onboarding.",
-        "operationId": "wallet-customer-create",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateWalletCustomerBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Created wallet customer",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletCustomer"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/customer/{customer_id}": {
-      "get": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Get wallet customer",
-        "description": "Get a wallet customer by local id.",
-        "operationId": "wallet-customer-get",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "customer_id",
-            "in": "path",
-            "description": "Wallet customer ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet customer",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletCustomer"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/customer/{customer_id}/kyc": {
-      "get": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Get wallet customer KYC details",
-        "description": "Return the stored Compose KYC verification status and KYC flow URL for a wallet customer.",
-        "operationId": "wallet-customer-kyc-get",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "customer_id",
-            "in": "path",
-            "description": "Wallet customer ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet customer KYC details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GetWalletCustomerKycResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/{wallet_id}": {
-      "get": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Get wallet",
-        "description": "Get a wallet by id.",
-        "operationId": "wallet-get",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "wallet_id",
-            "in": "path",
-            "description": "Wallet ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Wallet"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/balances": {
-      "get": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Get wallet balances",
-        "description": "Refresh and return Compose balances for this wallet.",
-        "operationId": "wallet-get-balances",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "wallet_id",
-            "in": "path",
-            "description": "Wallet ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet balances",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GetBalancesResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/crypto": {
-      "get": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Get wallet crypto deposit information",
-        "description": "Return crypto deposit information for this wallet.",
-        "operationId": "wallet-get-crypto-deposit-information",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "wallet_id",
-            "in": "path",
-            "description": "Wallet ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet crypto deposit information",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GetCryptoDepositInformationResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/fiat": {
-      "get": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Get wallet fiat deposit information",
-        "description": "Refresh and return Compose fiat deposit information for this wallet.",
-        "operationId": "wallet-get-fiat-deposit-information",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "wallet_id",
-            "in": "path",
-            "description": "Wallet ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "currency",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet fiat deposit information",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GetFiatDepositInformationResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/payments/mpp": {
-      "post": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Make MPP payment",
-        "description": "Make an MPP payment from the wallet using the configured payment adapter.",
-        "operationId": "wallet-make-mpp-payment",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "wallet_id",
-            "in": "path",
-            "description": "Wallet ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MakeMppPaymentRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Payment response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/payments/x402": {
-      "post": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Make x402 payment",
-        "description": "Make an x402 payment from the wallet using the configured payment adapter.",
-        "operationId": "wallet-make-x402-payment",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "wallet_id",
-            "in": "path",
-            "description": "Wallet ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MakeX402PaymentRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Payment response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaymentResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history": {
-      "get": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "List wallet transaction history",
-        "description": "Return cached transaction history for this wallet without scanning the chain.",
-        "operationId": "wallet-transaction-history-list",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "wallet_id",
-            "in": "path",
-            "description": "Wallet ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page_size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "next_page_token",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet transaction history",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletTransactionHistoryItemPaginatedResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history/refresh": {
-      "post": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Refresh wallet transaction history",
-        "description": "Scan configured chains for wallet-linked USDC transfers and upsert cached transaction history.",
-        "operationId": "wallet-transaction-history-refresh",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "wallet_id",
-            "in": "path",
-            "description": "Wallet ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet transaction history refresh result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RefreshWalletTransactionHistoryResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/virtual-account": {
-      "post": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Create wallet virtual account",
-        "description": "Create a currency-denominated Compose virtual account for an existing wallet.",
-        "operationId": "wallet-virtual-account-create",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "wallet_id",
-            "in": "path",
-            "description": "Wallet ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateWalletVirtualAccountBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Created wallet virtual account",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletVirtualAccount"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "Upstream provider error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/wait-until-balance": {
-      "post": {
-        "tags": [
-          "wallet",
-          "v1"
-        ],
-        "summary": "Wait until wallet balance",
-        "description": "Poll the local wallet balance cache until an asset reaches the requested minimum.",
-        "operationId": "wallet-wait-until-balance",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "wallet_id",
-            "in": "path",
-            "description": "Wallet ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WaitUntilBalanceRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Wait result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WaitUntilBalanceResponse"
                 }
               }
             }
@@ -41439,6 +40245,110 @@
           "agent"
         ]
       },
+      "ChatKitSearchAgent": {
+        "type": "object",
+        "description": "Agent context included when an agent identity or display name matched.",
+        "required": [
+          "id",
+          "display_name"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "ChatKitSearchHit": {
+        "type": "object",
+        "description": "One result from consolidated ChatKit full-text search.",
+        "required": [
+          "kind",
+          "session"
+        ],
+        "properties": {
+          "agent": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChatKitSearchAgent"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChatKitSearchHitKind"
+          },
+          "message": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Message"
+              }
+            ]
+          },
+          "session": {
+            "$ref": "#/components/schemas/ChatKitSearchSession"
+          }
+        }
+      },
+      "ChatKitSearchHitKind": {
+        "type": "string",
+        "description": "Kind of resource that matched a consolidated ChatKit search query.",
+        "enum": [
+          "session_title",
+          "agent",
+          "message"
+        ]
+      },
+      "ChatKitSearchHitPaginatedResponse": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatKitSearchHit"
+            }
+          },
+          "next_page_token": {
+            "type": "string"
+          }
+        }
+      },
+      "ChatKitSearchSession": {
+        "type": "object",
+        "description": "Session context included with every consolidated ChatKit search hit.",
+        "required": [
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "id": {
+            "$ref": "#/components/schemas/WrappedUuidV4"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          }
+        }
+      },
       "ChatKitSessionWithParticipants": {
         "type": "object",
         "description": "ChatKit session response with explicit participants.",
@@ -43076,27 +41986,6 @@
           "schema": {}
         }
       },
-      "CreatePayWalletRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "wallet_customer_id"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "owner_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "wallet_customer_id": {
-            "type": "string"
-          }
-        }
-      },
       "CreatePersonalToolGroupInstanceBody": {
         "type": "object",
         "required": [
@@ -44337,58 +43226,6 @@
           }
         }
       },
-      "CreateWalletBody": {
-        "type": "object",
-        "required": [
-          "name",
-          "wallet_customer_id"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "owner_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "wallet_customer_id": {
-            "type": "string"
-          }
-        }
-      },
-      "CreateWalletCustomerBody": {
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "account_type": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "owner_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "CreateWalletVirtualAccountBody": {
-        "type": "object",
-        "required": [
-          "currency"
-        ],
-        "properties": {
-          "currency": {
-            "type": "string"
-          }
-        }
-      },
       "CreateWikiAssetBody": {
         "type": "object",
         "required": [
@@ -45098,46 +43935,6 @@
           }
         }
       },
-      "DirectTokenPayment": {
-        "type": "object",
-        "required": [
-          "destination_address",
-          "amount"
-        ],
-        "properties": {
-          "amount": {
-            "type": "string"
-          },
-          "asset": {
-            "type": "string"
-          },
-          "chain": {
-            "type": "string"
-          },
-          "destination_address": {
-            "type": "string"
-          },
-          "destination_asset": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "destination_chain": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "slippage_bps": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64"
-          }
-        }
-      },
       "DownloadSkillPackageFileRequest": {
         "type": "object",
         "description": "Selects one package file for a lazy download URL.",
@@ -45478,80 +44275,6 @@
           },
           "expires_at": {
             "$ref": "#/components/schemas/WrappedChronoDateTime"
-          }
-        }
-      },
-      "GetBalancesResponse": {
-        "type": "object",
-        "required": [
-          "wallet_id",
-          "balances"
-        ],
-        "properties": {
-          "balances": {
-            "$ref": "#/components/schemas/WrappedJsonValue"
-          },
-          "wallet_id": {
-            "type": "string"
-          }
-        }
-      },
-      "GetCryptoDepositInformationResponse": {
-        "type": "object",
-        "required": [
-          "wallet_id",
-          "crypto"
-        ],
-        "properties": {
-          "crypto": {
-            "$ref": "#/components/schemas/WrappedJsonValue"
-          },
-          "wallet_id": {
-            "type": "string"
-          }
-        }
-      },
-      "GetFiatDepositInformationResponse": {
-        "type": "object",
-        "required": [
-          "wallet_id",
-          "currency",
-          "fiat"
-        ],
-        "properties": {
-          "currency": {
-            "type": "string"
-          },
-          "fiat": {
-            "$ref": "#/components/schemas/WrappedJsonValue"
-          },
-          "wallet_id": {
-            "type": "string"
-          }
-        }
-      },
-      "GetWalletCustomerKycResponse": {
-        "type": "object",
-        "required": [
-          "wallet_customer_id",
-          "compose_customer_id",
-          "kyc_verified"
-        ],
-        "properties": {
-          "compose_customer_id": {
-            "type": "string"
-          },
-          "kyc_flow_link": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "kyc_verified": {
-            "type": "boolean"
-          },
-          "wallet_customer_id": {
-            "type": "string"
           }
         }
       },
@@ -46873,233 +45596,6 @@
           "sub": {
             "type": "string",
             "description": "Subject identifier (user ID) of the machine account"
-          }
-        }
-      },
-      "MakeMppPaymentRequest": {
-        "type": "object",
-        "required": [
-          "wallet_id",
-          "url"
-        ],
-        "properties": {
-          "body": {},
-          "headers": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          },
-          "max_amount": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "max_amount_atomic": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "method": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "payment": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/DirectTokenPayment"
-              }
-            ]
-          },
-          "preferred_assets": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "preferred_channels": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Payment-channel contract addresses the caller explicitly permits.\nStateful methods that sign a server-selected channel, such as the\nStellar `channel` intent, require this pin on their first use. A\nvalidated `session_snapshot` pins subsequent requests."
-          },
-          "preferred_networks": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "preferred_recipients": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "session_action": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Session lifecycle action (`open`, `voucher`, `commit`, `topUp`, or\n`close`). Omit to open when no snapshot is supplied and voucher\notherwise."
-          },
-          "session_amount_atomic": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Incremental session amount in atomic units. Required for voucher and\ncommit actions unless the challenge pins an increment."
-          },
-          "session_delivery_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Delivery identifier required by a metered `commit` action."
-          },
-          "session_snapshot": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/PaymentSessionSnapshot",
-                "description": "Previously returned client session state for restart-safe continuation."
-              }
-            ]
-          },
-          "settlement_mode": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Preferred method-specific settlement mode. Methods that negotiate\nclient versus server broadcast currently accept `push` or `pull`."
-          },
-          "transport": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Payment transport. Defaults to `http`; use `mcp` for MCP's nested\npayment metadata or `jsonrpc` for the generic root `_meta` binding.\nTempo session challenges also support `sse` and `websocket` (`ws`) for\nmetered streaming with in-band voucher and receipt handling."
-          },
-          "url": {
-            "type": "string"
-          },
-          "wallet_id": {
-            "type": "string"
-          }
-        }
-      },
-      "MakeX402PaymentRequest": {
-        "type": "object",
-        "required": [
-          "wallet_id",
-          "url"
-        ],
-        "properties": {
-          "body": {},
-          "headers": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          },
-          "max_amount": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "max_amount_atomic": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "method": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "payment": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/DirectTokenPayment"
-              }
-            ]
-          },
-          "preferred_assets": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "preferred_networks": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "preferred_recipients": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "session_action": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Stateful scheme action (`open`, `voucher`, or `refund`). Omit to open\nwhen no snapshot is supplied and voucher otherwise."
-          },
-          "session_amount_atomic": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Incremental amount for voucher/close actions, in atomic units."
-          },
-          "session_snapshot": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/PaymentSessionSnapshot",
-                "description": "Previously returned client session state for restart-safe continuation."
-              }
-            ]
-          },
-          "transport": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Payment transport. Defaults to `http`; use `mcp` when `body` is the\nJSON-RPC MCP tool-call request that should be retried with x402 metadata."
-          },
-          "url": {
-            "type": "string"
-          },
-          "wallet_id": {
-            "type": "string"
           }
         }
       },
@@ -49159,264 +47655,6 @@
           "done"
         ]
       },
-      "PayOnboardingStep": {
-        "type": "string",
-        "enum": [
-          "enter_details",
-          "complete_kyc",
-          "ready"
-        ]
-      },
-      "PayPaymentRequest": {
-        "type": "object",
-        "required": [
-          "wallet_id",
-          "url"
-        ],
-        "properties": {
-          "body": {},
-          "headers": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          },
-          "max_amount": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "max_amount_atomic": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "method": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "payment": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/DirectTokenPayment"
-              }
-            ]
-          },
-          "preferred_assets": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "preferred_channels": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "preferred_networks": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "preferred_recipients": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "session_action": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "session_amount_atomic": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "session_delivery_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "session_snapshot": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/PaymentSessionSnapshot"
-              }
-            ]
-          },
-          "settlement_mode": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "transport": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "url": {
-            "type": "string"
-          },
-          "wallet_id": {
-            "type": "string"
-          }
-        }
-      },
-      "PayWalletSummaryError": {
-        "type": "object",
-        "required": [
-          "field",
-          "message"
-        ],
-        "properties": {
-          "field": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
-      "PayWalletSummaryResponse": {
-        "type": "object",
-        "properties": {
-          "balances": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/GetBalancesResponse"
-              }
-            ]
-          },
-          "crypto_deposit": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/GetCryptoDepositInformationResponse"
-              }
-            ]
-          },
-          "fiat_deposit": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/GetFiatDepositInformationResponse"
-              }
-            ]
-          },
-          "summary_errors": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PayWalletSummaryError"
-            }
-          },
-          "wallet": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/Wallet"
-              }
-            ]
-          }
-        }
-      },
-      "PaymentResponse": {
-        "type": "object",
-        "required": [
-          "wallet_id",
-          "protocol",
-          "response"
-        ],
-        "properties": {
-          "protocol": {
-            "type": "string"
-          },
-          "response": {
-            "$ref": "#/components/schemas/WrappedJsonValue"
-          },
-          "wallet_id": {
-            "type": "string"
-          }
-        }
-      },
-      "PaymentSessionSnapshot": {
-        "type": "object",
-        "description": "Opaque-enough client state needed to safely resume a stateful payment\nscheme after a process restart. Every field is authenticated again against\nthe next server challenge before it is used.",
-        "required": [
-          "protocol",
-          "method",
-          "network",
-          "channel_id",
-          "cumulative_amount",
-          "nonce",
-          "expires_at",
-          "deposit_amount",
-          "authorized_signer"
-        ],
-        "properties": {
-          "authorized_signer": {
-            "type": "string"
-          },
-          "channel_id": {
-            "type": "string"
-          },
-          "cumulative_amount": {
-            "type": "string"
-          },
-          "deposit_amount": {
-            "type": "string"
-          },
-          "expires_at": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "metadata": {},
-          "method": {
-            "type": "string"
-          },
-          "network": {
-            "type": "string"
-          },
-          "nonce": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "protocol": {
-            "type": "string"
-          }
-        }
-      },
       "PersonalMcpServerInstanceSerialized": {
         "type": "object",
         "required": [
@@ -50942,108 +49180,6 @@
           }
         }
       },
-      "ProvisionPayBrowserResponse": {
-        "type": "object",
-        "required": [
-          "browser_definition_id",
-          "enabled_tool_ids"
-        ],
-        "properties": {
-          "browser_definition_id": {
-            "type": "string"
-          },
-          "enabled_tool_ids": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "ProvisionTildePayRequest": {
-        "type": "object",
-        "properties": {
-          "account_type": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "owner_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "ProvisionTildePayResponse": {
-        "type": "object",
-        "required": [
-          "next_step"
-        ],
-        "properties": {
-          "browser": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ProvisionPayBrowserResponse"
-              }
-            ]
-          },
-          "customer": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/WalletCustomer"
-              }
-            ]
-          },
-          "kyc": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/GetWalletCustomerKycResponse"
-              }
-            ]
-          },
-          "mcp": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/SetupPayMcpResponse"
-              }
-            ]
-          },
-          "next_step": {
-            "$ref": "#/components/schemas/PayOnboardingStep"
-          },
-          "wallet": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/Wallet"
-              }
-            ]
-          }
-        }
-      },
       "ProvisionedProviderApp": {
         "type": "object",
         "description": "App credentials and metadata created by a provider provisioner.",
@@ -51676,34 +49812,6 @@
               "null"
             ],
             "description": "The refresh token. If not provided, will be read from cookie."
-          }
-        }
-      },
-      "RefreshWalletTransactionHistoryResponse": {
-        "type": "object",
-        "required": [
-          "wallet_id",
-          "scanned_chains",
-          "inserted_or_updated",
-          "linked_transactions"
-        ],
-        "properties": {
-          "inserted_or_updated": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "linked_transactions": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "scanned_chains": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "wallet_id": {
-            "type": "string"
           }
         }
       },
@@ -53309,32 +51417,6 @@
         "properties": {
           "mode": {
             "$ref": "#/components/schemas/ResourceAccessMode"
-          }
-        }
-      },
-      "SetupPayMcpResponse": {
-        "type": "object",
-        "required": [
-          "mcp_server_id",
-          "tool_group_instance_id",
-          "enabled_tool_ids",
-          "mcp_path"
-        ],
-        "properties": {
-          "enabled_tool_ids": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "mcp_path": {
-            "type": "string"
-          },
-          "mcp_server_id": {
-            "type": "string"
-          },
-          "tool_group_instance_id": {
-            "type": "string"
           }
         }
       },
@@ -57923,553 +56005,6 @@
                 "$ref": "#/components/schemas/UserToolFederationSelection"
               }
             }
-          }
-        }
-      },
-      "WaitForPayBalanceRequest": {
-        "type": "object",
-        "required": [
-          "wallet_id",
-          "asset",
-          "minimum_amount"
-        ],
-        "properties": {
-          "asset": {
-            "type": "string"
-          },
-          "minimum_amount": {
-            "type": "number",
-            "format": "double"
-          },
-          "poll_interval_secs": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64",
-            "minimum": 0
-          },
-          "timeout_secs": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64",
-            "minimum": 0
-          },
-          "wallet_id": {
-            "type": "string"
-          }
-        }
-      },
-      "WaitUntilBalanceRequest": {
-        "type": "object",
-        "required": [
-          "wallet_id",
-          "asset",
-          "minimum_amount"
-        ],
-        "properties": {
-          "asset": {
-            "type": "string"
-          },
-          "minimum_amount": {
-            "type": "number",
-            "format": "double"
-          },
-          "poll_interval_secs": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "timeout_secs": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "wallet_id": {
-            "type": "string"
-          }
-        }
-      },
-      "WaitUntilBalanceResponse": {
-        "type": "object",
-        "required": [
-          "wallet_id",
-          "satisfied",
-          "observed_amount"
-        ],
-        "properties": {
-          "observed_amount": {
-            "type": "number",
-            "format": "double"
-          },
-          "satisfied": {
-            "type": "boolean"
-          },
-          "wallet_id": {
-            "type": "string"
-          }
-        }
-      },
-      "Wallet": {
-        "type": "object",
-        "required": [
-          "id",
-          "org_id",
-          "team_id",
-          "name",
-          "status",
-          "wallet_customer_id",
-          "privy_wallet_id",
-          "privy_evm_address",
-          "compose_customer_id",
-          "compose_deposit_currency",
-          "compose_deposit_chain",
-          "created_at",
-          "updated_at"
-        ],
-        "properties": {
-          "cached_compose_balances": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/WrappedJsonValue"
-              }
-            ]
-          },
-          "compose_customer_id": {
-            "type": "string"
-          },
-          "compose_deposit_chain": {
-            "type": "string"
-          },
-          "compose_deposit_currency": {
-            "type": "string"
-          },
-          "compose_deposit_wallet_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "created_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          },
-          "id": {
-            "type": "string"
-          },
-          "last_compose_sync_at": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/WrappedChronoDateTime"
-              }
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "org_id": {
-            "type": "string"
-          },
-          "owner_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "privy_evm_address": {
-            "type": "string"
-          },
-          "privy_wallet_id": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "team_id": {
-            "type": "string"
-          },
-          "updated_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          },
-          "wallet_customer_id": {
-            "type": "string"
-          }
-        }
-      },
-      "WalletCustomer": {
-        "type": "object",
-        "required": [
-          "id",
-          "org_id",
-          "team_id",
-          "name",
-          "account_type",
-          "compose_customer_id",
-          "kyc_verified",
-          "compose_customer_payload",
-          "created_at",
-          "updated_at"
-        ],
-        "properties": {
-          "account_type": {
-            "type": "string"
-          },
-          "compose_customer_id": {
-            "type": "string"
-          },
-          "compose_customer_payload": {
-            "$ref": "#/components/schemas/WrappedJsonValue"
-          },
-          "compose_kyc_payload": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/WrappedJsonValue"
-              }
-            ]
-          },
-          "created_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          },
-          "id": {
-            "type": "string"
-          },
-          "kyc_flow_link": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "kyc_verified": {
-            "type": "boolean"
-          },
-          "name": {
-            "type": "string"
-          },
-          "org_id": {
-            "type": "string"
-          },
-          "owner_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "team_id": {
-            "type": "string"
-          },
-          "updated_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          }
-        }
-      },
-      "WalletCustomerPaginatedResponse": {
-        "type": "object",
-        "required": [
-          "items"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/WalletCustomer"
-            }
-          },
-          "next_page_token": {
-            "type": "string"
-          }
-        }
-      },
-      "WalletMerchant": {
-        "type": "object",
-        "required": [
-          "id",
-          "org_id",
-          "team_id",
-          "origin",
-          "merchant_url",
-          "raw_metadata",
-          "created_at",
-          "updated_at"
-        ],
-        "properties": {
-          "created_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          },
-          "favicon_url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "icon_fetched_at": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/WrappedChronoDateTime"
-              }
-            ]
-          },
-          "icon_media_type": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "icon_sha256": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "merchant_url": {
-            "type": "string"
-          },
-          "name": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "org_id": {
-            "type": "string"
-          },
-          "origin": {
-            "type": "string"
-          },
-          "raw_metadata": {
-            "$ref": "#/components/schemas/WrappedJsonValue"
-          },
-          "team_id": {
-            "type": "string"
-          },
-          "updated_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          }
-        }
-      },
-      "WalletPaginatedResponse": {
-        "type": "object",
-        "required": [
-          "items"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Wallet"
-            }
-          },
-          "next_page_token": {
-            "type": "string"
-          }
-        }
-      },
-      "WalletTransactionHistoryItem": {
-        "type": "object",
-        "required": [
-          "id",
-          "org_id",
-          "team_id",
-          "wallet_id",
-          "item_type",
-          "direction",
-          "status",
-          "occurred_at",
-          "raw_payload",
-          "created_at",
-          "updated_at"
-        ],
-        "properties": {
-          "amount": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "amount_decimals": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32"
-          },
-          "amount_raw": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "asset": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "chain": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "counterparty_address": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "created_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          },
-          "direction": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "item_type": {
-            "type": "string"
-          },
-          "merchant": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/WalletMerchant"
-              }
-            ]
-          },
-          "merchant_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "occurred_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          },
-          "org_id": {
-            "type": "string"
-          },
-          "raw_payload": {
-            "$ref": "#/components/schemas/WrappedJsonValue"
-          },
-          "scanned_at": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/WrappedChronoDateTime"
-              }
-            ]
-          },
-          "status": {
-            "type": "string"
-          },
-          "team_id": {
-            "type": "string"
-          },
-          "updated_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          },
-          "wallet_id": {
-            "type": "string"
-          }
-        }
-      },
-      "WalletTransactionHistoryItemPaginatedResponse": {
-        "type": "object",
-        "required": [
-          "items"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/WalletTransactionHistoryItem"
-            }
-          },
-          "next_page_token": {
-            "type": "string"
-          }
-        }
-      },
-      "WalletVirtualAccount": {
-        "type": "object",
-        "required": [
-          "id",
-          "org_id",
-          "team_id",
-          "wallet_id",
-          "wallet_customer_id",
-          "compose_customer_id",
-          "compose_virtual_account_id",
-          "currency",
-          "created_at",
-          "updated_at"
-        ],
-        "properties": {
-          "cached_compose_deposit_info": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/WrappedJsonValue"
-              }
-            ]
-          },
-          "compose_customer_id": {
-            "type": "string"
-          },
-          "compose_virtual_account_id": {
-            "type": "string"
-          },
-          "created_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          },
-          "currency": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "org_id": {
-            "type": "string"
-          },
-          "status": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "team_id": {
-            "type": "string"
-          },
-          "updated_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          },
-          "wallet_customer_id": {
-            "type": "string"
-          },
-          "wallet_id": {
-            "type": "string"
           }
         }
       },

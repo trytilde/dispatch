@@ -17,7 +17,11 @@ import type {
 } from "../contracts/auth.js";
 import type { ActivityEvent } from "../contracts/events.js";
 import type { ChatMessage, ChatPart } from "../contracts/messages.js";
-import type { AttachmentCompletion, ConversationSnapshot } from "../contracts/mission-control.js";
+import type {
+  AttachmentCompletion,
+  ChatKitSearchHit,
+  ConversationSnapshot,
+} from "../contracts/mission-control.js";
 import { QueuedTurnSchema, type QueuedTurn } from "../contracts/queue.js";
 import type { CreateRoutineInput, Routine, UpdateRoutineInput } from "../contracts/routines.js";
 import type {
@@ -93,6 +97,14 @@ export interface SignalsState {
   error: string;
 }
 
+export interface SearchState {
+  query: string;
+  sessionId?: string;
+  items: ChatKitSearchHit[];
+  status: "idle" | "loading" | "ready" | "error";
+  error: string;
+}
+
 export interface OpenBotState {
   auth: AuthState;
   sidebar: SidebarState;
@@ -100,6 +112,7 @@ export interface OpenBotState {
   agentSetup: AgentSetupState;
   routines: RoutinesState;
   signals: SignalsState;
+  search: SearchState;
 }
 
 export interface SendMessageInput {
@@ -120,6 +133,9 @@ export interface OpenBotActions {
   selectAgent(agentId: string): Promise<void>;
   startNewConversation(agentId: string): void;
   selectSession(agentId: string, session: ChatSession): Promise<void>;
+  searchChatKit(query: string, sessionId?: string): Promise<void>;
+  clearSearch(): void;
+  selectSearchHit(hit: ChatKitSearchHit): Promise<void>;
   ensureSession(title?: string): Promise<string>;
   refreshMessages(sessionId?: string, preserveLiveMessages?: boolean): Promise<void>;
   loadOlderMessages(): Promise<void>;
@@ -207,6 +223,7 @@ const initialState: OpenBotState = {
     status: "idle",
     error: "",
   },
+  search: { query: "", items: [], status: "idle", error: "" },
 };
 
 export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRuntime {
@@ -229,6 +246,7 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
   let sidebarRefreshTimer: ReturnType<typeof setTimeout> | undefined;
   const queueRefreshes = new Map<string, Promise<void>>();
   let initializePromise: Promise<void> | undefined;
+  let searchGeneration = 0;
 
   const updateAuth = (patch: Partial<AuthState>) =>
     store.setState((state) => ({ auth: { ...state.auth, ...patch } }));
@@ -258,6 +276,8 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     store.setState((state) => ({ routines: { ...state.routines, ...patch } }));
   const updateSignals = (patch: Partial<SignalsState>) =>
     store.setState((state) => ({ signals: { ...state.signals, ...patch } }));
+  const updateSearch = (patch: Partial<SearchState>) =>
+    store.setState((state) => ({ search: { ...state.search, ...patch } }));
   const replaceAgentRoutines = (agentId: string, items: Routine[]) =>
     updateRoutines({
       byAgentId: { ...store.getState().routines.byAgentId, [agentId]: items },
@@ -547,6 +567,52 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
         await abortableDelay(900, controller.signal, schedule, cancelScheduled);
       }
     })();
+  }
+
+  async function searchChatKit(query: string, sessionId?: string): Promise<void> {
+    const normalizedQuery = query.trim();
+    const generation = ++searchGeneration;
+    if (!normalizedQuery) {
+      updateSearch({ query: "", sessionId: undefined, items: [], status: "idle", error: "" });
+      return;
+    }
+    updateSearch({
+      query: normalizedQuery,
+      sessionId,
+      items: [],
+      status: "loading",
+      error: "",
+    });
+    try {
+      const response = await options.client.searchChatKit(normalizedQuery, sessionId);
+      if (generation !== searchGeneration) return;
+      updateSearch({ items: response.items, status: "ready" });
+    } catch (error) {
+      if (generation !== searchGeneration) return;
+      updateSearch({ items: [], status: "error", error: errorMessage(error) });
+    }
+  }
+
+  function clearSearch(): void {
+    searchGeneration += 1;
+    updateSearch({ query: "", sessionId: undefined, items: [], status: "idle", error: "" });
+  }
+
+  async function selectSearchHit(hit: ChatKitSearchHit): Promise<void> {
+    const state = store.getState();
+    const sessionAgent = state.sidebar.agents.find((agent) =>
+      agent.sessions.items.some((session) => session.id === hit.session.id),
+    );
+    const rawMessage = record(hit.message);
+    const messageAgent = state.sidebar.agents.find(
+      (agent) =>
+        rawMessage.from_inbox_type_id === agent.id || rawMessage.to_inbox_type_id === agent.id,
+    );
+    const agentId = hit.agent?.id ?? sessionAgent?.id ?? messageAgent?.id;
+    if (!agentId)
+      throw new Error("The bot for this search result is not available in the sidebar.");
+    await selectSession(agentId, hit.session);
+    clearSearch();
   }
 
   async function selectSession(agentId: string, session: ChatSession): Promise<void> {
@@ -1012,6 +1078,9 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     selectAgent,
     startNewConversation,
     selectSession,
+    searchChatKit,
+    clearSearch,
+    selectSearchHit,
     ensureSession,
     refreshMessages,
     loadOlderMessages,

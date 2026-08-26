@@ -151,6 +151,7 @@ export {
   AgentSearchDialog,
   type AgentSearchDialogProps,
   type SidebarAgent,
+  type WorkspaceSearchResult,
   WorkspaceAccount,
   type WorkspaceAccountProps,
 } from "./sidebar-components.js";

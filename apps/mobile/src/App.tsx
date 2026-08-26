@@ -21,11 +21,13 @@ import {
   completeOnboarding,
   errorMessage,
   loadOnboarding,
+  messageText,
   queuedTurnText,
   type AttachmentCompletion,
   type ChatAgent,
   type ClientInstallation,
   type ChatMessage,
+  type ChatKitSearchHit,
   type ChatSession,
   type OnboardingStorage,
   type QueuedTurn,
@@ -443,7 +445,19 @@ function SidebarScreen({
   onOpenChat: () => void;
 }) {
   const runtime = useRuntime();
+  const search = useStore(runtime.store, (state) => state.search);
+  const [query, setQuery] = useState("");
   const muted = useColor("textMuted");
+  const accent = useColor("accent");
+
+  useEffect(() => {
+    if (!query.trim()) {
+      runtime.actions.clearSearch();
+      return;
+    }
+    const handle = setTimeout(() => void runtime.actions.searchChatKit(query), 250);
+    return () => clearTimeout(handle);
+  }, [query, runtime.actions]);
 
   return (
     <View style={styles.fill}>
@@ -472,9 +486,53 @@ function SidebarScreen({
       <Text numberOfLines={1} variant="caption" style={[styles.serviceLine, { color: muted }]}>
         {controlOrigin}
       </Text>
+      <View style={styles.searchBox}>
+        <Input
+          accessibilityLabel="Search conversations and messages"
+          autoCapitalize="none"
+          onChangeText={setQuery}
+          placeholder="Search conversations and messages"
+          value={query}
+        />
+      </View>
       <Separator />
       <InlineError message={error} />
-      {loading && agents.length === 0 ? (
+      {query.trim() ? (
+        <ScrollView contentContainerStyle={styles.sidebarList}>
+          {search.status === "loading" ? <LoadingScreen compact label="Searching…" /> : null}
+          {search.status === "error" ? <InlineError message={search.error} /> : null}
+          {search.status === "ready" && search.items.length === 0 ? (
+            <Text variant="caption" style={{ color: muted }}>
+              No matching chats or messages.
+            </Text>
+          ) : null}
+          {search.items.map((hit) => (
+            <Pressable
+              accessibilityRole="button"
+              key={searchHitKey(hit)}
+              onPress={() => {
+                void runtime.actions
+                  .selectSearchHit(hit)
+                  .then(() => {
+                    setQuery("");
+                    onOpenChat();
+                  })
+                  .catch((reason) => runtime.actions.setError(errorMessage(reason)));
+              }}
+              style={({ pressed }) => pressed && { backgroundColor: accent }}
+            >
+              <Card style={styles.searchResult}>
+                <Text numberOfLines={1} variant="subtitle">
+                  {searchHitTitle(hit)}
+                </Text>
+                <Text numberOfLines={2} variant="caption" style={{ color: muted }}>
+                  {searchHitSubtitle(hit)}
+                </Text>
+              </Card>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : loading && agents.length === 0 ? (
         <LoadingScreen compact label="Loading agents…" />
       ) : (
         <ScrollView contentContainerStyle={styles.sidebarList}>
@@ -778,6 +836,21 @@ function formatDate(value: string): string {
     : date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function searchHitKey(hit: ChatKitSearchHit): string {
+  return `${hit.kind}:${hit.session.id}:${hit.message?.id ?? hit.agent?.id ?? hit.session.id}`;
+}
+
+function searchHitTitle(hit: ChatKitSearchHit): string {
+  if (hit.kind === "agent") return hit.agent?.display_name || hit.agent?.id || "Bot";
+  return hit.session.title || "Untitled conversation";
+}
+
+function searchHitSubtitle(hit: ChatKitSearchHit): string {
+  if (hit.kind === "message")
+    return (hit.message ? messageText(hit.message).trim() : "") || "Matching message";
+  return hit.kind === "session_title" ? "Conversation title" : hit.agent?.id || "Bot";
+}
+
 // Layout only. Every color comes from useColor at the point of use so both
 // appearances resolve without a second stylesheet.
 const styles = StyleSheet.create({
@@ -834,6 +907,8 @@ const styles = StyleSheet.create({
   headerActions: { alignItems: "flex-end" },
   eyebrow: { fontWeight: "700", letterSpacing: 1.6 },
   serviceLine: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs },
+  searchBox: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
+  searchResult: { gap: SPACING.xs, padding: SPACING.md },
   sidebarList: { gap: SPACING.md, padding: SPACING.md, paddingBottom: SPACING.xl },
   agentCard: { padding: 0, overflow: "hidden" },
   agentRow: {

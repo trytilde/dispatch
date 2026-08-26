@@ -72,6 +72,44 @@ describe("OpenBot client", () => {
     await expect(client.getSidebar()).rejects.toThrow();
   });
 
+  it("searches ChatKit with encoded query, session, and cursor parameters", async () => {
+    const fetch = vi.fn(async (input: RequestInfo | URL) => {
+      expect(requestUrl(input)).toBe(
+        "/api/chat/mission-control/search?q=quarterly+review&page_size=25&session_id=session-one&next_page_token=cursor%2Ftwo",
+      );
+      return Response.json({
+        items: [
+          {
+            kind: "message",
+            session: {
+              id: "session-one",
+              title: "Quarterly planning",
+              created_at: "2026-08-01T10:00:00Z",
+              updated_at: "2026-08-02T10:00:00Z",
+            },
+            message: {
+              id: "message-one",
+              type: "message",
+              role: "user",
+              session_id: "session-one",
+              text: "Quarterly review",
+              created_at: "2026-08-02T10:00:00Z",
+            },
+          },
+        ],
+        next_page_token: "cursor-three",
+      });
+    });
+    const client = createOpenBotClient({ fetch });
+
+    await expect(
+      client.searchChatKit("quarterly review", "session-one", "cursor/two"),
+    ).resolves.toMatchObject({
+      items: [{ kind: "message", message: { id: "message-one" } }],
+      next_page_token: "cursor-three",
+    });
+  });
+
   it("consumes the team-wide Mission Control event stream", async () => {
     const events: unknown[] = [];
     const client = createOpenBotClient({

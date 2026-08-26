@@ -98,7 +98,7 @@ export function OpenBotApp() {
   const previousMessageIdRef = useRef("");
   const [showScrollLatest, setShowScrollLatest] = useState(false);
   const electron = navigator.userAgent.includes("Electron");
-  const layout = useWorkspaceLayout({ floatingWorkspace: electron });
+  const layout = useWorkspaceLayout({ floatingWorkspace: true });
   const navigate = useNavigate();
   const setCreateAgentOpen = (open: boolean): void => {
     void navigate({
@@ -574,7 +574,7 @@ export function OpenBotApp() {
     <WorkspaceShell
       sidebarCollapsed={layout.sidebarCollapsed}
       computerOpen={layout.workspaceOpen && Boolean(selectedAgent)}
-      computerFloating={electron}
+      computerFloating
       style={layout.style}
     >
       <WorkspaceSidebar
@@ -873,7 +873,7 @@ export function OpenBotApp() {
       <AgentWorkspacePanel
         agentId={agentId}
         agentName={selectedAgent?.display_name || "Agent"}
-        floating={electron}
+        floating
         open={layout.workspaceOpen && Boolean(selectedAgent)}
         onClose={layout.toggleWorkspace}
         onResize={layout.beginWorkspaceResize}

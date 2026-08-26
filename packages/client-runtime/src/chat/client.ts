@@ -76,6 +76,12 @@ import {
   type SidebarResponse,
 } from "../contracts/sidebar.js";
 import { ClientRequestError } from "../errors.js";
+import {
+  MissionControlSocketTicketSchema,
+  observeMissionControlSocket,
+  type WebSocketFactory,
+  type WebSocketLike,
+} from "./websocket.js";
 import { consumeSse } from "./sse.js";
 
 export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -84,6 +90,9 @@ export interface OpenBotClientOptions {
   baseUrl?: string;
   fetch?: FetchLike;
   getAccessToken?: () => Promise<string | undefined>;
+  createWebSocket?: WebSocketFactory;
+  /** Browser by default. Native adapters must opt into Origin-free socket tickets. */
+  missionControlTransport?: "browser" | "native";
 }
 
 export interface OpenBotClient {
@@ -126,8 +135,8 @@ export interface OpenBotClient {
   submitTurn(agentId: string, input: SubmitTurnInput): Promise<SubmitTurnResponse>;
   observeMissionControl(
     signal: AbortSignal,
-    onEvent: (event: ChatEvent) => void,
-    afterRevision?: number,
+    onEvent: (event: ChatEvent) => void | Promise<void>,
+    onReady: () => void | Promise<void>,
   ): Promise<void>;
   observeSession(
     sessionId: string,
@@ -396,16 +405,46 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
           }),
         },
       ),
-    async observeMissionControl(signal, onEvent, afterRevision) {
-      const response = await request(chatPath("mission-control/events"), {
-        headers: {
-          accept: "text/event-stream",
-          ...(afterRevision === undefined ? {} : { "last-event-id": String(afterRevision) }),
-        },
-        signal,
-      });
-      if (!response.ok) throw await responseError(response);
-      await consumeSse(response, signal, onEvent);
+    async observeMissionControl(signal, onEvent, onReady) {
+      const createWebSocket =
+        options.createWebSocket ??
+        ((url, protocols) => new globalThis.WebSocket(url, protocols) as WebSocketLike);
+      let afterRevision: number | undefined;
+      let reconnectAttempt = 0;
+      while (!signal.aborted) {
+        try {
+          const ticket = await json(
+            chatPath("mission-control/socket-ticket"),
+            MissionControlSocketTicketSchema,
+            {
+              method: "POST",
+              body: JSON.stringify({ transport: options.missionControlTransport ?? "browser" }),
+              signal,
+            },
+          );
+          await observeMissionControlSocket({
+            signal,
+            ticket,
+            afterRevision,
+            createWebSocket,
+            onReady: async () => await onReady(),
+            onEvent,
+            onRevision: (revision) => {
+              afterRevision = Math.max(afterRevision ?? 0, revision);
+            },
+            onHealthy: () => {
+              reconnectAttempt = 0;
+            },
+          });
+        } catch (error) {
+          if (signal.aborted) return;
+          if (error instanceof ClientRequestError && error.status < 500) throw error;
+        }
+        if (!signal.aborted) {
+          await waitForReconnect(signal, reconnectAttempt);
+          reconnectAttempt += 1;
+        }
+      }
     },
     async observeSession(sessionId, signal, onEvent) {
       const response = await request(
@@ -678,6 +717,20 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
     rewriteTildeUrl,
     rewriteTildeUploadUrl,
   };
+}
+
+async function waitForReconnect(signal: AbortSignal, attempt: number): Promise<void> {
+  await new Promise<void>((resolve) => {
+    const capped = Math.min(250 * 2 ** Math.min(attempt, 8), 10_000);
+    const jittered = Math.min(10_000, Math.round(capped * (0.8 + Math.random() * 0.4)));
+    const timer = setTimeout(done, jittered);
+    function done(): void {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", done);
+      resolve();
+    }
+    signal.addEventListener("abort", done, { once: true });
+  });
 }
 
 function routineTriggerBody(spec: RoutineTriggerSpec): Record<string, unknown> {

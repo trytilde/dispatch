@@ -1,10 +1,10 @@
-# ADR-0014: Owner chat through a Tilde REST and SSE bridge
+# ADR-0014: Owner chat through Tilde REST and direct Mission Control WebSockets
 
 ## In brief
 
-- Web, desktop, and mobile preserve Tilde ChatKit's native REST and SSE contracts.
+- Web, desktop, and mobile preserve Tilde ChatKit's native REST, SSE, and WebSocket contracts.
 - The control service exposes an allowlisted same-origin bridge and injects server credentials.
-- Team-wide background activity is adapted from Tilde Mission Control WebSocket events to SSE.
+- Team-wide background activity connects directly to Tilde with a single-use socket ticket.
 - No Chat Provider or owner-facing protobuf contract is retained.
 - Agent execution remains behind the independently deployed agent endpoint.
 
@@ -23,29 +23,36 @@ The bridge does not accept tenant overrides and cannot proxy arbitrary Tilde con
 Agent responses still execute through the Agent Provider-managed endpoint, whether that endpoint is a development tunnel or the deployed agent service.
 
 OpenBot also needs owner-visible activity for agents whose conversations are not currently open. The
-control service therefore opens the fixed Tilde Mission Control WebSocket endpoint for the configured
-team and adapts its event stream to `/api/chat/background` SSE. Credentials, team identity, WebSocket
-heartbeats, and reconnection remain server-side; clients receive only the same allowlisted activity
-events used to reconcile sidebar previews, unread state, and busy indicators. This is not an arbitrary
-WebSocket proxy.
+client runtime obtains a short-lived, single-use Mission Control ticket from the authenticated control
+service, then connects directly to Tilde's documented WebSocket. The exchange forwards the current
+owner bearer token server-to-server; browser JavaScript never receives it. Web and Electron request a
+browser ticket bound to the installation registration, organization, team, scope, current membership,
+WebSocket audience, and exact registered HTTP Origin. Expo explicitly requests a native ticket using
+its protected bearer; native issuance requires bearer authentication and redemption requires an
+Origin-free socket. The ticket travels as a WebSocket subprotocol credential and is atomically consumed.
 
 Tilde publishes the Mission Control WebSocket contract as AsyncAPI generated from the same Rust event
 types used at runtime. The team-scoped socket is one system channel rather than one channel per chat:
 every connected owner client needs background activity for all accessible conversations. AsyncAPI
 separates client ping, server control frames, and typed domain events into distinct operations while
-retaining the single physical channel. The SSE bridge forwards the browser's last applied durable
+retaining the single physical channel. The direct socket forwards the client's last applied durable
 revision as `after_revision`, so a reconnect replays events produced while the client was offline.
+The framework-neutral client runtime owns heartbeat, revision cursors, capped exponential reconnect
+backoff with jitter, and event parsing. Tilde sends a ready barrier with the current revision; OpenBot
+refreshes authoritative sidebar and selected-session state before advancing that cursor, closing the
+initial REST-to-WebSocket race. Event cursors advance only after client reconciliation succeeds.
 
 ```mermaid
 flowchart LR
-  O["Owner in web, desktop, or mobile"] --> C["REST and SSE bridge"]
+  O["Owner in web, desktop, or mobile"] --> C["Allowlisted REST/SSE bridge"]
   C --> T["Tilde ChatKit API"]
   T --> A["Local tunnel or deployed agent endpoint"]
   A --> T
   T --> C
   C --> O
-  T -. "Mission Control WebSocket" .-> B["Background SSE adapter"]
-  B --> O
+  O -->|"request single-use ticket"| C
+  C -->|"owner bearer, server-to-server"| T
+  O -->|"direct Mission Control WebSocket"| T
 ```
 
 ## Consequences
@@ -54,8 +61,10 @@ flowchart LR
 - Control deployments route `/api/*` to the Hono Function and keep credentials server-side.
 - Tilde status codes, JSON bodies, attachment bytes, and SSE frames cross without an OpenBot projection layer.
 - The bridge is intentionally Tilde-specific; a second chat backend requires a new product decision rather than a generic provider contract in advance.
-- The Mission Control dependency is narrow, server-only, reconnecting, and checked against Tilde's
-  generated AsyncAPI contract at one adapter boundary.
+- The control service no longer holds one upstream WebSocket per browser; its retained role is the
+  owner-authorized ticket exchange and the existing REST/SSE compatibility bridge.
+- The client-owned Mission Control dependency is checked against Tilde's generated AsyncAPI contract.
+- Ticket persistence adds a deliberately narrow replay-prevention record in Tilde.
 
 ## Updates
 
@@ -63,3 +72,4 @@ flowchart LR
 - 2026-08-17T18:00:00+02:00: Added mobile as an owner client and moved parsing, transport, and live-state reconciliation into a shared framework-neutral client runtime without introducing a second server contract.
 - 2026-08-21T12:00:00+01:00: Added the server-side Mission Control WebSocket to background SSE adapter for team-wide agent activity, with the undocumented dependency isolated behind one allowlisted control-service boundary.
 - 2026-08-25T12:00:00+02:00: Replaced the undocumented event dependency with Tilde's Rust-derived AsyncAPI contract, retained one team-wide physical channel, and adopted durable event revisions plus aggregate REST snapshots for reconnect convergence.
+- 2026-08-26T16:18:13+01:00: Replaced the background SSE adapter with a direct client-to-Tilde Mission Control WebSocket using single-use browser/Electron Origin-bound or Expo native-bearer tickets, a ready barrier, and revision-safe reconnects.

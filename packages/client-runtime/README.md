@@ -13,6 +13,8 @@ Framework-neutral client behavior shared by OpenBot web, Electron, and Expo clie
 - `contracts/mission-control` owns aggregate bootstrap, conversation snapshot, turn-submission,
   and consolidated ChatKit search responses plus the durable event revision used to reconnect the
   team-wide observer.
+- `chat/websocket` owns Mission Control ticket use, the awaited `ready` snapshot barrier,
+  success-only reconnect cursors, capped jittered backoff, ping, parsing, and abort.
 - `contracts/installation` owns control-service health, public native-auth discovery, and the selected installation.
 - `contracts/attachments` owns attachment metadata and upload handshakes.
 - `contracts/queue` owns queued agent turns.

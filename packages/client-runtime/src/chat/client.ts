@@ -109,7 +109,10 @@ export interface OpenBotClient {
     nextPageToken?: string | null,
     sessionSort?: SessionSortOrder,
   ): Promise<ChatSessionPage>;
-  createSession(agentId: string, title?: string): Promise<ChatSession>;
+  createSession(
+    agentId: string,
+    input?: { title?: string; lookupKey?: string },
+  ): Promise<ChatSession>;
   renameSession(sessionId: string, title: string): Promise<ChatSession>;
   markSessionUnread(sessionId: string): Promise<ChatSession>;
   interruptSession(sessionId: string): Promise<void>;
@@ -155,6 +158,7 @@ export interface OpenBotClient {
   waitForConnectorAccount(accountId: string): Promise<ConnectorAccount>;
   createConnectorAccount(input: CreateConnectorAccountInput): Promise<CreateConnectorAccountResult>;
   bindConnector(agentId: string, accountId: string): Promise<void>;
+  deleteConnectorAccounts(accountIds: readonly string[]): Promise<void>;
   getPluginsCatalog(agentIds: readonly string[]): Promise<PluginsCatalog>;
   setToolAccountForAgent(accountId: string, agentId: string, enabled: boolean): Promise<void>;
   setSkillForAgent(skillId: string, agentId: string, enabled: boolean): Promise<void>;
@@ -279,7 +283,7 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
     ) {
       const parameters = new URLSearchParams({
         agent_page_size: "50",
-        session_page_size: "12",
+        session_page_size: "50",
         agent_sort: agentSort,
         session_sort: sessionSort,
       });
@@ -323,11 +327,17 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
         ChatSessionPageSchema,
       );
     },
-    async createSession(agentId, title) {
+    async createSession(agentId, input) {
       const response = await json(
         chatPath(`mission-control/agents/${encodeURIComponent(agentId)}/sessions`),
         SessionEnvelopeSchema,
-        { method: "POST", body: JSON.stringify({ title: title || null }) },
+        {
+          method: "POST",
+          body: JSON.stringify({
+            title: input?.title || null,
+            lookup_key: input?.lookupKey || null,
+          }),
+        },
       );
       return response.session;
     },
@@ -580,6 +590,12 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ agent_id: agentId, account_id: accountId }),
       }),
+    async deleteConnectorAccounts(accountIds) {
+      await json("/api/connectors/accounts", PluginMutationResultSchema, {
+        method: "DELETE",
+        body: JSON.stringify({ account_ids: accountIds }),
+      });
+    },
     getPluginsCatalog(agentIds) {
       const parameters = new URLSearchParams();
       for (const agentId of agentIds) parameters.append("agent_id", agentId);

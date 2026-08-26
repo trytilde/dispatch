@@ -180,7 +180,9 @@ describe("OpenBot client", () => {
     const client = createOpenBotClient({
       fetch: async (input, init) => {
         expect(requestUrl(input)).toBe("/api/chat/mission-control/socket-ticket");
-        expect(JSON.parse(String(init?.body))).toEqual({ transport: "browser" });
+        expect(JSON.parse(typeof init?.body === "string" ? init.body : "")).toEqual({
+          transport: "browser",
+        });
         return Response.json({
           ticket: "short-lived-ticket",
           protocol: "tilde.mission-control.ticket",
@@ -311,7 +313,7 @@ describe("OpenBot client", () => {
     const client = createOpenBotClient({
       missionControlTransport: "native",
       fetch: async (_input, init) => {
-        requestedBody = JSON.parse(String(init?.body));
+        requestedBody = JSON.parse(typeof init?.body === "string" ? init.body : "");
         return Response.json(socketTicket());
       },
       createWebSocket: () => {

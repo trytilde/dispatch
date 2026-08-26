@@ -1199,9 +1199,10 @@ async function assignToolAccount(
   agentId: string,
   signal?: AbortSignal,
 ): Promise<void> {
-  const servers = await listMcpServers(options, signal);
-  const server = resolveMcpServer(options, servers, agentId);
-  if (!server) throw new ConnectorUpstreamError("This bot has no Tilde MCP server", 404);
+  const serverId =
+    (options.environment ?? process.env)[
+      `${agentEnvironmentPrefix(agentId)}_MCP_SERVER_ID`
+    ]?.trim() || `openbot-${agentId}`;
 
   const result = await tildeRequest(
     options,
@@ -1210,7 +1211,7 @@ async function assignToolAccount(
     {
       all_tools: true,
       tool_source_type_ids: [],
-      mcp_server_instance_ids: [server.id],
+      mcp_server_instance_ids: [serverId],
     },
     signal,
   );

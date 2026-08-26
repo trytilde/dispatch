@@ -376,8 +376,8 @@ describe("OpenBot runtime", () => {
     runtime.dispose();
   });
 
-  it("reconnects Mission Control from the last durable revision", async () => {
-    const observedAfter: Array<number | undefined> = [];
+  it("hydrates the aggregate snapshot before accepting Mission Control events", async () => {
+    let bootstrapRequests = 0;
     const baseClient = createOpenBotClient({
       fetch: async () => {
         throw new Error("Unexpected HTTP request");
@@ -389,17 +389,12 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getBootstrap: async () => ({ sidebar: { items: [] } }),
-      observeMissionControl: async (signal, onEvent, afterRevision) => {
-        observedAfter.push(afterRevision);
-        if (observedAfter.length === 1) {
-          onEvent({
-            id: "41",
-            type: "chatkit.message.streaming",
-            data: { kind: { kind: "message_streaming", session_id: "session-one" } },
-          });
-          return;
-        }
+      getBootstrap: async () => {
+        bootstrapRequests += 1;
+        return { sidebar: { items: [] } };
+      },
+      observeMissionControl: async (signal, _onEvent, onReady) => {
+        await onReady();
         await new Promise<void>((resolve) =>
           signal.addEventListener("abort", () => resolve(), { once: true }),
         );
@@ -412,7 +407,7 @@ describe("OpenBot runtime", () => {
     });
 
     await runtime.actions.initialize();
-    await vi.waitFor(() => expect(observedAfter).toEqual([undefined, 41]));
+    await vi.waitFor(() => expect(bootstrapRequests).toBe(2));
     runtime.dispose();
   });
 
@@ -483,7 +478,7 @@ describe("OpenBot runtime", () => {
     });
 
     await runtime.actions.initialize();
-    emitEvent({
+    await emitEvent({
       id: "typing-one",
       type: "InboxInstance.typing_indicator.typing",
       data: {
@@ -501,7 +496,7 @@ describe("OpenBot runtime", () => {
     await runtime.actions.selectSession("agent-one", agentOneThread);
     expect(runtime.store.getState().conversation.agentBusy).toBe(false);
     await runtime.actions.selectAgent("agent-two");
-    emitEvent({
+    await emitEvent({
       id: "stream-one",
       type: "chatkit.message.streaming",
       data: {
@@ -526,7 +521,7 @@ describe("OpenBot runtime", () => {
     expect(backgroundAgent?.last_message_preview).toBe("Background result");
     expect(backgroundAgent?.sessions.items[0]?.unread).toBe(true);
 
-    emitEvent({
+    await emitEvent({
       id: "idle-one",
       type: "InboxInstance.typing_indicator.idle",
       data: {
@@ -557,20 +552,26 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getSidebar: async () => ({
-        items: [
-          {
-            id: "agent-one",
-            display_name: "Agent One",
-            provider_id: "tilde",
-            status: "ready",
-            sessions: {
-              items: [
-                { id: "session-one", created_at: now.toISOString(), updated_at: now.toISOString() },
-              ],
+      getBootstrap: async () => ({
+        sidebar: {
+          items: [
+            {
+              id: "agent-one",
+              display_name: "Agent One",
+              provider_id: "tilde",
+              status: "ready",
+              sessions: {
+                items: [
+                  {
+                    id: "session-one",
+                    created_at: now.toISOString(),
+                    updated_at: now.toISOString(),
+                  },
+                ],
+              },
             },
-          },
-        ],
+          ],
+        },
       }),
       getMessages: async () => ({ items: [], next_page_token: null }),
       getQueuedTurns: async () => ({ items: [], next_page_token: null }),
@@ -607,7 +608,7 @@ describe("OpenBot runtime", () => {
     failClock = true;
     expect(() => emitEvent(event)).toThrow("clock failed");
     failClock = false;
-    emitEvent(event);
+    await emitEvent(event);
 
     expect(runtime.store.getState().conversation.messages).toMatchObject([
       { id: "assistant-one", role: "assistant" },
@@ -706,7 +707,7 @@ describe("OpenBot runtime", () => {
         trigger_message_ids: [],
       },
     ]);
-    emitEvent({
+    await emitEvent({
       type: "chatkit.message.created",
       data: {
         kind: {
@@ -725,7 +726,7 @@ describe("OpenBot runtime", () => {
     expect(runtime.store.getState().conversation.queuedTurns[0]?.trigger_message_ids).toEqual([
       "persisted-second",
     ]);
-    emitEvent({
+    await emitEvent({
       type: "ChatKit.agent_turn.queued",
       data: {
         kind: {
@@ -780,7 +781,7 @@ describe("OpenBot runtime", () => {
     expect(getQueuedTurns).toHaveBeenCalledTimes(1);
     releaseQueueRefresh();
     await Promise.all([firstRefresh, secondRefresh]);
-    emitEvent({
+    await emitEvent({
       type: "ChatKit.agent_turn.dequeued",
       data: {
         kind: {

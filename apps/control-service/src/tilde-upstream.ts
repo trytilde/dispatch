@@ -35,7 +35,7 @@ export class TildeUpstreamError extends Error {
 export async function tildeJson(
   options: TildeRouteOptions,
   teamPath: string,
-  init?: { method?: "GET" | "POST" | "PATCH" | "DELETE"; body?: unknown },
+  init?: { method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; body?: unknown },
 ): Promise<unknown> {
   const method = init?.method ?? (init && "body" in init ? "POST" : "GET");
   const body = init?.body;

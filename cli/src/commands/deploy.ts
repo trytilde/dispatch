@@ -280,12 +280,12 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
     agentOrigins = agentEndpointCutoverOrigins({
       consolidatedRuntime,
       environment: deploymentConfiguration.environment,
-      targetOrigin: (
-        await agentService.baseUrl({
+      targetOrigin: agentService
+        .baseUrl({
           devMode: false,
           environment: deploymentConfiguration.environment,
         })
-      ).toString(),
+        .toString(),
     });
     await reconcileAgentResources({
       repositoryRoot,

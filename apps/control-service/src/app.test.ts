@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { Code, ConnectError } from "@connectrpc/connect";
+import type { AuthProvider } from "@tryopenbot/auth-provider";
 import type { ComputerProvider } from "@tryopenbot/computer-service-provider";
 import { app, createApp } from "./app.js";
 
@@ -362,9 +363,10 @@ describe("bare OpenBot server", () => {
         teamId: "openbot-team",
         baseUrl: "https://openbot-org.api.trytilde.ai",
         fetch: async (input, request) => {
-          upstreamUrl = input.toString();
+          upstreamUrl =
+            input instanceof Request ? input.url : input instanceof URL ? input.href : input;
           upstreamHeaders = new Headers(request?.headers);
-          upstreamBody = String(request?.body ?? "");
+          upstreamBody = typeof request?.body === "string" ? request.body : "";
           return Response.json({
             ticket: "short-lived-ticket",
             protocol: "tilde.mission-control.ticket",
@@ -413,7 +415,7 @@ describe("bare OpenBot server", () => {
         teamId: "openbot-team",
         baseUrl: "https://openbot-org.api.trytilde.ai",
         fetch: async (_input, request) => {
-          upstreamBody = String(request?.body ?? "");
+          upstreamBody = typeof request?.body === "string" ? request.body : "";
           return Response.json({
             ticket: "native-ticket",
             protocol: "tilde.mission-control.ticket",
@@ -449,7 +451,7 @@ describe("bare OpenBot server", () => {
         teamId: "openbot-team",
         baseUrl: "https://openbot-org.api.trytilde.ai",
         fetch: async (_input, request) => {
-          upstreamBody = String(request?.body ?? "");
+          upstreamBody = typeof request?.body === "string" ? request.body : "";
           return Response.json({
             ticket: "browser-ticket",
             protocol: "tilde.mission-control.ticket",

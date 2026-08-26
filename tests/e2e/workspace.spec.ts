@@ -103,7 +103,6 @@ test("loads the bare workspace without setup", async ({ page }) => {
 
 test("lists the user's continuous chat and the agent's named threads", async ({ page }) => {
   const messageRequests: string[] = [];
-  let eventSubscriptions = 0;
   const defaultUpdatedAt = "2026-08-25T08:00:00.000Z";
   await page.route("**/api/chat/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
@@ -141,11 +140,6 @@ test("lists the user's continuous chat and the agent's named threads", async ({ 
           },
         ]),
       });
-      return;
-    }
-    if (path.endsWith("/mission-control/events")) {
-      eventSubscriptions += 1;
-      await route.fulfill({ contentType: "text/event-stream", body: "" });
       return;
     }
     if (path.endsWith("/agent-turn-queue")) {
@@ -196,6 +190,7 @@ test("lists the user's continuous chat and the agent's named threads", async ({ 
     }
     await route.fulfill({ status: 404, json: { error: `Unhandled route ${path}` } });
   });
+  await routeMissionControlSocket(page, []);
 
   await page.goto("/");
 
@@ -208,7 +203,6 @@ test("lists the user's continuous chat and the agent's named threads", async ({ 
   await expect(rows.nth(1)).toContainText("Release planning");
   await expect(rows.nth(2)).toContainText("Older investigation");
   await expect.poll(() => messageRequests).toEqual(["user-session"]);
-  await expect.poll(() => eventSubscriptions).toBeGreaterThan(0);
 
   await rows.nth(1).click();
   await expect.poll(() => messageRequests).toContain("newer-thread");
@@ -418,6 +412,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
       parts: [{ type: "text", text: "Ready when you are." }],
     },
   ];
+  let sessionSnapshotRequests = 0;
 
   await page.route("**/api/computer/**", async (route) => {
     computerPreviewRequests += 1;
@@ -533,6 +528,21 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
           },
         });
         return;
+      }
+      sessionSnapshotRequests += 1;
+      if (sessionSnapshotRequests > 1 && !messages.some((message) => message.id === "stream-one")) {
+        messages = [
+          ...messages,
+          {
+            id: "stream-one",
+            type: "ui",
+            role: "assistant",
+            session_id: "session-one",
+            user_display_name: "Hello World",
+            created_at: now,
+            parts: [{ type: "text", text: "Streaming preview" }],
+          },
+        ];
       }
       await route.fulfill({
         json: {
@@ -827,6 +837,9 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await expect(page.locator("[data-menu-row] strong").first()).toBeVisible();
   await expect(page.getByText("Working session")).toHaveCount(0);
   await expect(page.locator(".message-list").getByText("Ready when you are.")).toBeVisible();
+  await expect(
+    page.locator(".message-list").getByText("Streaming preview", { exact: true }),
+  ).toBeVisible();
   await expect(page.locator(".message-list")).toHaveCSS("width", /\d+px/);
   const conversationWidth = await page.locator(".conversation").evaluate((element) => {
     const style = getComputedStyle(element);

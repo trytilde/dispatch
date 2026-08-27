@@ -33,7 +33,7 @@ export { tildeAgentProviderInitialization } from "./tools.js";
 export interface TildeAgentProviderConfig extends TildePlatformConfig {}
 
 type JsonRecord = Record<string, unknown>;
-const missionControlChannelId = "openbot-mission-control";
+const chatKitRealtimeChannelId = "openbot-chatkit-workspace";
 const maxConcurrentRequests = 10;
 
 interface AgentResource {
@@ -100,7 +100,7 @@ export class TildeAgentProvider implements AgentProvider {
       summary: `Reconcile authored agent ${agent.id} with Tilde`,
       steps: [
         "Create missing ChatKit agents",
-        "Create the shared OpenBot Mission Control chat channel when missing",
+        "Create the shared OpenBot ChatKit workspace chat channel when missing",
         "Reconcile Vercel AI SDK endpoint URLs and enabled status",
         "Synchronize authored skills and exact registry membership",
         "Reconcile dynamic MCP, Tilde control-plane, and deployment-platform tools",
@@ -125,8 +125,8 @@ export class TildeAgentProvider implements AgentProvider {
     const displayName = context.environment[`${prefix}_NAME`]?.trim() || slug;
     const channelId =
       context.agentKind === "primary"
-        ? missionControlChannelId
-        : `${missionControlChannelId}-${slug}`;
+        ? chatKitRealtimeChannelId
+        : `${chatKitRealtimeChannelId}-${slug}`;
     const mcpServerId = context.environment[`${prefix}_MCP_SERVER_ID`]?.trim() || `openbot-${slug}`;
     const endpointCredentialsAvailable = Boolean(
       context.environment[`${prefix}_API_KEY`]?.trim() &&
@@ -149,8 +149,8 @@ export class TildeAgentProvider implements AgentProvider {
           channel_id: channelId,
           channel_display_name:
             context.agentKind === "primary"
-              ? "OpenBot Mission Control"
-              : `OpenBot Mission Control: ${slug}`,
+              ? "OpenBot ChatKit workspace"
+              : `OpenBot ChatKit workspace: ${slug}`,
           skill_registry_name: `OpenBot ${slug}`,
           skill_registry_description: `Skills available to the ${slug} OpenBot agent.`,
           skills: skills.map((skill) => ({
@@ -299,7 +299,7 @@ export class TildeAgentProvider implements AgentProvider {
       );
     }
     await Promise.all([
-      this.#ensureMissionControlChannel(slug, agent.id, context.agentKind ?? "subagent"),
+      this.#ensureChatKitWorkspaceChannel(slug, agent.id, context.agentKind ?? "subagent"),
       this.#persistAgentRegistration(context, slug, prefix, agent, createdSecrets),
       this.#skills.deploy(context),
       this.#tools.deploy(context),
@@ -344,21 +344,21 @@ export class TildeAgentProvider implements AgentProvider {
   }
 
   /**
-   * Tilde resolves Mission Control sessions through the channel whose default agent matches the
+   * Tilde resolves ChatKit workspace sessions through the channel whose default agent matches the
    * requested agent, so every authored agent needs its own channel. The primary agent keeps the
    * original shared channel ID.
    */
-  async #ensureMissionControlChannel(
+  async #ensureChatKitWorkspaceChannel(
     slug: string,
     defaultAgentId: string,
     kind: "primary" | "subagent",
   ): Promise<void> {
     const channelId =
-      kind === "primary" ? missionControlChannelId : `${missionControlChannelId}-${slug}`;
+      kind === "primary" ? chatKitRealtimeChannelId : `${chatKitRealtimeChannelId}-${slug}`;
     let nextPageToken: string | undefined;
     let existing: JsonRecord | undefined;
     do {
-      const response = await this.#generated("list Mission Control chat channels", (signal) =>
+      const response = await this.#generated("list ChatKit workspace chat channels", (signal) =>
         chatkitListChatProviders({
           client: this.#api,
           path: { team_id: this.#teamId },
@@ -373,14 +373,16 @@ export class TildeAgentProvider implements AgentProvider {
     } while (nextPageToken);
 
     if (!existing) {
-      await this.#generated(`create the Mission Control channel for "${slug}"`, (signal) =>
+      await this.#generated(`create the ChatKit workspace channel for "${slug}"`, (signal) =>
         chatkitRegisterVercelUiChatProvider({
           client: this.#api,
           path: { team_id: this.#teamId },
           body: {
             id: channelId,
             display_name:
-              kind === "primary" ? "OpenBot Mission Control" : `OpenBot Mission Control: ${slug}`,
+              kind === "primary"
+                ? "OpenBot ChatKit workspace"
+                : `OpenBot ChatKit workspace: ${slug}`,
             default_agent_inbox_id: defaultAgentId,
           },
           signal,
@@ -390,7 +392,7 @@ export class TildeAgentProvider implements AgentProvider {
     }
     const configuration = jsonRecord(existing.configuration);
     if (configuration?.default_agent_inbox_id === defaultAgentId) return;
-    await this.#generated(`repoint the Mission Control channel for "${slug}"`, (signal) =>
+    await this.#generated(`repoint the ChatKit workspace channel for "${slug}"`, (signal) =>
       chatkitUpdateChatProvider({
         client: this.#api,
         path: { team_id: this.#teamId, channel_id: channelId },

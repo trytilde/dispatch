@@ -146,7 +146,7 @@ function bundleResponse(overrides: Record<string, unknown> = {}) {
     agent: agent(),
     api_key: "agent-api-key",
     webhook_signing_key: "signing-key",
-    channel: { id: "openbot-mission-control-scout" },
+    channel: { id: "openbot-chatkit-workspace-scout" },
     skill_registry: { id: "registry-one" },
     mcp_server: { id: "openbot-scout" },
     ...overrides,

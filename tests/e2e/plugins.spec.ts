@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { seedCompletedOnboarding } from "./onboarding-state.js";
 
-function missionControlBootstrap(sidebar: { items: unknown[]; next_page_token?: string | null }) {
+function chatKitRealtimeBootstrap(sidebar: { items: unknown[]; next_page_token?: string | null }) {
   return { sidebar };
 }
 
@@ -404,10 +404,10 @@ test.beforeEach(async ({ page }) => {
   });
   await page.route("**/api/chat/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith("/mission-control/bootstrap")) {
+    if (path.endsWith("/workspace/bootstrap")) {
       const now = new Date().toISOString();
       await route.fulfill({
-        json: missionControlBootstrap({
+        json: chatKitRealtimeBootstrap({
           items: [
             {
               id: "hello-world",
@@ -815,7 +815,7 @@ test("loads plugin settings without hydrating agent messages", async ({ page }) 
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;
     if (path.endsWith("/messages")) messageRequests.push(path);
-    if (path.endsWith("/mission-control/bootstrap")) sidebarRequests += 1;
+    if (path.endsWith("/workspace/bootstrap")) sidebarRequests += 1;
   });
 
   await page.goto("/settings/plugins/tools");

@@ -20,4 +20,4 @@
 "@tryopenbot/git-provider": minor
 ---
 
-Add a consolidated OpenBot runtime deployment, direct secure ChatKit workspace streaming, persisted unified routines, and bulk tool assignment.
+Replace the owner-chat transport with typed ChatKit workspace and realtime contracts, including per-user read state and explicit queue and turn lifecycle events.

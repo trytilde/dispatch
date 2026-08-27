@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { createOpenBotClient } from "./client.js";
 import {
-  observeMissionControlSocket,
-  type MissionControlSocketTicket,
+  observeChatKitRealtimeSocket,
+  type ChatKitRealtimeSocketTicket,
   type WebSocketLike,
 } from "./websocket.js";
 
@@ -64,7 +64,7 @@ describe("OpenBot client", () => {
   it("scopes chat requests to the installation and validates sidebar resources", async () => {
     const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(requestUrl(input)).toBe(
-        "https://openbot.test/api/chat/mission-control/sidebar?agent_page_size=50&session_page_size=50&agent_sort=updated_at&session_sort=updated_at",
+        "https://openbot.test/api/chat/workspace/sidebar?agent_page_size=50&session_page_size=50&agent_sort=updated_at&session_sort=updated_at",
       );
       expect(new Headers(init?.headers).get("authorization")).toBe("Bearer owner-token");
       return Response.json({
@@ -98,9 +98,9 @@ describe("OpenBot client", () => {
     });
   });
 
-  it("creates a stable per-user Mission Control session", async () => {
+  it("creates a stable per-user ChatKit workspace session", async () => {
     const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      expect(requestUrl(input)).toBe("/api/chat/mission-control/agents/agent-one/sessions");
+      expect(requestUrl(input)).toBe("/api/chat/workspace/agents/agent-one/sessions");
       expect(init?.method).toBe("POST");
       if (typeof init?.body !== "string") throw new Error("Expected a JSON request body");
       expect(JSON.parse(init.body)).toEqual({
@@ -127,6 +127,31 @@ describe("OpenBot client", () => {
     ).resolves.toMatchObject({ id: "session-one" });
   });
 
+  it("updates read state for only the authenticated user", async () => {
+    let requestBody: unknown;
+    const client = createOpenBotClient({
+      fetch: async (input, init) => {
+        expect(requestUrl(input)).toBe("/api/chat/workspace/sessions/session-one/read-state");
+        expect(init?.method).toBe("PUT");
+        requestBody = JSON.parse(typeof init?.body === "string" ? init.body : "");
+        return Response.json({
+          session_id: "session-one",
+          user_id: "owner-one",
+          last_read_at: "2026-08-27T12:00:00Z",
+          unread: false,
+          updated_at: "2026-08-27T12:00:00Z",
+        });
+      },
+    });
+
+    await expect(client.updateSessionReadState("session-one", false)).resolves.toMatchObject({
+      session_id: "session-one",
+      user_id: "owner-one",
+      unread: false,
+    });
+    expect(requestBody).toEqual({ unread: false });
+  });
+
   it("rejects malformed upstream resources at the client boundary", async () => {
     const client = createOpenBotClient({
       fetch: async () => Response.json({ items: [{ id: "missing-fields" }] }),
@@ -137,7 +162,7 @@ describe("OpenBot client", () => {
   it("searches ChatKit with encoded query, session, and cursor parameters", async () => {
     const fetch = vi.fn(async (input: RequestInfo | URL) => {
       expect(requestUrl(input)).toBe(
-        "/api/chat/mission-control/search?q=quarterly+review&page_size=25&session_id=session-one&next_page_token=cursor%2Ftwo",
+        "/api/chat/workspace/search?q=quarterly+review&page_size=25&session_id=session-one&next_page_token=cursor%2Ftwo",
       );
       return Response.json({
         items: [
@@ -172,22 +197,22 @@ describe("OpenBot client", () => {
     });
   });
 
-  it("connects directly to Tilde Mission Control with a short-lived socket ticket", async () => {
+  it("connects directly to Tilde ChatKit realtime with a short-lived socket ticket", async () => {
     const events: unknown[] = [];
     const controller = new AbortController();
     const socketUrls: string[] = [];
     let socketProtocols: string[] = [];
     const client = createOpenBotClient({
       fetch: async (input, init) => {
-        expect(requestUrl(input)).toBe("/api/chat/mission-control/socket-ticket");
+        expect(requestUrl(input)).toBe("/api/chat/realtime/socket-ticket");
         expect(JSON.parse(typeof init?.body === "string" ? init.body : "")).toEqual({
           transport: "browser",
         });
         return Response.json({
           ticket: "short-lived-ticket",
-          protocol: "tilde.mission-control.ticket",
+          protocol: "tilde.chatkit-realtime.ticket",
           expires_at: "2026-08-26T12:00:00Z",
-          websocket_url: "wss://team.api.trytilde.ai/api/v1/team/team/chatkit/mission-control/ws",
+          websocket_url: "wss://team.api.trytilde.ai/api/v1/team/team/chatkit/realtime",
         });
       },
       createWebSocket: (url, protocols) => {
@@ -197,37 +222,21 @@ describe("OpenBot client", () => {
         queueMicrotask(() => {
           socket.emit("open");
           if (socketUrls.length === 1) {
-            socket.emit(
-              "message",
-              JSON.stringify({
-                jsonrpc: "2.0",
-                method: "mission_control.ready",
-                params: { snapshot_revision: 41 },
-              }),
-            );
+            socket.emit("message", JSON.stringify({ type: "ready", cursor: 41 }));
             socket.emit("close");
             return;
           }
+          socket.emit("message", JSON.stringify({ type: "ready", cursor: 41 }));
           socket.emit(
             "message",
             JSON.stringify({
-              jsonrpc: "2.0",
-              method: "mission_control.ready",
-              params: { snapshot_revision: 41 },
-            }),
-          );
-          socket.emit(
-            "message",
-            JSON.stringify({
-              jsonrpc: "2.0",
-              method: "mission_control.event",
-              params: {
-                revision: 42,
-                event_type: "chatkit.message.streaming",
-                event: {
-                  id: "event-one",
-                  kind: { kind: "message_streaming", session_id: "session-one" },
-                },
+              type: "event",
+              cursor: 42,
+              event: {
+                id: "event-one",
+                occurred_at: "2026-08-26T12:00:00Z",
+                type: "activity.typing.started",
+                data: { session_id: "session-one", inbox_instance_id: "agent-one" },
               },
             }),
           );
@@ -237,7 +246,7 @@ describe("OpenBot client", () => {
     });
 
     const callbackOrder: string[] = [];
-    await client.observeMissionControl(
+    await client.observeChatKitRealtime(
       controller.signal,
       (event) => {
         callbackOrder.push("event");
@@ -252,21 +261,19 @@ describe("OpenBot client", () => {
     );
 
     expect(socketUrls).toEqual([
-      "wss://team.api.trytilde.ai/api/v1/team/team/chatkit/mission-control/ws",
-      "wss://team.api.trytilde.ai/api/v1/team/team/chatkit/mission-control/ws?after_revision=41",
+      "wss://team.api.trytilde.ai/api/v1/team/team/chatkit/realtime",
+      "wss://team.api.trytilde.ai/api/v1/team/team/chatkit/realtime?after_revision=41",
     ]);
     expect(socketProtocols).toEqual([
-      "tilde.mission-control.v1",
-      "tilde.mission-control.ticket.short-lived-ticket",
+      "tilde.chatkit-realtime.v1",
+      "tilde.chatkit-realtime.ticket.short-lived-ticket",
     ]);
     expect(events).toEqual([
       {
         id: "event-one",
-        type: "chatkit.message.streaming",
-        data: {
-          id: "event-one",
-          kind: { kind: "message_streaming", session_id: "session-one" },
-        },
+        occurred_at: "2026-08-26T12:00:00Z",
+        type: "activity.typing.started",
+        data: { session_id: "session-one", inbox_instance_id: "agent-one" },
       },
     ]);
     expect(callbackOrder).toEqual([
@@ -281,7 +288,7 @@ describe("OpenBot client", () => {
   it("does not advance an event cursor when applying the event fails", async () => {
     const socket = new TestWebSocket();
     const revisions: number[] = [];
-    const observation = observeMissionControlSocket({
+    const observation = observeChatKitRealtimeSocket({
       signal: new AbortController().signal,
       ticket: socketTicket(),
       createWebSocket: () => socket,
@@ -296,9 +303,14 @@ describe("OpenBot client", () => {
     socket.emit(
       "message",
       JSON.stringify({
-        jsonrpc: "2.0",
-        method: "mission_control.event",
-        params: { revision: 7, event_type: "chatkit.test", event: { id: "event-seven" } },
+        type: "event",
+        cursor: 7,
+        event: {
+          id: "event-seven",
+          occurred_at: "2026-08-26T12:00:00Z",
+          type: "activity.typing.started",
+          data: { session_id: "session-one", inbox_instance_id: "agent-one" },
+        },
       }),
     );
 
@@ -311,7 +323,7 @@ describe("OpenBot client", () => {
     const controller = new AbortController();
     let requestedBody: unknown;
     const client = createOpenBotClient({
-      missionControlTransport: "native",
+      realtimeTransport: "native",
       fetch: async (_input, init) => {
         requestedBody = JSON.parse(typeof init?.body === "string" ? init.body : "");
         return Response.json(socketTicket());
@@ -320,20 +332,13 @@ describe("OpenBot client", () => {
         const socket = new TestWebSocket();
         queueMicrotask(() => {
           socket.emit("open");
-          socket.emit(
-            "message",
-            JSON.stringify({
-              jsonrpc: "2.0",
-              method: "mission_control.ready",
-              params: { snapshot_revision: 1 },
-            }),
-          );
+          socket.emit("message", JSON.stringify({ type: "ready", cursor: 1 }));
         });
         return socket;
       },
     });
 
-    await client.observeMissionControl(
+    await client.observeChatKitRealtime(
       controller.signal,
       () => undefined,
       () => controller.abort(),
@@ -343,7 +348,7 @@ describe("OpenBot client", () => {
 
   it("closes a socket that errors after opening", async () => {
     const socket = new TestWebSocket();
-    const observation = observeMissionControlSocket({
+    const observation = observeChatKitRealtimeSocket({
       signal: new AbortController().signal,
       ticket: socketTicket(),
       createWebSocket: () => socket,
@@ -419,12 +424,12 @@ describe("OpenBot client", () => {
   });
 });
 
-function socketTicket(): MissionControlSocketTicket {
+function socketTicket(): ChatKitRealtimeSocketTicket {
   return {
     ticket: "short-lived-ticket",
-    protocol: "tilde.mission-control.ticket",
+    protocol: "tilde.chatkit-realtime.ticket",
     expires_at: "2026-08-26T12:00:00Z",
-    websocket_url: "wss://team.api.trytilde.ai/api/v1/team/team/chatkit/mission-control/ws",
+    websocket_url: "wss://team.api.trytilde.ai/api/v1/team/team/chatkit/realtime",
   };
 }
 

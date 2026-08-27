@@ -11,12 +11,12 @@ export const ConversationSnapshotSchema = z.object({
 });
 export type ConversationSnapshot = z.infer<typeof ConversationSnapshotSchema>;
 
-export const MissionControlBootstrapSchema = z.object({
+export const ChatKitWorkspaceBootstrapSchema = z.object({
   sidebar: SidebarResponseSchema,
   active_session_id: z.string().optional(),
   active_conversation: ConversationSnapshotSchema.optional(),
 });
-export type MissionControlBootstrap = z.infer<typeof MissionControlBootstrapSchema>;
+export type ChatKitWorkspaceBootstrap = z.infer<typeof ChatKitWorkspaceBootstrapSchema>;
 
 export const SubmitTurnResponseSchema = z.object({
   session: ChatSessionSchema,

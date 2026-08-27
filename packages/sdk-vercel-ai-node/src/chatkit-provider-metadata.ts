@@ -1,4 +1,4 @@
-import type { JsonValue } from "@trytilde/sdk";
+import type { JsonObject, JsonValue } from "@trytilde/sdk";
 import { isJsonObject } from "@trytilde/sdk/json";
 import type { ChatKitRequestMessage } from "./chatkit-request";
 
@@ -50,6 +50,40 @@ export type AgentMailChatKitMessageMetadata = {
   attachments: JsonValue[];
 };
 
+export type LinqHandle = JsonObject & {
+  id?: string | null;
+  handle: string;
+  service?: string | null;
+  status?: string | null;
+};
+
+export type LinqChat = JsonObject & {
+  id: string;
+  owner_handle?: LinqHandle | null;
+  group_name?: string | null;
+};
+
+export type LinqMessagePart =
+  | { type: "text"; value: string }
+  | { type: "media"; url: string; media_type?: string | null; filename?: string | null }
+  | (JsonObject & { type: string });
+
+export type LinqMessagePayload = JsonObject & {
+  id?: string | null;
+  chat: LinqChat;
+  sender_handle?: LinqHandle | null;
+  parts?: LinqMessagePart[];
+};
+
+/** Provider metadata attached to inbound Linq ChatKit messages. */
+export type LinqChatKitMessageMetadata = {
+  event_id: string;
+  trace_id: string | null;
+  chat_id: string;
+  owner_handle: string | null;
+  message: LinqMessagePayload;
+};
+
 export type ChatKitProviderMetadata =
   | {
       provider: "chatkit.channel.agentmail";
@@ -62,11 +96,16 @@ export type ChatKitProviderMetadata =
   | {
       provider: "chatkit.channel.slack";
       metadata: SlackChatKitMessageMetadata;
+    }
+  | {
+      provider: "chatkit.channel.linq";
+      metadata: LinqChatKitMessageMetadata;
     };
 
 export type ChatKitEndpointProviderContext = {
   agentmail?: AgentMailChatKitMessageMetadata;
   github?: GitHubChatKitMessageMetadata;
+  linq?: LinqChatKitMessageMetadata;
   slack?: SlackChatKitMessageMetadata;
   $chatkit_meta_provider?: ChatKitProviderMetadata;
 };
@@ -87,6 +126,12 @@ export function chatKitProviderContext(
     if (provider.provider === "chatkit.channel.github") {
       return {
         github: provider.metadata,
+        $chatkit_meta_provider: provider,
+      };
+    }
+    if (provider.provider === "chatkit.channel.linq") {
+      return {
+        linq: provider.metadata,
         $chatkit_meta_provider: provider,
       };
     }
@@ -114,6 +159,10 @@ export function parseProviderMetadata(
     const metadata = parseSlackMetadata(value.slack);
     return metadata ? { provider: value.provider, metadata } : null;
   }
+  if (value.provider === "chatkit.channel.linq") {
+    const metadata = parseLinqMetadata(value.linq);
+    return metadata ? { provider: value.provider, metadata } : null;
+  }
   return null;
 }
 
@@ -135,6 +184,28 @@ function parseAgentMailMetadata(
     return null;
   }
   return value as AgentMailChatKitMessageMetadata;
+}
+
+function parseLinqMetadata(value: JsonValue | undefined): LinqChatKitMessageMetadata | null {
+  if (
+    !isJsonObject(value) ||
+    typeof value.event_id !== "string" ||
+    !nullableString(value.trace_id) ||
+    typeof value.chat_id !== "string" ||
+    !nullableString(value.owner_handle) ||
+    !isLinqMessagePayload(value.message)
+  ) {
+    return null;
+  }
+  return value as LinqChatKitMessageMetadata;
+}
+
+function isLinqMessagePayload(value: JsonValue | undefined): value is LinqMessagePayload {
+  if (!isJsonObject(value) || !isJsonObject(value.chat) || typeof value.chat.id !== "string") {
+    return false;
+  }
+  if (value.parts !== undefined && !Array.isArray(value.parts)) return false;
+  return true;
 }
 
 function parseGitHubMetadata(value: JsonValue | undefined): GitHubChatKitMessageMetadata | null {

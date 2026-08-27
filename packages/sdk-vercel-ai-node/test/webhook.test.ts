@@ -377,6 +377,55 @@ describe("chatKitEndpoint", () => {
     expect(handler).toHaveBeenCalledOnce();
   });
 
+  it("promotes validated Linq message metadata into typed context", async () => {
+    const linq = {
+      event_id: "event-123",
+      trace_id: "trace-123",
+      chat_id: "chat-123",
+      owner_handle: "+12064585237",
+      message: {
+        id: "message-123",
+        chat: {
+          id: "chat-123",
+          owner_handle: { id: "line-1", handle: "+12064585237" },
+        },
+        sender_handle: { id: "person-1", handle: "+12025550123" },
+        parts: [{ type: "text", value: "hello" }],
+      },
+    };
+    const handler = vi.fn(async (_request: Request, context) => {
+      expect(context.linq).toEqual(linq);
+      expect(context.github).toBeUndefined();
+      expect(context.slack).toBeUndefined();
+      expect(context.$chatkit_meta_provider).toEqual({
+        provider: "chatkit.channel.linq",
+        metadata: linq,
+      });
+      return new Response("ok");
+    });
+    const endpoint = testChatKitEndpoint({
+      webhookSigningKey: key,
+      client: { apiKey: "test-key" },
+      handler,
+    });
+
+    const response = await endpoint(
+      signedRequest({
+        messages: [
+          {
+            id: "message-1",
+            role: "user",
+            parts: [{ type: "text", text: "hello" }],
+            metadata: { provider: "chatkit.channel.linq", linq },
+          },
+        ],
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
   it("provides validated Tilde request messages to the handler", async () => {
     const messages = [
       {
@@ -1650,6 +1699,55 @@ describe("ChatKit AI SDK converters", () => {
     ]);
     expect(onAppMention).toHaveBeenCalledOnce();
     expect(onMessagePosted).not.toHaveBeenCalled();
+  });
+
+  it("dispatches Linq signals to event-specific typed handlers", async () => {
+    const onMessageReceived = vi.fn((signal) => ({
+      id: signal.id,
+      role: "user" as const,
+      parts: [
+        {
+          type: "text" as const,
+          text: `${signal.data.data.chat?.id}:${signal.data.data.parts?.[0]?.type}`,
+        },
+      ],
+    }));
+
+    await expect(
+      convertToAiSdkMessages({
+        messages: [
+          {
+            id: "signal_linq",
+            role: "system",
+            type: "signal",
+            data: {
+              api_version: "v3",
+              webhook_version: "2026-02-03",
+              event_type: "message.received",
+              event_id: "event-123",
+              created_at: "2026-08-27T12:00:00Z",
+              trace_id: "trace-123",
+              data: {
+                id: "message-123",
+                chat: { id: "chat-123" },
+                parts: [{ type: "text", value: "hello" }],
+              },
+            },
+            metadata: { signal_type: "linq.message.received" },
+          },
+        ],
+        onUnprocessed: {
+          linq: { "linq.message.received": onMessageReceived },
+        },
+      }),
+    ).resolves.toEqual([
+      {
+        id: "signal_linq",
+        role: "user",
+        parts: [{ type: "text", text: "chat-123:text" }],
+      },
+    ]);
+    expect(onMessageReceived).toHaveBeenCalledOnce();
   });
 
   it("dispatches fake signals with caller-controlled data", async () => {

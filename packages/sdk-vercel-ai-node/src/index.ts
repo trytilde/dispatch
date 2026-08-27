@@ -138,6 +138,16 @@ export {
   isChatKitRequestMessage,
   parseChatKitRequestBody,
 } from "./chatkit-request";
+export {
+  type ChatKitIdentityKind,
+  type ChatKitMessageIdentity,
+  type ChatKitSessionContext,
+  formatSpeakerPrefix,
+  parseChatKitMessageIdentity,
+  parseChatKitSessionContext,
+  sessionProvenanceInstruction,
+  withSpeakerPrefix,
+} from "./chatkit-identity";
 export { type Client, type Config, createClient, createConfig } from "./client";
 export {
   type ChatKitContextClient,
@@ -150,6 +160,9 @@ export {
   chatKitEndpoint,
 } from "./handler";
 export {
+  type ChatKitConnectionOptions,
+  chatkitConnectionHeaders,
+  type ChatKitSessionPermissions,
   type CreateMCPClientOptions,
   createMCPClient,
   type TildeMCPClient,

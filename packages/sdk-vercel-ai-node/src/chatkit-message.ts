@@ -12,6 +12,7 @@ import {
   type ChatKitRequestMessagePart,
   isChatKitRequestMessage,
 } from "./chatkit-request";
+import type { LinqChat, LinqHandle, LinqMessagePart } from "./chatkit-provider-metadata";
 
 type Awaitable<T> = T | Promise<T>;
 
@@ -462,6 +463,130 @@ export type SlackSignalByType = {
   [TType in SlackSignalType]: SlackSignalMessage<TType>;
 };
 
+export const LINQ_WEBHOOK_EVENT_TYPES = [
+  "message.sent",
+  "message.received",
+  "message.read",
+  "message.delivered",
+  "message.edited",
+  "message.failed",
+  "reaction.added",
+  "reaction.removed",
+  "poll.received",
+  "poll.sent",
+  "poll.delivered",
+  "poll.read",
+  "poll.updated",
+  "poll.failed",
+  "poll.vote.added",
+  "poll.vote.removed",
+  "poll.reaction.added",
+  "participant.added",
+  "participant.removed",
+  "chat.created",
+  "chat.group_name_updated",
+  "chat.group_icon_updated",
+  "chat.group_name_update_failed",
+  "chat.group_icon_update_failed",
+  "chat.background_updated",
+  "chat.background_update_failed",
+  "chat.typing_indicator.started",
+  "chat.typing_indicator.stopped",
+  "phone_number.status_updated",
+  "contact_card.received",
+  "payment.succeeded",
+  "payment.canceled",
+  "payment.expired",
+  "payment.declined",
+  "payment.authorized",
+  "connection.created",
+  "connection.revoked",
+  "call.initiated",
+  "call.ringing",
+  "call.answered",
+  "call.ended",
+  "call.failed",
+  "call.declined",
+  "call.no_answer",
+  "location.sharing.started",
+  "location.sharing.stopped",
+] as const;
+
+export type LinqWebhookEventType = (typeof LINQ_WEBHOOK_EVENT_TYPES)[number];
+export type LinqSignalType = `linq.${LinqWebhookEventType}`;
+
+export type LinqMessageEventData = JsonObject & {
+  id?: string | null;
+  chat?: LinqChat | null;
+  sender_handle?: LinqHandle | null;
+  parts?: LinqMessagePart[];
+  status?: string | null;
+};
+
+export type LinqReactionEventData = LinqMessageEventData & {
+  reaction?: JsonObject | string | null;
+};
+
+export type LinqPollEventData = LinqMessageEventData & {
+  poll?: JsonObject | null;
+  vote?: JsonObject | null;
+};
+
+export type LinqChatEventData = JsonObject & {
+  id?: string | null;
+  chat?: LinqChat | null;
+  participant?: LinqHandle | null;
+  status?: string | null;
+};
+
+export type LinqPhoneNumberEventData = JsonObject & {
+  phone_number?: string | null;
+  status?: string | null;
+};
+
+export type LinqPaymentEventData = JsonObject & {
+  id?: string | null;
+  status?: string | null;
+  amount?: number | null;
+  currency?: string | null;
+};
+
+export type LinqEventData<TEvent extends LinqWebhookEventType> = TEvent extends `message.${string}`
+  ? LinqMessageEventData
+  : TEvent extends `reaction.${string}`
+    ? LinqReactionEventData
+    : TEvent extends `poll.${string}`
+      ? LinqPollEventData
+      : TEvent extends `payment.${string}`
+        ? LinqPaymentEventData
+        : TEvent extends "phone_number.status_updated"
+          ? LinqPhoneNumberEventData
+          : LinqChatEventData;
+
+export type LinqWebhookEnvelope<TEvent extends LinqWebhookEventType = LinqWebhookEventType> =
+  JsonObject & {
+    api_version: string;
+    webhook_version: string;
+    event_type: TEvent;
+    event_id: string;
+    created_at: string;
+    trace_id?: string | null;
+    partner_id?: string | null;
+    data: LinqEventData<TEvent>;
+  };
+
+export type LinqSignalMessage<TType extends LinqSignalType = LinqSignalType> =
+  ChatKitSignalMessage & {
+    metadata: SignalMetadata & { signal_type: TType };
+    data: TType extends `linq.${infer TEvent extends LinqWebhookEventType}`
+      ? LinqWebhookEnvelope<TEvent>
+      : never;
+  };
+
+export type LinqSignalByType = {
+  [TType in LinqSignalType]: LinqSignalMessage<TType>;
+};
+
 export type FakeSignalType = "fake.issue.opened" | "fake.ticket.created";
 
 export type FakeSignalMessage<TType extends FakeSignalType = FakeSignalType> =
@@ -515,6 +640,10 @@ export type ConvertToAiSdkSlackHandlers = {
   [TType in SlackSignalType]?: (signal: SlackSignalByType[TType]) => Awaitable<UIMessage | null>;
 };
 
+export type ConvertToAiSdkLinqHandlers = {
+  [TType in LinqSignalType]?: (signal: LinqSignalByType[TType]) => Awaitable<UIMessage | null>;
+};
+
 export type ConvertToAiSdkFakeHandlers = {
   [TType in FakeSignalType]?: (signal: FakeSignalByType[TType]) => Awaitable<UIMessage | null>;
 };
@@ -534,6 +663,7 @@ export type ConvertToAiSdkUnprocessedHandlers = {
   fake?: ConvertToAiSdkFakeHandlers;
   firecrawl?: ConvertToAiSdkFirecrawlHandlers;
   github?: ConvertToAiSdkGitHubHandlers;
+  linq?: ConvertToAiSdkLinqHandlers;
   sentry?: ConvertToAiSdkSentryHandlers;
   slack?: ConvertToAiSdkSlackHandlers;
   signal?: ConvertToAiSdkSignalHandler;
@@ -862,6 +992,14 @@ function resolveProviderSignalHandler(
         | undefined;
       return handler ? () => handler(message) : null;
     }
+    case "linq": {
+      if (!isLinqSignalType(signalType)) return null;
+      if (!isLinqSignalMessage(message, signalType)) return null;
+      const handler = handlers?.linq?.[signalType] as
+        | ((signal: LinqSignalMessage) => Awaitable<UIMessage | null>)
+        | undefined;
+      return handler ? () => handler(message) : null;
+    }
     case "slack": {
       if (!isSlackSignalType(signalType)) return null;
       if (!isSlackSignalMessage(message, signalType)) return null;
@@ -1136,6 +1274,26 @@ function isSentrySignalMessage<TType extends SentryIssueSignalType>(
 
 function isSlackSignalType(value: unknown): value is SlackSignalType {
   return value === "slack.app_mention" || value === "slack.message.posted";
+}
+
+export function isLinqSignalType(value: unknown): value is LinqSignalType {
+  if (typeof value !== "string" || !value.startsWith("linq.")) return false;
+  return (LINQ_WEBHOOK_EVENT_TYPES as readonly string[]).includes(value.slice("linq.".length));
+}
+
+export function isLinqSignalMessage<TType extends LinqSignalType>(
+  message: ChatKitSignalMessage,
+  signalType: TType,
+): message is LinqSignalMessage<TType> {
+  const data = message.data;
+  if (!isJsonObject(data) || !isJsonObject(data.data)) return false;
+  return (
+    data.event_type === signalType.slice("linq.".length) &&
+    typeof data.api_version === "string" &&
+    typeof data.webhook_version === "string" &&
+    typeof data.event_id === "string" &&
+    typeof data.created_at === "string"
+  );
 }
 
 function isSlackSignalMessage<TType extends SlackSignalType>(

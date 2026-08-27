@@ -8,6 +8,13 @@ import type {
   OwnerPrincipal,
 } from "@tryopenbot/auth-provider";
 
+declare module "hono" {
+  interface ContextVariableMap {
+    ownerPrincipal: OwnerPrincipal;
+    ownerAccessToken: string;
+  }
+}
+
 const accessCookie = "openbot_access";
 const refreshCookie = "openbot_refresh";
 const stateCookie = "openbot_oauth_state";

@@ -21,6 +21,7 @@ import {
   listSkills,
   updateSkill,
   updateSkillRegistry,
+  type EnabledSkillsSpec,
   type Skill as TildeSkill,
   type SkillRegistry as TildeSkillRegistry,
 } from "@trytilde/api-client";
@@ -118,20 +119,17 @@ export class TildeSkillReconciler {
   }
 
   /** Build the exact skill selection accepted by Tilde's Agent Resource Bundle API. */
-  async bundleSkills(context: DeploymentContext) {
-    const { id, path } = requireAgent(context);
-    const custom = (await authoredSkills(context.repositoryRoot, path)).map((skill) => ({
+  async bundleSkills(context: DeploymentContext): Promise<EnabledSkillsSpec> {
+    const { id } = requireAgent(context);
+    const custom = (await desiredOpenBotAgentSkills(context, true)).map((skill) => ({
       key: skill.sourcePath,
       name: teamSkillName(id, skill.name),
       description: skill.description,
       content: skill.content,
     }));
-    const managedCua = await this.#managedCuaSkill({
-      requestId: `agent-lifecycle:${id}:managed-cua`,
-    });
     return {
       custom,
-      managed: [{ provider_id: managedCua.providerId, skill_ids: [managedCua.skillId] }],
+      managed: [],
     };
   }
 

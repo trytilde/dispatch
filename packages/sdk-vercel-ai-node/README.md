@@ -14,6 +14,8 @@ pnpm add @trytilde/sdk @trytilde/sdk-vercel-ai-node zod
 - `createMCPClient(options)` creates a Tilde-authenticated AI SDK MCP client and merges local tools.
 - `toolEndpoint(options)` exposes signed, Zod-validated custom tool discovery and invocation.
 - `convertToAiSdkMessage` and `convertToAiSdkMessages` convert persisted ChatKit messages.
+- AgentMail, GitHub, and Slack provider metadata is promoted into typed endpoint context, and
+  AgentMail Signals can be handled through the discriminated `AgentMailSignalByType` map.
 - `createChatKitAttachmentFilePartHandler(options)` resolves ChatKit attachments for model input.
 - `verifyWebhookRequest`, `signBody`, and `WebhookVerificationError` implement signed webhook
   verification.

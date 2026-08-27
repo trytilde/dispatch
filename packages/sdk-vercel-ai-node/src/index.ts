@@ -3,6 +3,16 @@ export {
   createChatKitAttachmentFilePartHandler,
 } from "./chatkit-attachments";
 export {
+  type AgentMailAttachment,
+  type AgentMailDomain,
+  type AgentMailDomainRecord,
+  type AgentMailMessage,
+  type AgentMailSignalByType,
+  type AgentMailSignalData,
+  type AgentMailSignalMessage,
+  type AgentMailSignalType,
+  type AgentMailThread,
+  type AgentMailWebhookEventType,
   type ChatKitHistoryMessage,
   type ChatKitMessage,
   type ChatKitMessageBase,
@@ -15,6 +25,7 @@ export {
   type ChatKitUiReasoningPart,
   type ChatKitUiTextPart,
   type ConvertToAiSdkCacheHandler,
+  type ConvertToAiSdkAgentMailHandlers,
   type ConvertToAiSdkFakeHandlers,
   type ConvertToAiSdkFileUploadHandler,
   type ConvertToAiSdkFirecrawlHandlers,
@@ -79,6 +90,7 @@ export {
   type SlackSignalType,
 } from "./chatkit-message";
 export {
+  type AgentMailChatKitMessageMetadata,
   type ChatKitEndpointProviderContext,
   type ChatKitProviderMetadata,
   chatKitProviderContext,

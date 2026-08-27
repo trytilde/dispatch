@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import {
+  type AgentMailSignalByType,
   type ChatKitEndpointOptions,
   type Config,
   chatKitEndpoint,
@@ -236,6 +237,54 @@ describe("chatKitEndpoint", () => {
             metadata: {
               provider: "chatkit.channel.github",
               github,
+            },
+          },
+        ],
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
+  it("promotes validated AgentMail message metadata into typed context", async () => {
+    const agentmail = {
+      event_id: "evt_123",
+      event_type: "message.received" as const,
+      inbox_id: "inbox@example.com",
+      thread_id: "thr_123",
+      message_id: "msg_123",
+      subject: "Project update",
+      from: "Sender <sender@example.com>",
+      html_present: true,
+      attachments: [{ attachment_id: "att_123", filename: "status.pdf" }],
+    };
+    const handler = vi.fn(async (_request: Request, context) => {
+      expect(context.agentmail).toEqual(agentmail);
+      expect(context.github).toBeUndefined();
+      expect(context.slack).toBeUndefined();
+      expect(context.$chatkit_meta_provider).toEqual({
+        provider: "chatkit.channel.agentmail",
+        metadata: agentmail,
+      });
+      return new Response("ok");
+    });
+    const endpoint = testChatKitEndpoint({
+      webhookSigningKey: key,
+      client: { apiKey: "test-key" },
+      handler,
+    });
+
+    const response = await endpoint(
+      signedRequest({
+        messages: [
+          {
+            id: "message-1",
+            role: "user",
+            parts: [{ type: "text", text: "Please review the update" }],
+            metadata: {
+              provider: "chatkit.channel.agentmail",
+              agentmail,
             },
           },
         ],
@@ -1231,6 +1280,126 @@ describe("ChatKit AI SDK converters", () => {
     expect(onIssueOpened).toHaveBeenCalledOnce();
     expect(onPullRequestMerged).toHaveBeenCalledOnce();
     expect(onCiFailed).toHaveBeenCalledOnce();
+  });
+
+  it("dispatches AgentMail signals to typed handlers", async () => {
+    const onMessageReceived = vi.fn(
+      (signal: AgentMailSignalByType["agentmail.message.received"]) => ({
+        id: signal.id,
+        role: "user" as const,
+        parts: [
+          {
+            type: "text" as const,
+            text: `${signal.data.message.from}:${signal.data.message.subject}`,
+          },
+        ],
+      }),
+    );
+    const onDomainVerified = vi.fn(
+      (signal: AgentMailSignalByType["agentmail.domain.verified"]) => ({
+        id: signal.id,
+        role: "user" as const,
+        parts: [
+          {
+            type: "text" as const,
+            text: `verified:${signal.data.domain.domain}`,
+          },
+        ],
+      }),
+    );
+
+    await expect(
+      convertToAiSdkMessages({
+        messages: [
+          {
+            id: "signal_message",
+            role: "system",
+            type: "signal",
+            data: {
+              event_type: "message.received",
+              event_id: "evt_message",
+              message: {
+                inbox_id: "inbox@example.com",
+                thread_id: "thr_123",
+                message_id: "msg_123",
+                from: "sender@example.com",
+                subject: "Project update",
+              },
+            },
+            metadata: { signal_type: "agentmail.message.received" },
+          },
+          {
+            id: "signal_domain",
+            role: "system",
+            type: "signal",
+            data: {
+              event_type: "domain.verified",
+              event_id: "evt_domain",
+              domain: {
+                domain_id: "dom_123",
+                domain: "example.com",
+              },
+            },
+            metadata: { signal_type: "agentmail.domain.verified" },
+          },
+        ],
+        onUnprocessed: {
+          agentmail: {
+            "agentmail.message.received": onMessageReceived,
+            "agentmail.domain.verified": onDomainVerified,
+          },
+        },
+      }),
+    ).resolves.toEqual([
+      {
+        id: "signal_message",
+        role: "user",
+        parts: [{ type: "text", text: "sender@example.com:Project update" }],
+      },
+      {
+        id: "signal_domain",
+        role: "user",
+        parts: [{ type: "text", text: "verified:example.com" }],
+      },
+    ]);
+    expect(onMessageReceived).toHaveBeenCalledOnce();
+    expect(onDomainVerified).toHaveBeenCalledOnce();
+  });
+
+  it("drops unhandled and malformed AgentMail signals", async () => {
+    await expect(
+      convertToAiSdkMessages({
+        messages: [
+          {
+            id: "signal_unhandled",
+            role: "system",
+            type: "signal",
+            data: {
+              event_type: "message.sent",
+              event_id: "evt_sent",
+              message: {
+                inbox_id: "inbox@example.com",
+                thread_id: "thr_123",
+                message_id: "msg_123",
+              },
+            },
+            metadata: { signal_type: "agentmail.message.sent" },
+          },
+          {
+            id: "signal_malformed",
+            role: "system",
+            type: "signal",
+            data: {
+              event_type: "message.delivered",
+              event_id: "evt_delivered",
+              message: { inbox_id: "inbox@example.com" },
+            },
+            metadata: { signal_type: "agentmail.message.delivered" },
+          },
+        ],
+        onUnprocessed: { agentmail: {} },
+      }),
+    ).resolves.toEqual([]);
   });
 
   it("dispatches Firecrawl signals to typed handlers", async () => {

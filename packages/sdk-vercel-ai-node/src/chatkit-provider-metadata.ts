@@ -33,7 +33,28 @@ export type SlackChatKitMessageMetadata = {
   user: string | null;
 };
 
+/** AgentMail metadata attached to an inbound email ChatKit message. */
+export type AgentMailChatKitMessageMetadata = {
+  event_id: string;
+  event_type:
+    | "message.received"
+    | "message.received.blocked"
+    | "message.received.spam"
+    | "message.received.unauthenticated";
+  inbox_id: string;
+  thread_id: string;
+  message_id: string;
+  subject: string | null;
+  from: string;
+  html_present: boolean;
+  attachments: JsonValue[];
+};
+
 export type ChatKitProviderMetadata =
+  | {
+      provider: "chatkit.channel.agentmail";
+      metadata: AgentMailChatKitMessageMetadata;
+    }
   | {
       provider: "chatkit.channel.github";
       metadata: GitHubChatKitMessageMetadata;
@@ -44,6 +65,7 @@ export type ChatKitProviderMetadata =
     };
 
 export type ChatKitEndpointProviderContext = {
+  agentmail?: AgentMailChatKitMessageMetadata;
   github?: GitHubChatKitMessageMetadata;
   slack?: SlackChatKitMessageMetadata;
   $chatkit_meta_provider?: ChatKitProviderMetadata;
@@ -56,6 +78,12 @@ export function chatKitProviderContext(
     const metadata = messages[index]?.metadata;
     const provider = parseProviderMetadata(metadata);
     if (!provider) continue;
+    if (provider.provider === "chatkit.channel.agentmail") {
+      return {
+        agentmail: provider.metadata,
+        $chatkit_meta_provider: provider,
+      };
+    }
     if (provider.provider === "chatkit.channel.github") {
       return {
         github: provider.metadata,
@@ -74,6 +102,10 @@ export function parseProviderMetadata(
   value: JsonValue | undefined,
 ): ChatKitProviderMetadata | null {
   if (!isJsonObject(value) || typeof value.provider !== "string") return null;
+  if (value.provider === "chatkit.channel.agentmail") {
+    const metadata = parseAgentMailMetadata(value.agentmail);
+    return metadata ? { provider: value.provider, metadata } : null;
+  }
   if (value.provider === "chatkit.channel.github") {
     const metadata = parseGitHubMetadata(value.github);
     return metadata ? { provider: value.provider, metadata } : null;
@@ -83,6 +115,26 @@ export function parseProviderMetadata(
     return metadata ? { provider: value.provider, metadata } : null;
   }
   return null;
+}
+
+function parseAgentMailMetadata(
+  value: JsonValue | undefined,
+): AgentMailChatKitMessageMetadata | null {
+  if (
+    !isJsonObject(value) ||
+    typeof value.event_id !== "string" ||
+    !agentMailReceivedEvent(value.event_type) ||
+    typeof value.inbox_id !== "string" ||
+    typeof value.thread_id !== "string" ||
+    typeof value.message_id !== "string" ||
+    !nullableString(value.subject) ||
+    typeof value.from !== "string" ||
+    typeof value.html_present !== "boolean" ||
+    !Array.isArray(value.attachments)
+  ) {
+    return null;
+  }
+  return value as AgentMailChatKitMessageMetadata;
 }
 
 function parseGitHubMetadata(value: JsonValue | undefined): GitHubChatKitMessageMetadata | null {
@@ -138,5 +190,16 @@ function githubThreadKind(value: JsonValue | undefined): boolean {
     value === "pull_request" ||
     value === "pull_request_review_comment" ||
     value === "pull_request_review"
+  );
+}
+
+function agentMailReceivedEvent(
+  value: JsonValue | undefined,
+): value is AgentMailChatKitMessageMetadata["event_type"] {
+  return (
+    value === "message.received" ||
+    value === "message.received.blocked" ||
+    value === "message.received.spam" ||
+    value === "message.received.unauthenticated"
   );
 }

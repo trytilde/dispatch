@@ -86,6 +86,111 @@ export type ChatKitSignalMessage = ChatKitMessageBase & {
 
 export type ChatKitHistoryMessage = ChatKitMessage | ChatKitSignalMessage;
 
+export type AgentMailWebhookEventType =
+  | "domain.verified"
+  | "message.bounced"
+  | "message.complained"
+  | "message.delivered"
+  | "message.received"
+  | "message.received.blocked"
+  | "message.received.spam"
+  | "message.received.unauthenticated"
+  | "message.rejected"
+  | "message.security.completed"
+  | "message.security.override"
+  | "message.security.review"
+  | "message.sent";
+
+export type AgentMailSignalType = `agentmail.${AgentMailWebhookEventType}`;
+
+export type AgentMailAttachment = JsonObject & {
+  attachment_id?: string | null;
+  size?: number | null;
+  filename?: string | null;
+  content_type?: string | null;
+  content_disposition?: string | null;
+  content_id?: string | null;
+};
+
+export type AgentMailMessage = JsonObject & {
+  inbox_id: string;
+  thread_id: string;
+  message_id: string;
+  from?: string | null;
+  to?: string[];
+  reply_to?: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject?: string | null;
+  preview?: string | null;
+  text?: string | null;
+  html?: string | null;
+  extracted_text?: string | null;
+  extracted_html?: string | null;
+  attachments?: AgentMailAttachment[];
+  labels?: string[];
+  timestamp?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type AgentMailThread = JsonObject & {
+  inbox_id: string;
+  thread_id: string;
+  subject?: string | null;
+  preview?: string | null;
+  senders?: string[];
+  recipients?: string[];
+  last_message_id?: string | null;
+  message_count?: number;
+  attachments?: AgentMailAttachment[];
+  labels?: string[];
+  timestamp?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type AgentMailDomainRecord = JsonObject & {
+  type: string;
+  name: string;
+  value: string;
+  status?: string | null;
+  priority?: number | null;
+};
+
+export type AgentMailDomain = JsonObject & {
+  domain_id: string;
+  domain: string;
+  status?: string | null;
+  feedback_enabled?: boolean;
+  subdomains_enabled?: boolean;
+  tracking_enabled?: boolean;
+  records?: AgentMailDomainRecord[];
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type AgentMailSignalData<TType extends AgentMailSignalType = AgentMailSignalType> =
+  JsonObject & {
+    event_type: TType extends `agentmail.${infer TEvent extends AgentMailWebhookEventType}`
+      ? TEvent
+      : never;
+    event_id: string;
+    thread?: AgentMailThread | null;
+  } & (TType extends "agentmail.domain.verified"
+      ? { domain: AgentMailDomain; message?: null }
+      : { message: AgentMailMessage; domain?: AgentMailDomain | null });
+
+export type AgentMailSignalMessage<TType extends AgentMailSignalType = AgentMailSignalType> =
+  ChatKitSignalMessage & {
+    metadata: SignalMetadata & { signal_type: TType };
+    data: AgentMailSignalData<TType>;
+  };
+
+export type AgentMailSignalByType = {
+  [TType in AgentMailSignalType]: AgentMailSignalMessage<TType>;
+};
+
 export type FirecrawlMonitorPageStatus = "same" | "new" | "changed" | "removed" | "error";
 
 export type FirecrawlMonitorPageSignalType = `firecrawl.monitor.page.${FirecrawlMonitorPageStatus}`;
@@ -390,6 +495,12 @@ export type ConvertToAiSdkSentryHandlers = {
   ) => Awaitable<UIMessage | null>;
 };
 
+export type ConvertToAiSdkAgentMailHandlers = {
+  [TType in AgentMailSignalType]?: (
+    signal: AgentMailSignalByType[TType],
+  ) => Awaitable<UIMessage | null>;
+};
+
 export type ConvertToAiSdkGitHubHandlers = {
   [TType in GitHubSignalType]?: (signal: GitHubSignalByType[TType]) => Awaitable<UIMessage | null>;
 };
@@ -418,6 +529,7 @@ export type ConvertToAiSdkSignalHandler = (
 ) => Awaitable<UIMessage | null>;
 
 export type ConvertToAiSdkUnprocessedHandlers = {
+  agentmail?: ConvertToAiSdkAgentMailHandlers;
   fileUpload?: ConvertToAiSdkFileUploadHandler;
   fake?: ConvertToAiSdkFakeHandlers;
   firecrawl?: ConvertToAiSdkFirecrawlHandlers;
@@ -718,6 +830,14 @@ function resolveProviderSignalHandler(
   if (typeof signalType !== "string") return null;
   const provider = signalType.split(".", 1)[0];
   switch (provider) {
+    case "agentmail": {
+      if (!isAgentMailSignalType(signalType)) return null;
+      if (!isAgentMailSignalMessage(message, signalType)) return null;
+      const handler = handlers?.agentmail?.[signalType] as
+        | ((signal: AgentMailSignalMessage) => Awaitable<UIMessage | null>)
+        | undefined;
+      return handler ? () => handler(message) : null;
+    }
     case "firecrawl": {
       if (!isFirecrawlSignalType(signalType)) return null;
       if (!isFirecrawlSignalMessage(message, signalType)) return null;
@@ -833,6 +953,68 @@ function isFirecrawlSignalType(value: unknown): value is FirecrawlSignalType {
     value === "firecrawl.monitor.page.removed" ||
     value === "firecrawl.monitor.page.error" ||
     value === "firecrawl.monitor.check.completed"
+  );
+}
+
+function isAgentMailSignalType(value: unknown): value is AgentMailSignalType {
+  return (
+    value === "agentmail.domain.verified" ||
+    value === "agentmail.message.bounced" ||
+    value === "agentmail.message.complained" ||
+    value === "agentmail.message.delivered" ||
+    value === "agentmail.message.received" ||
+    value === "agentmail.message.received.blocked" ||
+    value === "agentmail.message.received.spam" ||
+    value === "agentmail.message.received.unauthenticated" ||
+    value === "agentmail.message.rejected" ||
+    value === "agentmail.message.security.completed" ||
+    value === "agentmail.message.security.override" ||
+    value === "agentmail.message.security.review" ||
+    value === "agentmail.message.sent"
+  );
+}
+
+function isAgentMailSignalMessage<TType extends AgentMailSignalType>(
+  message: ChatKitSignalMessage,
+  signalType: TType,
+): message is AgentMailSignalMessage<TType> {
+  const data = message.data;
+  if (
+    !isJsonObject(data) ||
+    typeof data.event_id !== "string" ||
+    data.event_type !== signalType.slice("agentmail.".length)
+  ) {
+    return false;
+  }
+  if (signalType === "agentmail.domain.verified") {
+    if (!isAgentMailDomain(data.domain)) return false;
+  } else if (!isAgentMailMessage(data.message)) {
+    return false;
+  }
+  if (data.thread !== undefined && data.thread !== null && !isAgentMailThread(data.thread)) {
+    return false;
+  }
+  return data.domain === undefined || data.domain === null || isAgentMailDomain(data.domain);
+}
+
+function isAgentMailMessage(value: unknown): value is AgentMailMessage {
+  return (
+    isJsonObject(value) &&
+    typeof value.inbox_id === "string" &&
+    typeof value.thread_id === "string" &&
+    typeof value.message_id === "string"
+  );
+}
+
+function isAgentMailThread(value: unknown): value is AgentMailThread {
+  return (
+    isJsonObject(value) && typeof value.inbox_id === "string" && typeof value.thread_id === "string"
+  );
+}
+
+function isAgentMailDomain(value: unknown): value is AgentMailDomain {
+  return (
+    isJsonObject(value) && typeof value.domain_id === "string" && typeof value.domain === "string"
   );
 }
 

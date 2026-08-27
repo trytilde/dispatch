@@ -6,14 +6,12 @@ authored agent code and not as a chat API.
 
 `AgentProvider` exposes only an idempotent `Deployable` lifecycle. The Tilde
 implementation discovers authored agents; creates or repairs ChatKit agents;
-synchronizes authored skills and registry membership; adds the OpenBot
-computer-use overlay without removing user-owned skills; relies on Tilde to
-expose its managed canonical Cua skill; and reconciles the dynamic MCP server,
-Tilde control-plane tools, and deployment-platform MCP connections through one
-typed Tilde bundle operation. Repeated deployments and retries after partial
-failure converge without duplicate resources or unnecessary updates. It
-exposes no vendor CRUD to the CLI. Owner conversation traffic uses Tilde's
-REST/SSE contract through the control service's allowlisted same-origin bridge.
+synchronizes authored skills and registry membership; adds the OpenBot computer-use overlay and the trusted managed canonical Cua skill without removing user-owned skills; and reconciles the
+dynamic MCP server, Tilde control-plane tools, and deployment-platform MCP
+connections. Repeated deployments and retries after partial failure converge
+without duplicate resources or unnecessary updates. It exposes no vendor CRUD
+to the CLI. Owner conversation traffic uses Tilde's REST/SSE contract through
+the control service's allowlisted same-origin bridge.
 
 ## Public API
 
@@ -22,5 +20,10 @@ REST/SSE contract through the control service's allowlisted same-origin bridge.
 - `TildeAgentProvider` and `TildeAgentProviderConfig`: typed Tilde implementation and configuration.
 - `tildeAgentProviderInitialization`: provider-specific initialization metadata collected with the shared Tilde platform.
 
-Reconciliation guarantees per agent: the Tilde control-plane toolkit is enabled and every one of its functions is mapped onto the agent's runtime MCP server, and authored skills sync into the agent's Tilde skill registry with team-unique names namespaced as `<agent-id>-<skill-name>`. The aggregate operation preserves the same idempotent ownership boundary while avoiding a client-side chain of dependent API calls.
-The provider tells Tilde whether it still holds the endpoint's one-time credentials, allowing a retry to replace an unrecoverable partial agent safely.
+Reconciliation now submits one typed Tilde Agent Resource Bundle and polls its
+durable status. Tilde owns the agent, dynamic MCP server, control-plane toolkit,
+exact managed/custom skill registry, default per-agent memory bank, bindings,
+credential rotation, and cleanup. OpenBot claims endpoint secrets once and
+uploads a deterministic canonical avatar to the stable machine-user profile,
+then retains its Mission Control channel plus credential-bearing
+deployment-platform integrations.

@@ -68,15 +68,19 @@ describe("OpenBot client", () => {
       );
       expect(new Headers(init?.headers).get("authorization")).toBe("Bearer owner-token");
       return Response.json({
-        items: [
-          {
-            id: "agent-one",
-            display_name: "Agent One",
-            provider_id: "tilde",
-            status: "ready",
-            sessions: { items: [] },
-          },
-        ],
+        activity: {
+          items: [
+            {
+              id: "agent-one",
+              display_name: "Agent One",
+              provider_id: "tilde",
+              status: "ready",
+              sessions: { items: [] },
+            },
+          ],
+        },
+        active_session_id: null,
+        active_conversation: null,
       });
     });
     const client = createOpenBotClient({
@@ -104,6 +108,7 @@ describe("OpenBot client", () => {
       expect(init?.method).toBe("POST");
       if (typeof init?.body !== "string") throw new Error("Expected a JSON request body");
       expect(JSON.parse(init.body)).toEqual({
+        agent_id: "agent-one",
         title: "Agent One",
         lookup_key: "openbot:user:owner-one:agent:agent-one",
       });

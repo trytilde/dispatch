@@ -1216,6 +1216,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/chatkit/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get ChatKit activity
+         * @description Returns agent activity and an optional active conversation snapshot in one request.
+         */
+        get: operations["chatkit-get-activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/chatkit/agent": {
         parameters: {
             query?: never;
@@ -1472,6 +1492,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List ChatKit agent sessions
+         * @description Lists visible sessions for one ChatKit agent with activity summaries.
+         */
+        get: operations["chatkit-list-agent-sessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send ChatKit agent message
+         * @description Sends a user message to the selected ChatKit agent session and invokes the registered Vercel UI-compatible agent endpoint.
+         */
+        post: operations["chatkit-send-agent-message"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/status": {
         parameters: {
             query?: never;
@@ -1490,6 +1550,26 @@ export interface paths {
          * @description Enables or disables a registered ChatKit HTTP agent.
          */
         patch: operations["chatkit-set-agent-status"];
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/turns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit ChatKit agent turn
+         * @description Creates a session when needed, finalizes uploaded attachments, sends the owner message, and returns canonical conversation state.
+         */
+        post: operations["chatkit-submit-agent-turn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/visibility": {
@@ -1940,6 +2020,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/chatkit/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search ChatKit
+         * @description Searches visible session titles, participating agents, and messages across the team. When session_id is provided, searches messages only within that visible session.
+         */
+        get: operations["chatkit-search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/chatkit/session": {
         parameters: {
             query?: never;
@@ -2339,9 +2439,69 @@ export interface paths {
         put?: never;
         /**
          * Create ChatKit session
-         * @description Creates a ChatKit session with explicit human and agent participants.
+         * @description Creates a ChatKit session with explicit participants, or wires the session to agent_id and its registered Vercel UI channel when agent_id is provided.
          */
         post: operations["chatkit-create-session"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update ChatKit session title
+         * @description Updates the title of the selected ChatKit session.
+         */
+        patch: operations["chatkit-update-session-title"];
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get ChatKit conversation activity
+         * @description Returns messages, pending queued turns, and the durable event revision for one session.
+         */
+        get: operations["chatkit-get-conversation-activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/interrupt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Interrupt ChatKit session
+         * @description Interrupts the active HTTP agent response for a ChatKit session.
+         */
+        post: operations["chatkit-interrupt-session"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9382,10 +9542,35 @@ export interface components {
             display_name: string;
             id: string;
         };
+        /** @description ChatKit activity projection with an optional active conversation. */
+        ChatKitActivityResponse: {
+            active_conversation: null | components["schemas"]["ChatKitConversationActivity"];
+            active_session_id: null | components["schemas"]["WrappedUuidV4"];
+            activity: components["schemas"]["ChatKitAgentActivityPage"];
+        };
         /** @description Public agent view used by list/get routes. */
         ChatKitAgent: components["schemas"]["Inbox"] & {
             api_key_id?: string | null;
             principal_user_id?: string | null;
+        };
+        /** @description Paginated ChatKit agent activity payload. */
+        ChatKitAgentActivityPage: {
+            items: components["schemas"]["ChatKitAgentActivitySummary"][];
+            next_page_token?: string | null;
+        };
+        /** @description Agent summary returned by the ChatKit activity projection. */
+        ChatKitAgentActivitySummary: {
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            display_name: string;
+            endpoint_url?: string | null;
+            has_vercel_ui_endpoint: boolean;
+            id: string;
+            last_message_preview?: string | null;
+            last_user_message_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            provider_id: string;
+            sessions: components["schemas"]["ChatKitAgentSessionsActivityResponse"];
+            status: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
         };
         /** @description Uploaded avatar metadata for one ChatKit agent principal. */
         ChatKitAgentAvatar: {
@@ -9407,6 +9592,11 @@ export interface components {
         ChatKitAgentPaginatedResponse: {
             items: components["schemas"]["ChatKitAgent"][];
             next_page_token?: string;
+        };
+        /** @description Paginated sessions payload for "show more". */
+        ChatKitAgentSessionsActivityResponse: {
+            items: components["schemas"]["ChatKitSessionActivitySummary"][];
+            next_page_token?: string | null;
         };
         /** @description Persisted queued agent turn. */
         ChatKitAgentTurnQueueItem: {
@@ -9440,6 +9630,13 @@ export interface components {
          * @enum {string}
          */
         ChatKitAgentTurnQueueStatus: "pending" | "running" | "completed" | "failed" | "cancelled";
+        /** @description Attachment upload details finalized atomically with a submitted turn. */
+        ChatKitAttachmentCompletion: {
+            attachment_id: components["schemas"]["WrappedUuidV4"];
+            sha256?: string | null;
+            /** Format: int64 */
+            size_bytes?: number | null;
+        };
         /** @description Provider-specific configuration field for a ChatKit chat provider. */
         ChatKitChatProviderConfigField: {
             field_type: string;
@@ -9447,6 +9644,13 @@ export interface components {
             name: string;
             placeholder: string;
             required?: boolean;
+        };
+        /** @description Initial messages and pending queue state for one ChatKit session. */
+        ChatKitConversationActivity: {
+            messages: components["schemas"]["MessagePaginatedResponse"];
+            queued_turns: components["schemas"]["ChatKitQueuedTurns"];
+            /** Format: int64 */
+            snapshot_revision: number;
         };
         /** @description Public ChatKit participant view. */
         ChatKitParticipant: {
@@ -9821,6 +10025,11 @@ export interface components {
         };
         /** @description Request body for creating a ChatKit session. */
         CreateChatKitSessionRequestInner: {
+            /**
+             * @description Agent to wire into the session with its registered Vercel UI channel.
+             *     This is mutually exclusive with explicit `participants`.
+             */
+            agent_id?: string | null;
             authorization?: components["schemas"]["ResourceAuthorizationModes"];
             external_conversation_id?: string | null;
             id?: null | components["schemas"]["WrappedUuidV4"];
@@ -11415,6 +11624,15 @@ export interface components {
             tool_accounts: components["schemas"]["WrappedJsonValue"][];
             tool_providers: components["schemas"]["WrappedJsonValue"][];
         };
+        OpenBotRealtimeTicket: {
+            expires_at: components["schemas"]["WrappedChronoDateTime"];
+            /** @description Stable subprotocol prefix. Append `.` and the returned ticket. */
+            protocol: string;
+            /** @description Short-lived credential presented through the WebSocket subprotocol header. */
+            ticket: string;
+        };
+        /** @enum {string} */
+        OpenBotRealtimeTicketTransport: "browser" | "native";
         OrgOidcProvider: {
             authorization_endpoint: string;
             client_id: string;
@@ -17275,6 +17493,39 @@ export interface operations {
             };
         };
     };
+    "chatkit-get-activity": {
+        parameters: {
+            query?: {
+                agent_page_size?: number;
+                agent_next_page_token?: string | null;
+                session_page_size?: number;
+                message_page_size?: number;
+                queue_page_size?: number;
+                active_session_id?: null | components["schemas"]["WrappedUuidV4"];
+                agent_sort?: string | null;
+                session_sort?: string | null;
+                q?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ChatKit activity projection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitActivityResponse"];
+                };
+            };
+        };
+    };
     "list-inbox-agents": {
         parameters: {
             query: {
@@ -17948,6 +18199,67 @@ export interface operations {
             };
         };
     };
+    "chatkit-list-agent-sessions": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                next_page_token?: string | null;
+                session_sort?: string | null;
+                q?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Agent inbox ID */
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ChatKit agent sessions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitAgentSessionsActivityResponse"];
+                };
+            };
+        };
+    };
+    "chatkit-send-agent-message": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Agent inbox ID */
+                agent_id: string;
+                /** @description Session ID */
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendChatKitAgentMessageRequestInner"];
+            };
+        };
+        responses: {
+            /** @description ChatKit messages after sending */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagePaginatedResponse"];
+                };
+            };
+        };
+    };
     "chatkit-set-agent-status": {
         parameters: {
             query?: never;
@@ -17997,6 +18309,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-submit-agent-turn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Agent inbox ID */
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitChatKitAgentTurnRequestInner"];
+            };
+        };
+        responses: {
+            /** @description Submitted ChatKit agent turn */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmitChatKitAgentTurnResponse"];
                 };
             };
         };
@@ -19127,6 +19468,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "chatkit-search": {
+        parameters: {
+            query: {
+                q: string;
+                session_id?: null | components["schemas"]["WrappedUuidV4"];
+                page_size?: number;
+                next_page_token?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Consolidated ChatKit search results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitSearchHitPaginatedResponse"];
+                };
+            };
+            /** @description Invalid query or pagination cursor */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Scoped session not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
             };
         };
     };
@@ -20359,6 +20746,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-update-session-title": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Session ID */
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateChatKitSessionTitleRequestInner"];
+            };
+        };
+        responses: {
+            /** @description Updated ChatKit session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+        };
+    };
+    "chatkit-get-conversation-activity": {
+        parameters: {
+            query?: {
+                message_page_size?: number;
+                queue_page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Session ID */
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ChatKit conversation activity snapshot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitConversationActivity"];
+                };
+            };
+        };
+    };
+    "chatkit-interrupt-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Session ID */
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ChatKit session interruption requested */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterruptChatKitSessionResponse"];
                 };
             };
         };

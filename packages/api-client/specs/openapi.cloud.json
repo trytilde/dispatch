@@ -5174,6 +5174,153 @@
         ]
       }
     },
+    "/api/v1/team/{team_id}/chatkit/activity": {
+      "get": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Get ChatKit activity",
+        "description": "Returns agent activity and an optional active conversation snapshot in one request.",
+        "operationId": "chatkit-get-activity",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "agent_next_page_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "session_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "message_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "queue_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "active_session_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/WrappedUuidV4"
+                }
+              ]
+            }
+          },
+          {
+            "name": "agent_sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "session_sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ChatKit activity projection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatKitActivityResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
     "/api/v1/team/{team_id}/chatkit/agent": {
       "get": {
         "tags": [
@@ -6547,6 +6694,189 @@
         }
       }
     },
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions": {
+      "get": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "List ChatKit agent sessions",
+        "description": "Lists visible sessions for one ChatKit agent with activity summaries.",
+        "operationId": "chatkit-list-agent-sessions",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "description": "Agent inbox ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "next_page_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "session_sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ChatKit agent sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatKitAgentSessionsActivityResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/messages": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Send ChatKit agent message",
+        "description": "Sends a user message to the selected ChatKit agent session and invokes the registered Vercel UI-compatible agent endpoint.",
+        "operationId": "chatkit-send-agent-message",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "description": "Agent inbox ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "Session ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendChatKitAgentMessageRequestInner"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "ChatKit messages after sending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagePaginatedResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
     "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/status": {
       "patch": {
         "tags": [
@@ -6632,6 +6962,77 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/turns": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Submit ChatKit agent turn",
+        "description": "Creates a session when needed, finalizes uploaded attachments, sends the owner message, and returns canonical conversation state.",
+        "operationId": "chatkit-submit-agent-turn",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "description": "Agent inbox ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitChatKitAgentTurnRequestInner"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Submitted ChatKit agent turn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitChatKitAgentTurnResponse"
                 }
               }
             }
@@ -8972,6 +9373,121 @@
             "description": ""
           }
         }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/search": {
+      "get": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Search ChatKit",
+        "description": "Searches visible session titles, participating agents, and messages across the team. When session_id is provided, searches messages only within that visible session.",
+        "operationId": "chatkit-search",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/WrappedUuidV4"
+                }
+              ]
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "next_page_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Consolidated ChatKit search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatKitSearchHitPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query or pagination cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Scoped session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
       }
     },
     "/api/v1/team/{team_id}/chatkit/session": {
@@ -11435,7 +11951,7 @@
           "v1"
         ],
         "summary": "Create ChatKit session",
-        "description": "Creates a ChatKit session with explicit human and agent participants.",
+        "description": "Creates a ChatKit session with explicit participants, or wires the session to agent_id and its registered Vercel UI channel when agent_id is provided.",
         "operationId": "chatkit-create-session",
         "parameters": [
           {
@@ -11494,6 +12010,217 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}": {
+      "patch": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Update ChatKit session title",
+        "description": "Updates the title of the selected ChatKit session.",
+        "operationId": "chatkit-update-session-title",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "Session ID",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChatKitSessionTitleRequestInner"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated ChatKit session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/activity": {
+      "get": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Get ChatKit conversation activity",
+        "description": "Returns messages, pending queued turns, and the durable event revision for one session.",
+        "operationId": "chatkit-get-conversation-activity",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "Session ID",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "message_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "queue_page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ChatKit conversation activity snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatKitConversationActivity"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/interrupt": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Interrupt ChatKit session",
+        "description": "Interrupts the active HTTP agent response for a ChatKit session.",
+        "operationId": "chatkit-interrupt-session",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "Session ID",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ChatKit session interruption requested",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterruptChatKitSessionResponse"
                 }
               }
             }
@@ -42453,6 +43180,40 @@
           }
         }
       },
+      "ChatKitActivityResponse": {
+        "type": "object",
+        "description": "ChatKit activity projection with an optional active conversation.",
+        "required": [
+          "activity",
+          "active_session_id",
+          "active_conversation"
+        ],
+        "properties": {
+          "active_conversation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChatKitConversationActivity"
+              }
+            ]
+          },
+          "active_session_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedUuidV4"
+              }
+            ]
+          },
+          "activity": {
+            "$ref": "#/components/schemas/ChatKitAgentActivityPage"
+          }
+        }
+      },
       "ChatKitAgent": {
         "allOf": [
           {
@@ -42477,6 +43238,89 @@
           }
         ],
         "description": "Public agent view used by list/get routes."
+      },
+      "ChatKitAgentActivityPage": {
+        "type": "object",
+        "description": "Paginated ChatKit agent activity payload.",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatKitAgentActivitySummary"
+            }
+          },
+          "next_page_token": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ChatKitAgentActivitySummary": {
+        "type": "object",
+        "description": "Agent summary returned by the ChatKit activity projection.",
+        "required": [
+          "id",
+          "display_name",
+          "provider_id",
+          "status",
+          "has_vercel_ui_endpoint",
+          "created_at",
+          "updated_at",
+          "sessions"
+        ],
+        "properties": {
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "endpoint_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "has_vercel_ui_endpoint": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_message_preview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_user_message_at": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedChronoDateTime"
+              }
+            ]
+          },
+          "provider_id": {
+            "type": "string"
+          },
+          "sessions": {
+            "$ref": "#/components/schemas/ChatKitAgentSessionsActivityResponse"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          }
+        }
       },
       "ChatKitAgentAvatar": {
         "type": "object",
@@ -42547,6 +43391,27 @@
           },
           "next_page_token": {
             "type": "string"
+          }
+        }
+      },
+      "ChatKitAgentSessionsActivityResponse": {
+        "type": "object",
+        "description": "Paginated sessions payload for \"show more\".",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatKitSessionActivitySummary"
+            }
+          },
+          "next_page_token": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -42680,6 +43545,31 @@
           "cancelled"
         ]
       },
+      "ChatKitAttachmentCompletion": {
+        "type": "object",
+        "description": "Attachment upload details finalized atomically with a submitted turn.",
+        "required": [
+          "attachment_id"
+        ],
+        "properties": {
+          "attachment_id": {
+            "$ref": "#/components/schemas/WrappedUuidV4"
+          },
+          "sha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size_bytes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
       "ChatKitChatProviderConfigField": {
         "type": "object",
         "description": "Provider-specific configuration field for a ChatKit chat provider.",
@@ -42704,6 +43594,27 @@
           },
           "required": {
             "type": "boolean"
+          }
+        }
+      },
+      "ChatKitConversationActivity": {
+        "type": "object",
+        "description": "Initial messages and pending queue state for one ChatKit session.",
+        "required": [
+          "messages",
+          "queued_turns",
+          "snapshot_revision"
+        ],
+        "properties": {
+          "messages": {
+            "$ref": "#/components/schemas/MessagePaginatedResponse"
+          },
+          "queued_turns": {
+            "$ref": "#/components/schemas/ChatKitQueuedTurns"
+          },
+          "snapshot_revision": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -44229,6 +45140,13 @@
         "type": "object",
         "description": "Request body for creating a ChatKit session.",
         "properties": {
+          "agent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Agent to wire into the session with its registered Vercel UI channel.\nThis is mutually exclusive with explicit `participants`."
+          },
           "authorization": {
             "$ref": "#/components/schemas/ResourceAuthorizationModes"
           },
@@ -50601,6 +51519,34 @@
             }
           }
         }
+      },
+      "OpenBotRealtimeTicket": {
+        "type": "object",
+        "required": [
+          "ticket",
+          "protocol",
+          "expires_at"
+        ],
+        "properties": {
+          "expires_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "protocol": {
+            "type": "string",
+            "description": "Stable subprotocol prefix. Append `.` and the returned ticket."
+          },
+          "ticket": {
+            "type": "string",
+            "description": "Short-lived credential presented through the WebSocket subprotocol header."
+          }
+        }
+      },
+      "OpenBotRealtimeTicketTransport": {
+        "type": "string",
+        "enum": [
+          "browser",
+          "native"
+        ]
       },
       "OrgOidcProvider": {
         "type": "object",

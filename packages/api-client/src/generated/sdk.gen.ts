@@ -823,6 +823,17 @@ export const automationsRemoveGrant = <ThrowOnError extends boolean = false>(opt
 });
 
 /**
+ * Get ChatKit activity
+ *
+ * Returns agent activity and an optional active conversation snapshot in one request.
+ */
+export const chatkitGetActivity = <ThrowOnError extends boolean = false>(options: Options<ChatkitGetActivityData, ThrowOnError>): RequestResult<ChatkitGetActivityResponses, unknown, ThrowOnError> => (options.client ?? client).get<ChatkitGetActivityResponses, unknown, ThrowOnError>({
+    security: [{ name: 'x-api-key', type: 'apiKey' }, { scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/team/{team_id}/chatkit/activity',
+    ...options
+});
+
+/**
  * List inbox agents
  *
  * List all agent inboxes (inbox_type=agent) with their linked inboxes (inboxes that pipe to them)
@@ -1015,6 +1026,32 @@ export const chatkitProvisionAgentResourceBundle = <ThrowOnError extends boolean
 export const chatkitClaimAgentResourceBundleOutputs = <ThrowOnError extends boolean = false>(options: Options<ChatkitClaimAgentResourceBundleOutputsData, ThrowOnError>): RequestResult<ChatkitClaimAgentResourceBundleOutputsResponses, unknown, ThrowOnError> => (options.client ?? client).post<ChatkitClaimAgentResourceBundleOutputsResponses, unknown, ThrowOnError>({ url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/provision/outputs/claim', ...options });
 
 /**
+ * List ChatKit agent sessions
+ *
+ * Lists visible sessions for one ChatKit agent with activity summaries.
+ */
+export const chatkitListAgentSessions = <ThrowOnError extends boolean = false>(options: Options<ChatkitListAgentSessionsData, ThrowOnError>): RequestResult<ChatkitListAgentSessionsResponses, unknown, ThrowOnError> => (options.client ?? client).get<ChatkitListAgentSessionsResponses, unknown, ThrowOnError>({
+    security: [{ name: 'x-api-key', type: 'apiKey' }, { scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions',
+    ...options
+});
+
+/**
+ * Send ChatKit agent message
+ *
+ * Sends a user message to the selected ChatKit agent session and invokes the registered Vercel UI-compatible agent endpoint.
+ */
+export const chatkitSendAgentMessage = <ThrowOnError extends boolean = false>(options: Options<ChatkitSendAgentMessageData, ThrowOnError>): RequestResult<ChatkitSendAgentMessageResponses, unknown, ThrowOnError> => (options.client ?? client).post<ChatkitSendAgentMessageResponses, unknown, ThrowOnError>({
+    security: [{ name: 'x-api-key', type: 'apiKey' }, { scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/messages',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Update ChatKit agent status
  *
  * Enables or disables a registered ChatKit HTTP agent.
@@ -1022,6 +1059,21 @@ export const chatkitClaimAgentResourceBundleOutputs = <ThrowOnError extends bool
 export const chatkitSetAgentStatus = <ThrowOnError extends boolean = false>(options: Options<ChatkitSetAgentStatusData, ThrowOnError>): RequestResult<ChatkitSetAgentStatusResponses, ChatkitSetAgentStatusErrors, ThrowOnError> => (options.client ?? client).patch<ChatkitSetAgentStatusResponses, ChatkitSetAgentStatusErrors, ThrowOnError>({
     security: [{ name: 'x-api-key', type: 'apiKey' }, { scheme: 'bearer', type: 'http' }],
     url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/status',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Submit ChatKit agent turn
+ *
+ * Creates a session when needed, finalizes uploaded attachments, sends the owner message, and returns canonical conversation state.
+ */
+export const chatkitSubmitAgentTurn = <ThrowOnError extends boolean = false>(options: Options<ChatkitSubmitAgentTurnData, ThrowOnError>): RequestResult<ChatkitSubmitAgentTurnResponses, unknown, ThrowOnError> => (options.client ?? client).post<ChatkitSubmitAgentTurnResponses, unknown, ThrowOnError>({
+    security: [{ name: 'x-api-key', type: 'apiKey' }, { scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/turns',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -1381,6 +1433,17 @@ export const addChatkitRoutineGrant = <ThrowOnError extends boolean = false>(opt
 export const removeChatkitRoutineGrant = <ThrowOnError extends boolean = false>(options: Options<RemoveChatkitRoutineGrantData, ThrowOnError>): RequestResult<RemoveChatkitRoutineGrantResponses, unknown, ThrowOnError> => (options.client ?? client).delete<RemoveChatkitRoutineGrantResponses, unknown, ThrowOnError>({ url: '/api/v1/team/{team_id}/chatkit/routines/{routine_id}/{plane}/grants/{principal_type}/{principal_id}', ...options });
 
 /**
+ * Search ChatKit
+ *
+ * Searches visible session titles, participating agents, and messages across the team. When session_id is provided, searches messages only within that visible session.
+ */
+export const chatkitSearch = <ThrowOnError extends boolean = false>(options: Options<ChatkitSearchData, ThrowOnError>): RequestResult<ChatkitSearchResponses, ChatkitSearchErrors, ThrowOnError> => (options.client ?? client).get<ChatkitSearchResponses, ChatkitSearchErrors, ThrowOnError>({
+    security: [{ name: 'x-api-key', type: 'apiKey' }, { scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/team/{team_id}/chatkit/search',
+    ...options
+});
+
+/**
  * List sessions
  *
  * List all chat sessions with pagination. Optionally filter by inbox_id to get sessions for a specific inbox.
@@ -1699,7 +1762,7 @@ export const chatkitListSessions = <ThrowOnError extends boolean = false>(option
 /**
  * Create ChatKit session
  *
- * Creates a ChatKit session with explicit human and agent participants.
+ * Creates a ChatKit session with explicit participants, or wires the session to agent_id and its registered Vercel UI channel when agent_id is provided.
  */
 export const chatkitCreateSession = <ThrowOnError extends boolean = false>(options: Options<ChatkitCreateSessionData, ThrowOnError>): RequestResult<ChatkitCreateSessionResponses, ChatkitCreateSessionErrors, ThrowOnError> => (options.client ?? client).post<ChatkitCreateSessionResponses, ChatkitCreateSessionErrors, ThrowOnError>({
     security: [{ name: 'x-api-key', type: 'apiKey' }, { scheme: 'bearer', type: 'http' }],
@@ -1709,6 +1772,43 @@ export const chatkitCreateSession = <ThrowOnError extends boolean = false>(optio
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Update ChatKit session title
+ *
+ * Updates the title of the selected ChatKit session.
+ */
+export const chatkitUpdateSessionTitle = <ThrowOnError extends boolean = false>(options: Options<ChatkitUpdateSessionTitleData, ThrowOnError>): RequestResult<ChatkitUpdateSessionTitleResponses, unknown, ThrowOnError> => (options.client ?? client).patch<ChatkitUpdateSessionTitleResponses, unknown, ThrowOnError>({
+    security: [{ name: 'x-api-key', type: 'apiKey' }, { scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/team/{team_id}/chatkit/sessions/{session_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get ChatKit conversation activity
+ *
+ * Returns messages, pending queued turns, and the durable event revision for one session.
+ */
+export const chatkitGetConversationActivity = <ThrowOnError extends boolean = false>(options: Options<ChatkitGetConversationActivityData, ThrowOnError>): RequestResult<ChatkitGetConversationActivityResponses, unknown, ThrowOnError> => (options.client ?? client).get<ChatkitGetConversationActivityResponses, unknown, ThrowOnError>({
+    security: [{ name: 'x-api-key', type: 'apiKey' }, { scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/team/{team_id}/chatkit/sessions/{session_id}/activity',
+    ...options
+});
+
+/**
+ * Interrupt ChatKit session
+ *
+ * Interrupts the active HTTP agent response for a ChatKit session.
+ */
+export const chatkitInterruptSession = <ThrowOnError extends boolean = false>(options: Options<ChatkitInterruptSessionData, ThrowOnError>): RequestResult<ChatkitInterruptSessionResponses, unknown, ThrowOnError> => (options.client ?? client).post<ChatkitInterruptSessionResponses, unknown, ThrowOnError>({
+    security: [{ name: 'x-api-key', type: 'apiKey' }, { scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/team/{team_id}/chatkit/sessions/{session_id}/interrupt',
+    ...options
 });
 
 /**

@@ -69,7 +69,6 @@ import { QueuedTurnPageSchema, type QueuedTurnPage } from "../contracts/queue.js
 import {
   ChatSessionPageSchema,
   ChatSessionSchema,
-  SidebarResponseSchema,
   type AgentSortOrder,
   type ChatSession,
   type ChatSessionPage,
@@ -301,7 +300,7 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
       if (nextAgentToken) parameters.set("agent_next_page_token", nextAgentToken);
       return await json(chatPath(`workspace/sidebar?${parameters}`), SidebarResponseSchema);
     },
-    async getBootstrap(activeSessionId) {
+    async getActivity(activeSessionId) {
       const parameters = new URLSearchParams({
         agent_page_size: "50",
         session_page_size: "12",

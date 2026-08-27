@@ -18,12 +18,6 @@
 "@tryopenbot/ui": minor
 "@tryopenbot/web": minor
 "@tryopenbot/git-provider": minor
-"@trytilde/api-client": minor
-"@trytilde/sdk": minor
 ---
 
-Migrate OpenBot to Tilde's regular ChatKit activity, agent, session, message, search, turn, and realtime-ticket REST routes while preserving the ChatKit realtime contract.
-
-Migration:
-- Replace `OpenBotClient.getBootstrap` with `OpenBotClient.getActivity`.
-- Read the agent page from the activity response's `activity` field.
+Replace the owner-chat transport with typed ChatKit workspace and realtime contracts, including per-user read state and explicit queue and turn lifecycle events.

@@ -250,7 +250,6 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
   const busySessionIds = new Set<string>();
   const liveMessagesBySession = new Map<string, ChatMessage[]>();
   let missionControlObserver: AbortController | undefined;
-  let lastMissionControlRevision: number | undefined;
   let agentSetupObserver: AbortController | undefined;
   let sidebarRefreshTimer: ReturnType<typeof setTimeout> | undefined;
   const queueRefreshes = new Map<string, Promise<void>>();
@@ -560,19 +559,10 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
             controller.signal,
             (event) => {
               if (event.id && seenEventIds.has(event.id)) return;
-              if (event.id) {
-                const revision = Number(event.id);
-                if (Number.isSafeInteger(revision) && revision >= 0)
-                  lastMissionControlRevision = revision;
-                seenEventIds.add(event.id);
-                if (seenEventIds.size > 1_000) {
-                  const oldest = seenEventIds.values().next().value;
-                  if (oldest) seenEventIds.delete(oldest);
-                }
-              }
               const sessionId = eventSessionId(event.data);
               if (!sessionId) {
                 scheduleSidebarRefresh();
+                rememberMissionControlEvent(event.id, seenEventIds);
                 return;
               }
               const state = store.getState();
@@ -631,8 +621,13 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
                 });
               }
               if (name.includes("session")) scheduleSidebarRefresh();
+              rememberMissionControlEvent(event.id, seenEventIds);
             },
-            lastMissionControlRevision,
+            async () => {
+              // Keep the socket-ready barrier bounded to one aggregate bootstrap request.
+              // Loading every inactive agent's remaining session pages would stall later events.
+              await hydrateSidebar(true, false);
+            },
           );
         } catch (error) {
           if (controller.signal.aborted) break;
@@ -1150,7 +1145,6 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       stopRoutinePolling();
       clearSignalErrors();
       busySessionIds.clear();
-      lastMissionControlRevision = undefined;
       liveMessagesBySession.clear();
       options.agentSetupPersistence?.save(null);
       store.setState({
@@ -1212,6 +1206,14 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       queueRefreshes.clear();
     },
   };
+}
+
+function rememberMissionControlEvent(id: string | undefined, seenEventIds: Set<string>): void {
+  if (!id) return;
+  seenEventIds.add(id);
+  if (seenEventIds.size <= 1_000) return;
+  const oldest = seenEventIds.values().next().value;
+  if (oldest) seenEventIds.delete(oldest);
 }
 
 function eventSessionId(value: unknown, depth = 0): string {

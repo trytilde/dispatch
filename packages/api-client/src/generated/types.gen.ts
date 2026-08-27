@@ -189,6 +189,76 @@ export type AutoProvisionToolGroupInstanceResponse = {
     tool_group_instance?: null | ToolGroupInstanceSerialized;
 };
 
+export type Automation = {
+    agent_id: string;
+    applied_generation: number;
+    authorization: ResourceAuthorizationModes;
+    created_at: WrappedChronoDateTime;
+    created_by_user_id: string;
+    enabled: boolean;
+    error_message?: string | null;
+    generation: number;
+    id: WrappedUuidV4;
+    instruction: string;
+    /**
+     * Execution error paired with the latest materialized schedule execution.
+     */
+    last_error?: string | null;
+    last_run_at?: null | WrappedChronoDateTime;
+    last_session_id?: null | WrappedUuidV4;
+    name: string;
+    org_id: string;
+    status: AutomationStatus;
+    team_id: string;
+    triggers: Array<AutomationTrigger>;
+    updated_at: WrappedChronoDateTime;
+};
+
+export type AutomationPaginatedResponse = {
+    items: Array<Automation>;
+    next_page_token?: string;
+};
+
+export enum AutomationStatus {
+    RECONCILING = 'reconciling',
+    ACTIVE = 'active',
+    ERROR = 'error',
+    DELETING = 'deleting'
+}
+
+export type AutomationTrigger = AutomationTriggerSpec & {
+    created_at: WrappedChronoDateTime;
+    id: WrappedUuidV4;
+    /**
+     * Schedule-only live projection from the materialized ChatKit routine.
+     */
+    last_error?: string | null;
+    last_run_at?: null | WrappedChronoDateTime;
+    last_session_id?: null | WrappedUuidV4;
+    materialized_resource_id?: null | WrappedUuidV4;
+    next_run_at?: null | WrappedChronoDateTime;
+    /**
+     * Schedule-only live projection from the materialized ChatKit routine.
+     */
+    schedule_description?: string | null;
+    updated_at: WrappedChronoDateTime;
+};
+
+export type AutomationTriggerInput = AutomationTriggerSpec & {
+    id: WrappedUuidV4;
+};
+
+export type AutomationTriggerSpec = {
+    kind: 'schedule';
+    schedule: string;
+} | {
+    filter?: SignalRuleFilter;
+    kind: 'event';
+    session_policy?: null | SignalSessionPolicy;
+    signal_provider_instance_id: string;
+    signal_type: string;
+};
+
 /**
  * Typed billing bootstrap response for the selected organization.
  */
@@ -719,8 +789,9 @@ export type ConfigurationSchema = {
 
 export type ConfigureHostedOpenBotInstanceRequest = {
     /**
-     * User-owned runtime values installed into both tenant projects. Tilde derives tenant,
-     * instance, OAuth, Computer, and platform identity from authenticated server state.
+     * User-owned runtime values installed into the canonical runtime project. Legacy split
+     * instances continue to receive the values in both existing projects. Tilde derives tenant,
+     * instance, OAuth, Computer, project, and platform identity from authenticated server state.
      */
     environment: {
         [key: string]: string;
@@ -992,6 +1063,12 @@ export type CreatePageTypeBody = {
 
 export type CreatePageTypeVersionBody = {
     schema: unknown;
+};
+
+export type CreatePayWalletRequest = {
+    name: string;
+    owner_id?: string | null;
+    wallet_customer_id: string;
 };
 
 export type CreatePersonalToolGroupInstanceBody = {
@@ -1315,6 +1392,22 @@ export type CreateUserCredentialParamsInner = {
     user_credential_configuration: WrappedJsonValue;
 };
 
+export type CreateWalletBody = {
+    name: string;
+    owner_id?: string | null;
+    wallet_customer_id: string;
+};
+
+export type CreateWalletCustomerBody = {
+    account_type?: string;
+    name: string;
+    owner_id?: string | null;
+};
+
+export type CreateWalletVirtualAccountBody = {
+    currency: string;
+};
+
 export type CreateWikiAssetBody = {
     alt_text?: string | null;
     checksum?: string | null;
@@ -1486,6 +1579,10 @@ export type DebugAuthProfilesResponse = {
     profiles: Array<string>;
 };
 
+export type DeleteAutomationResponse = {
+    deleted: boolean;
+};
+
 export type DeleteChatKitAgentTurnQueueItemResponse = {
     deleted: boolean;
 };
@@ -1525,11 +1622,72 @@ export type DeploymentEnvironmentFile = {
     filename: string;
 };
 
+export type DirectTokenPayment = {
+    amount: string;
+    asset?: string;
+    chain?: string;
+    destination_address: string;
+    destination_asset?: string | null;
+    destination_chain?: string | null;
+    slippage_bps?: number | null;
+};
+
 /**
  * Selects one package file for a lazy download URL.
  */
 export type DownloadSkillPackageFileRequest = {
     path: string;
+};
+
+/**
+ * Per-server result for an enable-and-bind operation.
+ */
+export type EnableAndBindMcpServerResult = {
+    already_bound_tool_source_type_ids: Array<string>;
+    bound_tool_source_type_ids: Array<string>;
+    error?: string | null;
+    mcp_server_instance_id: string;
+    succeeded: boolean;
+};
+
+/**
+ * A tool that could not be enabled. Other selected tools may still be bound.
+ */
+export type EnableAndBindToolFailure = {
+    error: string;
+    tool_source_type_id: string;
+};
+
+/**
+ * Public body for enabling provider tools and binding them to MCP servers.
+ */
+export type EnableAndBindToolsBody = {
+    /**
+     * Select every tool exposed by the provider account. Must be false when
+     * `tool_source_type_ids` is non-empty.
+     */
+    all_tools?: boolean;
+    mcp_server_instance_ids: Array<string>;
+    /**
+     * Explicit tools to enable when `all_tools` is false.
+     */
+    tool_source_type_ids?: Array<string>;
+};
+
+/**
+ * Observable result of enabling tools and binding them to one or more MCP servers.
+ */
+export type EnableAndBindToolsResponse = {
+    already_enabled_tool_source_type_ids: Array<string>;
+    /**
+     * True only when every selected tool was enabled and every server binding succeeded.
+     */
+    complete: boolean;
+    enabled_tool_source_type_ids: Array<string>;
+    failed_tools: Array<EnableAndBindToolFailure>;
+    mcp_servers: Array<EnableAndBindMcpServerResult>;
+    selected_tool_source_type_ids: Array<string>;
+    tool_group_instance_id: string;
 };
 
 export type EnableToolInstanceParamsInner = {
@@ -1643,6 +1801,29 @@ export type GetAttachmentDownloadUrlResponse = {
     expires_at: WrappedChronoDateTime;
 };
 
+export type GetBalancesResponse = {
+    balances: WrappedJsonValue;
+    wallet_id: string;
+};
+
+export type GetCryptoDepositInformationResponse = {
+    crypto: WrappedJsonValue;
+    wallet_id: string;
+};
+
+export type GetFiatDepositInformationResponse = {
+    currency: string;
+    fiat: WrappedJsonValue;
+    wallet_id: string;
+};
+
+export type GetWalletCustomerKycResponse = {
+    compose_customer_id: string;
+    kyc_flow_link?: string | null;
+    kyc_verified: boolean;
+    wallet_customer_id: string;
+};
+
 export type HashedApiKey = {
     created_at: WrappedChronoDateTime;
     description?: string | null;
@@ -1670,8 +1851,23 @@ export type HostedOpenBotDeployment = {
     status: string;
     team_id: string;
     title: string;
+    /**
+     * Deprecated compatibility projection. New instances mirror the runtime project here.
+     *
+     * @deprecated
+     */
     vercel_agent_project: string;
+    /**
+     * Deprecated compatibility projection. New instances mirror the runtime project here.
+     *
+     * @deprecated
+     */
     vercel_control_project: string;
+    /**
+     * Canonical Vercel project for combined web, control, and agent runtime releases.
+     * This is absent only for pre-consolidation instances that still use split projects.
+     */
+    vercel_runtime_project?: string | null;
     vercel_sandbox: string;
 };
 
@@ -1688,10 +1884,40 @@ export type HostedOpenBotInstance = {
     team_id: string;
     title: string;
     updated_at: WrappedChronoDateTime;
+    /**
+     * Deprecated compatibility projection. New instances mirror the runtime project here.
+     *
+     * @deprecated
+     */
     vercel_agent_project_id: string;
+    /**
+     * Deprecated compatibility projection. New instances mirror the runtime project here.
+     *
+     * @deprecated
+     */
     vercel_agent_project_name: string;
+    /**
+     * Deprecated compatibility projection. New instances mirror the runtime project here.
+     *
+     * @deprecated
+     */
     vercel_control_project_id: string;
+    /**
+     * Deprecated compatibility projection. New instances mirror the runtime project here.
+     *
+     * @deprecated
+     */
     vercel_control_project_name: string;
+    /**
+     * Canonical Vercel project ID for combined web, control, and agent runtime releases.
+     * This is absent on legacy instances that retain split control and agent projects.
+     */
+    vercel_runtime_project_id?: string | null;
+    /**
+     * Canonical Vercel project name for combined web, control, and agent runtime releases.
+     * This is absent on legacy instances that retain split control and agent projects.
+     */
+    vercel_runtime_project_name?: string | null;
     vercel_sandbox_name: string;
 };
 
@@ -1727,6 +1953,7 @@ export type HostedOpenBotReleaseFile = {
 };
 
 export enum HostedOpenBotReleaseService {
+    RUNTIME = 'runtime',
     CONTROL = 'control',
     AGENTS = 'agents'
 }
@@ -1965,6 +2192,15 @@ export type InvokeToolInstanceParamsInner = {
     params: WrappedJsonValue;
 };
 
+export type IssueMissionControlSocketTicketRequest = {
+    /**
+     * Required for browser tickets and forbidden for native tickets. Browser
+     * origins must match this OpenBot registration.
+     */
+    origin?: string | null;
+    transport: MissionControlTicketTransport;
+};
+
 export type JsonEqualsPredicate = {
     path: string;
     value: {
@@ -2060,6 +2296,88 @@ export type Machine = {
      * Subject identifier (user ID) of the machine account
      */
     sub: string;
+};
+
+export type MakeMppPaymentRequest = {
+    body?: unknown;
+    headers?: {
+        [key: string]: string;
+    };
+    max_amount?: string | null;
+    max_amount_atomic?: string | null;
+    method?: string | null;
+    payment?: null | DirectTokenPayment;
+    preferred_assets?: Array<string>;
+    /**
+     * Payment-channel contract addresses the caller explicitly permits.
+     * Stateful methods that sign a server-selected channel, such as the
+     * Stellar `channel` intent, require this pin on their first use. A
+     * validated `session_snapshot` pins subsequent requests.
+     */
+    preferred_channels?: Array<string>;
+    preferred_networks?: Array<string>;
+    preferred_recipients?: Array<string>;
+    /**
+     * Session lifecycle action (`open`, `voucher`, `commit`, `topUp`, or
+     * `close`). Omit to open when no snapshot is supplied and voucher
+     * otherwise.
+     */
+    session_action?: string | null;
+    /**
+     * Incremental session amount in atomic units. Required for voucher and
+     * commit actions unless the challenge pins an increment.
+     */
+    session_amount_atomic?: string | null;
+    /**
+     * Delivery identifier required by a metered `commit` action.
+     */
+    session_delivery_id?: string | null;
+    session_snapshot?: null | PaymentSessionSnapshot;
+    /**
+     * Preferred method-specific settlement mode. Methods that negotiate
+     * client versus server broadcast currently accept `push` or `pull`.
+     */
+    settlement_mode?: string | null;
+    /**
+     * Payment transport. Defaults to `http`; use `mcp` for MCP's nested
+     * payment metadata or `jsonrpc` for the generic root `_meta` binding.
+     * Tempo session challenges also support `sse` and `websocket` (`ws`) for
+     * metered streaming with in-band voucher and receipt handling.
+     */
+    transport?: string | null;
+    url: string;
+    wallet_id: string;
+};
+
+export type MakeX402PaymentRequest = {
+    body?: unknown;
+    headers?: {
+        [key: string]: string;
+    };
+    max_amount?: string | null;
+    max_amount_atomic?: string | null;
+    method?: string | null;
+    payment?: null | DirectTokenPayment;
+    preferred_assets?: Array<string>;
+    preferred_networks?: Array<string>;
+    preferred_recipients?: Array<string>;
+    /**
+     * Stateful scheme action (`open`, `voucher`, or `refund`). Omit to open
+     * when no snapshot is supplied and voucher otherwise.
+     */
+    session_action?: string | null;
+    /**
+     * Incremental amount for voucher/close actions, in atomic units.
+     */
+    session_amount_atomic?: string | null;
+    session_snapshot?: null | PaymentSessionSnapshot;
+    /**
+     * Payment transport. Defaults to `http`; use `mcp` when `body` is the
+     * JSON-RPC MCP tool-call request that should be retried with x402 metadata.
+     */
+    transport?: string | null;
+    url: string;
+    wallet_id: string;
 };
 
 export type ManagedSkillSelection = {
@@ -2544,6 +2862,23 @@ export type MissionControlSidebarResponse = {
     next_page_token?: string | null;
 };
 
+export type MissionControlSocketTicket = {
+    expires_at: WrappedChronoDateTime;
+    /**
+     * Stable subprotocol prefix. Append `.` and the returned ticket.
+     */
+    protocol: string;
+    /**
+     * Short-lived credential presented through the WebSocket subprotocol header.
+     */
+    ticket: string;
+};
+
+export enum MissionControlTicketTransport {
+    BROWSER = 'browser',
+    NATIVE = 'native'
+}
+
 export type MoveWikiPageBody = {
     expected_revision: number;
     path: string;
@@ -2686,6 +3021,72 @@ export enum PartState {
     STREAMING = 'streaming',
     DONE = 'done'
 }
+
+export enum PayOnboardingStep {
+    ENTER_DETAILS = 'enter_details',
+    COMPLETE_KYC = 'complete_kyc',
+    READY = 'ready'
+}
+
+export type PayPaymentRequest = {
+    body?: unknown;
+    headers?: {
+        [key: string]: string;
+    };
+    max_amount?: string | null;
+    max_amount_atomic?: string | null;
+    method?: string | null;
+    payment?: null | DirectTokenPayment;
+    preferred_assets?: Array<string>;
+    preferred_channels?: Array<string>;
+    preferred_networks?: Array<string>;
+    preferred_recipients?: Array<string>;
+    session_action?: string | null;
+    session_amount_atomic?: string | null;
+    session_delivery_id?: string | null;
+    session_snapshot?: null | PaymentSessionSnapshot;
+    settlement_mode?: string | null;
+    transport?: string | null;
+    url: string;
+    wallet_id: string;
+};
+
+export type PayWalletSummaryError = {
+    field: string;
+    message: string;
+};
+
+export type PayWalletSummaryResponse = {
+    balances?: null | GetBalancesResponse;
+    crypto_deposit?: null | GetCryptoDepositInformationResponse;
+    fiat_deposit?: null | GetFiatDepositInformationResponse;
+    summary_errors?: Array<PayWalletSummaryError>;
+    wallet?: null | Wallet;
+};
+
+export type PaymentResponse = {
+    protocol: string;
+    response: WrappedJsonValue;
+    wallet_id: string;
+};
+
+/**
+ * Opaque-enough client state needed to safely resume a stateful payment
+ * scheme after a process restart. Every field is authenticated again against
+ * the next server challenge before it is used.
+ */
+export type PaymentSessionSnapshot = {
+    authorized_signer: string;
+    channel_id: string;
+    cumulative_amount: string;
+    deposit_amount: string;
+    expires_at: number;
+    metadata?: unknown;
+    method: string;
+    network: string;
+    nonce: number;
+    protocol: string;
+};
 
 export type PersonalMcpServerInstanceSerialized = {
     agent_id?: string | null;
@@ -3076,6 +3477,26 @@ export type ProvisionAgentRequest = {
     skill_registry?: null | SkillRegistrySpec;
 };
 
+export type ProvisionPayBrowserResponse = {
+    browser_definition_id: string;
+    enabled_tool_ids: Array<string>;
+};
+
+export type ProvisionTildePayRequest = {
+    account_type?: string | null;
+    name?: string | null;
+    owner_id?: string | null;
+};
+
+export type ProvisionTildePayResponse = {
+    browser?: null | ProvisionPayBrowserResponse;
+    customer?: null | WalletCustomer;
+    kyc?: null | GetWalletCustomerKycResponse;
+    mcp?: null | SetupPayMcpResponse;
+    next_step: PayOnboardingStep;
+    wallet?: null | Wallet;
+};
+
 /**
  * App credentials and metadata created by a provider provisioner.
  */
@@ -3213,6 +3634,16 @@ export type ProxyCredentialTemplate = {
     kind: 'query_param';
 };
 
+export type PutAutomationBody = {
+    agent_id: string;
+    authorization?: ResourceAuthorizationModes;
+    enabled?: boolean;
+    initial_grants?: Array<ResourceGrantRequest>;
+    instruction: string;
+    name: string;
+    triggers: Array<AutomationTriggerInput>;
+};
+
 /**
  * Reasoning UI part - represents model reasoning/thinking
  */
@@ -3277,6 +3708,13 @@ export type RefreshTokenRequest = {
      * The refresh token. If not provided, will be read from cookie.
      */
     refresh_token?: string | null;
+};
+
+export type RefreshWalletTransactionHistoryResponse = {
+    inserted_or_updated: number;
+    linked_transactions: number;
+    scanned_chains: Array<string>;
+    wallet_id: string;
 };
 
 /**
@@ -3728,6 +4166,19 @@ export type RoutinePaginatedResponse = {
     next_page_token?: string;
 };
 
+export type RunAutomationBody = {
+    /**
+     * Stable client run identity used for deduplication.
+     */
+    run_id: WrappedUuidV4;
+};
+
+export type RunAutomationResponse = {
+    duplicate: boolean;
+    run_id: WrappedUuidV4;
+    session_id: WrappedUuidV4;
+};
+
 export type RuntimeConfig = {
     clerk_domain?: string | null;
     debug_auth_profiles_enabled: boolean;
@@ -3811,6 +4262,13 @@ export type SetChatKitResourceStatusRequest = {
  */
 export type SetResourceAccessModeRequest = {
     mode: ResourceAccessMode;
+};
+
+export type SetupPayMcpResponse = {
+    enabled_tool_ids: Array<string>;
+    mcp_path: string;
+    mcp_server_id: string;
+    tool_group_instance_id: string;
 };
 
 export type SignalAction = {
@@ -4770,7 +5228,8 @@ export type UpdateCustomToolProviderRequestInner = {
 
 export type UpdateHostedOpenBotComputerImageRequest = {
     /**
-     * Immutable VCR digest scoped to this instance's control project.
+     * Immutable VCR digest scoped to this instance's runtime project, or its legacy control
+     * project for a pre-consolidation instance.
      */
     image: string;
 };
@@ -5119,6 +5578,133 @@ export type Vec = Array<{
     user_tool_federation_mode: UserToolFederationMode;
     user_tool_federation_selections: Array<UserToolFederationSelection>;
 }>;
+
+export type WaitForPayBalanceRequest = {
+    asset: string;
+    minimum_amount: number;
+    poll_interval_secs?: number | null;
+    timeout_secs?: number | null;
+    wallet_id: string;
+};
+
+export type WaitUntilBalanceRequest = {
+    asset: string;
+    minimum_amount: number;
+    poll_interval_secs?: number;
+    timeout_secs?: number;
+    wallet_id: string;
+};
+
+export type WaitUntilBalanceResponse = {
+    observed_amount: number;
+    satisfied: boolean;
+    wallet_id: string;
+};
+
+export type Wallet = {
+    cached_compose_balances?: null | WrappedJsonValue;
+    compose_customer_id: string;
+    compose_deposit_chain: string;
+    compose_deposit_currency: string;
+    compose_deposit_wallet_id?: string | null;
+    created_at: WrappedChronoDateTime;
+    id: string;
+    last_compose_sync_at?: null | WrappedChronoDateTime;
+    name: string;
+    org_id: string;
+    owner_id?: string | null;
+    privy_evm_address: string;
+    privy_wallet_id: string;
+    status: string;
+    team_id: string;
+    updated_at: WrappedChronoDateTime;
+    wallet_customer_id: string;
+};
+
+export type WalletCustomer = {
+    account_type: string;
+    compose_customer_id: string;
+    compose_customer_payload: WrappedJsonValue;
+    compose_kyc_payload?: null | WrappedJsonValue;
+    created_at: WrappedChronoDateTime;
+    id: string;
+    kyc_flow_link?: string | null;
+    kyc_verified: boolean;
+    name: string;
+    org_id: string;
+    owner_id?: string | null;
+    team_id: string;
+    updated_at: WrappedChronoDateTime;
+};
+
+export type WalletCustomerPaginatedResponse = {
+    items: Array<WalletCustomer>;
+    next_page_token?: string;
+};
+
+export type WalletMerchant = {
+    created_at: WrappedChronoDateTime;
+    favicon_url?: string | null;
+    icon_fetched_at?: null | WrappedChronoDateTime;
+    icon_media_type?: string | null;
+    icon_sha256?: string | null;
+    id: string;
+    merchant_url: string;
+    name?: string | null;
+    org_id: string;
+    origin: string;
+    raw_metadata: WrappedJsonValue;
+    team_id: string;
+    updated_at: WrappedChronoDateTime;
+};
+
+export type WalletPaginatedResponse = {
+    items: Array<Wallet>;
+    next_page_token?: string;
+};
+
+export type WalletTransactionHistoryItem = {
+    amount?: string | null;
+    amount_decimals?: number | null;
+    amount_raw?: string | null;
+    asset?: string | null;
+    chain?: string | null;
+    counterparty_address?: string | null;
+    created_at: WrappedChronoDateTime;
+    direction: string;
+    id: string;
+    item_type: string;
+    merchant?: null | WalletMerchant;
+    merchant_id?: string | null;
+    occurred_at: WrappedChronoDateTime;
+    org_id: string;
+    raw_payload: WrappedJsonValue;
+    scanned_at?: null | WrappedChronoDateTime;
+    status: string;
+    team_id: string;
+    updated_at: WrappedChronoDateTime;
+    wallet_id: string;
+};
+
+export type WalletTransactionHistoryItemPaginatedResponse = {
+    items: Array<WalletTransactionHistoryItem>;
+    next_page_token?: string;
+};
+
+export type WalletVirtualAccount = {
+    cached_compose_deposit_info?: null | WrappedJsonValue;
+    compose_customer_id: string;
+    compose_virtual_account_id: string;
+    created_at: WrappedChronoDateTime;
+    currency: string;
+    id: string;
+    org_id: string;
+    status?: string | null;
+    team_id: string;
+    updated_at: WrappedChronoDateTime;
+    wallet_customer_id: string;
+    wallet_id: string;
+};
 
 /**
  * Safe public metadata for a webhook signing key. Secret material is omitted.
@@ -7628,6 +8214,215 @@ export type ListPublicAvailableToolGroupsResponses = {
 };
 
 export type ListPublicAvailableToolGroupsResponse = ListPublicAvailableToolGroupsResponses[keyof ListPublicAvailableToolGroupsResponses];
+
+export type AutomationsListData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: {
+        agent_id?: string | null;
+        status?: null | AutomationStatus;
+        page_size?: number;
+        next_page_token?: string | null;
+    };
+    url: '/api/v1/team/{team_id}/automations';
+};
+
+export type AutomationsListResponses = {
+    200: AutomationPaginatedResponse;
+};
+
+export type AutomationsListResponse = AutomationsListResponses[keyof AutomationsListResponses];
+
+export type AutomationsDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        automation_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/automations/{automation_id}';
+};
+
+export type AutomationsDeleteResponses = {
+    200: DeleteAutomationResponse;
+};
+
+export type AutomationsDeleteResponse = AutomationsDeleteResponses[keyof AutomationsDeleteResponses];
+
+export type AutomationsGetData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        automation_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/automations/{automation_id}';
+};
+
+export type AutomationsGetErrors = {
+    404: Error;
+};
+
+export type AutomationsGetError = AutomationsGetErrors[keyof AutomationsGetErrors];
+
+export type AutomationsGetResponses = {
+    200: Automation;
+};
+
+export type AutomationsGetResponse = AutomationsGetResponses[keyof AutomationsGetResponses];
+
+export type AutomationsPutData = {
+    body: PutAutomationBody;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        automation_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/automations/{automation_id}';
+};
+
+export type AutomationsPutErrors = {
+    400: Error;
+};
+
+export type AutomationsPutError = AutomationsPutErrors[keyof AutomationsPutErrors];
+
+export type AutomationsPutResponses = {
+    200: Automation;
+};
+
+export type AutomationsPutResponse = AutomationsPutResponses[keyof AutomationsPutResponses];
+
+export type AutomationsSetOwnershipData = {
+    body: SetResourceAccessModeRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        automation_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/automations/{automation_id}/ownership';
+};
+
+export type AutomationsSetOwnershipResponses = {
+    200: ResourceAuthorization;
+};
+
+export type AutomationsSetOwnershipResponse = AutomationsSetOwnershipResponses[keyof AutomationsSetOwnershipResponses];
+
+export type AutomationsRunData = {
+    body: RunAutomationBody;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        automation_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/automations/{automation_id}/run';
+};
+
+export type AutomationsRunResponses = {
+    200: RunAutomationResponse;
+};
+
+export type AutomationsRunResponse = AutomationsRunResponses[keyof AutomationsRunResponses];
+
+export type AutomationsSetVisibilityData = {
+    body: SetResourceAccessModeRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        automation_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/automations/{automation_id}/visibility';
+};
+
+export type AutomationsSetVisibilityResponses = {
+    200: ResourceAuthorization;
+};
+
+export type AutomationsSetVisibilityResponse = AutomationsSetVisibilityResponses[keyof AutomationsSetVisibilityResponses];
+
+export type AutomationsListGrantsData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        automation_id: WrappedUuidV4;
+        plane: ResourceGrantPlane;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/automations/{automation_id}/{plane}/grants';
+};
+
+export type AutomationsListGrantsResponses = {
+    200: Array<ResourceGrant>;
+};
+
+export type AutomationsListGrantsResponse = AutomationsListGrantsResponses[keyof AutomationsListGrantsResponses];
+
+export type AutomationsAddGrantData = {
+    body: CreateResourcePlaneGrantRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        automation_id: WrappedUuidV4;
+        plane: ResourceGrantPlane;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/automations/{automation_id}/{plane}/grants';
+};
+
+export type AutomationsAddGrantResponses = {
+    200: ResourceGrant;
+};
+
+export type AutomationsAddGrantResponse = AutomationsAddGrantResponses[keyof AutomationsAddGrantResponses];
+
+export type AutomationsRemoveGrantData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        automation_id: WrappedUuidV4;
+        plane: ResourceGrantPlane;
+        principal_type: ResourcePrincipalType;
+        principal_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/automations/{automation_id}/{plane}/grants/{principal_type}/{principal_id}';
+};
+
+export type AutomationsRemoveGrantResponses = {
+    200: unknown;
+};
 
 export type ListInboxAgentsData = {
     body?: never;
@@ -11875,6 +12670,40 @@ export type FinalizeHostedOpenbotReleaseResponses = {
 
 export type FinalizeHostedOpenbotReleaseResponse = FinalizeHostedOpenbotReleaseResponses[keyof FinalizeHostedOpenbotReleaseResponses];
 
+export type IssueOpenbotMissionControlTicketData = {
+    body: IssueMissionControlSocketTicketRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/identity/openbot/mission-control-ticket';
+};
+
+export type IssueOpenbotMissionControlTicketErrors = {
+    /**
+     * Invalid OpenBot access token
+     */
+    401: Error;
+    /**
+     * Token is not bound to this team
+     */
+    403: Error;
+};
+
+export type IssueOpenbotMissionControlTicketError = IssueOpenbotMissionControlTicketErrors[keyof IssueOpenbotMissionControlTicketErrors];
+
+export type IssueOpenbotMissionControlTicketResponses = {
+    /**
+     * Short-lived Mission Control socket ticket
+     */
+    200: MissionControlSocketTicket;
+};
+
+export type IssueOpenbotMissionControlTicketResponse = IssueOpenbotMissionControlTicketResponses[keyof IssueOpenbotMissionControlTicketResponses];
+
 export type ListManagedUserCredentialsData = {
     body?: never;
     path: {
@@ -14069,6 +14898,56 @@ export type InvokeToolResponses = {
 };
 
 export type InvokeToolResponse = InvokeToolResponses[keyof InvokeToolResponses];
+
+export type EnableAndBindProviderToolsData = {
+    body: EnableAndBindToolsBody;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Provider account / tool-group instance ID
+         */
+        tool_group_instance_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/mcp/tool-group/{tool_group_instance_id}/tools/enable-and-bind';
+};
+
+export type EnableAndBindProviderToolsErrors = {
+    /**
+     * Invalid or duplicate tool/server selection; no mutations were attempted
+     */
+    400: Error;
+    /**
+     * Unauthorized; no mutations were attempted
+     */
+    401: Error;
+    /**
+     * Caller cannot manage the provider account; no mutations were attempted
+     */
+    403: Error;
+    /**
+     * Provider account or explicitly selected tool not found; no mutations were attempted
+     */
+    404: Error;
+    /**
+     * Failed before an observable per-item result could be returned
+     */
+    500: Error;
+};
+
+export type EnableAndBindProviderToolsError = EnableAndBindProviderToolsErrors[keyof EnableAndBindProviderToolsErrors];
+
+export type EnableAndBindProviderToolsResponses = {
+    /**
+     * Per-tool enablement and per-server binding results. The complete field is false when any item failed
+     */
+    200: EnableAndBindToolsResponse;
+};
+
+export type EnableAndBindProviderToolsResponse = EnableAndBindProviderToolsResponses[keyof EnableAndBindProviderToolsResponses];
 
 export type ListToolsData = {
     body?: never;
@@ -16908,6 +17787,132 @@ export type StateValidateResponses = {
 
 export type StateValidateResponse = StateValidateResponses[keyof StateValidateResponses];
 
+export type TildePayProvisionData = {
+    body: ProvisionTildePayRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/tilde-pay/onboarding';
+};
+
+export type TildePayProvisionResponses = {
+    /**
+     * Fully reconciled Tilde Pay onboarding state
+     */
+    200: ProvisionTildePayResponse;
+};
+
+export type TildePayProvisionResponse = TildePayProvisionResponses[keyof TildePayProvisionResponses];
+
+export type TildePayPaymentMppData = {
+    body: PayPaymentRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/tilde-pay/payments/mpp';
+};
+
+export type TildePayPaymentMppResponses = {
+    /**
+     * Tilde Pay payment response
+     */
+    200: PaymentResponse;
+};
+
+export type TildePayPaymentMppResponse = TildePayPaymentMppResponses[keyof TildePayPaymentMppResponses];
+
+export type TildePayPaymentX402Data = {
+    body: PayPaymentRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/tilde-pay/payments/x402';
+};
+
+export type TildePayPaymentX402Responses = {
+    /**
+     * Tilde Pay payment response
+     */
+    200: PaymentResponse;
+};
+
+export type TildePayPaymentX402Response = TildePayPaymentX402Responses[keyof TildePayPaymentX402Responses];
+
+export type TildePayWalletSummaryData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/tilde-pay/wallet';
+};
+
+export type TildePayWalletSummaryResponses = {
+    /**
+     * Tilde Pay wallet summary
+     */
+    200: PayWalletSummaryResponse;
+};
+
+export type TildePayWalletSummaryResponse = TildePayWalletSummaryResponses[keyof TildePayWalletSummaryResponses];
+
+export type TildePayWalletCreateData = {
+    body: CreatePayWalletRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/tilde-pay/wallet';
+};
+
+export type TildePayWalletCreateResponses = {
+    /**
+     * Tilde Pay wallet summary
+     */
+    200: PayWalletSummaryResponse;
+};
+
+export type TildePayWalletCreateResponse = TildePayWalletCreateResponses[keyof TildePayWalletCreateResponses];
+
+export type TildePayWalletWaitUntilBalanceData = {
+    body: WaitForPayBalanceRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/tilde-pay/wallet/wait-until-balance';
+};
+
+export type TildePayWalletWaitUntilBalanceResponses = {
+    /**
+     * Tilde Pay balance wait result
+     */
+    200: WaitUntilBalanceResponse;
+};
+
+export type TildePayWalletWaitUntilBalanceResponse = TildePayWalletWaitUntilBalanceResponses[keyof TildePayWalletWaitUntilBalanceResponses];
+
 export type ListTrustedRuntimesData = {
     body?: never;
     path: {
@@ -17069,6 +18074,443 @@ export type UpdateTrustedRuntimeResponses = {
 };
 
 export type UpdateTrustedRuntimeResponse = UpdateTrustedRuntimeResponses[keyof UpdateTrustedRuntimeResponses];
+
+export type WalletListData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: {
+        page_size?: number;
+        owner_id?: string | null;
+    };
+    url: '/api/v1/team/{team_id}/wallet';
+};
+
+export type WalletListResponses = {
+    /**
+     * List wallets
+     */
+    200: WalletPaginatedResponse;
+};
+
+export type WalletListResponse = WalletListResponses[keyof WalletListResponses];
+
+export type WalletCreateData = {
+    body: CreateWalletBody;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/wallet';
+};
+
+export type WalletCreateErrors = {
+    /**
+     * Invalid request
+     */
+    400: Error;
+    /**
+     * Authentication failed
+     */
+    401: Error;
+    /**
+     * Forbidden
+     */
+    403: Error;
+    /**
+     * Upstream provider error
+     */
+    502: Error;
+};
+
+export type WalletCreateError = WalletCreateErrors[keyof WalletCreateErrors];
+
+export type WalletCreateResponses = {
+    /**
+     * Created wallet
+     */
+    200: Wallet;
+};
+
+export type WalletCreateResponse = WalletCreateResponses[keyof WalletCreateResponses];
+
+export type WalletCustomerListData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: {
+        page_size?: number;
+        owner_id?: string | null;
+    };
+    url: '/api/v1/team/{team_id}/wallet/customer';
+};
+
+export type WalletCustomerListResponses = {
+    /**
+     * List wallet customers
+     */
+    200: WalletCustomerPaginatedResponse;
+};
+
+export type WalletCustomerListResponse = WalletCustomerListResponses[keyof WalletCustomerListResponses];
+
+export type WalletCustomerCreateData = {
+    body: CreateWalletCustomerBody;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/wallet/customer';
+};
+
+export type WalletCustomerCreateResponses = {
+    /**
+     * Created wallet customer
+     */
+    200: WalletCustomer;
+};
+
+export type WalletCustomerCreateResponse = WalletCustomerCreateResponses[keyof WalletCustomerCreateResponses];
+
+export type WalletCustomerGetData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Wallet customer ID
+         */
+        customer_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/wallet/customer/{customer_id}';
+};
+
+export type WalletCustomerGetResponses = {
+    /**
+     * Wallet customer
+     */
+    200: WalletCustomer;
+};
+
+export type WalletCustomerGetResponse = WalletCustomerGetResponses[keyof WalletCustomerGetResponses];
+
+export type WalletCustomerKycGetData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Wallet customer ID
+         */
+        customer_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/wallet/customer/{customer_id}/kyc';
+};
+
+export type WalletCustomerKycGetResponses = {
+    /**
+     * Wallet customer KYC details
+     */
+    200: GetWalletCustomerKycResponse;
+};
+
+export type WalletCustomerKycGetResponse = WalletCustomerKycGetResponses[keyof WalletCustomerKycGetResponses];
+
+export type WalletGetData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Wallet ID
+         */
+        wallet_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/wallet/{wallet_id}';
+};
+
+export type WalletGetResponses = {
+    /**
+     * Wallet
+     */
+    200: Wallet;
+};
+
+export type WalletGetResponse = WalletGetResponses[keyof WalletGetResponses];
+
+export type WalletGetBalancesData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Wallet ID
+         */
+        wallet_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/balances';
+};
+
+export type WalletGetBalancesResponses = {
+    /**
+     * Wallet balances
+     */
+    200: GetBalancesResponse;
+};
+
+export type WalletGetBalancesResponse = WalletGetBalancesResponses[keyof WalletGetBalancesResponses];
+
+export type WalletGetCryptoDepositInformationData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Wallet ID
+         */
+        wallet_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/crypto';
+};
+
+export type WalletGetCryptoDepositInformationResponses = {
+    /**
+     * Wallet crypto deposit information
+     */
+    200: GetCryptoDepositInformationResponse;
+};
+
+export type WalletGetCryptoDepositInformationResponse = WalletGetCryptoDepositInformationResponses[keyof WalletGetCryptoDepositInformationResponses];
+
+export type WalletGetFiatDepositInformationData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Wallet ID
+         */
+        wallet_id: string;
+    };
+    query?: {
+        currency?: string | null;
+    };
+    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/fiat';
+};
+
+export type WalletGetFiatDepositInformationResponses = {
+    /**
+     * Wallet fiat deposit information
+     */
+    200: GetFiatDepositInformationResponse;
+};
+
+export type WalletGetFiatDepositInformationResponse = WalletGetFiatDepositInformationResponses[keyof WalletGetFiatDepositInformationResponses];
+
+export type WalletMakeMppPaymentData = {
+    body: MakeMppPaymentRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Wallet ID
+         */
+        wallet_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/payments/mpp';
+};
+
+export type WalletMakeMppPaymentResponses = {
+    /**
+     * Payment response
+     */
+    200: PaymentResponse;
+};
+
+export type WalletMakeMppPaymentResponse = WalletMakeMppPaymentResponses[keyof WalletMakeMppPaymentResponses];
+
+export type WalletMakeX402PaymentData = {
+    body: MakeX402PaymentRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Wallet ID
+         */
+        wallet_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/payments/x402';
+};
+
+export type WalletMakeX402PaymentResponses = {
+    /**
+     * Payment response
+     */
+    200: PaymentResponse;
+};
+
+export type WalletMakeX402PaymentResponse = WalletMakeX402PaymentResponses[keyof WalletMakeX402PaymentResponses];
+
+export type WalletTransactionHistoryListData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Wallet ID
+         */
+        wallet_id: string;
+    };
+    query?: {
+        page_size?: number;
+        next_page_token?: string | null;
+    };
+    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history';
+};
+
+export type WalletTransactionHistoryListResponses = {
+    /**
+     * Wallet transaction history
+     */
+    200: WalletTransactionHistoryItemPaginatedResponse;
+};
+
+export type WalletTransactionHistoryListResponse = WalletTransactionHistoryListResponses[keyof WalletTransactionHistoryListResponses];
+
+export type WalletTransactionHistoryRefreshData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Wallet ID
+         */
+        wallet_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history/refresh';
+};
+
+export type WalletTransactionHistoryRefreshResponses = {
+    /**
+     * Wallet transaction history refresh result
+     */
+    200: RefreshWalletTransactionHistoryResponse;
+};
+
+export type WalletTransactionHistoryRefreshResponse = WalletTransactionHistoryRefreshResponses[keyof WalletTransactionHistoryRefreshResponses];
+
+export type WalletVirtualAccountCreateData = {
+    body: CreateWalletVirtualAccountBody;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Wallet ID
+         */
+        wallet_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/virtual-account';
+};
+
+export type WalletVirtualAccountCreateErrors = {
+    /**
+     * Invalid request
+     */
+    400: Error;
+    /**
+     * Authentication failed
+     */
+    401: Error;
+    /**
+     * Forbidden
+     */
+    403: Error;
+    /**
+     * Upstream provider error
+     */
+    502: Error;
+};
+
+export type WalletVirtualAccountCreateError = WalletVirtualAccountCreateErrors[keyof WalletVirtualAccountCreateErrors];
+
+export type WalletVirtualAccountCreateResponses = {
+    /**
+     * Created wallet virtual account
+     */
+    200: WalletVirtualAccount;
+};
+
+export type WalletVirtualAccountCreateResponse = WalletVirtualAccountCreateResponses[keyof WalletVirtualAccountCreateResponses];
+
+export type WalletWaitUntilBalanceData = {
+    body: WaitUntilBalanceRequest;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Wallet ID
+         */
+        wallet_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/wait-until-balance';
+};
+
+export type WalletWaitUntilBalanceResponses = {
+    /**
+     * Wait result
+     */
+    200: WaitUntilBalanceResponse;
+};
+
+export type WalletWaitUntilBalanceResponse = WalletWaitUntilBalanceResponses[keyof WalletWaitUntilBalanceResponses];
 
 export type ListWikiOntologyTemplatesData = {
     body?: never;

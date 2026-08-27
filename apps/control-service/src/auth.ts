@@ -110,6 +110,7 @@ export function requireOwner(
     const authenticated = await authenticate(context, provider, options);
     if (!authenticated) return context.json({ error: "Authentication required" }, 401);
     context.set("ownerPrincipal", authenticated.principal);
+    context.set("ownerAccessToken", authenticated.accessToken);
     await next();
   };
 }

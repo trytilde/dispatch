@@ -8,8 +8,8 @@ import { parse as parseDotenv } from "dotenv";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
   discoverAgents,
-  LocalAgentServiceProvider,
-  VercelAgentServiceProvider,
+  LocalRuntimeServiceProvider,
+  VercelRuntimeServiceProvider,
 } from "@tryopenbot/agent-service-provider";
 import { TildeAuthProvider } from "@tryopenbot/auth-provider";
 import { tildeAgentProviderInitialization } from "@tryopenbot/agent-provider";
@@ -39,10 +39,6 @@ import {
   VercelInferenceProvider,
 } from "@tryopenbot/inference-provider";
 import { tildePlatform, VercelPlatform } from "@tryopenbot/platform-integrations";
-import {
-  LocalControlServiceProvider,
-  VercelControlServiceProvider,
-} from "@tryopenbot/control-service-provider";
 import { materializeFileTemplate, renderFileTemplatePath } from "@tryopenbot/utilities";
 import {
   agentTemplateDirectory,
@@ -203,7 +199,7 @@ export const runtimeChoices: readonly SelectChoice[] = [
   {
     value: "vercel",
     label: "Vercel",
-    description: "Deploy control and agent services as separate Vercel projects.",
+    description: "Deploy the web app, control API, and isolated agent functions as one runtime.",
   },
   {
     value: "tilde-cloud",
@@ -1657,18 +1653,13 @@ export function builtInRuntimeInitializationProviders(
 }
 
 function builtInRuntimeProviderGroup(runtime: RuntimeChoice): InitializableProvider[] {
-  if (runtime === "local")
-    return [
-      new LocalControlServiceProvider(),
-      new LocalAgentServiceProvider(),
-      new MicrosandboxComputerProvider(),
-    ];
   const vercel = new VercelPlatform({ managed: runtime === "tilde-cloud" });
-  return [
-    new VercelControlServiceProvider({ platform: vercel }),
-    new VercelAgentServiceProvider({ platform: vercel }),
-    new VercelSandboxComputerProvider({ platform: vercel }),
-  ];
+  return runtime === "local"
+    ? [new LocalRuntimeServiceProvider(), new MicrosandboxComputerProvider()]
+    : [
+        new VercelRuntimeServiceProvider({ platform: vercel }),
+        new VercelSandboxComputerProvider({ platform: vercel, projectRole: "runtime" }),
+      ];
 }
 
 function builtInSharedProviderGroup(runtime: RuntimeChoice | "current"): InitializableProvider[] {
@@ -1975,21 +1966,25 @@ function configuredInitializationProviderGroups(configuration: OpenBotConfigurat
   };
 }
 
-function configuredRuntimeChoice(configuration: OpenBotConfiguration): RuntimeChoice | undefined {
+export function configuredRuntimeChoice(
+  configuration: OpenBotConfiguration,
+): RuntimeChoice | undefined {
+  if (configuration.providers.controlService !== configuration.providers.agentService)
+    return undefined;
   const constructors = [
     constructorName(configuration.providers.controlService),
     constructorName(configuration.providers.agentService),
     constructorName(configuration.providers.computer),
   ];
   if (
-    constructors[0] === "LocalControlServiceProvider" &&
-    constructors[1] === "LocalAgentServiceProvider" &&
+    constructors[0] === "LocalRuntimeServiceProvider" &&
+    constructors[1] === "LocalRuntimeServiceProvider" &&
     constructors[2] === "MicrosandboxComputerProvider"
   )
     return "local";
   if (
-    constructors[0] === "VercelControlServiceProvider" &&
-    constructors[1] === "VercelAgentServiceProvider" &&
+    constructors[0] === "VercelRuntimeServiceProvider" &&
+    constructors[1] === "VercelRuntimeServiceProvider" &&
     constructors[2] === "VercelSandboxComputerProvider"
   )
     return constructorName(configuration.providers.git) === "LocalGitProvider"
@@ -2015,10 +2010,8 @@ function compatibleInitializationProvider(provider: InitializableProvider): Init
   if (provider.platforms?.length) return provider;
 
   switch (constructorName(provider)) {
-    case "VercelControlServiceProvider":
-      return new VercelControlServiceProvider();
-    case "VercelAgentServiceProvider":
-      return new VercelAgentServiceProvider();
+    case "VercelRuntimeServiceProvider":
+      return new VercelRuntimeServiceProvider();
     case "VercelSandboxComputerProvider":
       return new VercelSandboxComputerProvider();
     case "TildeAgentProvider":

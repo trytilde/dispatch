@@ -1203,13 +1203,25 @@ async function assignToolAccount(
     (options.environment ?? process.env)[
       `${agentEnvironmentPrefix(agentId)}_MCP_SERVER_ID`
     ]?.trim() || `openbot-${agentId}`;
-  await tildeRequest(
+
+  const result = await tildeRequest(
     options,
-    `/mcp/mcp-server/${encodeURIComponent(serverId)}/tool-group/${encodeURIComponent(accountId)}`,
-    "PUT",
-    {},
+    `/mcp/tool-group/${encodeURIComponent(accountId)}/tools/enable-and-bind`,
+    "POST",
+    {
+      all_tools: true,
+      tool_source_type_ids: [],
+      mcp_server_instance_ids: [serverId],
+    },
     signal,
   );
+  if (
+    typeof result !== "object" ||
+    result === null ||
+    (result as { complete?: unknown }).complete !== true
+  ) {
+    throw new ConnectorUpstreamError("Tilde could not enable and bind every tool", 502);
+  }
 }
 
 async function removeToolAccount(

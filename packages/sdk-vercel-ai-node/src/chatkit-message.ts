@@ -1,6 +1,7 @@
 import type { JsonObject, JsonValue } from "@trytilde/sdk";
 import { isJsonObject } from "@trytilde/sdk/json";
 import type { UIMessage } from "ai";
+import { withSpeakerPrefix } from "./chatkit-identity";
 import {
   type ChatKitContextClient,
   type ChatKitConvertedMessage,
@@ -555,8 +556,33 @@ async function convertRequestMessageToAiSdkMessage(
   return {
     id: message.id,
     role: message.role,
-    parts,
+    parts: applySpeakerPrefix(parts, message),
   } as UIMessage;
+}
+
+/**
+ * Prefix the first text part with the sender's label.
+ *
+ * Multi-party sessions put several humans and several agents in one transcript,
+ * so a model that only sees the text cannot tell who said what. Only the first
+ * text part is prefixed — repeating the speaker on every part would read as
+ * separate turns.
+ *
+ * The agent's own `assistant` messages are left alone: labelling them would
+ * teach the model to write its own name into replies.
+ */
+function applySpeakerPrefix(
+  parts: UIMessage["parts"],
+  message: ChatKitRequestMessage,
+): UIMessage["parts"] {
+  if (!message.identity || message.role === "assistant") return parts;
+  const index = parts.findIndex((part) => part.type === "text");
+  if (index === -1) return parts;
+  const target = parts[index] as { type: "text"; text?: string };
+  const prefixed = withSpeakerPrefix(target.text ?? "", message.identity);
+  const next = [...parts];
+  next[index] = { ...target, text: prefixed } as UIMessage["parts"][number];
+  return next;
 }
 
 async function convertRequestPartToAiSdkPart(

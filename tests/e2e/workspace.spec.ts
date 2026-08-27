@@ -146,7 +146,7 @@ test("lists the user's continuous chat and the agent's named threads", async ({ 
       await route.fulfill({ json: { items: [] } });
       return;
     }
-    if (path.endsWith("/activity")) {
+    if (path.endsWith("/snapshot")) {
       const sessionId = path.split("/").at(-2) ?? "";
       messageRequests.push(sessionId);
       await route.fulfill({
@@ -504,7 +504,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
       await route.fulfill({ status: 204 });
       return;
     }
-    if (path.endsWith("/activity")) {
+    if (path.endsWith("/snapshot")) {
       if (path.includes("/research-session/")) {
         researchMessageRequests += 1;
         await researchMessagesReady;
@@ -1365,7 +1365,7 @@ test("configures a connector through the in-chat account picker", async ({ page 
       await route.fulfill({ json: { items: [] } });
       return;
     }
-    if (path.endsWith("/activity")) {
+    if (path.endsWith("/snapshot")) {
       await route.fulfill({
         json: {
           messages: { items: transcript },

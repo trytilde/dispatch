@@ -516,6 +516,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/identity/invitations/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept invitation
+         * @description Accept an invitation after verifying the authenticated email and invitation password
+         */
+        post: operations["accept-invitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/identity/local-runtime/tunnel-connector": {
         parameters: {
             query?: never;
@@ -729,7 +749,11 @@ export interface paths {
         delete: operations["remove-organization-member"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update organization member role
+         * @description Move an organization member between the organization member and organization admin system groups
+         */
+        patch: operations["update-organization-member-role"];
         trace?: never;
     };
     "/api/v1/identity/organizations/{organization_id}/oidc-providers": {
@@ -828,6 +852,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/identity/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my profile
+         * @description Return the authenticated user's editable profile and readonly group memberships.
+         */
+        get: operations["get-self-profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update my profile
+         * @description Update the authenticated user's display name. Email is immutable here.
+         */
+        patch: operations["update-self-profile"];
+        trace?: never;
+    };
+    "/api/v1/identity/profile/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download my profile avatar
+         * @description Return the authenticated user's uploaded image or OpenBot avatar reference.
+         */
+        get: operations["get-self-avatar"];
+        /**
+         * Upload my profile avatar
+         * @description Upload a PNG, JPEG, or WebP avatar up to 2 MiB.
+         */
+        put: operations["upload-self-avatar"];
+        post?: never;
+        /**
+         * Delete my profile avatar
+         * @description Remove the authenticated user's profile avatar.
+         */
+        delete: operations["delete-self-avatar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/profile/avatar/openbot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set my OpenBot avatar
+         * @description Select a deterministic animated OpenBot avatar by ID.
+         */
+        put: operations["set-self-openbot-avatar"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/team-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List organization team groups
+         * @description List user-managed groups across every team in the current organization; requires organization administration
+         */
+        get: operations["list-organization-team-groups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/identity/team/{team_id}/api-key": {
         parameters: {
             query?: never;
@@ -916,6 +1032,146 @@ export interface paths {
         patch: operations["update-team"];
         trace?: never;
     };
+    "/api/v1/identity/teams/{team_entity_id}/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List team groups
+         * @description List user-managed groups in a team; system groups are excluded
+         */
+        get: operations["list-team-groups"];
+        put?: never;
+        /**
+         * Create team group
+         * @description Create a team-scoped user-managed group with a unique lowercase alphanumeric-and-hyphen slug
+         */
+        post: operations["create-team-group"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/teams/{team_entity_id}/groups/{group_slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get team group
+         * @description Get one user-managed team group by slug
+         */
+        get: operations["get-team-group"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete team group
+         * @description Delete a user-managed team group; system groups cannot be addressed by this endpoint
+         */
+        delete: operations["delete-team-group"];
+        options?: never;
+        head?: never;
+        /**
+         * Update team group
+         * @description Rename a user-managed team group while retaining its stable slug
+         */
+        patch: operations["update-team-group"];
+        trace?: never;
+    };
+    "/api/v1/identity/teams/{team_entity_id}/groups/{group_slug}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List team group members
+         * @description List users in a user-managed team group
+         */
+        get: operations["list-team-group-members"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/teams/{team_entity_id}/groups/{group_slug}/members/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Add team group member
+         * @description Idempotently add a current team member to a user-managed team group
+         */
+        put: operations["add-team-group-member"];
+        post?: never;
+        /**
+         * Remove team group member
+         * @description Idempotently remove a user from a user-managed team group
+         */
+        delete: operations["remove-team-group-member"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/teams/{team_entity_id}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List team invitations
+         * @description List current and historical team invitations
+         */
+        get: operations["list-team-invitations"];
+        put?: never;
+        /**
+         * Invite users to team
+         * @description Create or resend up to 100 email invitations with explicit system groups for the current team
+         */
+        post: operations["invite-team-users"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/teams/{team_entity_id}/invitations/{invitation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke team invitation
+         * @description Revoke a team invitation
+         */
+        delete: operations["revoke-team-invitation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/identity/teams/{team_entity_id}/members": {
         parameters: {
             query?: never;
@@ -957,7 +1213,11 @@ export interface paths {
         delete: operations["remove-team-member"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update team member role
+         * @description Move a team member between the team member and team admin system groups
+         */
+        patch: operations["update-team-member-role"];
         trace?: never;
     };
     "/api/v1/identity/temporary-accounts": {
@@ -1211,26 +1471,6 @@ export interface paths {
          * @description Idempotently removes a principal grant while retaining at least one private ownership grant.
          */
         delete: operations["automations-remove-grant"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/activity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get ChatKit activity
-         * @description Returns agent activity and an optional active conversation snapshot in one request.
-         */
-        get: operations["chatkit-get-activity"];
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1492,46 +1732,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List ChatKit agent sessions
-         * @description Lists visible sessions for one ChatKit agent with activity summaries.
-         */
-        get: operations["chatkit-list-agent-sessions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/messages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send ChatKit agent message
-         * @description Sends a user message to the selected ChatKit agent session and invokes the registered Vercel UI-compatible agent endpoint.
-         */
-        post: operations["chatkit-send-agent-message"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/status": {
         parameters: {
             query?: never;
@@ -1550,26 +1750,6 @@ export interface paths {
          * @description Enables or disables a registered ChatKit HTTP agent.
          */
         patch: operations["chatkit-set-agent-status"];
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/turns": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit ChatKit agent turn
-         * @description Creates a session when needed, finalizes uploaded attachments, sends the owner message, and returns canonical conversation state.
-         */
-        post: operations["chatkit-submit-agent-turn"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/visibility": {
@@ -2020,26 +2200,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/team/{team_id}/chatkit/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Search ChatKit
-         * @description Searches visible session titles, participating agents, and messages across the team. When session_id is provided, searches messages only within that visible session.
-         */
-        get: operations["chatkit-search"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/team/{team_id}/chatkit/session": {
         parameters: {
             query?: never;
@@ -2442,66 +2602,6 @@ export interface paths {
          * @description Creates a ChatKit session with explicit participants, or wires the session to agent_id and its registered Vercel UI channel when agent_id is provided.
          */
         post: operations["chatkit-create-session"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update ChatKit session title
-         * @description Updates the title of the selected ChatKit session.
-         */
-        patch: operations["chatkit-update-session-title"];
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/activity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get ChatKit conversation activity
-         * @description Returns messages, pending queued turns, and the durable event revision for one session.
-         */
-        get: operations["chatkit-get-conversation-activity"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/interrupt": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Interrupt ChatKit session
-         * @description Interrupts the active HTTP agent response for a ChatKit session.
-         */
-        post: operations["chatkit-interrupt-session"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6438,110 +6538,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/team/{team_id}/tilde-pay/onboarding": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Provision Tilde Pay
-         * @description Idempotently enroll billing, create a customer when details are supplied, create a wallet after KYC, configure the wallet MCP server and tools, and optionally configure browser tools when enabled.
-         */
-        post: operations["tilde-pay-provision"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/tilde-pay/payments/mpp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Make MPP payment
-         * @description Make an MPP payment from a Tilde Pay wallet.
-         */
-        post: operations["tilde-pay-payment-mpp"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/tilde-pay/payments/x402": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Make x402 payment
-         * @description Make an x402 payment from a Tilde Pay wallet.
-         */
-        post: operations["tilde-pay-payment-x402"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/tilde-pay/wallet": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Tilde Pay wallet summary
-         * @description Return wallet, balances, fiat deposit information, and crypto deposit information for Tilde Pay.
-         */
-        get: operations["tilde-pay-wallet-summary"];
-        put?: never;
-        /**
-         * Create Tilde Pay wallet
-         * @description Create a Tilde Pay wallet after KYC and return product-shaped wallet details.
-         */
-        post: operations["tilde-pay-wallet-create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/tilde-pay/wallet/wait-until-balance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Wait for Tilde Pay balance
-         * @description Poll wallet balances until the requested asset reaches the requested minimum.
-         */
-        post: operations["tilde-pay-wallet-wait-until-balance"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/team/{team_id}/trusted-runtime": {
         parameters: {
             query?: never;
@@ -6592,294 +6588,6 @@ export interface paths {
          * @description Patch trusted runtime metadata or status.
          */
         patch: operations["update-trusted-runtime"];
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List wallets
-         * @description List wallets for the current org/team.
-         */
-        get: operations["wallet-list"];
-        put?: never;
-        /**
-         * Create wallet
-         * @description Create a Tilde wallet by provisioning a Privy EVM wallet, Compose virtual IBAN, and Compose crypto deposit wallet.
-         */
-        post: operations["wallet-create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/customer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List wallet customers
-         * @description List wallet customers for the current org/team.
-         */
-        get: operations["wallet-customer-list"];
-        put?: never;
-        /**
-         * Create wallet customer
-         * @description Create a Compose customer and return a KYC verification link for wallet onboarding.
-         */
-        post: operations["wallet-customer-create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/customer/{customer_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get wallet customer
-         * @description Get a wallet customer by local id.
-         */
-        get: operations["wallet-customer-get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/customer/{customer_id}/kyc": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get wallet customer KYC details
-         * @description Return the stored Compose KYC verification status and KYC flow URL for a wallet customer.
-         */
-        get: operations["wallet-customer-kyc-get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/{wallet_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get wallet
-         * @description Get a wallet by id.
-         */
-        get: operations["wallet-get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/balances": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get wallet balances
-         * @description Refresh and return Compose balances for this wallet.
-         */
-        get: operations["wallet-get-balances"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/crypto": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get wallet crypto deposit information
-         * @description Return crypto deposit information for this wallet.
-         */
-        get: operations["wallet-get-crypto-deposit-information"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/fiat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get wallet fiat deposit information
-         * @description Refresh and return Compose fiat deposit information for this wallet.
-         */
-        get: operations["wallet-get-fiat-deposit-information"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/payments/mpp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Make MPP payment
-         * @description Make an MPP payment from the wallet using the configured payment adapter.
-         */
-        post: operations["wallet-make-mpp-payment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/payments/x402": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Make x402 payment
-         * @description Make an x402 payment from the wallet using the configured payment adapter.
-         */
-        post: operations["wallet-make-x402-payment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List wallet transaction history
-         * @description Return cached transaction history for this wallet without scanning the chain.
-         */
-        get: operations["wallet-transaction-history-list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history/refresh": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Refresh wallet transaction history
-         * @description Scan configured chains for wallet-linked USDC transfers and upsert cached transaction history.
-         */
-        post: operations["wallet-transaction-history-refresh"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/virtual-account": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create wallet virtual account
-         * @description Create a currency-denominated Compose virtual account for an existing wallet.
-         */
-        post: operations["wallet-virtual-account-create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/wallet/{wallet_id}/wait-until-balance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Wait until wallet balance
-         * @description Poll the local wallet balance cache until an asset reaches the requested minimum.
-         */
-        post: operations["wallet-wait-until-balance"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v1/team/{team_id}/wiki-ontology-templates": {
@@ -9206,6 +8914,10 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AcceptInvitationRequest: {
+            invitation_id: string;
+            password: string;
+        };
         /** @description Request body for adding a participant to a ChatKit session. */
         AddChatKitParticipantRequestInner: {
             participant: components["schemas"]["ChatKitParticipantInput"];
@@ -9542,35 +9254,10 @@ export interface components {
             display_name: string;
             id: string;
         };
-        /** @description ChatKit activity projection with an optional active conversation. */
-        ChatKitActivityResponse: {
-            active_conversation: null | components["schemas"]["ChatKitConversationActivity"];
-            active_session_id: null | components["schemas"]["WrappedUuidV4"];
-            activity: components["schemas"]["ChatKitAgentActivityPage"];
-        };
         /** @description Public agent view used by list/get routes. */
         ChatKitAgent: components["schemas"]["Inbox"] & {
             api_key_id?: string | null;
             principal_user_id?: string | null;
-        };
-        /** @description Paginated ChatKit agent activity payload. */
-        ChatKitAgentActivityPage: {
-            items: components["schemas"]["ChatKitAgentActivitySummary"][];
-            next_page_token?: string | null;
-        };
-        /** @description Agent summary returned by the ChatKit activity projection. */
-        ChatKitAgentActivitySummary: {
-            created_at: components["schemas"]["WrappedChronoDateTime"];
-            display_name: string;
-            endpoint_url?: string | null;
-            has_vercel_ui_endpoint: boolean;
-            id: string;
-            last_message_preview?: string | null;
-            last_user_message_at?: null | components["schemas"]["WrappedChronoDateTime"];
-            provider_id: string;
-            sessions: components["schemas"]["ChatKitAgentSessionsActivityResponse"];
-            status: string;
-            updated_at: components["schemas"]["WrappedChronoDateTime"];
         };
         /** @description Uploaded avatar metadata for one ChatKit agent principal. */
         ChatKitAgentAvatar: {
@@ -9592,11 +9279,6 @@ export interface components {
         ChatKitAgentPaginatedResponse: {
             items: components["schemas"]["ChatKitAgent"][];
             next_page_token?: string;
-        };
-        /** @description Paginated sessions payload for "show more". */
-        ChatKitAgentSessionsActivityResponse: {
-            items: components["schemas"]["ChatKitSessionActivitySummary"][];
-            next_page_token?: string | null;
         };
         /** @description Persisted queued agent turn. */
         ChatKitAgentTurnQueueItem: {
@@ -9630,13 +9312,6 @@ export interface components {
          * @enum {string}
          */
         ChatKitAgentTurnQueueStatus: "pending" | "running" | "completed" | "failed" | "cancelled";
-        /** @description Attachment upload details finalized atomically with a submitted turn. */
-        ChatKitAttachmentCompletion: {
-            attachment_id: components["schemas"]["WrappedUuidV4"];
-            sha256?: string | null;
-            /** Format: int64 */
-            size_bytes?: number | null;
-        };
         /** @description Provider-specific configuration field for a ChatKit chat provider. */
         ChatKitChatProviderConfigField: {
             field_type: string;
@@ -9644,13 +9319,6 @@ export interface components {
             name: string;
             placeholder: string;
             required?: boolean;
-        };
-        /** @description Initial messages and pending queue state for one ChatKit session. */
-        ChatKitConversationActivity: {
-            messages: components["schemas"]["MessagePaginatedResponse"];
-            queued_turns: components["schemas"]["ChatKitQueuedTurns"];
-            /** Format: int64 */
-            snapshot_revision: number;
         };
         /** @description Public ChatKit participant view. */
         ChatKitParticipant: {
@@ -9775,7 +9443,7 @@ export interface components {
             unread?: boolean;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
         };
-        /** @description Initial sidebar payload. */
+        /** @description Paginated ChatKit agent activity payload. */
         ChatKitWorkspaceSidebarResponse: {
             items: components["schemas"]["ChatKitWorkspaceAgentSummary"][];
             next_page_token?: string | null;
@@ -10042,6 +9710,7 @@ export interface components {
         };
         /** @description Request body for creating a ChatKit workspace session for an agent. */
         CreateChatKitWorkspaceSessionRequestInner: {
+            lookup_key?: string | null;
             title?: string | null;
         };
         CreateCustomToolProviderRequestInner: {
@@ -10162,11 +9831,6 @@ export interface components {
         };
         CreatePageTypeVersionBody: {
             schema: unknown;
-        };
-        CreatePayWalletRequest: {
-            name: string;
-            owner_id?: string | null;
-            wallet_customer_id: string;
         };
         CreatePersonalToolGroupInstanceBody: {
             authorization?: components["schemas"]["ResourceAuthorizationModes"];
@@ -10346,6 +10010,13 @@ export interface components {
             chat_provider: components["schemas"]["Inbox"];
             next_action: components["schemas"]["SlackInstallationNextAction"];
         };
+        /** @description Request to create a user-managed group inside one team. */
+        CreateTeamGroupBody: {
+            /** @description Human-readable group name. */
+            name: string;
+            /** @description URL-safe group slug, unique within the team. */
+            slug: string;
+        };
         CreateTeamRequest: {
             id?: string | null;
             name: string;
@@ -10436,19 +10107,6 @@ export interface components {
             initial_grants?: components["schemas"]["ResourceGrantRequest"][];
             metadata?: null | components["schemas"]["Metadata"];
             user_credential_configuration: components["schemas"]["WrappedJsonValue"];
-        };
-        CreateWalletBody: {
-            name: string;
-            owner_id?: string | null;
-            wallet_customer_id: string;
-        };
-        CreateWalletCustomerBody: {
-            account_type?: string;
-            name: string;
-            owner_id?: string | null;
-        };
-        CreateWalletVirtualAccountBody: {
-            currency: string;
         };
         CreateWikiAssetBody: {
             alt_text?: string | null;
@@ -10624,16 +10282,6 @@ export interface components {
             contents: string;
             filename: string;
         };
-        DirectTokenPayment: {
-            amount: string;
-            asset?: string;
-            chain?: string;
-            destination_address: string;
-            destination_asset?: string | null;
-            destination_chain?: string | null;
-            /** Format: int64 */
-            slippage_bps?: number | null;
-        };
         /** @description Selects one package file for a lazy download URL. */
         DownloadSkillPackageFileRequest: {
             path: string;
@@ -10763,24 +10411,38 @@ export interface components {
             download_url: string;
             expires_at: components["schemas"]["WrappedChronoDateTime"];
         };
-        GetBalancesResponse: {
-            balances: components["schemas"]["WrappedJsonValue"];
-            wallet_id: string;
+        /**
+         * @description A group entity for organizing users and managing access control.
+         *
+         *     Groups allow assigning permissions to multiple users at once.
+         */
+        Group: {
+            /** @description Timestamp when the group was created (UTC) */
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            /** @description Unique identifier (UUID format) */
+            id: string;
+            /** @description Human-readable group name */
+            name: string;
+            /** @description Owning organization. `None` is reserved for global system groups. */
+            org_id?: string | null;
+            /** @description Optional owning team within `org_id`. */
+            team_id?: string | null;
+            /** @description Timestamp when the group was last modified (UTC) */
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
         };
-        GetCryptoDepositInformationResponse: {
-            crypto: components["schemas"]["WrappedJsonValue"];
-            wallet_id: string;
+        GroupMemberWithUser: {
+            membership: components["schemas"]["GroupMembership"];
+            user: components["schemas"]["User"];
         };
-        GetFiatDepositInformationResponse: {
-            currency: string;
-            fiat: components["schemas"]["WrappedJsonValue"];
-            wallet_id: string;
+        GroupMemberWithUserPaginatedResponse: {
+            items: components["schemas"]["GroupMemberWithUser"][];
+            next_page_token?: string;
         };
-        GetWalletCustomerKycResponse: {
-            compose_customer_id: string;
-            kyc_flow_link?: string | null;
-            kyc_verified: boolean;
-            wallet_customer_id: string;
+        GroupMembership: {
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            group_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+            user_id: string;
         };
         HashedApiKey: {
             created_at: components["schemas"]["WrappedChronoDateTime"];
@@ -11063,6 +10725,20 @@ export interface components {
         InterruptChatKitSessionResponse: {
             interrupted: boolean;
         };
+        InviteUserFailure: {
+            committed: boolean;
+            email: string;
+            reason: string;
+        };
+        InviteUserInput: {
+            email: string;
+            groups: string[];
+        };
+        InviteUsersBody: components["schemas"]["InviteUserInput"][];
+        InviteUsersResponse: {
+            failures: components["schemas"]["InviteUserFailure"][];
+            invitations: components["schemas"]["UserInvitation"][];
+        };
         InvokeCustomToolRequestInner: {
             params: components["schemas"]["WrappedJsonValue"];
         };
@@ -11163,82 +10839,6 @@ export interface components {
             groups?: string[];
             /** @description Subject identifier (user ID) of the machine account */
             sub: string;
-        };
-        MakeMppPaymentRequest: {
-            body?: unknown;
-            headers?: {
-                [key: string]: string;
-            };
-            max_amount?: string | null;
-            max_amount_atomic?: string | null;
-            method?: string | null;
-            payment?: null | components["schemas"]["DirectTokenPayment"];
-            preferred_assets?: string[];
-            /**
-             * @description Payment-channel contract addresses the caller explicitly permits.
-             *     Stateful methods that sign a server-selected channel, such as the
-             *     Stellar `channel` intent, require this pin on their first use. A
-             *     validated `session_snapshot` pins subsequent requests.
-             */
-            preferred_channels?: string[];
-            preferred_networks?: string[];
-            preferred_recipients?: string[];
-            /**
-             * @description Session lifecycle action (`open`, `voucher`, `commit`, `topUp`, or
-             *     `close`). Omit to open when no snapshot is supplied and voucher
-             *     otherwise.
-             */
-            session_action?: string | null;
-            /**
-             * @description Incremental session amount in atomic units. Required for voucher and
-             *     commit actions unless the challenge pins an increment.
-             */
-            session_amount_atomic?: string | null;
-            /** @description Delivery identifier required by a metered `commit` action. */
-            session_delivery_id?: string | null;
-            session_snapshot?: null | components["schemas"]["PaymentSessionSnapshot"];
-            /**
-             * @description Preferred method-specific settlement mode. Methods that negotiate
-             *     client versus server broadcast currently accept `push` or `pull`.
-             */
-            settlement_mode?: string | null;
-            /**
-             * @description Payment transport. Defaults to `http`; use `mcp` for MCP's nested
-             *     payment metadata or `jsonrpc` for the generic root `_meta` binding.
-             *     Tempo session challenges also support `sse` and `websocket` (`ws`) for
-             *     metered streaming with in-band voucher and receipt handling.
-             */
-            transport?: string | null;
-            url: string;
-            wallet_id: string;
-        };
-        MakeX402PaymentRequest: {
-            body?: unknown;
-            headers?: {
-                [key: string]: string;
-            };
-            max_amount?: string | null;
-            max_amount_atomic?: string | null;
-            method?: string | null;
-            payment?: null | components["schemas"]["DirectTokenPayment"];
-            preferred_assets?: string[];
-            preferred_networks?: string[];
-            preferred_recipients?: string[];
-            /**
-             * @description Stateful scheme action (`open`, `voucher`, or `refund`). Omit to open
-             *     when no snapshot is supplied and voucher otherwise.
-             */
-            session_action?: string | null;
-            /** @description Incremental amount for voucher/close actions, in atomic units. */
-            session_amount_atomic?: string | null;
-            session_snapshot?: null | components["schemas"]["PaymentSessionSnapshot"];
-            /**
-             * @description Payment transport. Defaults to `http`; use `mcp` when `body` is the
-             *     JSON-RPC MCP tool-call request that should be retried with x402 metadata.
-             */
-            transport?: string | null;
-            url: string;
-            wallet_id: string;
         };
         ManagedSkillSelection: {
             provider_id: string;
@@ -11624,15 +11224,6 @@ export interface components {
             tool_accounts: components["schemas"]["WrappedJsonValue"][];
             tool_providers: components["schemas"]["WrappedJsonValue"][];
         };
-        OpenBotRealtimeTicket: {
-            expires_at: components["schemas"]["WrappedChronoDateTime"];
-            /** @description Stable subprotocol prefix. Append `.` and the returned ticket. */
-            protocol: string;
-            /** @description Short-lived credential presented through the WebSocket subprotocol header. */
-            ticket: string;
-        };
-        /** @enum {string} */
-        OpenBotRealtimeTicketTransport: "browser" | "native";
         OrgOidcProvider: {
             authorization_endpoint: string;
             client_id: string;
@@ -11666,6 +11257,14 @@ export interface components {
             slug?: string | null;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
         };
+        OrganizationMemberWithUser: {
+            membership: components["schemas"]["UserOrganization"];
+            user: components["schemas"]["User"];
+        };
+        OrganizationMemberWithUserPaginatedResponse: {
+            items: components["schemas"]["OrganizationMemberWithUser"][];
+            next_page_token?: string;
+        };
         PageRelationshipView: {
             inverse: boolean;
             label: string;
@@ -11694,65 +11293,6 @@ export interface components {
          * @enum {string}
          */
         PartState: "streaming" | "done";
-        /** @enum {string} */
-        PayOnboardingStep: "enter_details" | "complete_kyc" | "ready";
-        PayPaymentRequest: {
-            body?: unknown;
-            headers?: {
-                [key: string]: string;
-            };
-            max_amount?: string | null;
-            max_amount_atomic?: string | null;
-            method?: string | null;
-            payment?: null | components["schemas"]["DirectTokenPayment"];
-            preferred_assets?: string[];
-            preferred_channels?: string[];
-            preferred_networks?: string[];
-            preferred_recipients?: string[];
-            session_action?: string | null;
-            session_amount_atomic?: string | null;
-            session_delivery_id?: string | null;
-            session_snapshot?: null | components["schemas"]["PaymentSessionSnapshot"];
-            settlement_mode?: string | null;
-            transport?: string | null;
-            url: string;
-            wallet_id: string;
-        };
-        PayWalletSummaryError: {
-            field: string;
-            message: string;
-        };
-        PayWalletSummaryResponse: {
-            balances?: null | components["schemas"]["GetBalancesResponse"];
-            crypto_deposit?: null | components["schemas"]["GetCryptoDepositInformationResponse"];
-            fiat_deposit?: null | components["schemas"]["GetFiatDepositInformationResponse"];
-            summary_errors?: components["schemas"]["PayWalletSummaryError"][];
-            wallet?: null | components["schemas"]["Wallet"];
-        };
-        PaymentResponse: {
-            protocol: string;
-            response: components["schemas"]["WrappedJsonValue"];
-            wallet_id: string;
-        };
-        /**
-         * @description Opaque-enough client state needed to safely resume a stateful payment
-         *     scheme after a process restart. Every field is authenticated again against
-         *     the next server challenge before it is used.
-         */
-        PaymentSessionSnapshot: {
-            authorized_signer: string;
-            channel_id: string;
-            cumulative_amount: string;
-            deposit_amount: string;
-            /** Format: int64 */
-            expires_at: number;
-            metadata?: unknown;
-            method: string;
-            network: string;
-            /** Format: int64 */
-            nonce: number;
-            protocol: string;
-        };
         PersonalMcpServerInstanceSerialized: {
             agent_id?: string | null;
             authorization?: components["schemas"]["ResourceAuthorizationModes"];
@@ -12101,23 +11641,6 @@ export interface components {
             memory?: null | components["schemas"]["MemorySpec"];
             skill_registry?: null | components["schemas"]["SkillRegistrySpec"];
         };
-        ProvisionPayBrowserResponse: {
-            browser_definition_id: string;
-            enabled_tool_ids: string[];
-        };
-        ProvisionTildePayRequest: {
-            account_type?: string | null;
-            name?: string | null;
-            owner_id?: string | null;
-        };
-        ProvisionTildePayResponse: {
-            browser?: null | components["schemas"]["ProvisionPayBrowserResponse"];
-            customer?: null | components["schemas"]["WalletCustomer"];
-            kyc?: null | components["schemas"]["GetWalletCustomerKycResponse"];
-            mcp?: null | components["schemas"]["SetupPayMcpResponse"];
-            next_step: components["schemas"]["PayOnboardingStep"];
-            wallet?: null | components["schemas"]["Wallet"];
-        };
         /** @description App credentials and metadata created by a provider provisioner. */
         ProvisionedProviderApp: {
             created_resource_server_credential_ids: components["schemas"]["WrappedUuidV4"][];
@@ -12289,12 +11812,6 @@ export interface components {
         RefreshTokenRequest: {
             /** @description The refresh token. If not provided, will be read from cookie. */
             refresh_token?: string | null;
-        };
-        RefreshWalletTransactionHistoryResponse: {
-            inserted_or_updated: number;
-            linked_transactions: number;
-            scanned_chains: string[];
-            wallet_id: string;
         };
         /** @description Request body for registering a ChatKit chat provider. */
         RegisterChatKitChatProviderRequestInner: {
@@ -12669,6 +12186,22 @@ export interface components {
         SelectDebugAuthProfileRequest: {
             profile: string;
         };
+        SelfProfileAvatarResponse: {
+            avatar: components["schemas"]["UserAvatar"];
+        };
+        SelfProfileResponse: {
+            groups: string[];
+            user: components["schemas"]["SelfProfileUser"];
+        };
+        SelfProfileUser: {
+            avatar?: null | components["schemas"]["UserAvatar"];
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            display_name?: string | null;
+            email?: string | null;
+            id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+            user_type: components["schemas"]["UserType"];
+        };
         /** @description Request body for sending a ChatKit workspace message to an agent. */
         SendChatKitWorkspaceMessageRequestInner: {
             attachment_ids?: components["schemas"]["WrappedUuidV4"][];
@@ -12714,18 +12247,15 @@ export interface components {
         SetChatKitResourceStatusRequest: {
             status: components["schemas"]["InboxStatus"];
         };
+        SetOpenBotAvatarRequest: {
+            avatar_id: string;
+        };
         /**
          * @description Body used by the standard `POST /{id}/visibility` and
          *     `POST /{id}/ownership` endpoints.
          */
         SetResourceAccessModeRequest: {
             mode: components["schemas"]["ResourceAccessMode"];
-        };
-        SetupPayMcpResponse: {
-            enabled_tool_ids: string[];
-            mcp_path: string;
-            mcp_server_id: string;
-            tool_group_instance_id: string;
         };
         SignalAction: {
             agent_inbox_id: string;
@@ -13215,6 +12745,29 @@ export interface components {
             organization_id: string;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
         };
+        TeamGroupSummary: {
+            group: components["schemas"]["Group"];
+            /** Format: int64 */
+            member_count: number;
+            members: components["schemas"]["User"][];
+            team_name?: string | null;
+        };
+        TeamGroupSummaryPaginatedResponse: {
+            items: components["schemas"]["TeamGroupSummary"][];
+            next_page_token?: string;
+        };
+        TeamMemberWithUser: {
+            membership: components["schemas"]["UserTeam"];
+            user: components["schemas"]["User"];
+        };
+        TeamMemberWithUserPaginatedResponse: {
+            items: components["schemas"]["TeamMemberWithUser"][];
+            next_page_token?: string;
+        };
+        TeamPaginatedResponse: {
+            items: components["schemas"]["Team"][];
+            next_page_token?: string;
+        };
         /** @description A simple text message with raw text content */
         TextMessage: {
             cached_agent_representation?: null | components["schemas"]["WrappedJsonValue"];
@@ -13554,6 +13107,9 @@ export interface components {
             tool_description?: string | null;
             tool_name: string;
         };
+        UpdateMemberRoleBody: {
+            role: string;
+        };
         UpdateMemoryBankBody: {
             agent_id?: string | null;
             description?: string | null;
@@ -13577,6 +13133,9 @@ export interface components {
             status: components["schemas"]["OrgOidcProviderStatus"];
             token_endpoint: string;
             userinfo_endpoint?: string | null;
+        };
+        UpdateOrganizationMemberRoleBody: {
+            role: string;
         };
         UpdateOrganizationRequest: {
             metadata?: unknown;
@@ -13614,6 +13173,9 @@ export interface components {
             schedule?: string | null;
             title?: string | null;
         };
+        UpdateSelfProfileRequest: {
+            display_name?: string | null;
+        };
         UpdateSignalProviderInstanceRequestInner: {
             configuration: Record<string, never>;
             display_name: string;
@@ -13643,6 +13205,10 @@ export interface components {
             memory_bank_ids?: components["schemas"]["WrappedUuidV4"][] | null;
             name?: string | null;
             skill_ids?: components["schemas"]["WrappedUuidV4"][] | null;
+        };
+        /** @description Request to rename a user-managed team group. */
+        UpdateTeamGroupBody: {
+            name: string;
         };
         UpdateTeamRequest: {
             name: string;
@@ -13696,6 +13262,28 @@ export interface components {
             tags?: string[];
             title: string;
         };
+        /**
+         * @description A user entity in the system.
+         *
+         *     Represents both human users and machine accounts with their associated metadata.
+         */
+        User: {
+            avatar?: null | components["schemas"]["UserAvatar"];
+            /** @description Timestamp when the user was created (UTC) */
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            /** @description Optional human-readable description of the user or its purpose */
+            description?: string | null;
+            /** @description Human-readable profile name shared across product surfaces. */
+            display_name?: string | null;
+            /** @description Email address (required for human users, optional for machines) */
+            email?: string | null;
+            /** @description Unique identifier (UUID format) */
+            id: string;
+            /** @description Timestamp when the user was last modified (UTC) */
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+            /** @description Whether this is a machine or human user */
+            user_type: components["schemas"]["UserType"];
+        };
         /** @description Uploaded profile image metadata for a human or machine user. */
         UserAvatar: {
             bucket: string;
@@ -13734,6 +13322,22 @@ export interface components {
             items: components["schemas"]["UserCredentialSerialized"][];
             next_page_token?: string;
         };
+        UserInvitation: {
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            email: string;
+            groups: string[];
+            id: string;
+            invited_by_user_id: string;
+            last_sent_at: components["schemas"]["WrappedChronoDateTime"];
+            org_id: string;
+            status: string;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        UserInvitationPaginatedResponse: {
+            items: components["schemas"]["UserInvitation"][];
+            next_page_token?: string;
+        };
         UserOrganization: {
             created_at: components["schemas"]["WrappedChronoDateTime"];
             name?: string | null;
@@ -13757,6 +13361,13 @@ export interface components {
             tool_group_source_type_id: string;
             tool_source_type_id: string;
         };
+        /**
+         * @description Type of user identity in the system.
+         *
+         *     Distinguishes between automated services and real users.
+         * @enum {string}
+         */
+        UserType: "machine" | "human";
         ValidatePageTypeDataBody: {
             data: unknown;
             page_type_version_id: components["schemas"]["WrappedUuidV4"];
@@ -13789,130 +13400,6 @@ export interface components {
             user_tool_federation_mode: components["schemas"]["UserToolFederationMode"];
             user_tool_federation_selections: components["schemas"]["UserToolFederationSelection"][];
         }[];
-        WaitForPayBalanceRequest: {
-            asset: string;
-            /** Format: double */
-            minimum_amount: number;
-            /** Format: int64 */
-            poll_interval_secs?: number | null;
-            /** Format: int64 */
-            timeout_secs?: number | null;
-            wallet_id: string;
-        };
-        WaitUntilBalanceRequest: {
-            asset: string;
-            /** Format: double */
-            minimum_amount: number;
-            /** Format: int64 */
-            poll_interval_secs?: number;
-            /** Format: int64 */
-            timeout_secs?: number;
-            wallet_id: string;
-        };
-        WaitUntilBalanceResponse: {
-            /** Format: double */
-            observed_amount: number;
-            satisfied: boolean;
-            wallet_id: string;
-        };
-        Wallet: {
-            cached_compose_balances?: null | components["schemas"]["WrappedJsonValue"];
-            compose_customer_id: string;
-            compose_deposit_chain: string;
-            compose_deposit_currency: string;
-            compose_deposit_wallet_id?: string | null;
-            created_at: components["schemas"]["WrappedChronoDateTime"];
-            id: string;
-            last_compose_sync_at?: null | components["schemas"]["WrappedChronoDateTime"];
-            name: string;
-            org_id: string;
-            owner_id?: string | null;
-            privy_evm_address: string;
-            privy_wallet_id: string;
-            status: string;
-            team_id: string;
-            updated_at: components["schemas"]["WrappedChronoDateTime"];
-            wallet_customer_id: string;
-        };
-        WalletCustomer: {
-            account_type: string;
-            compose_customer_id: string;
-            compose_customer_payload: components["schemas"]["WrappedJsonValue"];
-            compose_kyc_payload?: null | components["schemas"]["WrappedJsonValue"];
-            created_at: components["schemas"]["WrappedChronoDateTime"];
-            id: string;
-            kyc_flow_link?: string | null;
-            kyc_verified: boolean;
-            name: string;
-            org_id: string;
-            owner_id?: string | null;
-            team_id: string;
-            updated_at: components["schemas"]["WrappedChronoDateTime"];
-        };
-        WalletCustomerPaginatedResponse: {
-            items: components["schemas"]["WalletCustomer"][];
-            next_page_token?: string;
-        };
-        WalletMerchant: {
-            created_at: components["schemas"]["WrappedChronoDateTime"];
-            favicon_url?: string | null;
-            icon_fetched_at?: null | components["schemas"]["WrappedChronoDateTime"];
-            icon_media_type?: string | null;
-            icon_sha256?: string | null;
-            id: string;
-            merchant_url: string;
-            name?: string | null;
-            org_id: string;
-            origin: string;
-            raw_metadata: components["schemas"]["WrappedJsonValue"];
-            team_id: string;
-            updated_at: components["schemas"]["WrappedChronoDateTime"];
-        };
-        WalletPaginatedResponse: {
-            items: components["schemas"]["Wallet"][];
-            next_page_token?: string;
-        };
-        WalletTransactionHistoryItem: {
-            amount?: string | null;
-            /** Format: int32 */
-            amount_decimals?: number | null;
-            amount_raw?: string | null;
-            asset?: string | null;
-            chain?: string | null;
-            counterparty_address?: string | null;
-            created_at: components["schemas"]["WrappedChronoDateTime"];
-            direction: string;
-            id: string;
-            item_type: string;
-            merchant?: null | components["schemas"]["WalletMerchant"];
-            merchant_id?: string | null;
-            occurred_at: components["schemas"]["WrappedChronoDateTime"];
-            org_id: string;
-            raw_payload: components["schemas"]["WrappedJsonValue"];
-            scanned_at?: null | components["schemas"]["WrappedChronoDateTime"];
-            status: string;
-            team_id: string;
-            updated_at: components["schemas"]["WrappedChronoDateTime"];
-            wallet_id: string;
-        };
-        WalletTransactionHistoryItemPaginatedResponse: {
-            items: components["schemas"]["WalletTransactionHistoryItem"][];
-            next_page_token?: string;
-        };
-        WalletVirtualAccount: {
-            cached_compose_deposit_info?: null | components["schemas"]["WrappedJsonValue"];
-            compose_customer_id: string;
-            compose_virtual_account_id: string;
-            created_at: components["schemas"]["WrappedChronoDateTime"];
-            currency: string;
-            id: string;
-            org_id: string;
-            status?: string | null;
-            team_id: string;
-            updated_at: components["schemas"]["WrappedChronoDateTime"];
-            wallet_customer_id: string;
-            wallet_id: string;
-        };
         /** @description Safe public metadata for a webhook signing key. Secret material is omitted. */
         WebhookSigningKeyMetadata: {
             created_at: components["schemas"]["WrappedChronoDateTime"];
@@ -15324,6 +14811,37 @@ export interface operations {
             };
         };
     };
+    "accept-invitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptInvitationRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserInvitation"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     get_local_runtime_tunnel_connector: {
         parameters: {
             query?: never;
@@ -15794,6 +15312,8 @@ export interface operations {
             query?: {
                 page_size?: number;
                 next_page_token?: string;
+                /** @description Filter to `human` users or `machine` agents. */
+                user_type?: string;
             };
             header?: never;
             path: {
@@ -15809,7 +15329,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["OrganizationMemberWithUserPaginatedResponse"];
+                };
             };
             /** @description Bad Request */
             400: {
@@ -15908,6 +15430,53 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-organization-member-role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization ID */
+                organization_id: string;
+                /** @description User ID */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOrganizationMemberRoleBody"];
+            };
+        };
+        responses: {
+            /** @description Organization member role updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOrganization"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Membership not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16281,7 +15850,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TeamPaginatedResponse"];
+                };
             };
             /** @description Bad Request */
             400: {
@@ -16344,6 +15915,211 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-self-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelfProfileResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-self-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSelfProfileRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelfProfileResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-self-avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": number[];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "upload-self-avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": number[];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelfProfileAvatarResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "delete-self-avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "set-self-openbot-avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetOpenBotAvatarRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelfProfileAvatarResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-organization-team-groups": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                next_page_token?: string;
+                /** @description Filter to `human` users or `machine` agents. */
+                user_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User-managed groups across organization teams */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamGroupSummaryPaginatedResponse"];
                 };
             };
         };
@@ -16782,11 +16558,368 @@ export interface operations {
             };
         };
     };
+    "list-team-groups": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                next_page_token?: string;
+                /** @description Filter to `human` users or `machine` agents. */
+                user_type?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_entity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User-managed team groups */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamGroupSummaryPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "create-team-group": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_entity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTeamGroupBody"];
+            };
+        };
+        responses: {
+            /** @description Team group created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description Invalid slug or name */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Group slug already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-team-group": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_entity_id: string;
+                /** @description Group slug */
+                group_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Team group */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "delete-team-group": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_entity_id: string;
+                /** @description Group slug */
+                group_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Team group deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-team-group": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_entity_id: string;
+                /** @description Group slug */
+                group_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTeamGroupBody"];
+            };
+        };
+        responses: {
+            /** @description Team group updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-team-group-members": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                next_page_token?: string;
+                /** @description Filter to `human` users or `machine` agents. */
+                user_type?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_entity_id: string;
+                /** @description Group slug */
+                group_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Group members */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMemberWithUserPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "add-team-group-member": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_entity_id: string;
+                /** @description Group slug */
+                group_slug: string;
+                /** @description User ID */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Group member added */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description User is not a team member */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "remove-team-group-member": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_entity_id: string;
+                /** @description Group slug */
+                group_slug: string;
+                /** @description User ID */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Group member removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "list-team-invitations": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                next_page_token?: string;
+            };
+            header?: never;
+            path: {
+                team_entity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserInvitationPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "invite-team-users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_entity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteUsersBody"];
+            };
+        };
+        responses: {
+            /** @description Invitations sent */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteUsersResponse"];
+                };
+            };
+            /** @description Invalid invitation */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Insufficient role assignment permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "revoke-team-invitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_entity_id: string;
+                invitation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "list-team-members": {
         parameters: {
             query?: {
                 page_size?: number;
                 next_page_token?: string;
+                /** @description Filter to `human` users or `machine` agents. */
+                user_type?: string;
             };
             header?: never;
             path: {
@@ -16802,7 +16935,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TeamMemberWithUserPaginatedResponse"];
+                };
             };
             /** @description Bad Request */
             400: {
@@ -16901,6 +17036,53 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-team-member-role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_entity_id: string;
+                /** @description User ID */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMemberRoleBody"];
+            };
+        };
+        responses: {
+            /** @description Team member role updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserTeam"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Membership not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17490,39 +17672,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    "chatkit-get-activity": {
-        parameters: {
-            query?: {
-                agent_page_size?: number;
-                agent_next_page_token?: string | null;
-                session_page_size?: number;
-                message_page_size?: number;
-                queue_page_size?: number;
-                active_session_id?: null | components["schemas"]["WrappedUuidV4"];
-                agent_sort?: string | null;
-                session_sort?: string | null;
-                q?: string | null;
-            };
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description ChatKit activity projection */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChatKitActivityResponse"];
-                };
             };
         };
     };
@@ -18199,67 +18348,6 @@ export interface operations {
             };
         };
     };
-    "chatkit-list-agent-sessions": {
-        parameters: {
-            query?: {
-                page_size?: number;
-                next_page_token?: string | null;
-                session_sort?: string | null;
-                q?: string | null;
-            };
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Agent inbox ID */
-                agent_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description ChatKit agent sessions */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChatKitAgentSessionsActivityResponse"];
-                };
-            };
-        };
-    };
-    "chatkit-send-agent-message": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Agent inbox ID */
-                agent_id: string;
-                /** @description Session ID */
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SendChatKitAgentMessageRequestInner"];
-            };
-        };
-        responses: {
-            /** @description ChatKit messages after sending */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessagePaginatedResponse"];
-                };
-            };
-        };
-    };
     "chatkit-set-agent-status": {
         parameters: {
             query?: never;
@@ -18309,35 +18397,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "chatkit-submit-agent-turn": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Agent inbox ID */
-                agent_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SubmitChatKitAgentTurnRequestInner"];
-            };
-        };
-        responses: {
-            /** @description Submitted ChatKit agent turn */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SubmitChatKitAgentTurnResponse"];
                 };
             };
         };
@@ -19468,52 +19527,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    "chatkit-search": {
-        parameters: {
-            query: {
-                q: string;
-                session_id?: null | components["schemas"]["WrappedUuidV4"];
-                page_size?: number;
-                next_page_token?: string | null;
-            };
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Consolidated ChatKit search results */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChatKitSearchHitPaginatedResponse"];
-                };
-            };
-            /** @description Invalid query or pagination cursor */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Scoped session not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
             };
         };
     };
@@ -20750,88 +20763,6 @@ export interface operations {
             };
         };
     };
-    "chatkit-update-session-title": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Session ID */
-                session_id: components["schemas"]["WrappedUuidV4"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateChatKitSessionTitleRequestInner"];
-            };
-        };
-        responses: {
-            /** @description Updated ChatKit session */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Session"];
-                };
-            };
-        };
-    };
-    "chatkit-get-conversation-activity": {
-        parameters: {
-            query?: {
-                message_page_size?: number;
-                queue_page_size?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Session ID */
-                session_id: components["schemas"]["WrappedUuidV4"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description ChatKit conversation activity snapshot */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChatKitConversationActivity"];
-                };
-            };
-        };
-    };
-    "chatkit-interrupt-session": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Session ID */
-                session_id: components["schemas"]["WrappedUuidV4"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description ChatKit session interruption requested */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InterruptChatKitSessionResponse"];
-                };
-            };
-        };
-    };
     "chatkit-join-session": {
         parameters: {
             query?: never;
@@ -21230,6 +21161,7 @@ export interface operations {
         parameters: {
             query?: {
                 agent_page_size?: number;
+                agent_next_page_token?: string | null;
                 session_page_size?: number;
                 message_page_size?: number;
                 queue_page_size?: number;
@@ -21449,6 +21381,9 @@ export interface operations {
                 agent_page_size?: number;
                 agent_next_page_token?: string | null;
                 session_page_size?: number;
+                message_page_size?: number;
+                queue_page_size?: number;
+                active_session_id?: null | components["schemas"]["WrappedUuidV4"];
                 agent_sort?: string | null;
                 session_sort?: string | null;
                 q?: string | null;
@@ -29715,164 +29650,6 @@ export interface operations {
             };
         };
     };
-    "tilde-pay-provision": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProvisionTildePayRequest"];
-            };
-        };
-        responses: {
-            /** @description Fully reconciled Tilde Pay onboarding state */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProvisionTildePayResponse"];
-                };
-            };
-        };
-    };
-    "tilde-pay-payment-mpp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PayPaymentRequest"];
-            };
-        };
-        responses: {
-            /** @description Tilde Pay payment response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaymentResponse"];
-                };
-            };
-        };
-    };
-    "tilde-pay-payment-x402": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PayPaymentRequest"];
-            };
-        };
-        responses: {
-            /** @description Tilde Pay payment response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaymentResponse"];
-                };
-            };
-        };
-    };
-    "tilde-pay-wallet-summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Tilde Pay wallet summary */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PayWalletSummaryResponse"];
-                };
-            };
-        };
-    };
-    "tilde-pay-wallet-create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreatePayWalletRequest"];
-            };
-        };
-        responses: {
-            /** @description Tilde Pay wallet summary */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PayWalletSummaryResponse"];
-                };
-            };
-        };
-    };
-    "tilde-pay-wallet-wait-until-balance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WaitForPayBalanceRequest"];
-            };
-        };
-        responses: {
-            /** @description Tilde Pay balance wait result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WaitUntilBalanceResponse"];
-                };
-            };
-        };
-    };
     "list-trusted-runtimes": {
         parameters: {
             query?: {
@@ -30059,505 +29836,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "wallet-list": {
-        parameters: {
-            query?: {
-                page_size?: number;
-                owner_id?: string | null;
-            };
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List wallets */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WalletPaginatedResponse"];
-                };
-            };
-        };
-    };
-    "wallet-create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateWalletBody"];
-            };
-        };
-        responses: {
-            /** @description Created wallet */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Wallet"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Upstream provider error */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "wallet-customer-list": {
-        parameters: {
-            query?: {
-                page_size?: number;
-                owner_id?: string | null;
-            };
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List wallet customers */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WalletCustomerPaginatedResponse"];
-                };
-            };
-        };
-    };
-    "wallet-customer-create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateWalletCustomerBody"];
-            };
-        };
-        responses: {
-            /** @description Created wallet customer */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WalletCustomer"];
-                };
-            };
-        };
-    };
-    "wallet-customer-get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Wallet customer ID */
-                customer_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Wallet customer */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WalletCustomer"];
-                };
-            };
-        };
-    };
-    "wallet-customer-kyc-get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Wallet customer ID */
-                customer_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Wallet customer KYC details */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetWalletCustomerKycResponse"];
-                };
-            };
-        };
-    };
-    "wallet-get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Wallet ID */
-                wallet_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Wallet */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Wallet"];
-                };
-            };
-        };
-    };
-    "wallet-get-balances": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Wallet ID */
-                wallet_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Wallet balances */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetBalancesResponse"];
-                };
-            };
-        };
-    };
-    "wallet-get-crypto-deposit-information": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Wallet ID */
-                wallet_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Wallet crypto deposit information */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetCryptoDepositInformationResponse"];
-                };
-            };
-        };
-    };
-    "wallet-get-fiat-deposit-information": {
-        parameters: {
-            query?: {
-                currency?: string | null;
-            };
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Wallet ID */
-                wallet_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Wallet fiat deposit information */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetFiatDepositInformationResponse"];
-                };
-            };
-        };
-    };
-    "wallet-make-mpp-payment": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Wallet ID */
-                wallet_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MakeMppPaymentRequest"];
-            };
-        };
-        responses: {
-            /** @description Payment response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaymentResponse"];
-                };
-            };
-        };
-    };
-    "wallet-make-x402-payment": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Wallet ID */
-                wallet_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MakeX402PaymentRequest"];
-            };
-        };
-        responses: {
-            /** @description Payment response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaymentResponse"];
-                };
-            };
-        };
-    };
-    "wallet-transaction-history-list": {
-        parameters: {
-            query?: {
-                page_size?: number;
-                next_page_token?: string | null;
-            };
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Wallet ID */
-                wallet_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Wallet transaction history */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WalletTransactionHistoryItemPaginatedResponse"];
-                };
-            };
-        };
-    };
-    "wallet-transaction-history-refresh": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Wallet ID */
-                wallet_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Wallet transaction history refresh result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RefreshWalletTransactionHistoryResponse"];
-                };
-            };
-        };
-    };
-    "wallet-virtual-account-create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Wallet ID */
-                wallet_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateWalletVirtualAccountBody"];
-            };
-        };
-        responses: {
-            /** @description Created wallet virtual account */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WalletVirtualAccount"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Upstream provider error */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "wallet-wait-until-balance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Team ID */
-                team_id: string;
-                /** @description Wallet ID */
-                wallet_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WaitUntilBalanceRequest"];
-            };
-        };
-        responses: {
-            /** @description Wait result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WaitUntilBalanceResponse"];
                 };
             };
         };

@@ -38,10 +38,9 @@ The observer retains the last durable revision and resumes from it after a disco
 Agent, session, read-state, message, queue, and turn events reduce directly from their discriminated
 payloads; no recursive payload inspection or event-name substring matching is retained.
 
-Initial load consumes `GET /chatkit/activity`, while conversation selection and turn submission
-consume server-authored aggregate responses. Web, Electron, and Expo therefore reconcile identical
-authoritative snapshots without issuing per-session fan-out reads after each user action or realtime
-event.
+Initial load, conversation selection, and turn submission consume server-authored aggregate
+responses. Web, Electron, and Expo therefore reconcile identical authoritative snapshots without
+issuing per-session fan-out reads after each user action or realtime event.
 
 `searchChatKit` searches session titles, associated bots, and messages across the workspace, or
 messages within one session. Runtime search actions discard stale responses and open results using

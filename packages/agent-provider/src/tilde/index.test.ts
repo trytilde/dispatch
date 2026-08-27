@@ -102,7 +102,7 @@ describe("TildeAgentProvider", () => {
             items: channelCreated
               ? [
                   {
-                    id: "openbot-mission-control-scout",
+                    id: "openbot-chatkit-workspace-scout",
                     configuration: { default_agent_inbox_id: "scout" },
                   },
                 ]
@@ -110,7 +110,7 @@ describe("TildeAgentProvider", () => {
           });
         if (request.method === "POST" && path.endsWith("/channels/vercel-ui")) {
           channelCreated = true;
-          return Response.json({ id: "openbot-mission-control-scout", status: "enabled" });
+          return Response.json({ id: "openbot-chatkit-workspace-scout", status: "enabled" });
         }
         throw new Error(`Unexpected request: ${request.method} ${path}`);
       }),
@@ -163,7 +163,7 @@ describe("TildeAgentProvider", () => {
           return Response.json({
             items: [
               {
-                id: "openbot-mission-control-scout",
+                id: "openbot-chatkit-workspace-scout",
                 configuration: { default_agent_inbox_id: "scout" },
               },
             ],
@@ -217,28 +217,17 @@ async function agentContext(slug: string): Promise<DeploymentContext> {
 
 function operation(status: string, outputsAvailable: boolean, mcpId = "openbot-scout") {
   return {
-    id: "scout",
-    provider_id: "chatkit.http-vercel-ai-sdk",
-    display_name: "Scout",
-    configuration: {
-      endpoint_url: "http://127.0.0.1:4100/api/agents/scout",
-      local_running_endpoint: true,
-      streaming: true,
-      timeout_ms: 300_000,
-      concurrency_policy: concurrencyPolicy,
-    },
-    status: "enabled",
-  };
-}
-
-function bundleResponse(overrides: Record<string, unknown> = {}) {
-  return {
-    agent: agent(),
-    api_key: "agent-api-key",
-    webhook_signing_key: "signing-key",
-    channel: { id: "openbot-chatkit-workspace-scout" },
-    skill_registry: { id: "registry-one" },
-    mcp_server: { id: "openbot-scout" },
-    ...overrides,
+    operation_id: "operation-one",
+    org_id: "org-one",
+    team_id: "team-one",
+    agent_id: "scout",
+    owner_user_id: "human-owner",
+    generation: 1,
+    status,
+    attempts: 1,
+    outputs_available: outputsAvailable,
+    resources: [{ kind: "mcp_server", key: "default", id: mcpId, created_by_operation: true }],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 }

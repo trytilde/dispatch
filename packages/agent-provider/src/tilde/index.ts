@@ -87,7 +87,7 @@ export class TildeAgentProvider implements AgentProvider {
       summary: `Reconcile authored agent ${agent.id} with Tilde`,
       steps: [
         "Create missing ChatKit agents",
-        "Create the shared OpenBot ChatKit workspace chat channel when missing",
+        "Create the shared OpenBot ChatKit workspace channel when missing",
         "Reconcile Vercel AI SDK endpoint URLs and enabled status",
         "Upload the agent's canonical machine-user avatar",
         "Synchronize authored skills and exact registry membership",
@@ -100,104 +100,6 @@ export class TildeAgentProvider implements AgentProvider {
   }
 
   async #deploy(context: DeploymentContext): Promise<void> {
-    if (context.environment.OPENBOT_USE_LEGACY_TILDE_RECONCILIATION === "true")
-      return await this.#deployLegacy(context);
-    const { id: slug } = requireAgent(context);
-    const origin = context.agentServiceOrigin ?? context.environment.AGENT_SERVICE_ORIGIN;
-    if (!origin)
-      throw new AgentProviderError(
-        "invalid_configuration",
-        `The agent service origin is unavailable for ${slug}`,
-      );
-    const prefix = `AGENT_${slug.replaceAll("-", "_").toUpperCase()}`;
-    const displayName = context.environment[`${prefix}_NAME`]?.trim() || slug;
-    const channelId =
-      context.agentKind === "primary"
-        ? chatKitRealtimeChannelId
-        : `${chatKitRealtimeChannelId}-${slug}`;
-    const mcpServerId = context.environment[`${prefix}_MCP_SERVER_ID`]?.trim() || `openbot-${slug}`;
-    const endpointCredentialsAvailable = Boolean(
-      context.environment[`${prefix}_API_KEY`]?.trim() &&
-      context.environment[`${prefix}_WEBHOOK_SIGNING_KEY`]?.trim(),
-    );
-    const skills = await desiredOpenBotAgentSkills(context, true);
-    const toolGroupInstanceIds = [
-      context.environment.GIT_GITHUB_TOOL_GROUP_ID,
-      context.environment[`${prefix}_VERCEL_MCP_SERVER_ID`],
-    ].filter((value): value is string => Boolean(value?.trim()));
-    const payload = await this.#generated("reconcile OpenBot agent bundle", (signal) =>
-      reconcileOpenbotAgentBundle({
-        client: this.#api,
-        path: { team_id: this.#teamId, agent_id: slug },
-        body: {
-          display_name: displayName,
-          endpoint_url: new URL(`/api/agents/${slug}`, `${origin}/`).toString(),
-          local_running_endpoint: context.devMode,
-          endpoint_credentials_available: endpointCredentialsAvailable,
-          channel_id: channelId,
-          channel_display_name:
-            context.agentKind === "primary"
-              ? "OpenBot ChatKit workspace"
-              : `OpenBot ChatKit workspace: ${slug}`,
-          skill_registry_name: `OpenBot ${slug}`,
-          skill_registry_description: `Skills available to the ${slug} OpenBot agent.`,
-          skills: skills.map((skill) => ({
-            name: skill.name,
-            description: skill.description,
-            content: skill.content,
-            source_path: skill.sourcePath,
-          })),
-          mcp_server_id: mcpServerId,
-          mcp_server_name: `OpenBot ${slug}`,
-          tool_group_instance_ids: toolGroupInstanceIds,
-        },
-        signal,
-      }),
-    );
-    const agent = jsonRecord(payload.agent as unknown as JsonRecord);
-    const registry = jsonRecord(payload.skill_registry as unknown as JsonRecord);
-    const server = jsonRecord(payload.mcp_server as unknown as JsonRecord);
-    await persistEnvironment(
-      context,
-      `${prefix}_AGENT_ID`,
-      requiredString(agent?.id, "agent identifier"),
-      `Tilde agent ID for ${slug}.`,
-    );
-    await persistEnvironment(
-      context,
-      `${prefix}_PROVIDER_ID`,
-      optionalString(agent?.provider_id) ?? "chatkit.http-vercel-ai-sdk",
-      `Tilde agent provider ID for ${slug}.`,
-    );
-    await persistEnvironment(
-      context,
-      `${prefix}_SKILL_REGISTRY_ID`,
-      requiredString(registry?.id, "skill registry identifier"),
-      `Tilde skill registry ID for ${slug}.`,
-    );
-    await persistEnvironment(
-      context,
-      `${prefix}_MCP_SERVER_ID`,
-      requiredString(server?.id, "MCP server identifier"),
-      `Tilde MCP server ID for ${slug}.`,
-    );
-    if (typeof payload.api_key === "string" && payload.api_key)
-      await persistSecret(
-        context,
-        `${prefix}_API_KEY`,
-        payload.api_key,
-        `Tilde endpoint API key for ${slug}.`,
-      );
-    if (typeof payload.webhook_signing_key === "string" && payload.webhook_signing_key)
-      await persistSecret(
-        context,
-        `${prefix}_WEBHOOK_SIGNING_KEY`,
-        payload.webhook_signing_key,
-        `Tilde webhook signing key for ${slug}.`,
-      );
-  }
-
-  async #deployLegacy(context: DeploymentContext): Promise<void> {
     const { id: slug } = requireAgent(context);
     const origin = context.agentServiceOrigin ?? context.environment.AGENT_SERVICE_ORIGIN;
     if (!origin)
@@ -341,10 +243,12 @@ export class TildeAgentProvider implements AgentProvider {
       `Tilde MCP server ID for ${slug}.`,
     );
     await Promise.all([
-      this.#ensureChatKitWorkspaceChannel(slug, agent.id, context.agentKind ?? "subagent"),
-      this.#persistAgentRegistration(context, slug, prefix, agent, createdSecrets),
-      this.#skills.deploy(context),
-      this.#tools.deploy(context),
+      this.#ensureChatKitWorkspaceChannel(slug, slug, context.agentKind ?? "subagent"),
+      this.#tools.deployExternalResources(context),
+      unsetEnvironment(context, `${prefix}_AGENT_ID`),
+      unsetEnvironment(context, `${prefix}_PROVIDER_ID`),
+      unsetEnvironment(context, `${prefix}_SKILL_REGISTRY_ID`),
+      unsetEnvironment(context, `${prefix}_TILDE_CONTROL_PLANE_TOOL_GROUP_ID`),
     ]);
   }
 

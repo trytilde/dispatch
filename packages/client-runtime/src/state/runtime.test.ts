@@ -83,8 +83,8 @@ describe("OpenBot runtime", () => {
           agent: { id: "reviewer", name: "Reviewer" },
         } as const;
       },
-      getActivity: async () => ({
-        activity: {
+      getBootstrap: async () => ({
+        sidebar: {
           items: ready
             ? [
                 {
@@ -97,8 +97,6 @@ describe("OpenBot runtime", () => {
               ]
             : [],
         },
-        active_session_id: null,
-        active_conversation: null,
       }),
     };
     const runtime = createOpenBotRuntime({
@@ -139,7 +137,7 @@ describe("OpenBot runtime", () => {
           });
         if (url.startsWith("/api/chat/workspace/bootstrap"))
           return Response.json({
-            activity: {
+            sidebar: {
               items: [
                 {
                   id: "agent-one",
@@ -150,8 +148,6 @@ describe("OpenBot runtime", () => {
                 },
               ],
             },
-            active_session_id: null,
-            active_conversation: null,
           });
         throw new Error(`Unexpected request: ${url}`);
       },
@@ -198,8 +194,8 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getActivity: async () => ({
-        activity: {
+      getBootstrap: async () => ({
+        sidebar: {
           items: [
             {
               id: "agent-one",
@@ -226,8 +222,6 @@ describe("OpenBot runtime", () => {
             },
           ],
         },
-        active_session_id: null,
-        active_conversation: null,
       }),
       getAgentSessions,
       getConversationSnapshot,
@@ -271,8 +265,8 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getActivity: async () => ({
-        activity: {
+      getBootstrap: async () => ({
+        sidebar: {
           items: [
             {
               id: "agent-one",
@@ -283,8 +277,6 @@ describe("OpenBot runtime", () => {
             },
           ],
         },
-        active_session_id: null,
-        active_conversation: null,
       }),
       createSession,
       getMessages: async () => ({ items: [], next_page_token: null }),
@@ -325,8 +317,8 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getActivity: async () => ({
-        activity: {
+      getBootstrap: async () => ({
+        sidebar: {
           items: [
             {
               id: "agent-one",
@@ -339,8 +331,6 @@ describe("OpenBot runtime", () => {
             },
           ],
         },
-        active_session_id: null,
-        active_conversation: null,
       }),
       getMessages,
       observeChatKitRealtime,
@@ -359,8 +349,8 @@ describe("OpenBot runtime", () => {
     runtime.dispose();
   });
 
-  it("captures initial activity failures without leaking an unhandled rejection", async () => {
-    let activityRequests = 0;
+  it("captures initial sidebar failures without leaking an unhandled rejection", async () => {
+    let sidebarRequests = 0;
     const client = createOpenBotClient({
       fetch: async (input) => {
         const url =
@@ -382,7 +372,7 @@ describe("OpenBot runtime", () => {
     await expect(runtime.actions.initialize()).resolves.toBeUndefined();
     expect(runtime.store.getState().sidebar.error).toBe("Chat unavailable");
     expect(runtime.store.getState().sidebar.loading).toBe(false);
-    expect(activityRequests).toBe(1);
+    expect(sidebarRequests).toBe(1);
     runtime.dispose();
   });
 
@@ -399,13 +389,9 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getActivity: async () => {
-        activityRequests += 1;
-        return {
-          activity: { items: [] },
-          active_session_id: null,
-          active_conversation: null,
-        };
+      getBootstrap: async () => {
+        bootstrapRequests += 1;
+        return { sidebar: { items: [] } };
       },
       observeChatKitRealtime: async (signal, _onEvent, onReady) => {
         await onReady();
@@ -421,7 +407,7 @@ describe("OpenBot runtime", () => {
     });
 
     await runtime.actions.initialize();
-    await vi.waitFor(() => expect(activityRequests).toBe(2));
+    await vi.waitFor(() => expect(bootstrapRequests).toBe(2));
     runtime.dispose();
   });
 
@@ -439,8 +425,8 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getActivity: async () => ({
-        activity: {
+      getBootstrap: async () => ({
+        sidebar: {
           items: [
             {
               id: "agent-one",
@@ -562,8 +548,8 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getActivity: async () => ({
-        activity: {
+      getBootstrap: async () => ({
+        sidebar: {
           items: [
             {
               id: "agent-one",
@@ -582,8 +568,6 @@ describe("OpenBot runtime", () => {
             },
           ],
         },
-        active_session_id: null,
-        active_conversation: null,
       }),
       getMessages: async () => ({ items: [], next_page_token: null }),
       getQueuedTurns: async () => ({ items: [], next_page_token: null }),
@@ -657,8 +641,8 @@ describe("OpenBot runtime", () => {
         authenticated: true,
         user: { subject: "owner-one", name: "Owner One" },
       }),
-      getActivity: async () => ({
-        activity: {
+      getBootstrap: async () => ({
+        sidebar: {
           items: [
             {
               id: "agent-one",

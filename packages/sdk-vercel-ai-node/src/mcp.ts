@@ -44,7 +44,22 @@ export type ChatKitSessionPermissions = {
   };
 };
 
-/** Scopes an MCP connection to one ChatKit session. */
+/**
+ * Scopes an MCP connection to one ChatKit session.
+ *
+ * A scoped connection is offered extra tools by Tilde:
+ *
+ * - `chatkit_list_agents` — agents this agent may delegate to
+ * - `chatkit_delegate` — ask one of them to do something, in a private child
+ *   conversation off the current session
+ * - `chatkit_wait_for_response` — wait for that reply
+ * - `chatkit_list_participants` — who is in the current conversation
+ *
+ * None of them take a session id: the session comes from this connection, so a
+ * conversation the caller was not authorized for cannot be addressed. Reaching
+ * a new agent needs no setup — it appears in `chatkit_list_agents` as soon as
+ * this agent has visibility on it.
+ */
 export type ChatKitConnectionOptions = {
   /**
    * Session this connection acts inside.

@@ -634,6 +634,9 @@ export type ChatKitMessageIdentity = {
 export type ChatKitParticipant = {
     inbox: Inbox;
     instance: InboxInstance;
+    joined_at: WrappedChronoDateTime;
+    membership_source: ChatKitParticipantMembershipSource;
+    participant_handle: string;
     participant_type: ChatKitParticipantType;
 };
 
@@ -656,6 +659,15 @@ export type ChatKitParticipantInput = {
      */
     tilde_user_id?: string | null;
 };
+
+/**
+ * How a durable conversation participant was admitted to a session.
+ */
+export enum ChatKitParticipantMembershipSource {
+    EXPLICIT = 'explicit',
+    PROVIDER = 'provider',
+    RECIPIENT = 'recipient'
+}
 
 /**
  * ChatKit participant kind for SaaS-facing session APIs.
@@ -2457,6 +2469,26 @@ export type InvokeResult = (WrappedJsonValue & {
 }) | (InvokeError & {
     type: 'error';
 });
+
+/**
+ * HTTP body for one session-bound provider action.
+ */
+export type InvokeSessionProviderToolBody = {
+    agent_inbox_instance_id: string;
+    input: WrappedJsonValue;
+    target_inbox_instance_id: string;
+    tool_call_id: string;
+    trigger_message_id: WrappedUuidV4;
+};
+
+/**
+ * Result from a provider-specific session action.
+ */
+export type InvokeSessionProviderToolResponse = {
+    provider_id: string;
+    result: WrappedJsonValue;
+    tool_name: string;
+};
 
 export type InvokeToolInstanceParamsInner = {
     /**
@@ -4272,6 +4304,38 @@ export type SelfProfileUser = {
 export type SendChatKitWorkspaceMessageRequestInner = {
     attachment_ids?: Array<WrappedUuidV4>;
     text: string;
+};
+
+/**
+ * HTTP body for a session-bound visible message.
+ */
+export type SendSessionMessageBody = SendSessionMessageInput & {
+    agent_inbox_instance_id: string;
+    target_inbox_instance_id: string;
+    tool_call_id: string;
+    trigger_message_id: WrappedUuidV4;
+};
+
+/**
+ * Model-visible parameters for the session-bound communication tool.
+ */
+export type SendSessionMessageInput = {
+    bcc?: Array<string> | null;
+    cc?: Array<string> | null;
+    content: string;
+    html?: string | null;
+    reply_all?: boolean | null;
+    subject?: string | null;
+    to?: Array<string> | null;
+};
+
+/**
+ * Canonical result returned by `sendMessage` after provider delivery.
+ */
+export type SendSessionMessageResponse = {
+    delivery_status: string;
+    message: Message;
+    provider_id: string;
 };
 
 /**
@@ -11829,6 +11893,66 @@ export type ChatkitRemoveSessionParticipantResponses = {
 };
 
 export type ChatkitRemoveSessionParticipantResponse = ChatkitRemoveSessionParticipantResponses[keyof ChatkitRemoveSessionParticipantResponses];
+
+export type ChatkitSendSessionMessageData = {
+    body: SendSessionMessageBody;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        /**
+         * Session ID
+         */
+        session_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/sessions/{session_id}/tools/sendMessage';
+};
+
+export type ChatkitSendSessionMessageErrors = {
+    400: Error;
+    404: Error;
+    500: Error;
+};
+
+export type ChatkitSendSessionMessageError = ChatkitSendSessionMessageErrors[keyof ChatkitSendSessionMessageErrors];
+
+export type ChatkitSendSessionMessageResponses = {
+    /**
+     * Provider message delivered
+     */
+    200: SendSessionMessageResponse;
+};
+
+export type ChatkitSendSessionMessageResponse = ChatkitSendSessionMessageResponses[keyof ChatkitSendSessionMessageResponses];
+
+export type ChatkitInvokeSessionProviderToolData = {
+    body: InvokeSessionProviderToolBody;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        session_id: WrappedUuidV4;
+        tool_name: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/sessions/{session_id}/tools/{tool_name}';
+};
+
+export type ChatkitInvokeSessionProviderToolErrors = {
+    400: Error;
+    404: Error;
+};
+
+export type ChatkitInvokeSessionProviderToolError = ChatkitInvokeSessionProviderToolErrors[keyof ChatkitInvokeSessionProviderToolErrors];
+
+export type ChatkitInvokeSessionProviderToolResponses = {
+    200: InvokeSessionProviderToolResponse;
+};
+
+export type ChatkitInvokeSessionProviderToolResponse = ChatkitInvokeSessionProviderToolResponses[keyof ChatkitInvokeSessionProviderToolResponses];
 
 export type ChatkitWorkspaceAgentSessionsData = {
     body?: never;

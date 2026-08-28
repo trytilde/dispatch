@@ -7,6 +7,10 @@ import { MessagesClient } from "./messages";
 const REGISTER_HTTP_AGENT_PATH = "/api/v1/team/{team_id}/chatkit/agents/http-vercel-ai-sdk";
 const REGISTER_VERCEL_UI_CHANNEL_PATH = "/api/v1/team/{team_id}/chatkit/channels/vercel-ui";
 const MESSAGE_HISTORY_PATH = "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/messages";
+const SESSION_SEND_MESSAGE_PATH =
+  "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/tools/sendMessage";
+const SESSION_PROVIDER_TOOL_PATH =
+  "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/tools/{tool_name}";
 const CONVERTED_MESSAGE_CACHE_PATH = "/api/v1/team/{team_id}/chatkit/messages/converted-cache";
 const HYDRATE_CONVERTED_MESSAGE_CACHE_PATH =
   "/api/v1/team/{team_id}/chatkit/messages/converted-cache/hydrate";
@@ -72,6 +76,43 @@ export type ReportToolExecutionInput = {
   summary?: string;
   startedAt?: string;
   completedAt?: string;
+};
+
+export type SendSessionMessageInput = {
+  sessionId: string;
+  agentInboxInstanceId: string;
+  targetInboxInstanceId: string;
+  triggerMessageId: string;
+  toolCallId: string;
+  content: string;
+  to?: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject?: string;
+  html?: string;
+  replyAll?: boolean;
+};
+
+export type SendSessionMessageResult = {
+  message: JsonObject;
+  providerId: string;
+  deliveryStatus: string;
+};
+
+export type InvokeSessionProviderToolInput = {
+  sessionId: string;
+  toolName: string;
+  agentInboxInstanceId: string;
+  targetInboxInstanceId: string;
+  triggerMessageId: string;
+  toolCallId: string;
+  parameters?: JsonObject;
+};
+
+export type InvokeSessionProviderToolResult = {
+  providerId: string;
+  toolName: string;
+  result: JsonValue;
 };
 
 export class ChatKitClient {
@@ -213,6 +254,65 @@ export class ChatKitClient {
       }
       throw error;
     }
+  }
+
+  async sendSessionMessage(input: SendSessionMessageInput): Promise<SendSessionMessageResult> {
+    const raw = await requestJson<{
+      message: JsonObject;
+      provider_id: string;
+      delivery_status: string;
+    }>(this.#config, {
+      method: "POST",
+      path: pathWithParams(teamPath(this.#config, SESSION_SEND_MESSAGE_PATH), {
+        session_id: input.sessionId,
+      }),
+      body: {
+        agent_inbox_instance_id: input.agentInboxInstanceId,
+        target_inbox_instance_id: input.targetInboxInstanceId,
+        trigger_message_id: input.triggerMessageId,
+        tool_call_id: input.toolCallId,
+        content: input.content,
+        to: input.to,
+        cc: input.cc,
+        bcc: input.bcc,
+        subject: input.subject,
+        html: input.html,
+        reply_all: input.replyAll,
+      },
+    });
+    return {
+      message: raw.message,
+      providerId: raw.provider_id,
+      deliveryStatus: raw.delivery_status,
+    };
+  }
+
+  async invokeSessionProviderTool(
+    input: InvokeSessionProviderToolInput,
+  ): Promise<InvokeSessionProviderToolResult> {
+    const raw = await requestJson<{
+      provider_id: string;
+      tool_name: string;
+      result: JsonValue;
+    }>(this.#config, {
+      method: "POST",
+      path: pathWithParams(teamPath(this.#config, SESSION_PROVIDER_TOOL_PATH), {
+        session_id: input.sessionId,
+        tool_name: input.toolName,
+      }),
+      body: {
+        agent_inbox_instance_id: input.agentInboxInstanceId,
+        target_inbox_instance_id: input.targetInboxInstanceId,
+        trigger_message_id: input.triggerMessageId,
+        tool_call_id: input.toolCallId,
+        input: input.parameters ?? {},
+      },
+    });
+    return {
+      providerId: raw.provider_id,
+      toolName: raw.tool_name,
+      result: raw.result,
+    };
   }
 
   async cacheConvertedMessages(input: {

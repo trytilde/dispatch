@@ -69,6 +69,8 @@ export type ChatKitConnectionOptions = {
    */
   sessionId: string;
   permissions?: ChatKitSessionPermissions;
+  /** Session-bound tools created from trusted ChatKit endpoint context. */
+  boundTools?: ToolSet;
 };
 
 export type CreateMCPClientOptions<TTools extends ToolSet = ToolSet> = Omit<
@@ -140,6 +142,7 @@ export async function createMCPClient<TTools extends ToolSet = ToolSet>(
     throw new TypeError("createMCPClient requires client config apiKey");
   }
   const localToolSet = options.tools ?? ({} as TTools);
+  const boundToolSet = options.chatkit?.boundTools ?? {};
   const hasLocalTools = Object.keys(localToolSet).length > 0;
   const agentId = options.agentId?.trim();
   if (hasLocalTools && !agentId) {
@@ -163,19 +166,21 @@ export async function createMCPClient<TTools extends ToolSet = ToolSet>(
     },
   });
 
-  const localTools = toLocalTools(
+  const authoredLocalTools = toLocalTools(
     localToolSet,
     options.client,
     agentId ?? "",
     options.serverId,
     options.chatkit?.sessionId,
   );
+  const boundLocalTools = toUnobservedLocalTools(boundToolSet);
+  const localTools = [...boundLocalTools, ...authoredLocalTools];
   try {
     if (agentId) {
       await options.client.chatkit.registerAgentTools({
         agentId,
         tools: [
-          ...localTools.map((tool) => ({
+          ...authoredLocalTools.map((tool) => ({
             toolId: localToolId(options.serverId, tool.name),
             wireName: tool.name,
             displayName: tool.name,
@@ -240,6 +245,33 @@ export async function createMCPClient<TTools extends ToolSet = ToolSet>(
     await mcp.close();
   };
   return { mcp, closeMcp };
+}
+
+function toUnobservedLocalTools(tools: ToolSet): LocalMcpTool[] {
+  return Object.entries(tools).map(([name, value]) => {
+    const tool = value as unknown as ExecutableToolLike;
+    if (typeof tool.execute !== "function") {
+      throw new TypeError(`Session-bound MCP tool requires execute: ${name}`);
+    }
+    const execute = tool.execute;
+    const localTool: LocalMcpTool = {
+      name,
+      description: tool.description ?? name,
+      inputSchema: jsonSchemaObject(tool.inputSchema),
+      async execute(input) {
+        return (await execute(input, {
+          toolCallId: `${name}-${randomUUID()}`,
+          messages: [],
+          abortSignal: new AbortController().signal,
+          context: undefined,
+        })) as ToolResult;
+      },
+    };
+    if (tool.outputSchema !== undefined) {
+      localTool.outputSchema = jsonSchemaObject(tool.outputSchema);
+    }
+    return localTool;
+  });
 }
 
 function toLocalTools(

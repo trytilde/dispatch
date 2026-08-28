@@ -13625,6 +13625,204 @@
         ]
       }
     },
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/tools/sendMessage": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Send a session-bound provider message",
+        "description": "Invokes the session provider's sendMessage capability with server-validated participant routing and persists the canonical ChatKit message.",
+        "operationId": "chatkit-send-session-message",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "description": "Session ID",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendSessionMessageBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Provider message delivered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendSessionMessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/tools/{tool_name}": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Invoke a session-bound provider tool",
+        "description": "Invokes a provider action with server-bound session and message routing.",
+        "operationId": "chatkit-invoke-session-provider-tool",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "tool_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvokeSessionProviderToolBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvokeSessionProviderToolResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
     "/api/v1/team/{team_id}/chatkit/workspace/agents/{agent_id}/sessions": {
       "get": {
         "tags": [
@@ -43231,6 +43429,9 @@
         "description": "Public ChatKit participant view.",
         "required": [
           "participant_type",
+          "participant_handle",
+          "membership_source",
+          "joined_at",
           "instance",
           "inbox"
         ],
@@ -43240,6 +43441,15 @@
           },
           "instance": {
             "$ref": "#/components/schemas/InboxInstance"
+          },
+          "joined_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "membership_source": {
+            "$ref": "#/components/schemas/ChatKitParticipantMembershipSource"
+          },
+          "participant_handle": {
+            "type": "string"
           },
           "participant_type": {
             "$ref": "#/components/schemas/ChatKitParticipantType"
@@ -43290,6 +43500,15 @@
             "description": "Tilde user this participant speaks for, when one is known.\n\nSet when a human is added through the API by a signed-in user. Left\n`None` for an inbound external participant, whose address is a claim\nrather than a credential and therefore confers no authority."
           }
         }
+      },
+      "ChatKitParticipantMembershipSource": {
+        "type": "string",
+        "description": "How a durable conversation participant was admitted to a session.",
+        "enum": [
+          "explicit",
+          "provider",
+          "recipient"
+        ]
       },
       "ChatKitParticipantType": {
         "type": "string",
@@ -49071,6 +49290,54 @@
             ]
           }
         ]
+      },
+      "InvokeSessionProviderToolBody": {
+        "type": "object",
+        "description": "HTTP body for one session-bound provider action.",
+        "required": [
+          "agent_inbox_instance_id",
+          "target_inbox_instance_id",
+          "tool_call_id",
+          "trigger_message_id",
+          "input"
+        ],
+        "properties": {
+          "agent_inbox_instance_id": {
+            "type": "string"
+          },
+          "input": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "target_inbox_instance_id": {
+            "type": "string"
+          },
+          "tool_call_id": {
+            "type": "string"
+          },
+          "trigger_message_id": {
+            "$ref": "#/components/schemas/WrappedUuidV4"
+          }
+        }
+      },
+      "InvokeSessionProviderToolResponse": {
+        "type": "object",
+        "description": "Result from a provider-specific session action.",
+        "required": [
+          "provider_id",
+          "tool_name",
+          "result"
+        ],
+        "properties": {
+          "provider_id": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "tool_name": {
+            "type": "string"
+          }
+        }
       },
       "InvokeToolInstanceParamsInner": {
         "type": "object",
@@ -55166,6 +55433,114 @@
             }
           },
           "text": {
+            "type": "string"
+          }
+        }
+      },
+      "SendSessionMessageBody": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendSessionMessageInput"
+          },
+          {
+            "type": "object",
+            "required": [
+              "agent_inbox_instance_id",
+              "target_inbox_instance_id",
+              "tool_call_id",
+              "trigger_message_id"
+            ],
+            "properties": {
+              "agent_inbox_instance_id": {
+                "type": "string"
+              },
+              "target_inbox_instance_id": {
+                "type": "string"
+              },
+              "tool_call_id": {
+                "type": "string"
+              },
+              "trigger_message_id": {
+                "$ref": "#/components/schemas/WrappedUuidV4"
+              }
+            }
+          }
+        ],
+        "description": "HTTP body for a session-bound visible message."
+      },
+      "SendSessionMessageInput": {
+        "type": "object",
+        "description": "Model-visible parameters for the session-bound communication tool.",
+        "required": [
+          "content"
+        ],
+        "properties": {
+          "bcc": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "cc": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "content": {
+            "type": "string"
+          },
+          "html": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reply_all": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SendSessionMessageResponse": {
+        "type": "object",
+        "description": "Canonical result returned by `sendMessage` after provider delivery.",
+        "required": [
+          "message",
+          "provider_id",
+          "delivery_status"
+        ],
+        "properties": {
+          "delivery_status": {
+            "type": "string"
+          },
+          "message": {
+            "$ref": "#/components/schemas/Message"
+          },
+          "provider_id": {
             "type": "string"
           }
         }

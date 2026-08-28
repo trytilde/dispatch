@@ -7416,6 +7416,162 @@
         ]
       }
     },
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/observability": {
+      "get": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Get agent observability configuration",
+        "description": "Returns agent event visibility defaults and the reconciled tool catalog with effective policy inputs.",
+        "operationId": "chatkit-get-agent-observability",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentObservabilityConfiguration"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Update agent observability defaults",
+        "description": "Updates one visibility policy used for both live and historical audience projections.",
+        "operationId": "chatkit-update-agent-observability",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAgentObservabilityPolicyRequestInner"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentObservabilityConfiguration"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
     "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/ownership": {
       "post": {
         "tags": [
@@ -7743,6 +7899,281 @@
             }
           },
           "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/tool-executions": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Report a local tool execution lifecycle event",
+        "description": "Records a Harness-local tool lifecycle event and its canonical execution state atomically.",
+        "operationId": "chatkit-report-tool-execution",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportToolExecutionRequestInner"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolExecution"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/tools": {
+      "put": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Register an agent tool set",
+        "description": "Reconciles the complete Harness-local tool set for an agent connection; omitted prior local tools become unavailable.",
+        "operationId": "chatkit-register-agent-tools",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterAgentToolsRequestInner"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentObservabilityConfiguration"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "api_key": []
+          },
+          {
+            "bearer_token": []
+          }
+        ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/tools/{tool_id}": {
+      "patch": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Update an agent tool visibility override",
+        "description": "Sets or clears the sparse visibility override and operator-authored summary for one stable tool identity.",
+        "operationId": "chatkit-update-agent-tool-visibility",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAgentToolVisibilityRequestInner"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentObservabilityConfiguration"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "",
             "content": {
               "application/json": {
@@ -41134,6 +41565,71 @@
           }
         }
       },
+      "AgentEventVisibility": {
+        "type": "string",
+        "enum": [
+          "hidden",
+          "summary",
+          "details"
+        ]
+      },
+      "AgentObservabilityConfiguration": {
+        "type": "object",
+        "required": [
+          "policy",
+          "tools"
+        ],
+        "properties": {
+          "policy": {
+            "$ref": "#/components/schemas/AgentObservabilityPolicy"
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentToolCatalogEntry"
+            }
+          }
+        }
+      },
+      "AgentObservabilityPolicy": {
+        "type": "object",
+        "required": [
+          "agent_inbox_id",
+          "org_id",
+          "team_id",
+          "tool_visibility",
+          "reasoning_visibility",
+          "thinking_visibility",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "agent_inbox_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "reasoning_visibility": {
+            "$ref": "#/components/schemas/AgentEventVisibility"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "thinking_visibility": {
+            "$ref": "#/components/schemas/AgentEventVisibility"
+          },
+          "tool_visibility": {
+            "$ref": "#/components/schemas/AgentEventVisibility"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          }
+        }
+      },
       "AgentProvisioningOperation": {
         "type": "object",
         "required": [
@@ -41244,6 +41740,104 @@
             "type": "string"
           }
         }
+      },
+      "AgentToolCatalogEntry": {
+        "type": "object",
+        "required": [
+          "agent_inbox_id",
+          "org_id",
+          "team_id",
+          "tool_id",
+          "wire_name",
+          "display_name",
+          "source",
+          "status",
+          "supports_summary",
+          "identity_snapshot",
+          "last_seen_at",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "agent_inbox_id": {
+            "type": "string"
+          },
+          "configured_summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "identity_snapshot": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "last_seen_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "provider_summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/AgentToolSource"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AgentToolStatus"
+          },
+          "supports_summary": {
+            "type": "boolean"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "tool_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "visibility_override": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AgentEventVisibility"
+              }
+            ]
+          },
+          "wire_name": {
+            "type": "string"
+          }
+        }
+      },
+      "AgentToolSource": {
+        "type": "string",
+        "enum": [
+          "mcp",
+          "harness_local",
+          "endpoint_observed",
+          "builtin",
+          "dynamic"
+        ]
+      },
+      "AgentToolStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "unavailable"
+        ]
       },
       "ApplyOntologyTemplateResult": {
         "type": "object",
@@ -42573,6 +43167,65 @@
           }
         }
       },
+      "ChatKitIdentityKind": {
+        "type": "string",
+        "description": "Address scheme for a [`ChatKitIdentity`].",
+        "enum": [
+          "email",
+          "mobile_number",
+          "username",
+          "tilde_user",
+          "agent"
+        ]
+      },
+      "ChatKitMessageIdentity": {
+        "type": "object",
+        "description": "Identity block serialized onto every ChatKit message delivered to an agent.\n\nThe runtime SDK uses this to attribute a speaker; it is deliberately a\nstructured field rather than only a text prefix so an agent can distinguish\na real sender from text that merely looks like one.",
+        "required": [
+          "identity_id",
+          "kind",
+          "display_name",
+          "is_agent",
+          "speaker_label"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "external_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "identity_id": {
+            "type": "string"
+          },
+          "is_agent": {
+            "type": "boolean"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChatKitIdentityKind"
+          },
+          "provider_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "speaker_label": {
+            "type": "string",
+            "description": "Pre-rendered, sanitized `display_name (qualifier)` label."
+          },
+          "tilde_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Present only when the identity is a verified authorization principal."
+          }
+        }
+      },
       "ChatKitParticipant": {
         "type": "object",
         "description": "Public ChatKit participant view.",
@@ -42628,6 +43281,13 @@
           },
           "participant_type": {
             "$ref": "#/components/schemas/ChatKitParticipantType"
+          },
+          "tilde_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Tilde user this participant speaks for, when one is known.\n\nSet when a human is added through the API by a signed-in user. Left\n`None` for an inbound external participant, whose address is a claim\nrather than a credential and therefore confers no authority."
           }
         }
       },
@@ -43078,6 +43738,17 @@
           "id": {
             "type": "string"
           },
+          "identity": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChatKitMessageIdentity",
+                "description": "Who sent this message.\n\nA structured field rather than a text prefix, because an external sender\nchooses their own display name and could otherwise forge a transcript\nturn. Runtimes may render a prefix from\n[`crate::identity::ChatKitMessageIdentity::speaker_label`], but this\nblock is the source of truth."
+              }
+            ]
+          },
           "metadata": {
             "oneOf": [
               {
@@ -43360,6 +44031,44 @@
             "items": {
               "$ref": "#/components/schemas/ChatMessage"
             }
+          },
+          "session": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChatSessionContext",
+                "description": "Where this conversation came from.\n\nRuntimes use it to tell the model that a reply is delivered back to the\nparticipants on the originating platform. Without it an agent answering\nan email writes as if it were in a chat window."
+              }
+            ]
+          }
+        }
+      },
+      "ChatSessionContext": {
+        "type": "object",
+        "description": "Provenance of the ChatKit session an agent turn belongs to.",
+        "required": [
+          "session_id",
+          "provider_id",
+          "provider_display_name",
+          "replies_route_to_provider"
+        ],
+        "properties": {
+          "provider_display_name": {
+            "type": "string",
+            "description": "Human-readable provider name for prompt text, for example `GitHub`."
+          },
+          "provider_id": {
+            "type": "string",
+            "description": "ChatKit provider that owns the channel the conversation started on, for\nexample `chatkit.channel.github`."
+          },
+          "replies_route_to_provider": {
+            "type": "boolean",
+            "description": "Whether a reply is delivered back to the originating platform by Tilde.\n\n`false` for the web UI and for agent-to-agent delegation, where the\nreply stays inside Tilde."
+          },
+          "session_id": {
+            "type": "string"
           }
         }
       },
@@ -48065,6 +48774,13 @@
           "updated_at"
         ],
         "properties": {
+          "chatkit_identity_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Identity this instance speaks for. `None` only for rows created before\nidentities existed, or while a backfill is still in flight."
+          },
           "created_at": {
             "$ref": "#/components/schemas/WrappedChronoDateTime"
           },
@@ -48362,6 +49078,13 @@
           "params"
         ],
         "properties": {
+          "chatkit_session_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ChatKit session the calling MCP connection was scoped to, after\nvalidation.\n\nThreaded through so a session-aware tool — delegation, for one — reads\nthe session from the connection rather than accepting it as a tool\nparameter a model could point anywhere."
+          },
           "mcp_server_instance_id": {
             "type": [
               "string",
@@ -52729,6 +53452,58 @@
           }
         }
       },
+      "RegisterAgentTool": {
+        "type": "object",
+        "required": [
+          "tool_id",
+          "wire_name",
+          "display_name"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "identity_snapshot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedJsonValue"
+              }
+            ]
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supports_summary": {
+            "type": "boolean"
+          },
+          "tool_id": {
+            "type": "string"
+          },
+          "wire_name": {
+            "type": "string"
+          }
+        }
+      },
+      "RegisterAgentToolsRequestInner": {
+        "type": "object",
+        "required": [
+          "tools"
+        ],
+        "properties": {
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegisterAgentTool"
+            }
+          }
+        }
+      },
       "RegisterChatKitChatProviderRequestInner": {
         "type": "object",
         "description": "Request body for registering a ChatKit chat provider.",
@@ -53250,6 +54025,124 @@
           },
           "source_kind": {
             "$ref": "#/components/schemas/MemorySourceKind"
+          }
+        }
+      },
+      "ReportToolExecutionRequestInner": {
+        "type": "object",
+        "required": [
+          "tool_id",
+          "wire_name",
+          "state",
+          "input"
+        ],
+        "properties": {
+          "batch_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "batch_index": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "completed_at": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedChronoDateTime"
+              }
+            ]
+          },
+          "error_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "event_id": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedUuidV4"
+              }
+            ]
+          },
+          "execution_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "input": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "message_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model_tool_call_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "output": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedJsonValue"
+              }
+            ]
+          },
+          "parent_execution_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "started_at": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedChronoDateTime"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/ToolExecutionState"
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tool_id": {
+            "type": "string"
+          },
+          "wire_name": {
+            "type": "string"
           }
         }
       },
@@ -56907,6 +57800,147 @@
           }
         }
       },
+      "ToolExecution": {
+        "type": "object",
+        "required": [
+          "id",
+          "org_id",
+          "team_id",
+          "agent_inbox_id",
+          "tool_id",
+          "wire_name",
+          "authority",
+          "state",
+          "input",
+          "identity_snapshot",
+          "started_at",
+          "updated_at"
+        ],
+        "properties": {
+          "agent_inbox_id": {
+            "type": "string"
+          },
+          "authority": {
+            "$ref": "#/components/schemas/ToolExecutionAuthority"
+          },
+          "batch_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "batch_index": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "completed_at": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedChronoDateTime"
+              }
+            ]
+          },
+          "error_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "identity_snapshot": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "input": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "message_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model_tool_call_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "output": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedJsonValue"
+              }
+            ]
+          },
+          "parent_execution_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "started_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ToolExecutionState"
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "tool_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "wire_name": {
+            "type": "string"
+          }
+        }
+      },
+      "ToolExecutionAuthority": {
+        "type": "string",
+        "enum": [
+          "server_observed",
+          "agent_endpoint_reported",
+          "harness_client_reported"
+        ]
+      },
+      "ToolExecutionState": {
+        "type": "string",
+        "enum": [
+          "started",
+          "progress",
+          "completed",
+          "failed"
+        ]
+      },
       "ToolGroupInstanceListItem": {
         "allOf": [
           {
@@ -57807,6 +58841,46 @@
           }
         ],
         "description": "Union of all UI message part types"
+      },
+      "UpdateAgentObservabilityPolicyRequestInner": {
+        "type": "object",
+        "required": [
+          "tool_visibility",
+          "reasoning_visibility",
+          "thinking_visibility"
+        ],
+        "properties": {
+          "reasoning_visibility": {
+            "$ref": "#/components/schemas/AgentEventVisibility"
+          },
+          "thinking_visibility": {
+            "$ref": "#/components/schemas/AgentEventVisibility"
+          },
+          "tool_visibility": {
+            "$ref": "#/components/schemas/AgentEventVisibility"
+          }
+        }
+      },
+      "UpdateAgentToolVisibilityRequestInner": {
+        "type": "object",
+        "properties": {
+          "configured_summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "visibility_override": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AgentEventVisibility"
+              }
+            ]
+          }
+        }
       },
       "UpdateChatKitChatProviderRequestInner": {
         "type": "object",

@@ -63,6 +63,28 @@ export type AgentEndpointSpec = {
     url: string;
 };
 
+export enum AgentEventVisibility {
+    HIDDEN = 'hidden',
+    SUMMARY = 'summary',
+    DETAILS = 'details'
+}
+
+export type AgentObservabilityConfiguration = {
+    policy: AgentObservabilityPolicy;
+    tools: Array<AgentToolCatalogEntry>;
+};
+
+export type AgentObservabilityPolicy = {
+    agent_inbox_id: string;
+    created_at: WrappedChronoDateTime;
+    org_id: string;
+    reasoning_visibility: AgentEventVisibility;
+    team_id: string;
+    thinking_visibility: AgentEventVisibility;
+    tool_visibility: AgentEventVisibility;
+    updated_at: WrappedChronoDateTime;
+};
+
 export type AgentProvisioningOperation = {
     agent_id: string;
     attempts: number;
@@ -99,6 +121,38 @@ export type AgentSpec = {
     endpoint: AgentEndpointSpec;
     status?: string;
 };
+
+export type AgentToolCatalogEntry = {
+    agent_inbox_id: string;
+    configured_summary?: string | null;
+    created_at: WrappedChronoDateTime;
+    display_name: string;
+    identity_snapshot: WrappedJsonValue;
+    last_seen_at: WrappedChronoDateTime;
+    org_id: string;
+    provider_summary?: string | null;
+    source: AgentToolSource;
+    status: AgentToolStatus;
+    supports_summary: boolean;
+    team_id: string;
+    tool_id: string;
+    updated_at: WrappedChronoDateTime;
+    visibility_override?: null | AgentEventVisibility;
+    wire_name: string;
+};
+
+export enum AgentToolSource {
+    MCP = 'mcp',
+    HARNESS_LOCAL = 'harness_local',
+    ENDPOINT_OBSERVED = 'endpoint_observed',
+    BUILTIN = 'builtin',
+    DYNAMIC = 'dynamic'
+}
+
+export enum AgentToolStatus {
+    ACTIVE = 'active',
+    UNAVAILABLE = 'unavailable'
+}
 
 /**
  * Result of an idempotent ontology-template installation.
@@ -540,6 +594,41 @@ export type ChatKitChatProviderConfigField = {
 };
 
 /**
+ * Address scheme for a [`ChatKitIdentity`].
+ */
+export enum ChatKitIdentityKind {
+    EMAIL = 'email',
+    MOBILE_NUMBER = 'mobile_number',
+    USERNAME = 'username',
+    TILDE_USER = 'tilde_user',
+    AGENT = 'agent'
+}
+
+/**
+ * Identity block serialized onto every ChatKit message delivered to an agent.
+ *
+ * The runtime SDK uses this to attribute a speaker; it is deliberately a
+ * structured field rather than only a text prefix so an agent can distinguish
+ * a real sender from text that merely looks like one.
+ */
+export type ChatKitMessageIdentity = {
+    display_name: string;
+    external_id?: string | null;
+    identity_id: string;
+    is_agent: boolean;
+    kind: ChatKitIdentityKind;
+    provider_id?: string | null;
+    /**
+     * Pre-rendered, sanitized `display_name (qualifier)` label.
+     */
+    speaker_label: string;
+    /**
+     * Present only when the identity is a verified authorization principal.
+     */
+    tilde_user_id?: string | null;
+};
+
+/**
  * Public ChatKit participant view.
  */
 export type ChatKitParticipant = {
@@ -558,6 +647,14 @@ export type ChatKitParticipantInput = {
     inbox_id: string;
     instance_id?: string | null;
     participant_type: ChatKitParticipantType;
+    /**
+     * Tilde user this participant speaks for, when one is known.
+     *
+     * Set when a human is added through the API by a signed-in user. Left
+     * `None` for an inbound external participant, whose address is a claim
+     * rather than a credential and therefore confers no authority.
+     */
+    tilde_user_id?: string | null;
 };
 
 /**
@@ -731,6 +828,7 @@ export type ChatKitWorkspaceSidebarResponse = {
  */
 export type ChatMessage = {
     id: string;
+    identity?: null | ChatKitMessageIdentity;
     metadata?: null | WrappedJsonValue;
     parts: Array<ChatMessagePart>;
     role: MessageRole;
@@ -785,6 +883,30 @@ export type ChatMessagePart = {
 export type ChatRequest = {
     chatId?: string | null;
     messages: Array<ChatMessage>;
+    session?: null | ChatSessionContext;
+};
+
+/**
+ * Provenance of the ChatKit session an agent turn belongs to.
+ */
+export type ChatSessionContext = {
+    /**
+     * Human-readable provider name for prompt text, for example `GitHub`.
+     */
+    provider_display_name: string;
+    /**
+     * ChatKit provider that owns the channel the conversation started on, for
+     * example `chatkit.channel.github`.
+     */
+    provider_id: string;
+    /**
+     * Whether a reply is delivered back to the originating platform by Tilde.
+     *
+     * `false` for the web UI and for agent-to-agent delegation, where the
+     * reply stays inside Tilde.
+     */
+    replies_route_to_provider: boolean;
+    session_id: string;
 };
 
 /**
@@ -2231,6 +2353,11 @@ export type Inbox = {
  * Stored inbox instance representation.
  */
 export type InboxInstance = {
+    /**
+     * Identity this instance speaks for. `None` only for rows created before
+     * identities existed, or while a backfill is still in flight.
+     */
+    chatkit_identity_id?: string | null;
     created_at: WrappedChronoDateTime;
     current_to_inbox_instance_id?: string | null;
     default_to_inbox_instance_id?: string | null;
@@ -2332,6 +2459,15 @@ export type InvokeResult = (WrappedJsonValue & {
 });
 
 export type InvokeToolInstanceParamsInner = {
+    /**
+     * ChatKit session the calling MCP connection was scoped to, after
+     * validation.
+     *
+     * Threaded through so a session-aware tool — delegation, for one — reads
+     * the session from the connection rather than accepting it as a tool
+     * parameter a model could point anywhere.
+     */
+    chatkit_session_id?: string | null;
     mcp_server_instance_id?: string | null;
     mcp_session_id?: string | null;
     params: WrappedJsonValue;
@@ -3600,6 +3736,19 @@ export type RefreshTokenRequest = {
     refresh_token?: string | null;
 };
 
+export type RegisterAgentTool = {
+    display_name: string;
+    identity_snapshot?: null | WrappedJsonValue;
+    summary?: string | null;
+    supports_summary?: boolean;
+    tool_id: string;
+    wire_name: string;
+};
+
+export type RegisterAgentToolsRequestInner = {
+    tools: Array<RegisterAgentTool>;
+};
+
 /**
  * Request body for registering a ChatKit chat provider.
  */
@@ -3753,6 +3902,26 @@ export type ReplaceMemoryBankBindingsBody = {
     memory_bank_ids: Array<WrappedUuidV4>;
     source_id: string;
     source_kind: MemorySourceKind;
+};
+
+export type ReportToolExecutionRequestInner = {
+    batch_id?: string | null;
+    batch_index?: number | null;
+    completed_at?: null | WrappedChronoDateTime;
+    error_message?: string | null;
+    event_id?: null | WrappedUuidV4;
+    execution_id?: string | null;
+    input: WrappedJsonValue;
+    message_id?: string | null;
+    model_tool_call_id?: string | null;
+    output?: null | WrappedJsonValue;
+    parent_execution_id?: string | null;
+    session_id?: string | null;
+    started_at?: null | WrappedChronoDateTime;
+    state: ToolExecutionState;
+    summary?: string | null;
+    tool_id: string;
+    wire_name: string;
 };
 
 export type ResolveLoginProviderResponse = {
@@ -4907,6 +5076,44 @@ export type ToolDeploymentWithGroupSerializedPaginatedResponse = {
     next_page_token?: string;
 };
 
+export type ToolExecution = {
+    agent_inbox_id: string;
+    authority: ToolExecutionAuthority;
+    batch_id?: string | null;
+    batch_index?: number | null;
+    completed_at?: null | WrappedChronoDateTime;
+    error_message?: string | null;
+    id: string;
+    identity_snapshot: WrappedJsonValue;
+    input: WrappedJsonValue;
+    message_id?: string | null;
+    model_tool_call_id?: string | null;
+    org_id: string;
+    output?: null | WrappedJsonValue;
+    parent_execution_id?: string | null;
+    session_id?: string | null;
+    started_at: WrappedChronoDateTime;
+    state: ToolExecutionState;
+    summary?: string | null;
+    team_id: string;
+    tool_id: string;
+    updated_at: WrappedChronoDateTime;
+    wire_name: string;
+};
+
+export enum ToolExecutionAuthority {
+    SERVER_OBSERVED = 'server_observed',
+    AGENT_ENDPOINT_REPORTED = 'agent_endpoint_reported',
+    HARNESS_CLIENT_REPORTED = 'harness_client_reported'
+}
+
+export enum ToolExecutionState {
+    STARTED = 'started',
+    PROGRESS = 'progress',
+    COMPLETED = 'completed',
+    FAILED = 'failed'
+}
+
 export type ToolGroupInstanceListItem = ToolGroupInstanceSerialized & {
     credential_source: CredentialSourceSerialized;
     source: ToolGroupSourceSerialized;
@@ -5130,6 +5337,17 @@ export type UiMessagePart = (TextUiPart & {
 }) | (DataUiPart & {
     type: 'data';
 });
+
+export type UpdateAgentObservabilityPolicyRequestInner = {
+    reasoning_visibility: AgentEventVisibility;
+    thinking_visibility: AgentEventVisibility;
+    tool_visibility: AgentEventVisibility;
+};
+
+export type UpdateAgentToolVisibilityRequestInner = {
+    configured_summary?: string | null;
+    visibility_override?: null | AgentEventVisibility;
+};
 
 /**
  * Request body for updating a ChatKit chat provider.
@@ -9282,6 +9500,57 @@ export type ChatkitUpdateAgentAvatarResponses = {
 
 export type ChatkitUpdateAgentAvatarResponse = ChatkitUpdateAgentAvatarResponses[keyof ChatkitUpdateAgentAvatarResponses];
 
+export type ChatkitGetAgentObservabilityData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/observability';
+};
+
+export type ChatkitGetAgentObservabilityErrors = {
+    404: Error;
+};
+
+export type ChatkitGetAgentObservabilityError = ChatkitGetAgentObservabilityErrors[keyof ChatkitGetAgentObservabilityErrors];
+
+export type ChatkitGetAgentObservabilityResponses = {
+    200: AgentObservabilityConfiguration;
+};
+
+export type ChatkitGetAgentObservabilityResponse = ChatkitGetAgentObservabilityResponses[keyof ChatkitGetAgentObservabilityResponses];
+
+export type ChatkitUpdateAgentObservabilityData = {
+    body: UpdateAgentObservabilityPolicyRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/observability';
+};
+
+export type ChatkitUpdateAgentObservabilityErrors = {
+    400: Error;
+    404: Error;
+};
+
+export type ChatkitUpdateAgentObservabilityError = ChatkitUpdateAgentObservabilityErrors[keyof ChatkitUpdateAgentObservabilityErrors];
+
+export type ChatkitUpdateAgentObservabilityResponses = {
+    200: AgentObservabilityConfiguration;
+};
+
+export type ChatkitUpdateAgentObservabilityResponse = ChatkitUpdateAgentObservabilityResponses[keyof ChatkitUpdateAgentObservabilityResponses];
+
 export type ChatkitUpdateAgentOwnershipData = {
     body: SetResourceAccessModeRequest;
     path: {
@@ -9397,6 +9666,85 @@ export type ChatkitSetAgentStatusResponses = {
 };
 
 export type ChatkitSetAgentStatusResponse = ChatkitSetAgentStatusResponses[keyof ChatkitSetAgentStatusResponses];
+
+export type ChatkitReportToolExecutionData = {
+    body: ReportToolExecutionRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/tool-executions';
+};
+
+export type ChatkitReportToolExecutionErrors = {
+    400: Error;
+    404: Error;
+};
+
+export type ChatkitReportToolExecutionError = ChatkitReportToolExecutionErrors[keyof ChatkitReportToolExecutionErrors];
+
+export type ChatkitReportToolExecutionResponses = {
+    200: ToolExecution;
+};
+
+export type ChatkitReportToolExecutionResponse = ChatkitReportToolExecutionResponses[keyof ChatkitReportToolExecutionResponses];
+
+export type ChatkitRegisterAgentToolsData = {
+    body: RegisterAgentToolsRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/tools';
+};
+
+export type ChatkitRegisterAgentToolsErrors = {
+    400: Error;
+    404: Error;
+};
+
+export type ChatkitRegisterAgentToolsError = ChatkitRegisterAgentToolsErrors[keyof ChatkitRegisterAgentToolsErrors];
+
+export type ChatkitRegisterAgentToolsResponses = {
+    200: AgentObservabilityConfiguration;
+};
+
+export type ChatkitRegisterAgentToolsResponse = ChatkitRegisterAgentToolsResponses[keyof ChatkitRegisterAgentToolsResponses];
+
+export type ChatkitUpdateAgentToolVisibilityData = {
+    body: UpdateAgentToolVisibilityRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        tool_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/tools/{tool_id}';
+};
+
+export type ChatkitUpdateAgentToolVisibilityErrors = {
+    400: Error;
+    404: Error;
+};
+
+export type ChatkitUpdateAgentToolVisibilityError = ChatkitUpdateAgentToolVisibilityErrors[keyof ChatkitUpdateAgentToolVisibilityErrors];
+
+export type ChatkitUpdateAgentToolVisibilityResponses = {
+    200: AgentObservabilityConfiguration;
+};
+
+export type ChatkitUpdateAgentToolVisibilityResponse = ChatkitUpdateAgentToolVisibilityResponses[keyof ChatkitUpdateAgentToolVisibilityResponses];
 
 export type ChatkitUpdateAgentVisibilityData = {
     body: SetResourceAccessModeRequest;

@@ -15,9 +15,11 @@ pnpm add @trytilde/sdk @trytilde/sdk-vercel-ai-node zod
   and `context.$provider.tools` while treating returned assistant text as private reasoning.
 - `createMCPClient(options)` creates a Tilde-authenticated AI SDK MCP client, registers local tools
   for the owning ChatKit agent, and records local and dynamic child executions. Pass `agentId` when
-  supplying `tools`; use `chatkit.sessionId` to correlate executions to the active session. Inside
-  a tool-mode endpoint, `context.session.createMCPClient(options)` also injects the current
-  session's bound provider tools without registering them as authored local tools.
+  supplying `tools`; use `chatkit.sessionId` to correlate executions to the active session. Tilde
+  derives the tools and agents reachable from that session from the authenticated agent record;
+  callers cannot declare permissions in this client. Inside a tool-mode endpoint,
+  `context.session.createMCPClient(options)` also injects the current session's bound provider tools
+  without registering them as authored local tools.
 - `createChatKitSessionTools(client, session)` constructs the trusted, provider-aware `sendMessage`,
   reaction, thread, AgentMail, and Linq poll tools used by tool-mode endpoints.
 - `toolEndpoint(options)` exposes signed, Zod-validated custom tool discovery and invocation.

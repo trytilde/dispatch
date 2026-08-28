@@ -55,6 +55,7 @@
     "build": "tsc --noEmit && tsdown --config ../../tsdown.browser.config.ts && node ../../scripts/copy-package-assets.mjs",
     "check": "vp check",
     "lint": "vp lint",
+    "prepare": "pnpm build",
     "prepack": "pnpm build",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",

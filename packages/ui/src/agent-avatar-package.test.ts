@@ -3,6 +3,7 @@ import packageJson from "../package.json" with { type: "json" };
 
 const manifest = packageJson as {
   exports?: Record<string, unknown>;
+  scripts?: Record<string, string>;
   dependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
   peerDependenciesMeta?: Record<string, { optional?: boolean }>;
@@ -15,6 +16,10 @@ describe("AgentAvatar package entry", () => {
       import: "./dist/agent-avatar.js",
     });
     expect(manifest.exports?.["./agent-avatar.css"]).toBe("./dist/agent-avatar.css");
+  });
+
+  it("builds packed artifacts when installed from Git", () => {
+    expect(manifest.scripts?.prepare).toBe("pnpm build");
   });
 
   it("does not require client-runtime for the standalone entry", () => {

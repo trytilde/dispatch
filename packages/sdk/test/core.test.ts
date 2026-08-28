@@ -866,6 +866,89 @@ describe("ChatKit client", () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
+  it("invokes active-turn-bound ChatKit communication tools", async () => {
+    const requests: Array<{ url: string; method?: string; body: unknown }> = [];
+    const fetchMock = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      const url = String(input);
+      requests.push({
+        url,
+        method: init?.method,
+        body: init?.body ? await new Response(init.body).json() : undefined,
+      });
+      if (url.endsWith("/tools/sendMessage")) {
+        return Response.json({
+          message: { id: "message_1" },
+          provider_id: "chatkit.channel.slack",
+          delivery_status: "queued",
+        });
+      }
+      return Response.json({
+        provider_id: "chatkit.channel.slack",
+        tool_name: "addReaction",
+        result: { ok: true },
+      });
+    });
+    const client = createClient({
+      baseUrl: "https://api.example.test",
+      teamId: "team_123",
+      fetch: fetchMock as typeof fetch,
+    });
+
+    await expect(
+      client.chatkit.sendSessionMessage({
+        sessionId: "session_1",
+        agentInboxInstanceId: "agent_instance",
+        targetInboxInstanceId: "target_instance",
+        triggerMessageId: "trigger_1",
+        toolCallId: "call_1",
+        content: "Hello",
+      }),
+    ).resolves.toEqual({
+      message: { id: "message_1" },
+      providerId: "chatkit.channel.slack",
+      deliveryStatus: "queued",
+    });
+    await expect(
+      client.chatkit.invokeSessionProviderTool({
+        sessionId: "session_1",
+        toolName: "addReaction",
+        agentInboxInstanceId: "agent_instance",
+        targetInboxInstanceId: "target_instance",
+        triggerMessageId: "trigger_1",
+        toolCallId: "call_2",
+        parameters: { emoji: "eyes" },
+      }),
+    ).resolves.toEqual({
+      providerId: "chatkit.channel.slack",
+      toolName: "addReaction",
+      result: { ok: true },
+    });
+    expect(requests).toEqual([
+      {
+        url: "https://api.example.test/api/v1/team/team_123/chatkit/sessions/session_1/tools/sendMessage",
+        method: "POST",
+        body: {
+          agent_inbox_instance_id: "agent_instance",
+          target_inbox_instance_id: "target_instance",
+          trigger_message_id: "trigger_1",
+          tool_call_id: "call_1",
+          content: "Hello",
+        },
+      },
+      {
+        url: "https://api.example.test/api/v1/team/team_123/chatkit/sessions/session_1/tools/addReaction",
+        method: "POST",
+        body: {
+          agent_inbox_instance_id: "agent_instance",
+          target_inbox_instance_id: "target_instance",
+          trigger_message_id: "trigger_1",
+          tool_call_id: "call_2",
+          input: { emoji: "eyes" },
+        },
+      },
+    ]);
+  });
+
   it("caches and hydrates converted ChatKit messages", async () => {
     const fetchMock = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
       if (String(input).endsWith("/chatkit/messages/converted-cache")) {

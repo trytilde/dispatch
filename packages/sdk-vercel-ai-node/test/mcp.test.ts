@@ -98,6 +98,38 @@ describe("createMCPClient", () => {
     });
   });
 
+  it("adds trusted session-bound tools without requiring agent registration", async () => {
+    const client = createClient({
+      baseUrl: "https://api.example.test",
+      teamId: "team_123",
+      apiKey: "tilde-key",
+    });
+    const execute = vi.fn(async () => ({ queued: true }));
+    const sendMessage = tool({
+      description: "Send the bound reply",
+      inputSchema: jsonSchema<{ content: string }>({
+        type: "object",
+        properties: { content: { type: "string" } },
+        required: ["content"],
+      }),
+      execute,
+    });
+
+    const { mcp } = await createMCPClient({
+      client,
+      serverId: "server_1",
+      chatkit: {
+        sessionId: "session_1",
+        boundTools: { sendMessage },
+      },
+    });
+
+    await expect(mcp.callTool("sendMessage", { content: "hello" })).resolves.toEqual({
+      queued: true,
+    });
+    expect(execute).toHaveBeenCalledOnce();
+  });
+
   it("registers provided AI SDK tools as local MCP tools", async () => {
     const client = createClient({
       baseUrl: "https://api.example.test",

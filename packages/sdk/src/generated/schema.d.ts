@@ -2776,6 +2776,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/tools/sendMessage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a session-bound provider message
+         * @description Invokes the session provider's sendMessage capability with server-validated participant routing and persists the canonical ChatKit message.
+         */
+        post: operations["chatkit-send-session-message"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/tools/{tool_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invoke a session-bound provider tool
+         * @description Invokes a provider action with server-bound session and message routing.
+         */
+        post: operations["chatkit-invoke-session-provider-tool"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/chatkit/workspace/agents/{agent_id}/sessions": {
         parameters: {
             query?: never;
@@ -9470,6 +9510,9 @@ export interface components {
         ChatKitParticipant: {
             inbox: components["schemas"]["Inbox"];
             instance: components["schemas"]["InboxInstance"];
+            joined_at: components["schemas"]["WrappedChronoDateTime"];
+            membership_source: components["schemas"]["ChatKitParticipantMembershipSource"];
+            participant_handle: string;
             participant_type: components["schemas"]["ChatKitParticipantType"];
         };
         /** @description Participant input for creating or joining a ChatKit session. */
@@ -9489,6 +9532,11 @@ export interface components {
              */
             tilde_user_id?: string | null;
         };
+        /**
+         * @description How a durable conversation participant was admitted to a session.
+         * @enum {string}
+         */
+        ChatKitParticipantMembershipSource: "explicit" | "provider" | "recipient";
         /**
          * @description ChatKit participant kind for SaaS-facing session APIs.
          * @enum {string}
@@ -10931,6 +10979,20 @@ export interface components {
             /** @enum {string} */
             type: "error";
         });
+        /** @description HTTP body for one session-bound provider action. */
+        InvokeSessionProviderToolBody: {
+            agent_inbox_instance_id: string;
+            input: components["schemas"]["WrappedJsonValue"];
+            target_inbox_instance_id: string;
+            tool_call_id: string;
+            trigger_message_id: components["schemas"]["WrappedUuidV4"];
+        };
+        /** @description Result from a provider-specific session action. */
+        InvokeSessionProviderToolResponse: {
+            provider_id: string;
+            result: components["schemas"]["WrappedJsonValue"];
+            tool_name: string;
+        };
         InvokeToolInstanceParamsInner: {
             /**
              * @description ChatKit session the calling MCP connection was scoped to, after
@@ -12425,6 +12487,29 @@ export interface components {
         SendChatKitWorkspaceMessageRequestInner: {
             attachment_ids?: components["schemas"]["WrappedUuidV4"][];
             text: string;
+        };
+        /** @description HTTP body for a session-bound visible message. */
+        SendSessionMessageBody: components["schemas"]["SendSessionMessageInput"] & {
+            agent_inbox_instance_id: string;
+            target_inbox_instance_id: string;
+            tool_call_id: string;
+            trigger_message_id: components["schemas"]["WrappedUuidV4"];
+        };
+        /** @description Model-visible parameters for the session-bound communication tool. */
+        SendSessionMessageInput: {
+            bcc?: string[] | null;
+            cc?: string[] | null;
+            content: string;
+            html?: string | null;
+            reply_all?: boolean | null;
+            subject?: string | null;
+            to?: string[] | null;
+        };
+        /** @description Canonical result returned by `sendMessage` after provider delivery. */
+        SendSessionMessageResponse: {
+            delivery_status: string;
+            message: components["schemas"]["Message"];
+            provider_id: string;
         };
         /** @description A session represents a conversation containing related messages. */
         Session: {
@@ -21490,6 +21575,103 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-send-session-message": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Session ID */
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendSessionMessageBody"];
+            };
+        };
+        responses: {
+            /** @description Provider message delivered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendSessionMessageResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-invoke-session-provider-tool": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                tool_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvokeSessionProviderToolBody"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvokeSessionProviderToolResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

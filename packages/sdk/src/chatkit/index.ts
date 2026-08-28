@@ -12,6 +12,9 @@ const HYDRATE_CONVERTED_MESSAGE_CACHE_PATH =
   "/api/v1/team/{team_id}/chatkit/messages/converted-cache/hydrate";
 const ATTACHMENT_DOWNLOAD_URL_PATH =
   "/api/v1/team/{team_id}/chatkit/session/{session_id}/attachment/{attachment_id}/download-url";
+const AGENT_TOOLS_PATH = "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/tools";
+const AGENT_TOOL_EXECUTIONS_PATH =
+  "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/tool-executions";
 
 type Paginated<T> = {
   items: T[];
@@ -38,6 +41,37 @@ export type ChatKitAttachment = JsonObject & {
   id?: string;
   filename?: string;
   media_type?: string;
+};
+
+export type AgentToolRegistration = {
+  toolId: string;
+  wireName: string;
+  displayName: string;
+  supportsSummary?: boolean;
+  summary?: string;
+  identity?: JsonObject;
+};
+
+export type ToolExecutionState = "started" | "progress" | "completed" | "failed";
+
+export type ReportToolExecutionInput = {
+  agentId: string;
+  executionId: string;
+  toolId: string;
+  wireName: string;
+  state: ToolExecutionState;
+  input: JsonValue;
+  sessionId?: string;
+  messageId?: string;
+  modelToolCallId?: string;
+  parentExecutionId?: string;
+  batchId?: string;
+  batchIndex?: number;
+  output?: JsonValue;
+  errorMessage?: string;
+  summary?: string;
+  startedAt?: string;
+  completedAt?: string;
 };
 
 export class ChatKitClient {
@@ -92,6 +126,55 @@ export class ChatKitClient {
         id: input.id,
         display_name: input.displayName,
         default_agent_inbox_id: input.defaultAgentInboxId,
+      },
+    });
+  }
+
+  async registerAgentTools(input: {
+    agentId: string;
+    tools: AgentToolRegistration[];
+  }): Promise<JsonObject> {
+    return requestJson<JsonObject>(this.#config, {
+      method: "PUT",
+      path: pathWithParams(teamPath(this.#config, AGENT_TOOLS_PATH), {
+        agent_id: input.agentId,
+      }),
+      body: {
+        tools: input.tools.map((tool) => ({
+          tool_id: tool.toolId,
+          wire_name: tool.wireName,
+          display_name: tool.displayName,
+          supports_summary: tool.supportsSummary ?? false,
+          summary: tool.summary,
+          identity_snapshot: tool.identity,
+        })),
+      },
+    });
+  }
+
+  async reportToolExecution(input: ReportToolExecutionInput): Promise<JsonObject> {
+    return requestJson<JsonObject>(this.#config, {
+      method: "POST",
+      path: pathWithParams(teamPath(this.#config, AGENT_TOOL_EXECUTIONS_PATH), {
+        agent_id: input.agentId,
+      }),
+      body: {
+        execution_id: input.executionId,
+        session_id: input.sessionId,
+        message_id: input.messageId,
+        tool_id: input.toolId,
+        wire_name: input.wireName,
+        state: input.state,
+        model_tool_call_id: input.modelToolCallId,
+        parent_execution_id: input.parentExecutionId,
+        batch_id: input.batchId,
+        batch_index: input.batchIndex,
+        input: input.input,
+        output: input.output,
+        error_message: input.errorMessage,
+        summary: input.summary,
+        started_at: input.startedAt,
+        completed_at: input.completedAt,
       },
     });
   }

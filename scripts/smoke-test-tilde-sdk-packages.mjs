@@ -9,6 +9,9 @@ const temporaryDirectory = mkdtempSync(join(tmpdir(), "tilde-sdk-package-smoke-"
 const packages = [
   "packages/api-client",
   "packages/sdk",
+  "packages/sdk-claude-code",
+  "packages/sdk-codex",
+  "packages/sdk-cursor",
   "packages/sdk-react",
   "packages/sdk-vercel-ai-node",
   "packages/sdk-vercel-ai-react",
@@ -49,6 +52,9 @@ try {
           "@ai-sdk/mcp": "1.0.59",
           "@trytilde/api-client": `file:${apiClientTarball}`,
           "@trytilde/sdk": `file:${sdkTarball}`,
+          "@trytilde/sdk-claude-code": `file:${tarballs.get("@trytilde/sdk-claude-code")}`,
+          "@trytilde/sdk-codex": `file:${tarballs.get("@trytilde/sdk-codex")}`,
+          "@trytilde/sdk-cursor": `file:${tarballs.get("@trytilde/sdk-cursor")}`,
           "@trytilde/sdk-react": `file:${sdkReactTarball}`,
           "@trytilde/sdk-vercel-ai-node": `file:${tarballs.get("@trytilde/sdk-vercel-ai-node")}`,
           "@trytilde/sdk-vercel-ai-react": `file:${tarballs.get("@trytilde/sdk-vercel-ai-react")}`,
@@ -98,6 +104,9 @@ import {
   reverseProxyPath,
 } from "@trytilde/sdk";
 import { isJsonObject } from "@trytilde/sdk/json";
+import { normalizeClaudeCodeHook } from "@trytilde/sdk-claude-code";
+import { normalizeCodexHook } from "@trytilde/sdk-codex";
+import { normalizeCursorHook } from "@trytilde/sdk-cursor";
 import {
   parseChatKitRequestBody,
   type ChatKitRequestBody,
@@ -123,6 +132,9 @@ if (
   proxy.endpoint !== "https://api.trytilde.ai" ||
   typeof whoami !== "function" ||
   !isJsonObject({ ok: true }) ||
+  normalizeClaudeCodeHook({}) !== null ||
+  normalizeCodexHook({}) !== null ||
+  normalizeCursorHook({}) !== null ||
   body.messages.length !== 0 ||
   reverseProxyPath({ profileId: "profile-id", teamId: "team-id" }) !==
     "/api/v1/team/team-id/reverse-proxy/profile-id"

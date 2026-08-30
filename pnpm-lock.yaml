@@ -380,6 +380,15 @@ importers:
       '@trytilde/sdk':
         specifier: workspace:*
         version: link:../packages/sdk
+      '@trytilde/sdk-claude-code':
+        specifier: workspace:*
+        version: link:../packages/sdk-claude-code
+      '@trytilde/sdk-codex':
+        specifier: workspace:*
+        version: link:../packages/sdk-codex
+      '@trytilde/sdk-cursor':
+        specifier: workspace:*
+        version: link:../packages/sdk-cursor
       arg:
         specifier: 5.0.2
         version: 5.0.2
@@ -860,6 +869,54 @@ importers:
       vitest:
         specifier: 4.1.10
         version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.3.0)(@vitest/browser-preview@4.1.10)(happy-dom@20.10.3)(vite@8.2.1(@types/node@24.3.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))
+
+  packages/sdk-claude-code:
+    dependencies:
+      '@trytilde/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+    devDependencies:
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.2.9(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(esbuild@0.28.2)(happy-dom@20.10.3)(jiti@2.7.0)(terser@5.50.0)(tsx@4.21.0)(typescript@5.9.2)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))(yaml@2.9.0)
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/browser-preview@4.1.10)(happy-dom@20.10.3)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))
+
+  packages/sdk-codex:
+    dependencies:
+      '@trytilde/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+    devDependencies:
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.2.9(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(esbuild@0.28.2)(happy-dom@20.10.3)(jiti@2.7.0)(terser@5.50.0)(tsx@4.21.0)(typescript@5.9.2)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))(yaml@2.9.0)
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/browser-preview@4.1.10)(happy-dom@20.10.3)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))
+
+  packages/sdk-cursor:
+    dependencies:
+      '@trytilde/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+    devDependencies:
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.2.9(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(esbuild@0.28.2)(happy-dom@20.10.3)(jiti@2.7.0)(terser@5.50.0)(tsx@4.21.0)(typescript@5.9.2)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))(yaml@2.9.0)
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/browser-preview@4.1.10)(happy-dom@20.10.3)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.21.0)(yaml@2.9.0))
 
   packages/sdk-react:
     devDependencies:

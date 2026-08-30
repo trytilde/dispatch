@@ -919,6 +919,10 @@ export type ChatRequest = {
  */
 export type ChatSessionContext = {
     /**
+     * Calling agent whose display/browser context a delegated specialist should continue.
+     */
+    parent_agent_id?: string | null;
+    /**
      * Human-readable provider name for prompt text, for example `GitHub`.
      */
     provider_display_name: string;
@@ -3929,8 +3933,20 @@ export type ReportToolExecutionRequestInner = {
     started_at?: null | WrappedChronoDateTime;
     state: ToolExecutionState;
     summary?: string | null;
+    tool?: null | ReportedAgentTool;
     tool_id: string;
     wire_name: string;
+};
+
+/**
+ * Tool metadata carried with a lifecycle report when the calling harness
+ * discovers tools one execution at a time.
+ */
+export type ReportedAgentTool = {
+    display_name: string;
+    identity_snapshot?: null | WrappedJsonValue;
+    summary?: string | null;
+    supports_summary?: boolean;
 };
 
 export type ResolveLoginProviderResponse = {

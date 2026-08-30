@@ -1295,7 +1295,7 @@ export const chatkitSetAgentStatus = <ThrowOnError extends boolean = false>(opti
 /**
  * Report a local tool execution lifecycle event
  *
- * Records a Harness-local tool lifecycle event and its canonical execution state atomically.
+ * Records a coding-harness-local tool lifecycle event and its canonical execution state atomically. Event-oriented clients may include tool metadata to register one newly discovered tool without reconciling the complete local catalog.
  */
 export const chatkitReportToolExecution = <ThrowOnError extends boolean = false>(options: Options<ChatkitReportToolExecutionData, ThrowOnError>): RequestResult<ChatkitReportToolExecutionResponses, ChatkitReportToolExecutionErrors, ThrowOnError> => (options.client ?? client).post<ChatkitReportToolExecutionResponses, ChatkitReportToolExecutionErrors, ThrowOnError>({
     security: [{ name: 'x-api-key', type: 'apiKey' }, { scheme: 'bearer', type: 'http' }],

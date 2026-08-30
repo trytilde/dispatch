@@ -8112,7 +8112,7 @@
           "v1"
         ],
         "summary": "Report a local tool execution lifecycle event",
-        "description": "Records a Harness-local tool lifecycle event and its canonical execution state atomically.",
+        "description": "Records a coding-harness-local tool lifecycle event and its canonical execution state atomically. Event-oriented clients may include tool metadata to register one newly discovered tool without reconciling the complete local catalog.",
         "operationId": "chatkit-report-tool-execution",
         "parameters": [
           {
@@ -42587,6 +42587,13 @@
           "replies_route_to_provider"
         ],
         "properties": {
+          "parent_agent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Calling agent whose display/browser context a delegated specialist should continue."
+          },
           "provider_display_name": {
             "type": "string",
             "description": "Human-readable provider name for prompt text, for example `GitHub`."
@@ -52623,11 +52630,53 @@
               "null"
             ]
           },
+          "tool": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportedAgentTool",
+                "description": "Optional immutable tool metadata supplied by event-oriented clients\nthat cannot enumerate a complete local tool catalog up front.\n\nWhen the tool is not registered yet, ChatKit creates one active\nHarness-local catalog entry without marking any other tools unavailable."
+              }
+            ]
+          },
           "tool_id": {
             "type": "string"
           },
           "wire_name": {
             "type": "string"
+          }
+        }
+      },
+      "ReportedAgentTool": {
+        "type": "object",
+        "description": "Tool metadata carried with a lifecycle report when the calling harness\ndiscovers tools one execution at a time.",
+        "required": [
+          "display_name"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "identity_snapshot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedJsonValue"
+              }
+            ]
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "supports_summary": {
+            "type": "boolean"
           }
         }
       },

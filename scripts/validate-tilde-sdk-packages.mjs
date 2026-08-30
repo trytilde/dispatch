@@ -7,6 +7,8 @@ const packages = [
   "packages/sdk-claude-code",
   "packages/sdk-codex",
   "packages/sdk-cursor",
+  "packages/sdk-gemini-cli",
+  "packages/sdk-opencode",
   "packages/sdk-react",
   "packages/sdk-vercel-ai-node",
   "packages/sdk-vercel-ai-react",

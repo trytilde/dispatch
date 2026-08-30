@@ -250,11 +250,17 @@ export function mcpServerConfigForCli(cli: AgentCli, server: TildeMcpServerChoic
     throw new Error(`MCP server ${server.label} does not include a URL`);
   }
   switch (cli) {
+    case "opencode":
+      return {
+        type: "remote",
+        url,
+        enabled: true,
+      };
+    case "gemini":
+      return { httpUrl: url };
     case "claude":
     case "codex":
     case "cursor":
-    case "opencode":
-    case "gemini":
       return {
         name: server.label,
         transport: "streamable_http",
@@ -272,7 +278,7 @@ export function cliMcpConfigPath(cli: AgentCli, homeDir: string): string {
     case "cursor":
       return join(homeDir, ".cursor", "mcp.json");
     case "opencode":
-      return join(homeDir, ".config", "opencode", "mcp.json");
+      return join(homeDir, ".config", "opencode", "opencode.json");
     case "gemini":
       return join(homeDir, ".gemini", "settings.json");
   }
@@ -397,7 +403,7 @@ export async function configureTildePluginForCli(
   if (input.auditAgentId && !auditAgent) {
     throw new Error(`ChatKit audit agent not found: ${input.auditAgentId}`);
   }
-  const [mcpConfigPath, skillFiles, audit] = await Promise.all([
+  const [mcpConfigPath, skillFiles] = await Promise.all([
     writeMcpConfigForCli(cli, {
       homeDir: input.homeDir,
       servers: selected.mcpServers,
@@ -406,25 +412,25 @@ export async function configureTildePluginForCli(
       homeDir: input.homeDir,
       registries: selected.skillRegistries,
     }),
-    auditAgent && (cli === "codex" || cli === "claude" || cli === "cursor")
-      ? Promise.all([
-          writeCodingAgentAuditInstallation(
-            cli,
-            {
-              baseUrl: config.baseUrl,
-              teamId: auditAgent.teamId,
-              agentId: auditAgent.id,
-            },
-            input.homeDir,
-          ),
-          installCodingAgentAuditHooks({
-            cli,
-            homeDir: input.homeDir,
-            mcpServers: selected.mcpServers.filter((server) => server.teamId === auditAgent.teamId),
-          }),
-        ])
-      : Promise.resolve(undefined),
   ]);
+  const audit = auditAgent
+    ? await Promise.all([
+        writeCodingAgentAuditInstallation(
+          cli,
+          {
+            baseUrl: config.baseUrl,
+            teamId: auditAgent.teamId,
+            agentId: auditAgent.id,
+          },
+          input.homeDir,
+        ),
+        installCodingAgentAuditHooks({
+          cli,
+          homeDir: input.homeDir,
+          mcpServers: selected.mcpServers.filter((server) => server.teamId === auditAgent.teamId),
+        }),
+      ])
+    : undefined;
   return {
     mcpConfigPath,
     mcpServerCount: selected.mcpServers.length,

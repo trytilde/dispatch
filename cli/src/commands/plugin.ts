@@ -161,19 +161,21 @@ async function runAuditHookCommand(args: readonly string[]): Promise<number> {
   }
   if (!cli) throw new Error("Missing --cli for plugin audit hook");
   const text = await readStandardInput();
-  if (!text.trim()) return 0;
-  try {
-    await runCodingAgentAuditHook({
-      cli,
-      homeDir,
-      ...(apiKey ? { apiKey } : {}),
-      payload: JSON.parse(text) as unknown,
-    });
-  } catch (error) {
-    process.stderr.write(
-      `Tilde ChatKit audit hook failed open: ${error instanceof Error ? error.message : String(error)}\n`,
-    );
+  if (text.trim()) {
+    try {
+      await runCodingAgentAuditHook({
+        cli,
+        homeDir,
+        ...(apiKey ? { apiKey } : {}),
+        payload: JSON.parse(text) as unknown,
+      });
+    } catch (error) {
+      process.stderr.write(
+        `Tilde ChatKit audit hook failed open: ${error instanceof Error ? error.message : String(error)}\n`,
+      );
+    }
   }
+  if (cli === "gemini") process.stdout.write("{}\n");
   return 0;
 }
 
@@ -219,7 +221,7 @@ function runChildCommand(command: string, args: string[]): Promise<number> {
 export function tildePluginHelpText(): string {
   return `Usage:
   openbot plugin --cli <claude|codex|cursor|opencode|gemini> [options]
-  openbot plugin audit --cli <claude|codex|cursor>
+  openbot plugin audit --cli <claude|codex|cursor|opencode|gemini>
 
 Options:
   --base-url <url>       Tilde API base URL. Default: TILDE_API_BASE_URL or ${DEFAULT_TILDE_API_BASE_URL}

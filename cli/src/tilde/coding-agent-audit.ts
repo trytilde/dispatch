@@ -4,6 +4,8 @@ import { dirname, join } from "node:path";
 import { codexPluginRoot, recordCodexHook } from "@trytilde/sdk-codex";
 import { recordClaudeCodeHook } from "@trytilde/sdk-claude-code";
 import { recordCursorHook } from "@trytilde/sdk-cursor";
+import { recordGeminiCliHook } from "@trytilde/sdk-gemini-cli";
+import { opencodePluginPath, recordOpenCodeHook } from "@trytilde/sdk-opencode";
 import { createClient } from "@trytilde/sdk";
 import type { JsonObject } from "@trytilde/sdk/json";
 import { isJsonObject } from "@trytilde/sdk/json";
@@ -41,7 +43,6 @@ export async function runCodingAgentAuditHook(input: {
   apiKey?: string;
   payload: unknown;
 }): Promise<void> {
-  if (input.cli !== "codex" && input.cli !== "claude" && input.cli !== "cursor") return;
   const store = await readAuditStore(codingAgentAuditConfigPath(input.homeDir));
   const installation = store.installations?.[input.cli];
   if (!installation) return;
@@ -62,8 +63,12 @@ export async function runCodingAgentAuditHook(input: {
     await recordCodexHook({ client, agentId: installation.agentId, input: input.payload });
   } else if (input.cli === "claude") {
     await recordClaudeCodeHook({ client, agentId: installation.agentId, input: input.payload });
-  } else {
+  } else if (input.cli === "cursor") {
     await recordCursorHook({ client, agentId: installation.agentId, input: input.payload });
+  } else if (input.cli === "opencode") {
+    await recordOpenCodeHook({ client, agentId: installation.agentId, input: input.payload });
+  } else {
+    await recordGeminiCliHook({ client, agentId: installation.agentId, input: input.payload });
   }
 }
 
@@ -80,8 +85,9 @@ export async function installCodingAgentAuditHooks(input: {
     case "cursor":
       return mergeCursorHooks(join(input.homeDir, ".cursor", "hooks.json"));
     case "opencode":
+      return installOpenCodePlugin(input.homeDir);
     case "gemini":
-      return undefined;
+      return mergeGeminiHooks(join(input.homeDir, ".gemini", "settings.json"));
   }
 }
 
@@ -189,6 +195,39 @@ async function mergeCursorHooks(path: string): Promise<string> {
   }
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, `${JSON.stringify({ ...document, version: 1, hooks }, null, 2)}\n`, "utf8");
+  return path;
+}
+
+async function installOpenCodePlugin(homeDir: string): Promise<string> {
+  const path = join(homeDir, ".config", "opencode", "plugins", "tilde-audit.js");
+  await mkdir(dirname(path), { recursive: true });
+  await cp(opencodePluginPath(), path);
+  return path;
+}
+
+async function mergeGeminiHooks(path: string): Promise<string> {
+  const document = await readJsonObject(path);
+  const hooks = isJsonObject(document.hooks) ? document.hooks : {};
+  const command = "openbot plugin audit --cli gemini";
+  for (const event of ["SessionStart", "SessionEnd", "BeforeAgent", "AfterAgent", "AfterTool"]) {
+    const existing = Array.isArray(hooks[event]) ? hooks[event] : [];
+    if (JSON.stringify(existing).includes(command)) continue;
+    hooks[event] = [
+      ...existing,
+      {
+        hooks: [
+          {
+            type: "command",
+            command,
+            name: "Tilde ChatKit audit",
+            timeout: 30_000,
+          },
+        ],
+      },
+    ];
+  }
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, `${JSON.stringify({ ...document, hooks }, null, 2)}\n`, "utf8");
   return path;
 }
 

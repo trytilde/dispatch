@@ -3,7 +3,7 @@ import type { Client } from "../client";
 import type { JsonObject, JsonValue } from "../tools";
 import type { ChatKitSessionParticipant, ChatKitSessionWithParticipants } from "./index";
 
-export type CodingAgentSource = "codex" | "claude-code" | "cursor";
+export type CodingAgentSource = "codex" | "claude-code" | "cursor" | "opencode" | "gemini-cli";
 
 type CodingAgentEventBase = {
   sessionId: string;
@@ -122,6 +122,10 @@ function sourceDisplayName(source: CodingAgentSource): string {
       return "Claude Code";
     case "cursor":
       return "Cursor";
+    case "opencode":
+      return "OpenCode";
+    case "gemini-cli":
+      return "Gemini CLI";
   }
 }
 

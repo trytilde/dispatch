@@ -68,6 +68,7 @@ Harness adapters normalize their native hook payloads before calling the core
 recorder. The recorder reuses one ChatKit session per harness session, writes
 prompts and final responses as searchable messages, and correlates each tool
 lifecycle by its stable execution ID.
+Supported sources are Codex, Claude Code, Cursor, OpenCode, and Gemini CLI.
 
 ```ts
 import { createClient, recordCodingAgentEvent } from "@trytilde/sdk";

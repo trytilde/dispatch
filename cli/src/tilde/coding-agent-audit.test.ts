@@ -10,26 +10,62 @@ import {
 } from "./coding-agent-audit";
 
 describe("coding-agent audit integration", () => {
-  it.each(["claude", "cursor"] as const)("installs and deduplicates %s hooks", async (cli) => {
-    const homeDir = await mkdtemp(join(tmpdir(), `tilde-audit-${cli}-`));
-    const first = await installCodingAgentAuditHooks({ cli, homeDir, mcpServers: [] });
-    const second = await installCodingAgentAuditHooks({ cli, homeDir, mcpServers: [] });
+  it.each(["claude", "cursor", "gemini"] as const)(
+    "installs and deduplicates %s hooks",
+    async (cli) => {
+      const homeDir = await mkdtemp(join(tmpdir(), `tilde-audit-${cli}-`));
+      const first = await installCodingAgentAuditHooks({ cli, homeDir, mcpServers: [] });
+      const second = await installCodingAgentAuditHooks({ cli, homeDir, mcpServers: [] });
+      expect(second).toBe(first);
+      const contents = await readFile(first!, "utf8");
+      expect(contents.match(new RegExp(`openbot plugin audit --cli ${cli}`, "g"))?.length).toBe(
+        cli === "gemini" ? 5 : 7,
+      );
+    },
+  );
+
+  it("installs the OpenCode audit plugin idempotently", async () => {
+    const homeDir = await mkdtemp(join(tmpdir(), "tilde-audit-opencode-"));
+    const first = await installCodingAgentAuditHooks({ cli: "opencode", homeDir, mcpServers: [] });
+    const second = await installCodingAgentAuditHooks({ cli: "opencode", homeDir, mcpServers: [] });
     expect(second).toBe(first);
-    const contents = await readFile(first!, "utf8");
-    expect(contents.match(new RegExp(`openbot plugin audit --cli ${cli}`, "g"))?.length).toBe(
-      cli === "claude" ? 7 : 7,
-    );
+    expect(await readFile(first!, "utf8")).toContain("export const TildeChatKitAudit");
   });
 
-  it("records a Claude prompt using stored non-secret routing config", async () => {
+  it.each([
+    {
+      cli: "claude" as const,
+      payload: {
+        session_id: "claude-session",
+        hook_event_name: "UserPromptSubmit",
+        prompt: "Audit this change",
+      },
+    },
+    {
+      cli: "opencode" as const,
+      payload: {
+        session_id: "opencode-session",
+        hook_event_name: "chat.message",
+        text: "Audit this change",
+      },
+    },
+    {
+      cli: "gemini" as const,
+      payload: {
+        session_id: "gemini-session",
+        hook_event_name: "BeforeAgent",
+        prompt: "Audit this change",
+      },
+    },
+  ])("records a $cli prompt using stored non-secret routing config", async ({ cli, payload }) => {
     const homeDir = await mkdtemp(join(tmpdir(), "tilde-audit-record-"));
     await writeCodingAgentAuditInstallation(
-      "claude",
+      cli,
       { baseUrl: "https://api.test", teamId: "team-1", agentId: "agent-1" },
       homeDir,
     );
     expect(JSON.parse(await readFile(codingAgentAuditConfigPath(homeDir), "utf8"))).toMatchObject({
-      installations: { claude: { teamId: "team-1", agentId: "agent-1" } },
+      installations: { [cli]: { teamId: "team-1", agentId: "agent-1" } },
     });
 
     const requests: string[] = [];
@@ -50,14 +86,10 @@ describe("coding-agent audit integration", () => {
     }) as typeof fetch;
     try {
       await runCodingAgentAuditHook({
-        cli: "claude",
+        cli,
         homeDir,
         apiKey: "test-key",
-        payload: {
-          session_id: "claude-session",
-          hook_event_name: "UserPromptSubmit",
-          prompt: "Audit this change",
-        },
+        payload,
       });
     } finally {
       globalThis.fetch = originalFetch;

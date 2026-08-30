@@ -12,6 +12,8 @@ const packages = [
   "packages/sdk-claude-code",
   "packages/sdk-codex",
   "packages/sdk-cursor",
+  "packages/sdk-gemini-cli",
+  "packages/sdk-opencode",
   "packages/sdk-react",
   "packages/sdk-vercel-ai-node",
   "packages/sdk-vercel-ai-react",
@@ -55,6 +57,8 @@ try {
           "@trytilde/sdk-claude-code": `file:${tarballs.get("@trytilde/sdk-claude-code")}`,
           "@trytilde/sdk-codex": `file:${tarballs.get("@trytilde/sdk-codex")}`,
           "@trytilde/sdk-cursor": `file:${tarballs.get("@trytilde/sdk-cursor")}`,
+          "@trytilde/sdk-gemini-cli": `file:${tarballs.get("@trytilde/sdk-gemini-cli")}`,
+          "@trytilde/sdk-opencode": `file:${tarballs.get("@trytilde/sdk-opencode")}`,
           "@trytilde/sdk-react": `file:${sdkReactTarball}`,
           "@trytilde/sdk-vercel-ai-node": `file:${tarballs.get("@trytilde/sdk-vercel-ai-node")}`,
           "@trytilde/sdk-vercel-ai-react": `file:${tarballs.get("@trytilde/sdk-vercel-ai-react")}`,
@@ -107,6 +111,8 @@ import { isJsonObject } from "@trytilde/sdk/json";
 import { normalizeClaudeCodeHook } from "@trytilde/sdk-claude-code";
 import { normalizeCodexHook } from "@trytilde/sdk-codex";
 import { normalizeCursorHook } from "@trytilde/sdk-cursor";
+import { normalizeGeminiCliHook } from "@trytilde/sdk-gemini-cli";
+import { normalizeOpenCodeHook } from "@trytilde/sdk-opencode";
 import {
   parseChatKitRequestBody,
   type ChatKitRequestBody,
@@ -135,6 +141,8 @@ if (
   normalizeClaudeCodeHook({}) !== null ||
   normalizeCodexHook({}) !== null ||
   normalizeCursorHook({}) !== null ||
+  normalizeGeminiCliHook({}) !== null ||
+  normalizeOpenCodeHook({}) !== null ||
   body.messages.length !== 0 ||
   reverseProxyPath({ profileId: "profile-id", teamId: "team-id" }) !==
     "/api/v1/team/team-id/reverse-proxy/profile-id"

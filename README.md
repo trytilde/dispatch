@@ -82,6 +82,7 @@ This monorepo owns the public Tilde TypeScript SDK packages alongside OpenBot:
 - `@trytilde/sdk`: stable hand-authored Tilde client, ChatKit, MCP, skill, and reverse-proxy APIs.
 - `@trytilde/sdk-react`: React provider and ChatKit hooks.
 - `@trytilde/sdk-vercel-ai-node` and `@trytilde/sdk-vercel-ai-react`: Vercel AI SDK adapters.
+- `@trytilde/sdk-codex`, `@trytilde/sdk-claude-code`, and `@trytilde/sdk-cursor`: native coding-agent hook adapters that record canonical ChatKit audit events.
 
 Use `openbot auth`, `openbot state`, `openbot tunnel`, and `openbot plugin`; there is no separate
 Tilde CLI or plugin package. SDK packages version independently from OpenBot's fixed package group.

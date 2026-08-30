@@ -1827,7 +1827,7 @@ export interface paths {
         put?: never;
         /**
          * Report a local tool execution lifecycle event
-         * @description Records a Harness-local tool lifecycle event and its canonical execution state atomically.
+         * @description Records a coding-harness-local tool lifecycle event and its canonical execution state atomically. Event-oriented clients may include tool metadata to register one newly discovered tool without reconciling the complete local catalog.
          */
         post: operations["chatkit-report-tool-execution"];
         delete?: never;
@@ -9409,6 +9409,8 @@ export interface components {
         };
         /** @description Provenance of the ChatKit session an agent turn belongs to. */
         ChatSessionContext: {
+            /** @description Calling agent whose display/browser context a delegated specialist should continue. */
+            parent_agent_id?: string | null;
             /** @description Human-readable provider name for prompt text, for example `GitHub`. */
             provider_display_name: string;
             /**
@@ -11873,8 +11875,19 @@ export interface components {
             started_at?: null | components["schemas"]["WrappedChronoDateTime"];
             state: components["schemas"]["ToolExecutionState"];
             summary?: string | null;
+            tool?: null | components["schemas"]["ReportedAgentTool"];
             tool_id: string;
             wire_name: string;
+        };
+        /**
+         * @description Tool metadata carried with a lifecycle report when the calling harness
+         *     discovers tools one execution at a time.
+         */
+        ReportedAgentTool: {
+            display_name: string;
+            identity_snapshot?: null | components["schemas"]["WrappedJsonValue"];
+            summary?: string | null;
+            supports_summary?: boolean;
         };
         ResolveLoginProviderResponse: {
             provider: components["schemas"]["LoginProviderResolution"];

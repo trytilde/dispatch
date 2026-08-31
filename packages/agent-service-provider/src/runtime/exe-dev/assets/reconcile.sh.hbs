@@ -75,12 +75,18 @@ chmod 0700 "$(dirname "$environment_file")"
 
 if [[ ! -d "$remote_directory/.git" ]]; then
   git clone --branch "$source_branch" --single-branch "$source_url" "$remote_directory"
-elif [[ -n "$(git -C "$remote_directory" status --porcelain)" ]]; then
+elif [[ -n "$(git -C "$remote_directory" status --porcelain --untracked-files=no)" ]]; then
   echo "Preserving remote OpenBot edits; skipping source fast-forward"
 else
   git -C "$remote_directory" remote set-url origin "$source_url"
-  git -C "$remote_directory" fetch origin "$source_branch"
-  git -C "$remote_directory" merge --ff-only "origin/$source_branch"
+  git -C "$remote_directory" fetch --no-tags origin \
+    "refs/heads/$source_branch:refs/remotes/origin/$source_branch"
+  if git -C "$remote_directory" show-ref --verify --quiet "refs/heads/$source_branch"; then
+    git -C "$remote_directory" switch "$source_branch"
+    git -C "$remote_directory" merge --ff-only "origin/$source_branch"
+  else
+    git -C "$remote_directory" switch --create "$source_branch" --no-track "origin/$source_branch"
+  fi
 fi
 
 (

@@ -1,5 +1,6 @@
 ---
 "@tryopenbot/agent-provider": minor
+"openbot": minor
 "@trytilde/sdk-vercel-ai-node": minor
 ---
 

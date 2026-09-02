@@ -84,6 +84,12 @@ export type ChatKitEndpointContext = ChatKitEndpointProviderContext & {
   skills: SkillsClient;
   session: ChatKitSessionClient;
   chatkit: ChatKitContextClient;
+  /** Request-scoped MCP connection with the verified speaker capability kept private. */
+  mcp: {
+    connect<TTools extends ToolSet = ToolSet>(
+      options: Omit<CreateMCPClientOptions<TTools>, "client">,
+    ): Promise<TildeMCPClientHandle<TTools>>;
+  };
   $provider?: { id: string; tools: ToolSet };
 };
 
@@ -249,6 +255,26 @@ export function chatKitEndpoint(
     );
     const personalToolClientNonce = crypto.randomUUID();
     const personalToolProtocolSessionId = crypto.randomUUID();
+    const mcp = {
+      connect<TTools extends ToolSet = ToolSet>(
+        mcpOptions: Omit<CreateMCPClientOptions<TTools>, "client">,
+      ) {
+        return createMCPClient({
+          ...mcpOptions,
+          client,
+          headers: {
+            ...mcpOptions.headers,
+            ...(personalToolCapability
+              ? {
+                  "x-tilde-personal-tool-capability": personalToolCapability,
+                  "x-tilde-personal-tool-client-nonce": personalToolClientNonce,
+                  "x-tilde-personal-tool-protocol-session-id": personalToolProtocolSessionId,
+                }
+              : {}),
+          },
+        });
+      },
+    };
     const sessionTools = toolSession ? createChatKitSessionTools(client, toolSession) : undefined;
     const currentRequestMessageIds = messageIds(body.messages);
     const session: ChatKitSessionClient = {
@@ -258,19 +284,8 @@ export function chatKitEndpoint(
             providerId: toolSession.providerId,
             tools: sessionTools,
             createMCPClient: (mcpOptions: Omit<CreateMCPClientOptions, "client" | "chatkit">) =>
-              createMCPClient({
+              mcp.connect({
                 ...mcpOptions,
-                client,
-                headers: {
-                  ...mcpOptions.headers,
-                  ...(personalToolCapability
-                    ? {
-                        "x-tilde-personal-tool-capability": personalToolCapability,
-                        "x-tilde-personal-tool-client-nonce": personalToolClientNonce,
-                        "x-tilde-personal-tool-protocol-session-id": personalToolProtocolSessionId,
-                      }
-                    : {}),
-                },
                 chatkit: {
                   sessionId: toolSession.id,
                   boundTools: sessionTools,
@@ -406,6 +421,7 @@ export function chatKitEndpoint(
       skills: client.skills,
       session,
       chatkit,
+      mcp,
       ...(toolSession && sessionTools
         ? { $provider: { id: toolSession.providerId, tools: sessionTools } }
         : {}),

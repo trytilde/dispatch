@@ -14,7 +14,7 @@ Personal tool federation is opt-in. Set
 `OPENBOT_PERSONAL_TOOL_FEDERATION_MODE=all` to let each verified ChatKit
 speaker bring every active personal account to a shared agent, or `selected`
 to enforce the MCP server's provider/tool allowlist. The default is `none`.
-Generated agents use `context.session.createMCPClient(...)`; Tilde resolves accounts
+Generated agents use `context.mcp.connect(...)`; Tilde resolves accounts
 and brokers credentials per request, while user IDs and opaque capabilities
 remain outside model arguments and portable agent configuration.
 

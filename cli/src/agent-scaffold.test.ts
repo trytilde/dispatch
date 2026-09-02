@@ -10,6 +10,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { discoverAgents } from "@tryopenbot/agent-service-provider";
 import { setImmediate } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { VercelAgentServiceProvider } from "@tryopenbot/agent-service-provider";
@@ -21,6 +22,7 @@ import {
   agentTemplateDirectory,
   scaffoldAgent,
   scaffoldAgentTemplates,
+  scaffoldMemoryCatcherAgent,
   scaffoldPrimaryAgent,
 } from "./agent-scaffold.js";
 
@@ -207,6 +209,43 @@ describe("agent scaffolding", () => {
       ),
     ).toContain("Custom instructions for Custom Agent");
     expect(await readFile(customTemplate, "utf8")).toContain("AGENT_ID_JSON");
+  });
+
+  it("materializes the least-privilege Memory Catcher agent", async () => {
+    const root = await temporaryRepository();
+    await scaffoldAgentTemplates(root);
+    await scaffoldPrimaryAgent(root, "Factory");
+    const catcher = await scaffoldMemoryCatcherAgent(root);
+    const directory = join(root, "configuration/agent/subagents/memory-catcher");
+
+    expect(catcher).toMatchObject({ id: "memory-catcher", name: "Memory Catcher", directory });
+    expect((await readdir(directory)).toSorted()).toEqual([
+      "agent.ts",
+      "instructions.ts",
+      "instrumentation.ts",
+      "skills",
+      "tools",
+    ]);
+    expect(await readFile(join(directory, "agent.ts"), "utf8")).toContain(
+      'model: "zai/glm-5.3-flash"',
+    );
+    expect(await readFile(join(directory, "instructions.ts"), "utf8")).toContain(
+      "Never, ever invoke sendMessage",
+    );
+    expect(await readFile(join(directory, "skills/memory-synthesis/SKILL.md"), "utf8")).toContain(
+      "OpenViking/OKF",
+    );
+    await expect(access(join(directory, "tools/bash.ts"))).resolves.toBeUndefined();
+    await expect(access(join(directory, "inference.ts"))).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(discoverAgents(root)).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          slug: "memory-catcher",
+          path: join(directory, "agent.ts"),
+          instrumentationPath: join(directory, "instrumentation.ts"),
+        }),
+      ]),
+    );
   });
 
   it("never exposes a partial agent when a late template fails", async () => {

@@ -28,6 +28,9 @@ const COMPACTION_EVENT_PATH =
   "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/compaction-events";
 const COMPACTED_HISTORY_PATH =
   "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/messages/from-last-compaction";
+const AUTOMATIC_MEMORY_RECALL_PATH =
+  "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/automatic-memory/recall";
+const AGENT_PATH = "/api/v1/team/{team_id}/chatkit/agents/{agent_id}";
 const ATTACHMENT_DOWNLOAD_URL_PATH =
   "/api/v1/team/{team_id}/chatkit/session/{session_id}/attachment/{attachment_id}/download-url";
 const AGENT_TOOLS_PATH = "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/tools";
@@ -97,6 +100,31 @@ export type ChatKitCompactionCheckpoint = {
   inputTokens: number;
   outputTokens: number;
   endedAt: string;
+};
+
+export type ChatKitAutomaticMemoryMode = "none" | "personal" | "personal_plus_agent" | "team";
+
+export type ChatKitAutomaticMemoryItem = {
+  bankId: string;
+  bankName: string;
+  memoryId: string;
+  memoryType: string;
+  content: string;
+  evidenceIds: string[];
+  source?: string;
+  learnedByAgentId?: string;
+};
+
+export type ChatKitAutomaticMemoryProjection = {
+  items: ChatKitAutomaticMemoryItem[];
+  rendered: string;
+  estimatedTokens: number;
+  truncated: boolean;
+};
+
+export type ChatKitAgentMemorySettings = {
+  mode: ChatKitAutomaticMemoryMode;
+  bankIds: string[];
 };
 
 export type AgentToolRegistration = {
@@ -220,12 +248,97 @@ export class ChatKitClient {
     return new ChatKitRoutinesClient(this.#config, agentId);
   }
 
+  /** Recall using only a durable triggering message; Tilde derives its effective actor. */
+  async recallAutomaticMemory(input: {
+    agentId: string;
+    sessionId: string;
+    messageId: string;
+    maxTokens?: number;
+  }): Promise<ChatKitAutomaticMemoryProjection> {
+    const raw = await requestJson<{
+      items: Array<{
+        bank_id: string;
+        bank_name: string;
+        memory_id: string;
+        memory_type: string;
+        content: string;
+        evidence_ids?: string[];
+        source?: string | null;
+        learned_by_agent_id?: string | null;
+      }>;
+      rendered: string;
+      estimated_tokens: number;
+      truncated: boolean;
+    }>(this.#config, {
+      method: "POST",
+      path: pathWithParams(teamPath(this.#config, AUTOMATIC_MEMORY_RECALL_PATH), {
+        agent_id: input.agentId,
+        session_id: input.sessionId,
+      }),
+      body: {
+        message_id: input.messageId,
+        ...(input.maxTokens === undefined ? {} : { max_tokens: input.maxTokens }),
+      },
+    });
+    return {
+      items: raw.items.map((item) => ({
+        bankId: item.bank_id,
+        bankName: item.bank_name,
+        memoryId: item.memory_id,
+        memoryType: item.memory_type,
+        content: item.content,
+        evidenceIds: item.evidence_ids ?? [],
+        ...(item.source ? { source: item.source } : {}),
+        ...(item.learned_by_agent_id ? { learnedByAgentId: item.learned_by_agent_id } : {}),
+      })),
+      rendered: raw.rendered,
+      estimatedTokens: raw.estimated_tokens,
+      truncated: raw.truncated,
+    };
+  }
+
+  async getAgentMemorySettings(agentId: string): Promise<ChatKitAgentMemorySettings> {
+    const raw = await requestJson<{
+      automatic_memory_mode?: ChatKitAutomaticMemoryMode | null;
+      memory_bank_ids?: string[] | null;
+    }>(this.#config, {
+      path: pathWithParams(teamPath(this.#config, AGENT_PATH), { agent_id: agentId }),
+    });
+    return {
+      mode: raw.automatic_memory_mode ?? "none",
+      bankIds: raw.memory_bank_ids ?? [],
+    };
+  }
+
+  async updateAgentMemorySettings(
+    agentId: string,
+    settings: ChatKitAgentMemorySettings,
+  ): Promise<ChatKitAgentMemorySettings> {
+    const raw = await requestJson<{
+      automatic_memory_mode?: ChatKitAutomaticMemoryMode | null;
+      memory_bank_ids?: string[] | null;
+    }>(this.#config, {
+      method: "PATCH",
+      path: pathWithParams(teamPath(this.#config, AGENT_PATH), { agent_id: agentId }),
+      body: {
+        automatic_memory_mode: settings.mode,
+        memory_bank_ids: settings.bankIds,
+      },
+    });
+    return {
+      mode: raw.automatic_memory_mode ?? settings.mode,
+      bankIds: raw.memory_bank_ids ?? settings.bankIds,
+    };
+  }
+
   async registerHttpVercelAiSdkAgent(input: {
     id?: string;
     displayName: string;
     endpointUrl: string;
     streaming?: boolean;
     timeoutMs?: number;
+    automaticMemoryMode?: ChatKitAutomaticMemoryMode;
+    memoryBankIds?: string[];
   }): Promise<{
     agent: RegisteredChatKitAgent;
     apiKey: string;
@@ -244,6 +357,8 @@ export class ChatKitClient {
         endpoint_url: input.endpointUrl,
         streaming: input.streaming ?? false,
         timeout_ms: input.timeoutMs,
+        automatic_memory_mode: input.automaticMemoryMode ?? "none",
+        memory_bank_ids: input.memoryBankIds,
       },
     });
     return {

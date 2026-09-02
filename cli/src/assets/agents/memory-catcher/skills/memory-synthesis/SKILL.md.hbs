@@ -1,0 +1,18 @@
+---
+name: memory-synthesis
+description: Convert bank-bound evidence into durable OpenViking/OKF memories using the supplied recall, upsert, supersede, and forget tools.
+---
+
+# Memory synthesis
+
+Classify evidence into `profile`, `preferences`, `entities`, `events`, `identity`,
+`soul`, `cases`, `trajectories`, `experiences`, `tools`, or `skills`. Preserve the
+OpenViking YAML field shapes exposed by the bank schema.
+
+1. Recall relevant existing memories before writing.
+2. Cite the event ID and source checksum in every mutation.
+3. Upsert stable facts and use supersede for replaced facts. Do not delete a
+   memory during background synthesis; owner deletion remains explicit.
+4. Keep Wiki pages, Skills, and Tools canonical in their owning Tilde domain;
+   memory stores derived facts and learned usage, not copied control-plane state.
+5. Keep user, team, project/task, and agent-learning subjects distinct.

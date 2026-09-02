@@ -27,9 +27,13 @@ export {
   AgentRunsClient,
   type AgentRunStatus,
   type AgentToolRegistration,
+  type ChatKitAgentMemorySettings,
   type ChatKitAttachment,
   type ChatKitCompactionCheckpoint,
   type ChatKitCompactionLifecycle,
+  type ChatKitAutomaticMemoryItem,
+  type ChatKitAutomaticMemoryMode,
+  type ChatKitAutomaticMemoryProjection,
   type ChatKitSessionParticipant,
   type ChatKitSessionWithParticipants,
   ChatKitClient,
@@ -86,6 +90,16 @@ export {
   BillingClient,
   type CommitAiCreditReceiptInput,
 } from "./billing";
+export {
+  MemoryBankClient,
+  MemoryClient,
+  MemorySynthesisSessionClient,
+  type MemoryBankSummary,
+  type MemoryDocumentInput,
+  type MemoryDocumentRecord,
+  type MemorySourceBindingInput,
+  type MemoryType,
+} from "./memory";
 export { isJsonObject, isRecord, parseJsonValue, stringField, trimmedStringField } from "./json.js";
 export {
   type CreateTildeGrpcReverseProxyOptions,

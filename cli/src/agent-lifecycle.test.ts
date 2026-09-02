@@ -145,6 +145,59 @@ describe("agent resource lifecycle", () => {
     expect(peak).toBe(10);
   });
 
+  it("reconciles Memory Catcher before agents whose banks depend on it", async () => {
+    vi.mocked(discoverAgents).mockResolvedValueOnce([
+      {
+        slug: "factory",
+        kind: "primary",
+        directory: "/repository/configuration/agent",
+        path: "/repository/configuration/agent/agent.ts",
+      },
+      {
+        slug: "memory-catcher",
+        kind: "subagent",
+        directory: "/repository/configuration/agent/subagents/memory-catcher",
+        path: "/repository/configuration/agent/subagents/memory-catcher/agent.ts",
+      },
+      {
+        slug: "research-assistant",
+        kind: "subagent",
+        directory: "/repository/configuration/agent/subagents/research-assistant",
+        path: "/repository/configuration/agent/subagents/research-assistant/agent.ts",
+      },
+    ]);
+    const calls: string[] = [];
+    let catcherReady = false;
+
+    await reconcileAgentResources({
+      repositoryRoot: "/repository",
+      environment: {},
+      devMode: true,
+      providers: {
+        agent: {
+          deployable: {
+            plan: async () => ({ summary: "agent" }),
+            deploy: async (context) => {
+              if (context.agentId === "memory-catcher") {
+                calls.push("memory-catcher");
+                catcherReady = true;
+                return;
+              }
+              expect(catcherReady).toBe(true);
+              calls.push(context.agentId!);
+            },
+          },
+        } as AgentProvider,
+        agentService: {
+          baseUrl: () => new URL("http://127.0.0.1:4100"),
+        } as unknown as AgentServiceProvider,
+      },
+    });
+
+    expect(calls[0]).toBe("memory-catcher");
+    expect(calls.toSorted()).toEqual(["factory", "memory-catcher", "research-assistant"]);
+  });
+
   it("serializes repository persistence without poisoning the queue after a failure", async () => {
     const calls: string[] = [];
     let active = 0;

@@ -6,6 +6,7 @@ import {
   composeChatKitCompactionPrepareStep,
   convertToAiSdkMessages,
   createChatKitCompactionController,
+  createChatKitAutomaticMemoryController,
   createClient,
   HostedInferenceBillingController,
   HostedInferenceCreditsExhaustedError,
@@ -262,9 +263,22 @@ export default chatKitEndpoint({
       ),
       tags: ["hosted-openbot", `agent:${{{AGENT_ID_JSON}}}`],
     });
+    const triggerMessageId = context.messages.at(-1)?.id;
+    const automaticMemory = triggerMessageId
+      ? await createChatKitAutomaticMemoryController({
+          session: context.session,
+          maxTokens: 2_000,
+        })
+          .recall({ messageId: triggerMessageId })
+          .catch(() => {
+            console.warn("Automatic memory recall unavailable; continuing without memory");
+            return undefined;
+          })
+      : undefined;
     const convertedModelMessages = await convertToModelMessages(messages);
     const modelMessages = [
       ...(history.checkpoint ? [chatKitCompactionCheckpointMessage(history.checkpoint)] : []),
+      ...(automaticMemory?.message ? [automaticMemory.message] : []),
       ...convertedModelMessages,
     ];
     const sourceMessageIds = [...requestHistory, ...context.messages]
@@ -275,7 +289,11 @@ export default chatKitEndpoint({
       agentId: {{{AGENT_ID_JSON}}},
       sourceMessageIds:
         sourceMessageIds.length === convertedModelMessages.length
-          ? [...(history.checkpoint ? [null] : []), ...sourceMessageIds]
+          ? [
+              ...(history.checkpoint ? [null] : []),
+              ...(automaticMemory?.message ? [null] : []),
+              ...sourceMessageIds,
+            ]
           : undefined,
       compactedThroughMessageId:
         durableInvocation.run?.hidden

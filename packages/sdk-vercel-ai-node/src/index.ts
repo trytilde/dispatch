@@ -195,6 +195,11 @@ export {
   chatKitEndpoint,
   TILDE_CHATKIT_RESPONSE_MODE_HEADER,
 } from "./handler";
+export { createMemorySynthesisTools, restrictMemorySynthesisTools } from "./memory-synthesis-tools";
+export {
+  createChatKitAutomaticMemoryController,
+  type ChatKitAutomaticMemoryController,
+} from "./automatic-memory";
 export { type ChatKitToolSession, createChatKitSessionTools } from "./chatkit-session-tools";
 export {
   type ChatKitConnectionOptions,

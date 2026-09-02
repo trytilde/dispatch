@@ -6,8 +6,8 @@ authored agent code and not as a chat API.
 
 `AgentProvider` exposes only an idempotent `Deployable` lifecycle. The Tilde
 implementation discovers authored agents; creates or repairs ChatKit agents;
-synchronizes authored skills and registry membership; adds the OpenBot computer-use overlay and the trusted managed canonical Cua skill without removing user-owned skills; and reconciles the
-dynamic MCP server, Tilde control-plane tools, and deployment-platform MCP
+ synchronizes authored skills and registry membership; adds the OpenBot computer-use overlay and the trusted managed canonical Cua skill without removing user-owned skills; and reconciles the
+dynamic MCP server, an agent-owned memory bank, Tilde control-plane tools, and deployment-platform MCP
 connections. Repeated deployments and retries after partial failure converge
 without duplicate resources or unnecessary updates. It exposes no vendor CRUD
 to the CLI. Owner conversation traffic uses Tilde's REST/SSE contract through
@@ -22,9 +22,10 @@ the control service's allowlisted same-origin bridge.
 
 Reconciliation now submits one typed Tilde Agent Resource Bundle and polls its
 durable status. Tilde owns the agent, dynamic MCP server, control-plane toolkit,
-exact managed/custom skill registry, credential rotation, and cleanup. Memory is
-opt-in on Tilde; omitting it preserves any existing agent-owned bank without
-making a paid bank a prerequisite for new-agent creation. OpenBot claims endpoint secrets once and
+exact managed/custom skill registry, memory bank, credential rotation, and
+cleanup. Ordinary OpenBot bots deploy with `personal_plus_agent` automatic
+memory; the synthesis-only Memory Catcher deploys with mode `none` and no bank,
+preventing recursive synthesis. OpenBot claims endpoint secrets once and
 uploads a deterministic canonical avatar to the stable machine-user profile,
 then retains its ChatKit realtime channel plus credential-bearing
 deployment-platform integrations.

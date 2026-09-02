@@ -101,6 +101,7 @@ export class TildeAgentProvider implements AgentProvider {
         "Create the shared OpenBot ChatKit workspace channel when missing",
         "Reconcile Vercel AI SDK endpoint URLs and enabled status",
         "Upload the agent's canonical machine-user avatar",
+        "Provision automatic memory for ordinary agents without recursive synthesizer memory",
         "Synchronize authored skills and exact registry membership",
         "Reconcile dynamic MCP, Tilde control-plane, and deployment-platform tools",
         context.devMode
@@ -121,6 +122,7 @@ export class TildeAgentProvider implements AgentProvider {
     const localRunningEndpoint = context.devMode;
     const prefix = `AGENT_${slug.replaceAll("-", "_").toUpperCase()}`;
     const displayName = context.environment[`${prefix}_NAME`]?.trim() || slug;
+    const synthesisOnly = slug === "memory-catcher";
     const apiKeyName = `${prefix}_API_KEY`;
     const webhookKeyName = `${prefix}_WEBHOOK_SIGNING_KEY`;
     const endpointUrl = new URL(`/api/agents/${slug}`, `${origin}/`);
@@ -142,6 +144,7 @@ export class TildeAgentProvider implements AgentProvider {
               concurrency_policy: ChatKitAgentConcurrencyPolicy.QUEUE,
             },
             status: "enabled",
+            automatic_memory_mode: synthesisOnly ? "none" : "personal_plus_agent",
             credential_strategy: hasCredentials
               ? AgentCredentialStrategy.PRESERVE
               : AgentCredentialStrategy.ROTATE,
@@ -162,6 +165,17 @@ export class TildeAgentProvider implements AgentProvider {
             description: `Skills available to the ${slug} OpenBot agent.`,
             enabled_skills: enabledSkills,
           },
+          ...(synthesisOnly
+            ? {}
+            : {
+                memory: {
+                  bank: {
+                    enabled: true,
+                    name: `OpenBot ${slug} memory`,
+                    description: `Memory owned by the ${slug} OpenBot agent.`,
+                  },
+                },
+              }),
         },
         signal,
       }),

@@ -318,7 +318,7 @@ describe("chatKitEndpoint", () => {
     expect(response.status).toBe(200);
   });
 
-  it("exposes canonical receiving-agent metadata on the endpoint context", async () => {
+  it("exposes the canonical receiving-agent profile on the endpoint context", async () => {
     const agent = {
       id: "agent-one",
       displayName: "Agent One",
@@ -345,6 +345,31 @@ describe("chatKitEndpoint", () => {
 
     const response = await endpoint(signedRequest({ messages: [], agent }));
 
+    expect(response.status).toBe(200);
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
+  it("exposes typed durable execution state on the endpoint context", async () => {
+    const execution = {
+      kind: "agent_run",
+      hidden: true,
+      runId: "7aae5f83-4ce2-487e-a951-f9400367b72c",
+      workerId: "worker-one",
+      generation: 9,
+    } as const;
+    const handler = vi.fn(async (request: Request, context) => {
+      expect(context.execution).toEqual(execution);
+      expect(context.body.execution).toEqual(execution);
+      expect(await request.json()).toEqual({ messages: [], execution });
+      return new Response("ok");
+    });
+    const endpoint = testChatKitEndpoint({
+      webhookSigningKey: key,
+      client: { apiKey: "test-key" },
+      handler,
+    });
+
+    const response = await endpoint(signedRequest({ messages: [], execution }));
     expect(response.status).toBe(200);
     expect(handler).toHaveBeenCalledOnce();
   });

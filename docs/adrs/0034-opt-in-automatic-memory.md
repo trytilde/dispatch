@@ -2,21 +2,25 @@
 
 ## In brief
 
-- The reusable Tilde SDK defaults automatic memory to `none`; OpenBot explicitly
-  deploys ordinary bots with `personal_plus_agent` and a dedicated agent bank.
+- The reusable Tilde SDK and OpenBot both default automatic memory to `none`.
+  Owners opt in during initialization or with fork-owned environment settings.
 - Tilde derives memory authority from the durable triggering ChatKit message;
   OpenBot never supplies a user identity or bank ID during recall.
 - The agent inserts a deterministic bounded projection after stable instructions
   and any compaction checkpoint so provider prompt-prefix caching remains useful.
 - Memory Catcher is a least-privilege user-deployed background agent with one
-  server-bound synthesis session per bank and no memory bank of its own.
+  server-bound synthesis session per bank and no memory bank of its own. It uses
+  the installation's selected inference provider rather than separate model auth.
 
 ## Decision
 
 OpenBot uses the high-level Tilde automatic-memory controller around inference.
 An owner can select `none`, `personal`, `personal_plus_agent`, or `team`, and can
-inspect, edit, or delete visible facts. OpenBot's deployment default is
-`personal_plus_agent`; callers of the reusable SDK must opt in explicitly.
+inspect, edit, or delete visible facts. OpenBot's deployment default is `none`.
+`OPENBOT_AUTOMATIC_MEMORY_MODE` selects the installation default and
+`AGENT_<ID>_AUTOMATIC_MEMORY_MODE` overrides one bot. Only
+`personal_plus_agent` provisions a bot-owned bank; moving away sends an
+explicit disabled bank spec so repeated deployment removes that owned bank.
 
 Recall is tied to the newest durable triggering message ID. Tilde authenticates
 the recipient bot, resolves the effective actor and current bank visibility, and
@@ -38,11 +42,12 @@ ChatKit, not the OpenBot model loop, performs idempotent post-turn evidence
 enqueueing. Explicit owner facts remain owner-editable and protected from
 automatic overwrite.
 
-Memory Catcher uses `zai/glm-5.3-flash`, receives only session-bound recall,
-retain, supersede, and completion tools, and never receives a model
-argument for a bank, tenant, or user. It has no automatic memory mode or owned
-bank, preventing recursive synthesis. Its instructions prohibit human messaging;
-dynamic `sendMessage` and unbound memory tools are removed before inference.
+Memory Catcher uses the installation's selected inference provider, receives
+only session-bound recall, retain, supersede, forget, and completion tools, and
+never receives a model argument for a bank, tenant, or user. It has no automatic
+memory mode or owned bank, preventing recursive synthesis. Its instructions
+prohibit human messaging; dynamic `sendMessage` and unbound memory tools are
+removed before inference.
 
 ## Consequences
 
@@ -54,11 +59,10 @@ dynamic `sendMessage` and unbound memory tools are removed before inference.
   evidence remains queued until the configured bank synthesizer can process it.
 - Forks must scaffold and deploy Memory Catcher and reconcile ordinary agents'
   memory bundle fields.
-
-<FOLLOW UP>
-Owner: Tilde Memory API and OpenBot Memory Catcher
-Trigger: the synthesis-session delete operation accepts a batch identity and
-writes the same durable mutation receipt as retain/supersede
-Work: restore the model-visible background forget tool and prove a forget-only
-batch completes exactly once without retrying an already-applied deletion
-</FOLLOW UP>
+- Every synthesis mutation and completion is bound to the current claim's exact
+  batch, complete evidence set, and fresh lease owner. Stale workers cannot
+  adopt receipts from an earlier claim, and per-operation receipts make exact
+  delete retries idempotent.
+- The ordinary agent bundle names `memory-catcher` as the owned bank's
+  synthesizer. Bundle reconciliation validates and converges that stable
+  same-team reference on create, update, state import, and repeated deployment.

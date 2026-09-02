@@ -23,9 +23,12 @@ the control service's allowlisted same-origin bridge.
 Reconciliation now submits one typed Tilde Agent Resource Bundle and polls its
 durable status. Tilde owns the agent, dynamic MCP server, control-plane toolkit,
 exact managed/custom skill registry, memory bank, credential rotation, and
-cleanup. Ordinary OpenBot bots deploy with `personal_plus_agent` automatic
-memory; the synthesis-only Memory Catcher deploys with mode `none` and no bank,
-preventing recursive synthesis. OpenBot claims endpoint secrets once and
+cleanup. Ordinary OpenBot bots default automatic memory to `none`.
+`OPENBOT_AUTOMATIC_MEMORY_MODE` and the per-agent
+`AGENT_<ID>_AUTOMATIC_MEMORY_MODE` override select an explicit mode;
+`personal_plus_agent` alone provisions one agent-owned bank. The synthesis-only
+Memory Catcher deploys with mode `none` and no bank, preventing recursive
+synthesis. OpenBot claims endpoint secrets once and
 uploads a deterministic canonical avatar to the stable machine-user profile,
 then retains its ChatKit realtime channel plus credential-bearing
 deployment-platform integrations.

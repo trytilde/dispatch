@@ -71,12 +71,23 @@ export async function reconcileAgentResources(
 ): Promise<void> {
   const discoveredSources = await discoverAgents(options.repositoryRoot);
   const selectedAgentIds = options.agentIds ? new Set(options.agentIds) : undefined;
+  const automaticMemoryEnabled = discoveredSources.some((source) => {
+    if (source.slug === "memory-catcher") return false;
+    const prefix = `AGENT_${source.slug.replaceAll("-", "_").toUpperCase()}`;
+    const value =
+      options.environment[`${prefix}_AUTOMATIC_MEMORY_MODE`] ??
+      options.environment.OPENBOT_AUTOMATIC_MEMORY_MODE;
+    return (value?.trim().toLowerCase() ?? "none") !== "none";
+  });
   let sources = selectedAgentIds
     ? discoveredSources.filter((source) => selectedAgentIds.has(source.slug))
-    : discoveredSources;
+    : discoveredSources.filter(
+        (source) => source.slug !== "memory-catcher" || automaticMemoryEnabled,
+      );
   const synthesisSource = discoveredSources.find(({ slug }) => slug === "memory-catcher");
   if (
     selectedAgentIds &&
+    automaticMemoryEnabled &&
     synthesisSource &&
     sources.some(({ slug }) => slug !== "memory-catcher") &&
     !sources.includes(synthesisSource)

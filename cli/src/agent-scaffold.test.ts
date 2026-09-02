@@ -221,14 +221,15 @@ describe("agent scaffolding", () => {
     expect(catcher).toMatchObject({ id: "memory-catcher", name: "Memory Catcher", directory });
     expect((await readdir(directory)).toSorted()).toEqual([
       "agent.ts",
+      "inference.ts",
       "instructions.ts",
       "instrumentation.ts",
       "skills",
       "tools",
     ]);
-    expect(await readFile(join(directory, "agent.ts"), "utf8")).toContain(
-      'model: "zai/glm-5.3-flash"',
-    );
+    const catcherSource = await readFile(join(directory, "agent.ts"), "utf8");
+    expect(catcherSource).toContain("prepareInference(tools as ToolSet, request.signal)");
+    expect(catcherSource).not.toContain('model: "zai/glm-5.3-flash"');
     expect(await readFile(join(directory, "instructions.ts"), "utf8")).toContain(
       "Never, ever invoke sendMessage",
     );
@@ -236,7 +237,9 @@ describe("agent scaffolding", () => {
       "OpenViking/OKF",
     );
     await expect(access(join(directory, "tools/bash.ts"))).resolves.toBeUndefined();
-    await expect(access(join(directory, "inference.ts"))).rejects.toMatchObject({ code: "ENOENT" });
+    expect(await readFile(join(directory, "inference.ts"), "utf8")).toContain(
+      'modelId ?? process.env.AI_MODEL ?? "openai/gpt-5.6-sol"',
+    );
     await expect(discoverAgents(root)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -304,6 +307,13 @@ describe("agent scaffolding", () => {
     expect(inference).toContain("createCodexAppServer");
     expect(inference).toContain('const defaultModel = "gpt-5.6-sol"');
     expect(inference).toContain("createSdkMcpServer");
+    await scaffoldMemoryCatcherAgent(root);
+    const catcherInference = await readFile(
+      join(root, "configuration/agent/subagents/memory-catcher/inference.ts"),
+      "utf8",
+    );
+    expect(catcherInference).toContain("createCodexAppServer");
+    expect(catcherInference).toContain('const defaultModel = "gpt-5.6-sol"');
     await expect(
       new VercelAgentServiceProvider().check({
         devMode: true,

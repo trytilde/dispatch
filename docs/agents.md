@@ -27,7 +27,10 @@ when a model needs another policy. Tilde persists lifecycle events but does not
 run the compaction loop. See ADR-0033 and the
 [AI SDK compaction guide](https://ai-sdk.dev/cookbook/guides/agent-context-compaction).
 
-Ordinary generated agents recall automatic memory before inference. Stable
+Automatic memory is owner-selectable and defaults off. Set
+`OPENBOT_AUTOMATIC_MEMORY_MODE` to `personal`, `personal_plus_agent`, or `team`,
+or use `AGENT_<ID>_AUTOMATIC_MEMORY_MODE` for one bot. Enabled ordinary agents
+recall automatic memory before inference. Stable
 instructions remain the provider-cache prefix; the bounded provenance-bearing
 projection follows them and any compaction checkpoint, before the mutable
 conversation tail. Tilde derives actor and bank access from the durable trigger

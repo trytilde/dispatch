@@ -365,22 +365,37 @@ export class MemorySynthesisSessionClient {
     return response.result;
   }
 
-  async forget(documentId: string): Promise<void> {
-    requireDocumentId(documentId);
+  async forget(input: {
+    documentId: string;
+    batchId: string;
+    evidenceIds: string[];
+    leaseOwner: string;
+  }): Promise<void> {
+    requireDocumentId(input.documentId);
+    if (!input.batchId.trim()) throw new TypeError("batchId is required");
+    if (!input.evidenceIds.length) throw new TypeError("evidenceIds are required");
+    if (!input.leaseOwner.trim()) throw new TypeError("leaseOwner is required");
     await requestJson<void>(this.#config, {
       method: "DELETE",
       path: `${this.#root}/documents`,
-      body: { document_id: documentId },
+      body: {
+        document_id: input.documentId,
+        batch_id: input.batchId,
+        evidence_ids: input.evidenceIds,
+        lease_owner: input.leaseOwner,
+      },
     });
   }
 
   finish(input: {
     batchId: string;
     evidenceIds: string[];
+    leaseOwner: string;
     outcome: "mutated" | "noop";
     reason: string;
   }): Promise<JsonValue> {
     if (!input.evidenceIds.length) throw new TypeError("evidenceIds are required");
+    if (!input.leaseOwner.trim()) throw new TypeError("leaseOwner is required");
     if (input.outcome === "noop" && !input.reason.trim())
       throw new TypeError("noop synthesis requires a reason");
     return this.upsert({
@@ -388,11 +403,18 @@ export class MemorySynthesisSessionClient {
       content: JSON.stringify({
         batch_id: input.batchId,
         evidence_ids: input.evidenceIds,
+        lease_owner: input.leaseOwner,
         outcome: input.outcome,
         reason: input.reason,
       }),
       memoryType: "events",
-      metadata: { internal: true, synthesis_receipt: true },
+      metadata: {
+        internal: true,
+        synthesis_receipt: true,
+        synthesis_batch_id: input.batchId,
+        synthesis_lease_owner: input.leaseOwner,
+      },
+      evidenceIds: input.evidenceIds,
       tags: ["tilde-internal:synthesis-receipt"],
     });
   }

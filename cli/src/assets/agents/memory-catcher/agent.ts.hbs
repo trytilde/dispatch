@@ -7,6 +7,7 @@ import {
 } from "@trytilde/sdk-vercel-ai-node";
 import { consumeStream, convertToModelMessages, stepCountIs, streamText } from "ai";
 import type { ToolSet } from "@ai-sdk/provider-utils";
+import { prepareInference } from "./inference.js";
 import instructions from "./instructions.js";
 
 const client = createClient({
@@ -40,11 +41,11 @@ export default chatKitEndpoint({
         chatkit: context.chatkit,
       });
       const closeMcp = () => void mcp.closeMcp();
+      const inference = await prepareInference(tools as ToolSet, request.signal);
       const result = streamText({
-        model: "zai/glm-5.3-flash",
+        ...inference,
         instructions,
         messages: await convertToModelMessages(messages),
-        tools: tools as ToolSet,
         stopWhen: stepCountIs(50),
         abortSignal: request.signal,
         onFinish: closeMcp,

@@ -8,6 +8,10 @@ const SKILL_DISCOVERY_TOOLS = new Set([
   "read_skill_description",
   "read_skill",
 ]);
+const evidenceIdsSchema = z
+  .array(z.uuid())
+  .min(1)
+  .refine((ids) => new Set(ids).size === ids.length, "evidence_ids must be unique");
 
 /**
  * Keep a synthesis turn restricted to its session-bound memory mutations and
@@ -55,7 +59,8 @@ export function createMemorySynthesisTools(memory: MemorySynthesisSessionClient)
         title: z.string().optional(),
         metadata: z.record(z.string(), z.unknown()).optional(),
         tags: z.array(z.string()).optional(),
-        evidence_ids: z.array(z.string().min(1)).min(1),
+        evidence_ids: evidenceIdsSchema,
+        lease_owner: z.string().min(1),
       }),
       execute: (input) =>
         memory.upsert({
@@ -66,6 +71,7 @@ export function createMemorySynthesisTools(memory: MemorySynthesisSessionClient)
           metadata: {
             ...(input.metadata as JsonObject | undefined),
             synthesis_batch_id: input.batch_id,
+            synthesis_lease_owner: input.lease_owner,
           },
           ...(input.tags === undefined ? {} : { tags: input.tags }),
           evidenceIds: input.evidence_ids,
@@ -79,7 +85,8 @@ export function createMemorySynthesisTools(memory: MemorySynthesisSessionClient)
         document_id: z.string().min(1),
         content: z.string().min(1),
         memory_type: z.enum(memoryTypes),
-        evidence_ids: z.array(z.string().min(1)).min(1),
+        evidence_ids: evidenceIdsSchema,
+        lease_owner: z.string().min(1),
       }),
       execute: (input) =>
         memory.upsert({
@@ -87,15 +94,35 @@ export function createMemorySynthesisTools(memory: MemorySynthesisSessionClient)
           content: input.content,
           memoryType: input.memory_type,
           supersedesMemoryId: input.previous_memory_id,
-          metadata: { synthesis_batch_id: input.batch_id },
+          metadata: {
+            synthesis_batch_id: input.batch_id,
+            synthesis_lease_owner: input.lease_owner,
+          },
           evidenceIds: input.evidence_ids,
+        }),
+    }),
+    memory_forget: tool({
+      description: "Forget a superseded memory under this synthesis batch's exact worker lease.",
+      inputSchema: z.object({
+        batch_id: z.string().min(1),
+        document_id: z.string().min(1),
+        evidence_ids: evidenceIdsSchema,
+        lease_owner: z.string().min(1),
+      }),
+      execute: (input) =>
+        memory.forget({
+          batchId: input.batch_id,
+          documentId: input.document_id,
+          evidenceIds: input.evidence_ids,
+          leaseOwner: input.lease_owner,
         }),
     }),
     finish_synthesis: tool({
       description: "Durably finish a synthesis batch after mutations or a cited no-op.",
       inputSchema: z.object({
         batch_id: z.string().min(1),
-        evidence_ids: z.array(z.string().min(1)).min(1),
+        evidence_ids: evidenceIdsSchema,
+        lease_owner: z.string().min(1),
         outcome: z.enum(["mutated", "noop"]),
         reason: z.string().min(1),
       }),
@@ -103,6 +130,7 @@ export function createMemorySynthesisTools(memory: MemorySynthesisSessionClient)
         memory.finish({
           batchId: input.batch_id,
           evidenceIds: input.evidence_ids,
+          leaseOwner: input.lease_owner,
           outcome: input.outcome,
           reason: input.reason,
         }),

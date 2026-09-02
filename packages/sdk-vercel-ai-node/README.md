@@ -58,7 +58,8 @@ pnpm add @trytilde/sdk @trytilde/sdk-vercel-ai-node zod
   model call's cacheable `instructions` field.
 - `createMemorySynthesisTools(session)` creates bank-free tools for a Tilde
   synthesis session; `context.session.memorySynthesisTools()` supplies the
-  request-bound form inside a ChatKit endpoint.
+  request-bound form inside a ChatKit endpoint. Upsert, supersede, forget, and
+  finish tools require the current job's exact batch, evidence set, and lease owner.
 - `verifyWebhookRequest`, `signBody`, and `WebhookVerificationError` implement signed webhook
   verification.
 

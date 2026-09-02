@@ -42,7 +42,9 @@ pnpm add @trytilde/sdk
 - `ChatKitClient.createMessage(input)` writes a canonical searchable message with caller-selected stable identity metadata.
 - `MemoryClient`, `MemoryBankClient`, and `MemorySynthesisSessionClient` expose
   visible-bank discovery, owner-managed documents, synchronous recall/retain,
-  source bindings, and bank-free synthesis-session operations.
+  source bindings, and bank-free synthesis-session operations. Synthesis
+  mutations and completion require the exact current batch, complete evidence
+  set, and fresh lease owner; synthesis forget is separate from owner deletion.
 - `MemoryClient.personalBanks(ownerUserId)` and
   `personalBank(ownerUserId, bankId)` use owner credentials to inspect, edit,
   or delete explicit personal facts; personal synthesizer assignment remains a

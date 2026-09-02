@@ -127,7 +127,7 @@ describe("agent resource lifecycle", () => {
     await reconcileAgentResources({
       repositoryRoot: "/repository",
       agentIds: ["research-assistant"],
-      environment: {},
+      environment: { OPENBOT_AUTOMATIC_MEMORY_MODE: "personal_plus_agent" },
       devMode: true,
       providers: {
         agent: {
@@ -145,6 +145,82 @@ describe("agent resource lifecycle", () => {
     });
 
     expect(deployedAgentIds).toEqual(["memory-catcher", "research-assistant"]);
+  });
+
+  it("includes Memory Catcher for a per-agent memory override", async () => {
+    vi.mocked(discoverAgents).mockResolvedValueOnce([
+      {
+        slug: "memory-catcher",
+        kind: "subagent",
+        directory: "/repository/configuration/agent/subagents/memory-catcher",
+        path: "/repository/configuration/agent/subagents/memory-catcher/agent.ts",
+      },
+      {
+        slug: "research-assistant",
+        kind: "subagent",
+        directory: "/repository/configuration/agent/subagents/research-assistant",
+        path: "/repository/configuration/agent/subagents/research-assistant/agent.ts",
+      },
+    ]);
+    const deployedAgentIds: string[] = [];
+
+    await reconcileAgentResources({
+      repositoryRoot: "/repository",
+      environment: { AGENT_RESEARCH_ASSISTANT_AUTOMATIC_MEMORY_MODE: "personal_plus_agent" },
+      devMode: true,
+      providers: {
+        agent: {
+          deployable: {
+            plan: async () => ({ summary: "agent" }),
+            deploy: async (context) => {
+              deployedAgentIds.push(context.agentId!);
+            },
+          },
+        } as AgentProvider,
+        agentService: {
+          baseUrl: () => new URL("http://127.0.0.1:4100"),
+        } as unknown as AgentServiceProvider,
+      },
+    });
+
+    expect(deployedAgentIds).toEqual(["memory-catcher", "research-assistant"]);
+  });
+
+  it("does not deploy Memory Catcher while automatic memory is default-off", async () => {
+    vi.mocked(discoverAgents).mockResolvedValueOnce([
+      {
+        slug: "memory-catcher",
+        kind: "subagent",
+        directory: "/repository/configuration/agent/subagents/memory-catcher",
+        path: "/repository/configuration/agent/subagents/memory-catcher/agent.ts",
+      },
+      {
+        slug: "research-assistant",
+        kind: "subagent",
+        directory: "/repository/configuration/agent/subagents/research-assistant",
+        path: "/repository/configuration/agent/subagents/research-assistant/agent.ts",
+      },
+    ]);
+    const deployedAgentIds: string[] = [];
+    await reconcileAgentResources({
+      repositoryRoot: "/repository",
+      environment: {},
+      devMode: true,
+      providers: {
+        agent: {
+          deployable: {
+            plan: async () => ({ summary: "agent" }),
+            deploy: async (context) => {
+              deployedAgentIds.push(context.agentId!);
+            },
+          },
+        } as AgentProvider,
+        agentService: {
+          baseUrl: () => new URL("http://127.0.0.1:4100"),
+        } as unknown as AgentServiceProvider,
+      },
+    });
+    expect(deployedAgentIds).toEqual(["research-assistant"]);
   });
 
   it("reconciles up to ten authored agents concurrently", async () => {
@@ -217,7 +293,7 @@ describe("agent resource lifecycle", () => {
 
     await reconcileAgentResources({
       repositoryRoot: "/repository",
-      environment: {},
+      environment: { OPENBOT_AUTOMATIC_MEMORY_MODE: "personal_plus_agent" },
       devMode: true,
       providers: {
         agent: {

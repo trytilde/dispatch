@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { createClient } from "../src";
 
+const synthesisEvidenceId = "11111111-1111-4111-8111-111111111111";
+
 describe("MemoryClient", () => {
   it("binds bank identity in the path and exposes synchronous mutations", async () => {
     const fetchMock = vi
@@ -80,22 +82,71 @@ describe("MemoryClient", () => {
   });
 
   it("binds synthesis mutations only to the ChatKit session path", async () => {
-    const fetchMock = vi.fn(async () => Response.json({ result: { ok: true } }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ result: { ok: true } }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
     const memory = createClient({
       apiKey: "agent-key",
       baseUrl: "https://api.example.test",
       teamId: "team-one",
       fetch: fetchMock,
     }).memory.synthesisSession("session-one");
+    expect(() =>
+      memory.finish({
+        batchId: "batch-one",
+        evidenceIds: [synthesisEvidenceId],
+        leaseOwner: "",
+        outcome: "noop",
+        reason: "duplicate evidence",
+      }),
+    ).toThrow("leaseOwner is required");
+    await expect(
+      memory.forget({
+        documentId: "obsolete-memory",
+        batchId: "batch-one",
+        evidenceIds: [synthesisEvidenceId],
+        leaseOwner: "",
+      }),
+    ).rejects.toThrow("leaseOwner is required");
     await memory.finish({
       batchId: "batch-one",
-      evidenceIds: ["event-one"],
+      evidenceIds: [synthesisEvidenceId],
+      leaseOwner: "lease-one",
       outcome: "noop",
       reason: "duplicate evidence",
     });
+    await memory.forget({
+      documentId: "obsolete-memory",
+      batchId: "batch-one",
+      evidenceIds: [synthesisEvidenceId],
+      leaseOwner: "lease-one",
+    });
     const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
     expect(calls[0]?.[0]).toContain("/memory/synthesis-sessions/session-one/retain");
-    expect(calls[0]?.[1].body as string).not.toContain("bank_id");
+    const finishBody = JSON.parse(calls[0]?.[1].body as string);
+    expect(finishBody.document).toMatchObject({
+      document_id: "synthesis-receipt:batch-one",
+      metadata: {
+        evidence_ids: [synthesisEvidenceId],
+        synthesis_batch_id: "batch-one",
+        synthesis_lease_owner: "lease-one",
+      },
+    });
+    expect(JSON.parse(finishBody.document.content)).toMatchObject({
+      batch_id: "batch-one",
+      evidence_ids: [synthesisEvidenceId],
+      lease_owner: "lease-one",
+      outcome: "noop",
+    });
+    expect(JSON.stringify(finishBody)).not.toContain("bank_id");
+    expect(calls[1]?.[0]).toContain("/memory/synthesis-sessions/session-one/documents");
+    expect(JSON.parse(calls[1]?.[1].body as string)).toEqual({
+      document_id: "obsolete-memory",
+      batch_id: "batch-one",
+      evidence_ids: [synthesisEvidenceId],
+      lease_owner: "lease-one",
+    });
   });
 
   it("lets an owner inspect, edit, and delete an attributed explicit fact", async () => {

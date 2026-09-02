@@ -232,6 +232,7 @@ export async function scaffoldMemoryCatcherAgent(
     false,
     memoryCatcherTemplates,
     false,
+    true,
   );
 }
 
@@ -259,6 +260,7 @@ async function materializeAgent(
   createSubagentDirectory: boolean,
   overlays: readonly (readonly [string, string])[] = [],
   includeDefaultTemplates = true,
+  includeInferenceTemplate = false,
 ): Promise<ScaffoldedAgent> {
   // Build outside configuration/ so the orchestrator cannot discover a half-written agent.
   // Publishing with one same-filesystem rename makes the complete template visible atomically.
@@ -308,6 +310,14 @@ async function materializeAgent(
       await materializeFileTemplate(
         fileURLToPath(new URL(sourcePath, import.meta.url)),
         destination,
+        values,
+        { flag: "wx", mode: 0o600 },
+      );
+    }
+    if (includeInferenceTemplate) {
+      await materializeFileTemplate(
+        resolve(repositoryRoot, agentTemplateDirectory, "inference.ts.hbs"),
+        resolve(stagingDirectory, "inference.ts"),
         values,
         { flag: "wx", mode: 0o600 },
       );

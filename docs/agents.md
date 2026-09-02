@@ -37,8 +37,8 @@ conversation tail. Tilde derives actor and bank access from the durable trigger
 message and performs idempotent post-turn enqueueing. Memory Catcher is the
 least-privilege background synthesizer under
 `configuration/agent/subagents/memory-catcher/`; it receives only bank-bound
-synthesis tools, uses `zai/glm-5.3-flash`, never sends human messages, and owns no
-memory bank itself. See ADR-0034.
+synthesis tools, uses the installation's selected inference provider, never
+sends human messages, and owns no memory bank itself. See ADR-0034.
 
 All agents share one OpenBot Computer, filesystem, and process identity. If an agent's authored `sandbox/workspace/**` contains files, deployment seeds them once into `/workspace/<id>`. The computer service uses the fixed agent ID to choose that default directory, but it is not a security boundary: agents can use absolute paths, see sibling directories, and administer the shared machine. Changes to authored seed files do not update an already deployed agent directory.
 

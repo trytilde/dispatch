@@ -20,7 +20,8 @@ pnpm add @trytilde/sdk
 - `client.chatkit.reportCompactionEvent(input)` records an active agent's session compaction
   lifecycle without replacing the canonical transcript.
 - `client.chatkit.runs` creates, claims, accounts, transitions, and recovers provider-neutral
-  durable agent runs and their effect receipts.
+  durable agent runs and their effect receipts. Effect prepare/finish calls carry the claimed
+  run generation and worker ID so stale hosts cannot write receipts into a newer lease.
 - `client.chatkit.work({ agentId, sessionId })` binds durable goals, tasks, and child jobs to one
   authenticated agent conversation.
 - `client.chatkit.routines(agentId)` binds recurring-work operations to one authenticated agent.

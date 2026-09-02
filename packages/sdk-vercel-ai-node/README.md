@@ -37,6 +37,13 @@ pnpm add @trytilde/sdk @trytilde/sdk-vercel-ai-node zod
 - `LinqSignalType`, `LinqSignalByType`, and `LinqWebhookEnvelope` strongly type every supported Linq
   webhook event. Register event-specific conversion handlers under `onUnprocessed.linq`.
 - `createChatKitAttachmentFilePartHandler(options)` resolves ChatKit attachments for model input.
+- `HostedInferenceBillingController` reserves organization AI credits before every managed model
+  call, settles authoritative Gateway generation receipts, releases excluded BYOK calls, and
+  blocks provider replay while a durable AgentRun effect outcome is uncertain. All Gateway calls
+  reserve before inference because BYOK can fall back to charged system credentials; an
+  authoritative BYOK receipt releases the reservation. Callers must terminally
+  fail a reconciled run when no model response can be recovered; replaying the
+  same step is unsafe.
 - `createChatKitCompactionController(options)` implements an agent-owned `prepareStep` compaction
   loop; compose it after provider preparation with `composeChatKitCompactionPrepareStep`.
 - `runAgentObjective(options)` and `runAgentHostOnce(options)` continue durable objectives across

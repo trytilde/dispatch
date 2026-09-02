@@ -84,12 +84,15 @@ class MemoryRunStore implements AgentRunStore {
     sessionId: string;
     agentId: string;
     runId: string;
+    generation: number;
+    workerId: string;
     stepId: string;
     toolCallId: string;
     toolName: string;
     inputFingerprint: string;
     idempotencyKey: string;
   }) {
+    this.assertEffectLease(input.generation, input.workerId);
     const receipt: AgentRunEffectReceipt = {
       ...input,
       status: "planned",
@@ -100,7 +103,11 @@ class MemoryRunStore implements AgentRunStore {
   }
 
   async finishEffect(input: {
+    sessionId: string;
+    agentId: string;
     runId: string;
+    generation: number;
+    workerId: string;
     stepId: string;
     toolCallId: string;
     toolName: string;
@@ -109,12 +116,18 @@ class MemoryRunStore implements AgentRunStore {
     status: "committed" | "uncertain";
     output?: JsonValue;
   }) {
+    this.assertEffectLease(input.generation, input.workerId);
     const receipt: AgentRunEffectReceipt = {
       ...input,
       createdAt: new Date(0).toISOString(),
     };
     this.receipts.set(`${input.toolName}:${input.inputFingerprint}`, receipt);
     return receipt;
+  }
+
+  private assertEffectLease(generation: number, workerId: string): void {
+    if (generation !== this.run?.generation || workerId !== this.leaseOwner)
+      throw new Error("stale effect writer");
   }
 }
 
@@ -133,7 +146,7 @@ describe("durable AgentRun controller", () => {
         toolName: "increment",
         args: { sequence: run.continuationCount + 1 },
         expectedGeneration: run.generation,
-        workerId: "worker",
+        workerId: store.leaseOwner!,
         async execute() {
           effects += 1;
           return { effects };
@@ -172,6 +185,7 @@ describe("durable AgentRun controller", () => {
   it("reuses a persisted effect receipt after a crash without repeating the effect", async () => {
     const store = new MemoryRunStore();
     store.run = runFixture({ sessionId: "session", agentId: "factory", objective: "effect" });
+    store.leaseOwner = "worker-uncertain";
     let externalEffects = 0;
     const call = () =>
       executeRunEffect({
@@ -184,7 +198,7 @@ describe("durable AgentRun controller", () => {
         toolName: "charge-card",
         args: { invoice: "inv-1" },
         expectedGeneration: store.run!.generation,
-        workerId: "worker",
+        workerId: store.leaseOwner!,
         async execute(idempotencyKey) {
           externalEffects += 1;
           return { idempotencyKey, charged: true };
@@ -200,6 +214,7 @@ describe("durable AgentRun controller", () => {
   it("marks a planned non-idempotent effect uncertain after restart and never repeats it", async () => {
     const store = new MemoryRunStore();
     store.run = runFixture({ sessionId: "session", agentId: "factory", objective: "effect" });
+    store.leaseOwner = "worker-uncertain";
     let externalEffects = 0;
     const args = { invoice: "inv-uncertain" };
     const inputFingerprint = await sha(JSON.stringify(args));
@@ -207,6 +222,8 @@ describe("durable AgentRun controller", () => {
       sessionId: "session",
       agentId: "factory",
       runId: store.run.id,
+      generation: store.run.generation,
+      workerId: "worker-uncertain",
       stepId: "1:1",
       toolCallId: "call-uncertain",
       toolName: "legacy-charge",
@@ -226,7 +243,7 @@ describe("durable AgentRun controller", () => {
         toolName: "legacy-charge",
         args,
         expectedGeneration: store.run.generation,
-        workerId: "worker",
+        workerId: store.leaseOwner!,
         async execute() {
           externalEffects += 1;
           return { charged: true };

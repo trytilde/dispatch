@@ -106,6 +106,8 @@ describe("AgentRunsClient", () => {
       sessionId: "session",
       agentId: "factory",
       runId: "run",
+      generation: 1,
+      workerId: "worker-1",
       stepId: "1:1",
       toolCallId: "call",
       toolName: "charge",
@@ -124,6 +126,27 @@ describe("AgentRunsClient", () => {
     expect(committed.output).toEqual({ ok: true });
     expect(requests[0]?.url).toContain("/runs/run/effects/prepare");
     expect(requests[1]?.url).toContain("/runs/run/effects/finish");
+    expect(requests[0]?.body).toEqual({
+      generation: 1,
+      worker_id: "worker-1",
+      step_id: "1:1",
+      tool_call_id: "call",
+      tool_name: "charge",
+      input_fingerprint: "fp",
+      idempotency_key: "key",
+      status: "planned",
+    });
+    expect(requests[1]?.body).toEqual({
+      generation: 1,
+      worker_id: "worker-1",
+      step_id: "1:1",
+      tool_call_id: "call",
+      tool_name: "charge",
+      input_fingerprint: "fp",
+      idempotency_key: "key",
+      status: "committed",
+      output: { ok: true },
+    });
   });
 });
 

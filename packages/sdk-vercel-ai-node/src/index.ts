@@ -197,6 +197,7 @@ export {
 } from "./handler";
 export { createMemorySynthesisTools, restrictMemorySynthesisTools } from "./memory-synthesis-tools";
 export {
+  composeChatKitAutomaticMemoryMessages,
   createChatKitAutomaticMemoryController,
   type ChatKitAutomaticMemoryController,
 } from "./automatic-memory";

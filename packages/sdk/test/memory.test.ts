@@ -191,4 +191,32 @@ describe("MemoryClient", () => {
     expect(calls[1]?.[1].method).toBe("PUT");
     expect(calls[2]?.[1].method).toBe("DELETE");
   });
+
+  it("replaces and retries personal source bindings without a team path", async () => {
+    const fetchMock = vi.fn(async () => Response.json({ items: [] }));
+    const memory = createClient({
+      bearerToken: "owner-token",
+      baseUrl: "https://api.example.test",
+      teamId: "team-one",
+      fetch: fetchMock,
+    }).memory;
+
+    await memory.bindPersonalSource("owner-one", {
+      sourceKind: "wiki",
+      sourceId: "wiki-one",
+      memoryBankIds: ["bank-one"],
+    });
+    await memory.retryPersonalSource("owner-one", "wiki", "wiki-one");
+
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
+    expect(calls.map(([url]) => url)).toEqual([
+      "https://api.example.test/api/v1/user/owner-one/memory/source-bindings",
+      "https://api.example.test/api/v1/user/owner-one/memory/source-bindings/retry",
+    ]);
+    expect(JSON.parse(calls[0]?.[1].body as string)).toEqual({
+      source_kind: "wiki",
+      source_id: "wiki-one",
+      memory_bank_ids: ["bank-one"],
+    });
+  });
 });

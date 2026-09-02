@@ -47,6 +47,9 @@ pnpm add @trytilde/sdk
   `personalBank(ownerUserId, bankId)` use owner credentials to inspect, edit,
   or delete explicit personal facts; personal synthesizer assignment remains a
   separate operation so a queue can safely wait while none is configured.
+- `MemoryClient.bindPersonalSource(ownerUserId, input)` and
+  `retryPersonalSource(ownerUserId, sourceKind, sourceId)` keep personal Wiki,
+  Skill, Tool, MCP, Signal, and ChatKit ingestion on user-owned routes.
 - `ChatKitClient.recallAutomaticMemory(input)` requests a bounded,
   provenance-bearing projection using only a durable triggering message.
 - `ChatKitClient.getAgentMemorySettings(agentId)` and

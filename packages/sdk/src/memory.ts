@@ -278,10 +278,40 @@ export class MemoryClient {
     });
   }
 
+  bindPersonalSource(ownerUserId: string, input: MemorySourceBindingInput): Promise<JsonValue> {
+    requireOwnerUserId(ownerUserId);
+    return requestJson(this.#config, {
+      method: "PUT",
+      path: pathWithParams("/api/v1/user/{user_id}/memory/source-bindings", {
+        user_id: ownerUserId,
+      }),
+      body: {
+        source_kind: input.sourceKind,
+        source_id: input.sourceId,
+        memory_bank_ids: input.memoryBankIds,
+      },
+    });
+  }
+
   retrySource(sourceKind: string, sourceId: string): Promise<JsonValue> {
     return requestJson(this.#config, {
       method: "POST",
       path: teamPath(this.#config, "/api/v1/team/{team_id}/memory/source-bindings/retry"),
+      body: { source_kind: sourceKind, source_id: sourceId },
+    });
+  }
+
+  retryPersonalSource(
+    ownerUserId: string,
+    sourceKind: string,
+    sourceId: string,
+  ): Promise<JsonValue> {
+    requireOwnerUserId(ownerUserId);
+    return requestJson(this.#config, {
+      method: "POST",
+      path: pathWithParams("/api/v1/user/{user_id}/memory/source-bindings/retry", {
+        user_id: ownerUserId,
+      }),
       body: { source_kind: sourceKind, source_id: sourceId },
     });
   }

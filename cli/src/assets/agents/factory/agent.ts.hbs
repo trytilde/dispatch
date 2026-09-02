@@ -4,6 +4,7 @@ import {
   chatKitCompactionCheckpointMessage,
   chatKitEndpoint,
   composeChatKitCompactionPrepareStep,
+  composeChatKitAutomaticMemoryMessages,
   convertToAiSdkMessages,
   createChatKitCompactionController,
   createChatKitAutomaticMemoryController,
@@ -276,11 +277,13 @@ export default chatKitEndpoint({
           })
       : undefined;
     const convertedModelMessages = await convertToModelMessages(messages);
-    const modelMessages = [
-      ...(history.checkpoint ? [chatKitCompactionCheckpointMessage(history.checkpoint)] : []),
-      ...(automaticMemory?.message ? [automaticMemory.message] : []),
-      ...convertedModelMessages,
-    ];
+    const modelMessages = composeChatKitAutomaticMemoryMessages({
+      checkpoint: history.checkpoint
+        ? chatKitCompactionCheckpointMessage(history.checkpoint)
+        : undefined,
+      memory: automaticMemory?.message,
+      tail: convertedModelMessages,
+    });
     const sourceMessageIds = [...requestHistory, ...context.messages]
       .map((message) => message.id)
       .filter((id): id is string => typeof id === "string" && id.length > 0);

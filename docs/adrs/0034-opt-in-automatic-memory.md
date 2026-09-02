@@ -54,3 +54,11 @@ dynamic `sendMessage` and unbound memory tools are removed before inference.
   evidence remains queued until the configured bank synthesizer can process it.
 - Forks must scaffold and deploy Memory Catcher and reconcile ordinary agents'
   memory bundle fields.
+
+<FOLLOW UP>
+Owner: Tilde Memory API and OpenBot Memory Catcher
+Trigger: the synthesis-session delete operation accepts a batch identity and
+writes the same durable mutation receipt as retain/supersede
+Work: restore the model-visible background forget tool and prove a forget-only
+batch completes exactly once without retrying an already-applied deletion
+</FOLLOW UP>

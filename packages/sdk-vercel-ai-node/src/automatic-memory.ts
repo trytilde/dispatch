@@ -10,6 +10,25 @@ export type ChatKitAutomaticMemoryController = {
 };
 
 /**
+ * Preserve the cache-sensitive prompt order shared by ordinary and compacted
+ * turns: checkpoint, bounded memory, then the mutable conversation tail.
+ * Stable instructions remain in the model call's separate `instructions`
+ * field and therefore precede every message returned here.
+ */
+export function composeChatKitAutomaticMemoryMessages(input: {
+  checkpoint?: ModelMessage | readonly ModelMessage[];
+  memory?: ModelMessage;
+  tail: readonly ModelMessage[];
+}): ModelMessage[] {
+  const checkpoint = input.checkpoint
+    ? Array.isArray(input.checkpoint)
+      ? input.checkpoint
+      : [input.checkpoint]
+    : [];
+  return [...checkpoint, ...(input.memory ? [input.memory] : []), ...input.tail];
+}
+
+/**
  * Resolves server-authorized automatic memory and converts it into a stable
  * system suffix. Insert it after stable instructions and any compaction
  * checkpoint, but before the mutable conversation tail.

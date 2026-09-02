@@ -53,6 +53,9 @@ pnpm add @trytilde/sdk @trytilde/sdk-vercel-ai-node zod
 - `createChatKitAutomaticMemoryController(options)` converts server-authorized
   recall into a deterministic dynamic system suffix for insertion after stable
   instructions and any compaction checkpoint.
+- `composeChatKitAutomaticMemoryMessages(options)` preserves checkpoint →
+  memory → mutable-tail ordering without moving stable instructions out of the
+  model call's cacheable `instructions` field.
 - `createMemorySynthesisTools(session)` creates bank-free tools for a Tilde
   synthesis session; `context.session.memorySynthesisTools()` supplies the
   request-bound form inside a ChatKit endpoint.

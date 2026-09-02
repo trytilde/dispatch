@@ -1,7 +1,22 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { createChatKitAutomaticMemoryController } from "../src/automatic-memory";
+import {
+  composeChatKitAutomaticMemoryMessages,
+  createChatKitAutomaticMemoryController,
+} from "../src/automatic-memory";
 
 describe("automatic memory inference controller", () => {
+  it("keeps a compaction checkpoint before memory and the mutable tail", () => {
+    const checkpoint = { role: "system", content: "checkpoint" } as const;
+    const memory = { role: "system", content: "memory" } as const;
+    const tail = [{ role: "user", content: "new message" }] as const;
+
+    expect(composeChatKitAutomaticMemoryMessages({ checkpoint, memory, tail })).toEqual([
+      checkpoint,
+      memory,
+      ...tail,
+    ]);
+  });
+
   it("returns no dynamic message when memory is disabled", async () => {
     const recallAutomaticMemory = vi.fn(async () => ({
       items: [],

@@ -37,8 +37,18 @@ pnpm add @trytilde/sdk @trytilde/sdk-vercel-ai-node zod
 - `LinqSignalType`, `LinqSignalByType`, and `LinqWebhookEnvelope` strongly type every supported Linq
   webhook event. Register event-specific conversion handlers under `onUnprocessed.linq`.
 - `createChatKitAttachmentFilePartHandler(options)` resolves ChatKit attachments for model input.
+- `createChatKitCompactionController(options)` implements an agent-owned `prepareStep` compaction
+  loop; compose it after provider preparation with `composeChatKitCompactionPrepareStep`.
+- `runAgentObjective(options)` and `runAgentHostOnce(options)` continue durable objectives across
+  request and deployment boundaries with loop and budget guards.
+- `executeRunEffect(options)` records effect intent before execution and reuses committed outputs;
+  unsupported uncertain outcomes are never automatically repeated.
 - `verifyWebhookRequest`, `signBody`, and `WebhookVerificationError` implement signed webhook
   verification.
+
+Compaction is request-scoped and never rewrites ChatKit history. The active agent reports start,
+completion, or failure through `context.session`; ChatKit persists those events while authored
+code controls thresholds, prompts, retries, and retained context.
 
 ```ts
 import { convertToAiSdkMessage, type LinqSignalByType } from "@trytilde/sdk-vercel-ai-node";

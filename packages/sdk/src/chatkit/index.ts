@@ -5,6 +5,14 @@ import type { JsonObject, JsonValue } from "../tools";
 import { MessagesClient } from "./messages";
 import { ChatKitRoomsClient } from "./rooms";
 export * from "./rooms";
+import { AgentRunsClient } from "./runs";
+import { ChatKitRoutinesClient } from "./routines";
+import { ChatKitWorkClient } from "./work";
+
+export * from "./jobs";
+export * from "./routines";
+export * from "./runs";
+export * from "./work";
 
 const REGISTER_HTTP_AGENT_PATH = "/api/v1/team/{team_id}/chatkit/agents/http-vercel-ai-sdk";
 const REGISTER_VERCEL_UI_CHANNEL_PATH = "/api/v1/team/{team_id}/chatkit/channels/vercel-ui";
@@ -16,6 +24,10 @@ const SESSION_PROVIDER_TOOL_PATH =
 const CONVERTED_MESSAGE_CACHE_PATH = "/api/v1/team/{team_id}/chatkit/messages/converted-cache";
 const HYDRATE_CONVERTED_MESSAGE_CACHE_PATH =
   "/api/v1/team/{team_id}/chatkit/messages/converted-cache/hydrate";
+const COMPACTION_EVENT_PATH =
+  "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/compaction-events";
+const COMPACTED_HISTORY_PATH =
+  "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/messages/from-last-compaction";
 const ATTACHMENT_DOWNLOAD_URL_PATH =
   "/api/v1/team/{team_id}/chatkit/session/{session_id}/attachment/{attachment_id}/download-url";
 const AGENT_TOOLS_PATH = "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/tools";
@@ -49,6 +61,42 @@ export type ChatKitAttachment = JsonObject & {
   id?: string;
   filename?: string;
   media_type?: string;
+};
+
+export type ChatKitCompactionLifecycle =
+  | {
+      status: "started";
+      inputMessageCount: number;
+      estimatedInputTokens: number;
+      compactedThroughMessageId: string;
+    }
+  | {
+      status: "ended";
+      summary: string;
+      compactedMessageIds: string[];
+      retainedMessageIds: string[];
+      inputTokens: number;
+      outputTokens: number;
+    }
+  | {
+      status: "failed";
+      error: string;
+      retryable: boolean;
+    };
+
+export type ChatKitCompactionCheckpoint = {
+  eventId: string;
+  revision: number;
+  compactionId: string;
+  sessionId: string;
+  agentId: string;
+  summary: string;
+  compactedThroughMessageId: string;
+  compactedMessageIds: string[];
+  retainedMessageIds: string[];
+  inputTokens: number;
+  outputTokens: number;
+  endedAt: string;
 };
 
 export type AgentToolRegistration = {
@@ -153,11 +201,23 @@ export class ChatKitClient {
   readonly #config: NormalizedConfig;
   readonly #messages: MessagesClient;
   readonly rooms: ChatKitRoomsClient;
+  readonly runs: AgentRunsClient;
 
   constructor(config: NormalizedConfig, messages = new MessagesClient(config)) {
     this.#config = config;
     this.#messages = messages;
     this.rooms = new ChatKitRoomsClient(config);
+    this.runs = new AgentRunsClient(config);
+  }
+
+  /** Bind goal, task, and background-job operations to one agent conversation. */
+  work(input: { agentId: string; sessionId: string }): ChatKitWorkClient {
+    return new ChatKitWorkClient(this.#config, input.agentId, input.sessionId);
+  }
+
+  /** Bind recurring-work operations to one authenticated agent. */
+  routines(agentId: string): ChatKitRoutinesClient {
+    return new ChatKitRoutinesClient(this.#config, agentId);
   }
 
   async registerHttpVercelAiSdkAgent(input: {
@@ -439,6 +499,93 @@ export class ChatKitClient {
     };
   }
 
+  async reportCompactionEvent(input: {
+    sessionId: string;
+    agentId: string;
+    compactionId: string;
+    lifecycle: ChatKitCompactionLifecycle;
+  }): Promise<{ eventId: string }> {
+    const lifecycle = input.lifecycle;
+    const body =
+      lifecycle.status === "started"
+        ? {
+            status: lifecycle.status,
+            input_message_count: lifecycle.inputMessageCount,
+            estimated_input_tokens: lifecycle.estimatedInputTokens,
+            compacted_through_message_id: lifecycle.compactedThroughMessageId,
+          }
+        : lifecycle.status === "ended"
+          ? {
+              status: lifecycle.status,
+              summary: lifecycle.summary,
+              compacted_message_ids: lifecycle.compactedMessageIds,
+              retained_message_ids: lifecycle.retainedMessageIds,
+              input_tokens: lifecycle.inputTokens,
+              output_tokens: lifecycle.outputTokens,
+            }
+          : {
+              status: lifecycle.status,
+              error: lifecycle.error,
+              retryable: lifecycle.retryable,
+            };
+    const raw = await requestJson<{ event_id: string }>(this.#config, {
+      method: "POST",
+      path: pathWithParams(teamPath(this.#config, COMPACTION_EVENT_PATH), {
+        session_id: input.sessionId,
+      }),
+      body: {
+        agent_id: input.agentId,
+        compaction_id: input.compactionId,
+        lifecycle: body,
+      },
+    });
+    return { eventId: raw.event_id };
+  }
+
+  async getLatestCompaction(input: {
+    sessionId: string;
+    agentId: string;
+  }): Promise<ChatKitCompactionCheckpoint | undefined> {
+    const raw = await requestJson<RawCompactionCheckpoint | null>(this.#config, {
+      path: pathWithParams(teamPath(this.#config, `${COMPACTION_EVENT_PATH}/latest`), {
+        session_id: input.sessionId,
+      }),
+      query: { agent_id: input.agentId },
+    });
+    return raw === null ? undefined : compactionCheckpointFromRaw(raw);
+  }
+
+  async getCompactedHistory<TMessage extends JsonValue = JsonObject>(input: {
+    sessionId: string;
+    agentId: string;
+    pageSize?: number;
+    nextPageToken?: string;
+  }): Promise<{
+    checkpoint?: ChatKitCompactionCheckpoint;
+    items: TMessage[];
+    nextPageToken?: string;
+  }> {
+    const raw = await requestJson<{
+      checkpoint: RawCompactionCheckpoint | null;
+      items: TMessage[];
+      next_page_token?: string | null;
+    }>(this.#config, {
+      path: pathWithParams(teamPath(this.#config, COMPACTED_HISTORY_PATH), {
+        session_id: input.sessionId,
+      }),
+      query: {
+        agent_id: input.agentId,
+        page_size: input.pageSize ?? 100,
+        next_page_token: input.nextPageToken,
+      },
+    });
+    return {
+      ...(raw.checkpoint ? { checkpoint: compactionCheckpointFromRaw(raw.checkpoint) } : {}),
+      items: raw.items,
+      ...(raw.next_page_token ? { nextPageToken: raw.next_page_token } : {}),
+    };
+  }
+
   async getAttachmentDownloadUrl(input: { sessionId: string; attachmentId: string }): Promise<{
     attachment: ChatKitAttachment;
     downloadUrl: string;
@@ -476,6 +623,38 @@ export class ChatKitClient {
 }
 
 export { MessagesClient } from "./messages";
+
+type RawCompactionCheckpoint = {
+  event_id: string;
+  revision: number;
+  compaction_id: string;
+  session_id: string;
+  agent_id: string;
+  summary: string;
+  compacted_through_message_id: string;
+  compacted_message_ids: string[];
+  retained_message_ids: string[];
+  input_tokens: number;
+  output_tokens: number;
+  ended_at: string;
+};
+
+function compactionCheckpointFromRaw(raw: RawCompactionCheckpoint): ChatKitCompactionCheckpoint {
+  return {
+    eventId: raw.event_id,
+    revision: raw.revision,
+    compactionId: raw.compaction_id,
+    sessionId: raw.session_id,
+    agentId: raw.agent_id,
+    summary: raw.summary,
+    compactedThroughMessageId: raw.compacted_through_message_id,
+    compactedMessageIds: raw.compacted_message_ids,
+    retainedMessageIds: raw.retained_message_ids,
+    inputTokens: raw.input_tokens,
+    outputTokens: raw.output_tokens,
+    endedAt: raw.ended_at,
+  };
+}
 
 function isMissingChatKitRoute(error: unknown): boolean {
   return (

@@ -117,7 +117,7 @@ export interface paths {
         };
         /**
          * Get organization billing context
-         * @description Returns product subscriptions, effective access, human seat quantities, payment state, and AI-credit balance from the local billing projection.
+         * @description Returns product subscriptions, effective access, human seat quantities, payment state, and Hindsight memory-bank capacity from the local billing projection.
          */
         get: operations["billing-context-get"];
         put?: never;
@@ -5041,7 +5041,7 @@ export interface paths {
         put?: never;
         /**
          * Create a memory bank
-         * @description Create an isolated HelixDB graph/vector memory bank and its enabled private tool provider.
+         * @description Create an isolated Hindsight-backed memory bank and its enabled private tool provider.
          */
         post: operations["create-memory-bank"];
         delete?: never;
@@ -5179,7 +5179,7 @@ export interface paths {
         };
         /**
          * Check memory bank health
-         * @description Check Tilde provisioning state and HelixDB reachability.
+         * @description Check Tilde provisioning state and Hindsight reachability.
          */
         get: operations["check-memory-bank-health"];
         put?: never;
@@ -8389,7 +8389,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * List personal source memory-bank bindings
+         * @description Inspect selected personal banks and synchronization state for one personal source.
+         */
         get: operations["list-personal-memory-source-bindings"];
+        /**
+         * Replace personal source memory-bank bindings
+         * @description Atomically replace a personal source's selected personal banks and durably queue a full backfill.
+         */
         put: operations["replace-personal-memory-source-bindings"];
         post?: never;
         delete?: never;
@@ -8407,7 +8415,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["retry-personal-memory-source-bindings"];
+        /**
+         * Retry personal source synchronization
+         * @description Retry every personal memory-bank binding for a personal source.
+         */
+        post: operations["retry-personal-memory-source-sync"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9142,6 +9154,546 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/billing/internal/memory-banks/quantity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Commit Hindsight memory-bank quantity
+         * @description System-only lifecycle endpoint. A successful creation requires a live reservation_id in the body; omit it when recording a deletion or retrying an already-authoritative quantity.
+         */
+        post: operations["billing-memory-bank-reservation-commit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/internal/memory-banks/reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reserve Hindsight memory-bank capacity
+         * @description System-only lifecycle endpoint used by the Hindsight resource owner before creating one bank. The returned reservation must be committed or released.
+         */
+        post: operations["billing-memory-bank-reservation-create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/internal/memory-banks/reservations/{reservation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Release Hindsight memory-bank reservation
+         * @description System-only lifecycle endpoint used when Hindsight resource creation fails after reserving capacity.
+         */
+        delete: operations["billing-memory-bank-reservation-release"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List agent goals
+         * @description Lists goals owned by the authenticated ChatKit agent in one active session.
+         */
+        get: operations["chatkit-list-goals"];
+        put?: never;
+        /**
+         * Create an agent goal
+         * @description Creates a durable goal for the authenticated ChatKit agent in one active session.
+         */
+        post: operations["chatkit-create-goal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/goals/{goal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an agent goal
+         * @description Gets one goal owned by the authenticated ChatKit agent.
+         */
+        get: operations["chatkit-get-goal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update an agent goal
+         * @description Updates progress or terminal state for one agent-owned goal.
+         */
+        patch: operations["chatkit-update-goal"];
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List background agent jobs
+         * @description Lists one parent agent's durable children.
+         */
+        get: operations["chatkit-list-agent-jobs"];
+        put?: never;
+        /**
+         * Delegate a background agent job
+         * @description Durably delegates one idempotent child-agent objective.
+         */
+        post: operations["chatkit-delegate-agent-job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Inspect a background agent job
+         * @description Returns durable state, transcript references, and artifacts.
+         */
+        get: operations["chatkit-get-agent-job"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs/{job_id}/collect-result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Collect a background agent job result
+         * @description Returns a terminal result and durable child references.
+         */
+        post: operations["chatkit-collect-agent-job-result"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs/{job_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume a background agent job
+         * @description Requeues an interrupted child with a new generation.
+         */
+        post: operations["chatkit-resume-agent-job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs/{job_id}/steer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Steer a background agent job
+         * @description Durably appends an idempotent child instruction.
+         */
+        post: operations["chatkit-steer-agent-job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs/{job_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop a background agent job
+         * @description Durably records an owner interrupt.
+         */
+        post: operations["chatkit-stop-agent-job"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create or recover an AgentRun
+         * @description Creates an idempotent durable objective for the active agent.
+         */
+        post: operations["chatkit-create-agent-run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the active AgentRun
+         * @description Returns the latest non-terminal run for automatic continuation or user-message reactivation.
+         */
+        get: operations["chatkit-get-active-agent-run"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim due AgentRuns
+         * @description Atomically leases due runs to one host worker.
+         */
+        post: operations["chatkit-claim-agent-runs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an AgentRun
+         * @description Gets one durable agent execution.
+         */
+        get: operations["chatkit-get-agent-run"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}/control": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Control an AgentRun
+         * @description Lets an authorized owner pause, resume, or cancel a run while atomically invalidating any worker lease.
+         */
+        post: operations["chatkit-control-agent-run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}/effects/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish an AgentRun effect
+         * @description Commits an effect output or marks its outcome uncertain.
+         */
+        post: operations["chatkit-finish-agent-run-effect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}/effects/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lookup an AgentRun effect
+         * @description Returns a committed, planned, or uncertain effect by deterministic input fingerprint.
+         */
+        get: operations["chatkit-get-agent-run-effect"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}/effects/prepare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Prepare an AgentRun effect
+         * @description Persists deterministic effect intent before executing an external side effect.
+         */
+        post: operations["chatkit-prepare-agent-run-effect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}/steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Append an AgentRun step
+         * @description Idempotently appends accounting and progress under the current lease.
+         */
+        post: operations["chatkit-append-agent-run-step"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}/transition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transition an AgentRun
+         * @description Pauses, resumes, stalls, completes, fails, or cancels a run durably.
+         */
+        post: operations["chatkit-transition-agent-run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List agent tasks
+         * @description Lists tasks owned by the authenticated ChatKit agent in one active session.
+         */
+        get: operations["chatkit-list-tasks"];
+        put?: never;
+        /**
+         * Create an agent task
+         * @description Creates an executable task with same-session dependencies for the authenticated ChatKit agent.
+         */
+        post: operations["chatkit-create-task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an agent task
+         * @description Gets one task owned by the authenticated ChatKit agent.
+         */
+        get: operations["chatkit-get-task"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update an agent task
+         * @description Updates task content, dependencies, progress, or terminal state without allowing terminal tasks to reopen.
+         */
+        patch: operations["chatkit-update-task"];
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/compaction-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a ChatKit compaction lifecycle event
+         * @description Lets the active agent participant report its own context-compaction lifecycle. ChatKit persists and streams the event while the agent owns compaction policy and execution.
+         */
+        post: operations["chatkit-report-compaction-event"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/compaction-events/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the latest successful ChatKit compaction
+         * @description Returns only the newest successful checkpoint for the authenticated active session agent.
+         */
+        get: operations["chatkit-get-latest-compaction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/messages/from-last-compaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List ChatKit history from the latest successful compaction
+         * @description Returns the authenticated agent's byte-stable checkpoint separately from messages after its transcript boundary.
+         */
+        get: operations["chatkit-get-compacted-history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -9401,10 +9953,11 @@ export interface components {
         };
         /** @description Typed billing bootstrap response for the selected organization. */
         BillingContext: {
-            ai_credits: components["schemas"]["OrganizationAiCreditContext"];
+            ai_credits?: components["schemas"]["OrganizationAiCreditContext"];
             can_manage_billing: boolean;
             org_id: string;
             products: components["schemas"]["ProductBillingContext"][];
+            memory_banks: components["schemas"]["MemoryBankBillingContext"];
         };
         /**
          * @description A separately billed Tilde product whose access is evaluated per organization.
@@ -10193,6 +10746,8 @@ export interface components {
         CreateChatKitWorkspaceSessionRequestInner: {
             lookup_key?: string | null;
             title?: string | null;
+            id?: null | components["schemas"]["WrappedUuidV4"];
+            metadata?: null | components["schemas"]["WrappedJsonValue"];
         };
         CreateCustomToolProviderRequestInner: {
             description?: string;
@@ -10673,7 +11228,7 @@ export interface components {
             type_id: string;
         };
         /**
-         * @description Current caller's seat state. Machine identities never consume seats.
+         * @description Current caller's seat state. Agent identities never consume seats.
          * @enum {string}
          */
         CurrentSeatStatus: "active" | "not_assigned" | "not_billable";
@@ -11604,7 +12159,7 @@ export interface components {
             document_id: string;
             metadata?: unknown;
             /**
-             * @description Explicit actor observation scopes. Each inner list is consolidated
+             * @description Explicit Hindsight observation scopes. Each inner list is consolidated
              *     independently, preventing observations from crossing actor boundaries.
              */
             observation_scopes?: string[][];
@@ -11614,7 +12169,7 @@ export interface components {
             result: unknown;
         };
         /** @enum {string} */
-        MemoryProvider: "helix";
+        MemoryProvider: "hindsight";
         MemorySourceBinding: {
             created_at: components["schemas"]["WrappedChronoDateTime"];
             /** @description True while a detached source is waiting for provider document cleanup. */
@@ -11632,6 +12187,7 @@ export interface components {
             source_kind: components["schemas"]["MemorySourceKind"];
             team_id?: string | null;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
+            created_by_user_id?: string | null;
         };
         /** @enum {string} */
         MemorySourceKind: "chatkit_channel" | "chatkit_session" | "signal_provider" | "signal_delivery" | "skill_registry" | "skill" | "mcp_server" | "wiki" | "wiki_page";
@@ -14415,6 +14971,395 @@ export interface components {
         WrappedJsonValue: unknown;
         /** Format: uuid */
         WrappedUuidV4: string;
+        /** @description One provider-neutral child execution correlated to a parent conversation. */
+        AgentJob: {
+            artifacts?: components["schemas"]["AgentJobArtifact"][];
+            budget?: null | components["schemas"]["AgentJobBudget"];
+            child_agent_id: string;
+            child_session_id?: null | components["schemas"]["WrappedUuidV4"];
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            error?: string | null;
+            id: components["schemas"]["WrappedUuidV4"];
+            metadata?: {
+                [key: string]: unknown;
+            };
+            model_id?: string | null;
+            objective: string;
+            org_id: string;
+            parent_agent_id: string;
+            parent_session_id: components["schemas"]["WrappedUuidV4"];
+            result?: unknown;
+            status: components["schemas"]["AgentJobStatus"];
+            team_id: string;
+            transcript_message_ids?: components["schemas"]["WrappedUuidV4"][];
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        /** @description Durable reference to a child-produced artifact. */
+        AgentJobArtifact: {
+            id: string;
+            media_type?: string | null;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            name?: string | null;
+            uri?: string | null;
+        };
+        /** @description Caller-selected hard limits for one child execution. */
+        AgentJobBudget: {
+            /** Format: int64 */
+            max_cost_microusd?: number | null;
+            /** Format: int64 */
+            max_duration_seconds?: number | null;
+            /** Format: int64 */
+            max_input_tokens?: number | null;
+            /** Format: int64 */
+            max_output_tokens?: number | null;
+        };
+        AgentJobPaginatedResponse: {
+            items: components["schemas"]["AgentJob"][];
+            next_page_token?: string;
+        };
+        /**
+         * @description Durable lifecycle of one delegated child-agent job.
+         * @enum {string}
+         */
+        AgentJobStatus: "queued" | "running" | "input-required" | "paused" | "completed" | "failed" | "stopped";
+        AgentRun: {
+            agent_id: string;
+            budget: components["schemas"]["AgentRunBudget"];
+            /** Format: int64 */
+            continuation_count: number;
+            /** Format: int64 */
+            cost_microusd: number;
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            /** Format: int64 */
+            elapsed_ms: number;
+            error?: string | null;
+            /** Format: int64 */
+            generation: number;
+            goal_id?: null | components["schemas"]["WrappedUuidV4"];
+            id: components["schemas"]["WrappedUuidV4"];
+            /** Format: int64 */
+            input_tokens: number;
+            lease_expires_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            lease_owner?: string | null;
+            /** Format: int64 */
+            no_progress_count: number;
+            objective: string;
+            org_id: string;
+            /** Format: int64 */
+            output_tokens: number;
+            /** Format: int64 */
+            repeated_pattern_count: number;
+            result?: unknown;
+            session_id: components["schemas"]["WrappedUuidV4"];
+            status: components["schemas"]["AgentRunStatus"];
+            /** Format: int64 */
+            step_count: number;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        AgentRunBudget: {
+            /** Format: int64 */
+            max_cost_microusd?: number | null;
+            /** Format: int64 */
+            max_duration_seconds?: number | null;
+            /** Format: int64 */
+            max_input_tokens?: number | null;
+            /** Format: int64 */
+            max_output_tokens?: number | null;
+            /** Format: int64 */
+            max_steps?: number | null;
+        };
+        AgentRunEffectReceipt: {
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            idempotency_key: string;
+            input_fingerprint: string;
+            output?: unknown;
+            run_id: components["schemas"]["WrappedUuidV4"];
+            status?: string;
+            step_id: string;
+            tool_call_id: string;
+            tool_name: string;
+        };
+        /** @enum {string} */
+        AgentRunStatus: "active" | "waiting" | "paused" | "stalled" | "completed" | "failed" | "canceled";
+        AppendAgentRunStepInner: {
+            /** Format: int64 */
+            continuation: number;
+            /** Format: int64 */
+            cost_microusd: number;
+            /** Format: int64 */
+            elapsed_ms: number;
+            /** Format: int64 */
+            input_tokens: number;
+            outcome: string;
+            /** Format: int64 */
+            output_tokens: number;
+            payload: unknown;
+            progress_fingerprint?: string | null;
+            response_fingerprint?: string | null;
+            step_id: string;
+            /** Format: int64 */
+            tool_call_count: number;
+        };
+        /** @description Checkpoint metadata plus only messages after its durable transcript boundary. */
+        ChatKitCompactedHistoryResponse: {
+            checkpoint?: null | components["schemas"]["ChatKitCompactionCheckpoint"];
+            items: components["schemas"]["Message"][];
+            next_page_token?: string | null;
+        };
+        /** @description Durable checkpoint used to resume an agent request without replaying compacted context. */
+        ChatKitCompactionCheckpoint: {
+            agent_id: string;
+            compacted_message_ids?: components["schemas"]["WrappedUuidV4"][];
+            compacted_through_message_id: components["schemas"]["WrappedUuidV4"];
+            compaction_id: components["schemas"]["WrappedUuidV4"];
+            ended_at: components["schemas"]["WrappedChronoDateTime"];
+            event_id: components["schemas"]["WrappedUuidV4"];
+            /** Format: int64 */
+            input_tokens: number;
+            /** Format: int64 */
+            output_tokens: number;
+            retained_message_ids?: components["schemas"]["WrappedUuidV4"][];
+            /** Format: int64 */
+            revision: number;
+            session_id: components["schemas"]["WrappedUuidV4"];
+            summary: string;
+        };
+        /** @description Agent-authored lifecycle payload for one context compaction attempt. */
+        ChatKitCompactionLifecycleInput: {
+            compacted_through_message_id: components["schemas"]["WrappedUuidV4"];
+            /** Format: int64 */
+            estimated_input_tokens: number;
+            /** Format: int64 */
+            input_message_count: number;
+            /** @enum {string} */
+            status: "started";
+        } | {
+            compacted_message_ids?: components["schemas"]["WrappedUuidV4"][];
+            /** Format: int64 */
+            input_tokens: number;
+            /** Format: int64 */
+            output_tokens: number;
+            retained_message_ids?: components["schemas"]["WrappedUuidV4"][];
+            /** @enum {string} */
+            status: "ended";
+            summary: string;
+        } | {
+            error: string;
+            retryable: boolean;
+            /** @enum {string} */
+            status: "failed";
+        };
+        ClaimAgentRunsInner: {
+            /** Format: int64 */
+            lease_seconds: number;
+            /** Format: int32 */
+            limit: number;
+            worker_id: string;
+        };
+        /** @description Public request body for committing a Hindsight reservation. */
+        CommitMemoryBankReservationBody: {
+            /** Format: int64 */
+            active_banks: number;
+            /**
+             * @description Provide when committing a successful creation; omit when recording a
+             *     deletion or retrying an already-authoritative quantity.
+             */
+            reservation_id?: string | null;
+        };
+        ControlAgentRunInner: {
+            reason?: string | null;
+            result?: unknown;
+            status: components["schemas"]["AgentRunStatus"];
+        };
+        CreateAgentRunInner: {
+            budget?: components["schemas"]["AgentRunBudget"];
+            goal_id?: null | components["schemas"]["WrappedUuidV4"];
+            idempotency_key: string;
+            objective: string;
+        };
+        /** @description Fields accepted when an agent creates a goal in its current conversation. */
+        CreateGoalRequestInner: {
+            objective: string;
+        };
+        /** @description Fields accepted when an agent creates a task in its current conversation. */
+        CreateTaskRequestInner: {
+            context_id?: string | null;
+            dependency_task_ids?: components["schemas"]["WrappedUuidV4"][];
+            goal_id?: null | components["schemas"]["WrappedUuidV4"];
+            inbox_id?: string | null;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            parent_task_id?: string | null;
+            plan?: string | null;
+            summary: string;
+        };
+        /** @description Fields accepted when delegating a child job. */
+        DelegateAgentJobRequestInner: {
+            budget?: null | components["schemas"]["AgentJobBudget"];
+            child_agent_id: string;
+            idempotency_key: string;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            model_id?: string | null;
+            objective: string;
+        };
+        /** @description Durable desired outcome owned by one explicit agent in one conversation. */
+        Goal: {
+            agent_id: string;
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            id: components["schemas"]["WrappedUuidV4"];
+            objective: string;
+            org_id: string;
+            progress_note?: string | null;
+            /** Format: int32 */
+            progress_percent?: number | null;
+            session_id: components["schemas"]["WrappedUuidV4"];
+            status: components["schemas"]["GoalStatus"];
+            status_reason?: string | null;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        GoalPaginatedResponse: {
+            items: components["schemas"]["Goal"][];
+            next_page_token?: string;
+        };
+        /**
+         * @description Lifecycle state for a durable agent goal.
+         * @enum {string}
+         */
+        GoalStatus: "active" | "completed" | "failed" | "canceled";
+        /** @description Organization-level Hindsight memory-bank capacity. */
+        MemoryBankBillingContext: {
+            /** Format: int64 */
+            active: number;
+            /** Format: int64 */
+            billable: number;
+            can_create: boolean;
+            /** Format: int64 */
+            confirmed_billable: number;
+            /** Format: int64 */
+            included: number;
+            payment_url?: string | null;
+            /** Format: int64 */
+            pending_reservations: number;
+            requires_payment_method: boolean;
+        };
+        /**
+         * @description A short-lived paid-capacity reservation returned to the Hindsight owner.
+         *     The owner must commit it after resource creation or release it on failure.
+         */
+        MemoryBankCreationReservation: {
+            billing: components["schemas"]["MemoryBankBillingContext"];
+            /** Format: date-time */
+            expires_at: string;
+            reservation_id: string;
+        };
+        RecordAgentRunEffectInner: {
+            /** Format: int64 */
+            generation: number;
+            idempotency_key: string;
+            input_fingerprint: string;
+            output?: unknown;
+            status: string;
+            step_id: string;
+            tool_call_id: string;
+            tool_name: string;
+            worker_id: string;
+        };
+        /** @description Public request body for reporting an agent-owned compaction lifecycle event. */
+        ReportChatKitCompactionEventInner: {
+            agent_id: string;
+            compaction_id: components["schemas"]["WrappedUuidV4"];
+            lifecycle: components["schemas"]["ChatKitCompactionLifecycleInput"];
+        };
+        /** @description Accepted durable compaction lifecycle event. */
+        ReportChatKitCompactionEventResponse: {
+            event_id: components["schemas"]["WrappedUuidV4"];
+        };
+        /** @description Optional instruction supplied when resuming a stopped or paused child. */
+        ResumeAgentJobRequestInner: {
+            instruction?: string | null;
+        };
+        /** @description New instruction durably appended to a running child job. */
+        SteerAgentJobRequestInner: {
+            idempotency_key: string;
+            instruction: string;
+        };
+        /** @description Optional owner-supplied reason for stopping a child. */
+        StopAgentJobRequestInner: {
+            reason?: string | null;
+        };
+        /** @description Executable work item owned by one explicit agent in one conversation. */
+        Task: {
+            agent_id: string;
+            context_id?: string | null;
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            dependency_task_ids?: components["schemas"]["WrappedUuidV4"][];
+            goal_id?: null | components["schemas"]["WrappedUuidV4"];
+            id: components["schemas"]["WrappedUuidV4"];
+            inbox_id?: string | null;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            org_id: string;
+            parent_task_id?: string | null;
+            plan?: string | null;
+            progress_note?: string | null;
+            /** Format: int32 */
+            progress_percent?: number | null;
+            session_id: components["schemas"]["WrappedUuidV4"];
+            status: components["schemas"]["TaskStatus"];
+            status_reason?: string | null;
+            status_timestamp: components["schemas"]["WrappedChronoDateTime"];
+            summary?: string | null;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        TaskPaginatedResponse: {
+            items: components["schemas"]["Task"][];
+            next_page_token?: string;
+        };
+        /**
+         * @description Task lifecycle states retained for ChatKit and A2A interoperability.
+         * @enum {string}
+         */
+        TaskStatus: "submitted" | "working" | "input-required" | "completed" | "canceled" | "failed" | "rejected" | "auth-required" | "unknown";
+        TransitionAgentRunInner: {
+            /** Format: int64 */
+            expected_generation: number;
+            reason?: string | null;
+            result?: unknown;
+            status: components["schemas"]["AgentRunStatus"];
+            worker_id: string;
+        };
+        /** @description Mutable goal fields. Omitted fields retain their current value. */
+        UpdateGoalRequestInner: {
+            objective?: string | null;
+            progress_note?: string | null;
+            /** Format: int32 */
+            progress_percent?: number | null;
+            status?: null | components["schemas"]["GoalStatus"];
+            status_reason?: string | null;
+        };
+        /** @description Mutable task fields. Omitted fields retain their current value. */
+        UpdateTaskRequestInner: {
+            dependency_task_ids?: components["schemas"]["WrappedUuidV4"][] | null;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            plan?: string | null;
+            progress_note?: string | null;
+            /** Format: int32 */
+            progress_percent?: number | null;
+            status?: null | components["schemas"]["TaskStatus"];
+            status_reason?: string | null;
+            summary?: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -34263,7 +35208,7 @@ export interface operations {
             };
         };
     };
-    "retry-personal-memory-source-bindings": {
+    "retry-personal-memory-source-sync": {
         parameters: {
             query?: never;
             header?: never;
@@ -35894,6 +36839,1007 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "billing-memory-bank-reservation-commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitMemoryBankReservationBody"];
+            };
+        };
+        responses: {
+            /** @description Updated memory-bank billing context */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryBankBillingContext"];
+                };
+            };
+            /** @description Invalid quantity transition */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description System administrator required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Reservation expired or consumed */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "billing-memory-bank-reservation-create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reserved memory-bank capacity */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryBankCreationReservation"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Stripe payment action required */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description System administrator required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Concurrent reconciliation in progress */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "billing-memory-bank-reservation-release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Reservation id */
+                reservation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated memory-bank billing context */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryBankBillingContext"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description System administrator required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Reservation missing or no longer pending */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-list-goals": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                next_page_token?: string | null;
+                status?: null | components["schemas"]["GoalStatus"];
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "chatkit-create-goal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGoalRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"];
+                };
+            };
+        };
+    };
+    "chatkit-get-goal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                goal_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"];
+                };
+            };
+        };
+    };
+    "chatkit-update-goal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                goal_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGoalRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"];
+                };
+            };
+        };
+    };
+    "chatkit-list-agent-jobs": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                next_page_token?: string | null;
+                status?: null | components["schemas"]["AgentJobStatus"];
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentJobPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "chatkit-delegate-agent-job": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DelegateAgentJobRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentJob"];
+                };
+            };
+        };
+    };
+    "chatkit-get-agent-job": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                job_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentJob"];
+                };
+            };
+        };
+    };
+    "chatkit-collect-agent-job-result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                job_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentJob"];
+                };
+            };
+        };
+    };
+    "chatkit-resume-agent-job": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                job_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResumeAgentJobRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentJob"];
+                };
+            };
+        };
+    };
+    "chatkit-steer-agent-job": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                job_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SteerAgentJobRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentJob"];
+                };
+            };
+        };
+    };
+    "chatkit-stop-agent-job": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                job_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StopAgentJobRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentJob"];
+                };
+            };
+        };
+    };
+    "chatkit-create-agent-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAgentRunInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRun"];
+                };
+            };
+        };
+    };
+    "chatkit-get-active-agent-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["AgentRun"];
+                };
+            };
+        };
+    };
+    "chatkit-claim-agent-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimAgentRunsInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRun"][];
+                };
+            };
+        };
+    };
+    "chatkit-get-agent-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                run_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRun"];
+                };
+            };
+        };
+    };
+    "chatkit-control-agent-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                run_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControlAgentRunInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRun"];
+                };
+            };
+        };
+    };
+    "chatkit-finish-agent-run-effect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                run_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordAgentRunEffectInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunEffectReceipt"];
+                };
+            };
+        };
+    };
+    "chatkit-get-agent-run-effect": {
+        parameters: {
+            query: {
+                tool_name: string;
+                input_fingerprint: string;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                run_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["AgentRunEffectReceipt"];
+                };
+            };
+        };
+    };
+    "chatkit-prepare-agent-run-effect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                run_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordAgentRunEffectInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunEffectReceipt"];
+                };
+            };
+        };
+    };
+    "chatkit-append-agent-run-step": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                run_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppendAgentRunStepInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRun"];
+                };
+            };
+        };
+    };
+    "chatkit-transition-agent-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                run_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransitionAgentRunInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRun"];
+                };
+            };
+        };
+    };
+    "chatkit-list-tasks": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                next_page_token?: string | null;
+                goal_id?: null | components["schemas"]["WrappedUuidV4"];
+                status?: null | components["schemas"]["TaskStatus"];
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "chatkit-create-task": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTaskRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    "chatkit-get-task": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                task_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    "chatkit-update-task": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                agent_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                task_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTaskRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    "chatkit-report-compaction-event": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportChatKitCompactionEventInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportChatKitCompactionEventResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-get-latest-compaction": {
+        parameters: {
+            query: {
+                agent_id: string;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["ChatKitCompactionCheckpoint"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-get-compacted-history": {
+        parameters: {
+            query: {
+                agent_id: string;
+                page_size?: number;
+                next_page_token?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitCompactedHistoryResponse"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
             };
         };
     };

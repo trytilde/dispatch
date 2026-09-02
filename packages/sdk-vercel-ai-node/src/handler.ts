@@ -1,4 +1,10 @@
-import type { JsonObject, JsonValue, SkillsClient } from "@trytilde/sdk";
+import type {
+  ChatKitCompactionCheckpoint,
+  ChatKitCompactionLifecycle,
+  JsonObject,
+  JsonValue,
+  SkillsClient,
+} from "@trytilde/sdk";
 import { isJsonObject } from "@trytilde/sdk/json";
 import {
   type ChatKitContextClient,
@@ -48,11 +54,14 @@ export type { ChatKitContextClient, ChatKitConvertedMessage };
 export type ChatKitSessionHistoryOptions = {
   nextPageToken?: string;
   pageSize?: number;
+  fromLastCompaction?: boolean;
+  agentId?: string;
 };
 
 export type ChatKitSessionHistory = {
   items: ChatKitHistoryMessage[];
   nextPageToken?: string;
+  checkpoint?: ChatKitCompactionCheckpoint;
 };
 
 export type ChatKitSessionClient = {
@@ -63,6 +72,11 @@ export type ChatKitSessionClient = {
     options: Omit<CreateMCPClientOptions, "client" | "chatkit">,
   ): Promise<TildeMCPClientHandle>;
   history(options?: ChatKitSessionHistoryOptions): Promise<ChatKitSessionHistory>;
+  reportCompaction(input: {
+    agentId: string;
+    compactionId: string;
+    lifecycle: ChatKitCompactionLifecycle;
+  }): Promise<{ eventId: string }>;
 };
 
 export type ChatKitEndpointContext = ChatKitEndpointProviderContext & {
@@ -293,7 +307,39 @@ export function chatKitEndpoint(
               }),
           }
         : {}),
+      reportCompaction(input) {
+        return client.chatkit.reportCompactionEvent({
+          sessionId: sessionId.value,
+          ...input,
+        });
+      },
       async history(historyOptions = {}) {
+        if (
+          historyOptions.fromLastCompaction &&
+          (historyOptions.pageSize !== undefined || historyOptions.nextPageToken !== undefined)
+        ) {
+          throw new TypeError("fromLastCompaction requires the unpaginated history helper");
+        }
+        if (historyOptions.fromLastCompaction) {
+          if (!historyOptions.agentId?.trim())
+            throw new TypeError("fromLastCompaction requires agentId");
+          const items: JsonValue[] = [];
+          let checkpoint: ChatKitCompactionCheckpoint | undefined;
+          let nextPageToken: string | undefined;
+          do {
+            const page = await client.chatkit.getCompactedHistory<JsonValue>({
+              sessionId: sessionId.value,
+              agentId: historyOptions.agentId,
+              pageSize: 100,
+              ...(nextPageToken ? { nextPageToken } : {}),
+            });
+            checkpoint ??= page.checkpoint;
+            items.push(...page.items);
+            nextPageToken = page.nextPageToken;
+          } while (nextPageToken);
+          const normalized = normalizeHistoryItems(items, currentRequestMessageIds);
+          return checkpoint ? { checkpoint, items: normalized } : { items: normalized };
+        }
         if (historyOptions.pageSize === undefined && historyOptions.nextPageToken === undefined) {
           const items: JsonValue[] = [];
           let nextPageToken: string | undefined;

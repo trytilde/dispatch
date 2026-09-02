@@ -71,9 +71,29 @@ export async function reconcileAgentResources(
 ): Promise<void> {
   const discoveredSources = await discoverAgents(options.repositoryRoot);
   const selectedAgentIds = options.agentIds ? new Set(options.agentIds) : undefined;
-  const sources = selectedAgentIds
+  const automaticMemoryEnabled = discoveredSources.some((source) => {
+    if (source.slug === "memory-catcher") return false;
+    const prefix = `AGENT_${source.slug.replaceAll("-", "_").toUpperCase()}`;
+    const value =
+      options.environment[`${prefix}_AUTOMATIC_MEMORY_MODE`] ??
+      options.environment.OPENBOT_AUTOMATIC_MEMORY_MODE;
+    return (value?.trim().toLowerCase() ?? "none") !== "none";
+  });
+  let sources = selectedAgentIds
     ? discoveredSources.filter((source) => selectedAgentIds.has(source.slug))
-    : discoveredSources;
+    : discoveredSources.filter(
+        (source) => source.slug !== "memory-catcher" || automaticMemoryEnabled,
+      );
+  const synthesisSource = discoveredSources.find(({ slug }) => slug === "memory-catcher");
+  if (
+    selectedAgentIds &&
+    automaticMemoryEnabled &&
+    synthesisSource &&
+    sources.some(({ slug }) => slug !== "memory-catcher") &&
+    !sources.includes(synthesisSource)
+  ) {
+    sources = [synthesisSource, ...sources];
+  }
   const report = options.report ?? (() => undefined);
   const persistence = serialDeploymentPersistence(repositoryDeploymentPersistence(options));
   const agentServiceOrigin = (
@@ -93,7 +113,7 @@ export async function reconcileAgentResources(
   ).replace(/\/$/, "");
   report({ event: "agent.lifecycle.started", details: { total: sources.length } });
 
-  await mapWithConcurrency(sources, 10, async (source, index) => {
+  const reconcile = async (source: (typeof sources)[number], index: number) => {
     const progress = { agentId: source.slug, index: index + 1, total: sources.length };
     report({ event: "agent.reconcile.started", details: progress });
     const context: DeploymentContext = {
@@ -118,7 +138,18 @@ export async function reconcileAgentResources(
     };
     await runAgentProvider("agent", options.providers.agent, context);
     report({ event: "agent.reconcile.complete", details: progress });
-  });
+  };
+
+  // Team memory banks validate their configured synthesizer when they are
+  // created. Reconcile the built-in synthesizer before ordinary agents so an
+  // initial installation cannot race its own dependency.
+  const synthesisIndex = sources.findIndex(({ slug }) => slug === "memory-catcher");
+  if (synthesisIndex >= 0) await reconcile(sources[synthesisIndex]!, synthesisIndex);
+  await mapWithConcurrency(
+    sources.filter((_, index) => index !== synthesisIndex),
+    10,
+    async (source) => reconcile(source, sources.indexOf(source)),
+  );
 }
 
 async function runAgentProvider(

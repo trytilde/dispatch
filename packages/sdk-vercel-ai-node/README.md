@@ -50,6 +50,16 @@ pnpm add @trytilde/sdk @trytilde/sdk-vercel-ai-node zod
   request and deployment boundaries with loop and budget guards.
 - `executeRunEffect(options)` records effect intent before execution and reuses committed outputs;
   unsupported uncertain outcomes are never automatically repeated.
+- `createChatKitAutomaticMemoryController(options)` converts server-authorized
+  recall into a deterministic dynamic system suffix for insertion after stable
+  instructions and any compaction checkpoint.
+- `composeChatKitAutomaticMemoryMessages(options)` preserves checkpoint →
+  memory → mutable-tail ordering without moving stable instructions out of the
+  model call's cacheable `instructions` field.
+- `createMemorySynthesisTools(session)` creates bank-free tools for a Tilde
+  synthesis session; `context.session.memorySynthesisTools()` supplies the
+  request-bound form inside a ChatKit endpoint. Upsert, supersede, forget, and
+  finish tools require the current job's exact batch, evidence set, and lease owner.
 - `verifyWebhookRequest`, `signBody`, and `WebhookVerificationError` implement signed webhook
   verification.
 

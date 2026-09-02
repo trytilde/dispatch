@@ -5,6 +5,7 @@ import { SkillsClient } from "./skills";
 import { McpClient } from "./tools";
 import { SelfExtensionClient } from "./self-extension";
 import { BillingClient } from "./billing";
+import { MemoryClient } from "./memory";
 
 export class Client {
   readonly config: NormalizedConfig;
@@ -14,6 +15,7 @@ export class Client {
   readonly skills: SkillsClient;
   readonly selfExtension: SelfExtensionClient;
   readonly billing: BillingClient;
+  readonly memory: MemoryClient;
 
   constructor(config: Config = {}) {
     this.config = createConfig(config);
@@ -23,6 +25,7 @@ export class Client {
     this.skills = new SkillsClient(this.config);
     this.selfExtension = new SelfExtensionClient(this.config);
     this.billing = new BillingClient(this.config);
+    this.memory = new MemoryClient(this.config);
   }
 }
 

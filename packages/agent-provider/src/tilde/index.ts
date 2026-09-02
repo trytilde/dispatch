@@ -21,6 +21,7 @@ import {
   AgentCredentialStrategy,
   AgentProvisioningStatus,
   ChatKitAgentConcurrencyPolicy,
+  ChatKitAutomaticMemoryMode,
   UserToolFederationMode,
   createTildeApiClient,
   type TildeApiClient,
@@ -101,6 +102,7 @@ export class TildeAgentProvider implements AgentProvider {
         "Create the shared OpenBot ChatKit workspace channel when missing",
         "Reconcile Vercel AI SDK endpoint URLs and enabled status",
         "Upload the agent's canonical machine-user avatar",
+        "Provision automatic memory for ordinary agents without recursive synthesizer memory",
         "Synchronize authored skills and exact registry membership",
         "Reconcile dynamic MCP, Tilde control-plane, and deployment-platform tools",
         context.devMode
@@ -121,6 +123,10 @@ export class TildeAgentProvider implements AgentProvider {
     const localRunningEndpoint = context.devMode;
     const prefix = `AGENT_${slug.replaceAll("-", "_").toUpperCase()}`;
     const displayName = context.environment[`${prefix}_NAME`]?.trim() || slug;
+    const synthesisOnly = slug === "memory-catcher";
+    const memoryMode = synthesisOnly
+      ? ChatKitAutomaticMemoryMode.NONE
+      : automaticMemoryMode(context.environment, prefix);
     const apiKeyName = `${prefix}_API_KEY`;
     const webhookKeyName = `${prefix}_WEBHOOK_SIGNING_KEY`;
     const endpointUrl = new URL(`/api/agents/${slug}`, `${origin}/`);
@@ -142,6 +148,7 @@ export class TildeAgentProvider implements AgentProvider {
               concurrency_policy: ChatKitAgentConcurrencyPolicy.QUEUE,
             },
             status: "enabled",
+            automatic_memory_mode: memoryMode,
             credential_strategy: hasCredentials
               ? AgentCredentialStrategy.PRESERVE
               : AgentCredentialStrategy.ROTATE,
@@ -162,6 +169,21 @@ export class TildeAgentProvider implements AgentProvider {
             description: `Skills available to the ${slug} OpenBot agent.`,
             enabled_skills: enabledSkills,
           },
+          ...(synthesisOnly
+            ? {}
+            : {
+                memory: {
+                  bank:
+                    memoryMode === ChatKitAutomaticMemoryMode.PERSONAL_PLUS_AGENT
+                      ? {
+                          enabled: true,
+                          name: `OpenBot ${slug} memory`,
+                          description: `Memory owned by the ${slug} OpenBot agent.`,
+                          synthesizer_agent_id: "memory-catcher",
+                        }
+                      : { enabled: false },
+                },
+              }),
         },
         signal,
       }),
@@ -398,6 +420,25 @@ function personalToolFederationMode(
   if (value === "all") return UserToolFederationMode.ALL;
   if (value === "selected") return UserToolFederationMode.SELECTED;
   return UserToolFederationMode.NONE;
+}
+
+function automaticMemoryMode(
+  environment: Record<string, string | undefined>,
+  agentPrefix: string,
+): ChatKitAutomaticMemoryMode {
+  const value = (
+    environment[`${agentPrefix}_AUTOMATIC_MEMORY_MODE`] ?? environment.OPENBOT_AUTOMATIC_MEMORY_MODE
+  )
+    ?.trim()
+    .toLowerCase();
+  if (!value || value === "none") return ChatKitAutomaticMemoryMode.NONE;
+  if (value === "personal") return ChatKitAutomaticMemoryMode.PERSONAL;
+  if (value === "personal_plus_agent") return ChatKitAutomaticMemoryMode.PERSONAL_PLUS_AGENT;
+  if (value === "team") return ChatKitAutomaticMemoryMode.TEAM;
+  throw new AgentProviderError(
+    "invalid_configuration",
+    "OPENBOT_AUTOMATIC_MEMORY_MODE must be none, personal, personal_plus_agent, or team",
+  );
 }
 
 function jsonRecord(value: unknown): JsonRecord | undefined {

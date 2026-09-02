@@ -1,7 +1,7 @@
 # @trytilde/sdk
 
-Core TypeScript client for Tilde agents, MCP servers, skills, ChatKit sessions,
-and credential-injecting reverse proxies.
+Core TypeScript client for Tilde agents, MCP servers, skills, memory banks,
+ChatKit sessions, and credential-injecting reverse proxies.
 
 ```bash
 pnpm add @trytilde/sdk
@@ -40,6 +40,23 @@ pnpm add @trytilde/sdk
 - `recordCodingAgentEvent(options)` records harness-neutral session, message, and tool lifecycle events in canonical ChatKit sessions.
 - `ChatKitClient.createAgentSession(input)` idempotently resolves a lookup-key session and its participant routes.
 - `ChatKitClient.createMessage(input)` writes a canonical searchable message with caller-selected stable identity metadata.
+- `MemoryClient`, `MemoryBankClient`, and `MemorySynthesisSessionClient` expose
+  visible-bank discovery, owner-managed documents, synchronous recall/retain,
+  source bindings, and bank-free synthesis-session operations. Synthesis
+  mutations and completion require the exact current batch, complete evidence
+  set, and fresh lease owner; synthesis forget is separate from owner deletion.
+- `MemoryClient.personalBanks(ownerUserId)` and
+  `personalBank(ownerUserId, bankId)` use owner credentials to inspect, edit,
+  or delete explicit personal facts; personal synthesizer assignment remains a
+  separate operation so a queue can safely wait while none is configured.
+- `MemoryClient.bindPersonalSource(ownerUserId, input)` and
+  `retryPersonalSource(ownerUserId, sourceKind, sourceId)` keep personal Wiki,
+  Skill, Tool, MCP, Signal, and ChatKit ingestion on user-owned routes.
+- `ChatKitClient.recallAutomaticMemory(input)` requests a bounded,
+  provenance-bearing projection using only a durable triggering message.
+- `ChatKitClient.getAgentMemorySettings(agentId)` and
+  `updateAgentMemorySettings(agentId, settings)` inspect and replace the bot's
+  automatic-memory mode and selected banks.
 - `@trytilde/sdk/api` exposes the generated API client when a stable wrapper does not yet exist.
 - `@trytilde/sdk/json` exposes the shared JSON types, guards, accessors, and parser.
 

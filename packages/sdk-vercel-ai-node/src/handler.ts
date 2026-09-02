@@ -1,6 +1,7 @@
 import type {
   ChatKitCompactionCheckpoint,
   ChatKitCompactionLifecycle,
+  ChatKitAutomaticMemoryProjection,
   JsonObject,
   JsonValue,
   SkillsClient,
@@ -27,6 +28,7 @@ import type { Client } from "./client";
 import type { ToolSet } from "ai";
 import { createMCPClient, type CreateMCPClientOptions, type TildeMCPClientHandle } from "./mcp";
 import { createChatKitSessionTools, type ChatKitToolSession } from "./chatkit-session-tools";
+import { createMemorySynthesisTools } from "./memory-synthesis-tools";
 import {
   type VerifiedWebhookRequest,
   type VerifyWebhookOptions,
@@ -77,6 +79,11 @@ export type ChatKitSessionClient = {
     compactionId: string;
     lifecycle: ChatKitCompactionLifecycle;
   }): Promise<{ eventId: string }>;
+  memorySynthesisTools(): ToolSet;
+  recallAutomaticMemory(input: {
+    messageId: string;
+    maxTokens?: number;
+  }): Promise<ChatKitAutomaticMemoryProjection>;
 };
 
 export type ChatKitEndpointContext = ChatKitEndpointProviderContext & {
@@ -293,6 +300,18 @@ export function chatKitEndpoint(
     const currentRequestMessageIds = messageIds(body.messages);
     const session: ChatKitSessionClient = {
       id: sessionId.value,
+      memorySynthesisTools() {
+        return createMemorySynthesisTools(client.memory.synthesisSession(sessionId.value));
+      },
+      recallAutomaticMemory(input) {
+        const agentId = body.agent?.id;
+        if (!agentId) throw new TypeError("Automatic memory requires the verified receiving agent");
+        return client.chatkit.recallAutomaticMemory({
+          sessionId: sessionId.value,
+          agentId,
+          ...input,
+        });
+      },
       ...(toolSession && sessionTools
         ? {
             providerId: toolSession.providerId,

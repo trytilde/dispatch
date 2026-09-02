@@ -11,6 +11,7 @@ export const CapabilityChangeApprovalSchema = z
     title: z.string(),
     rationale: z.string(),
     category: z.string(),
+    status: z.string().default("pending"),
     preview: z
       .object({
         permissions: z.array(z.unknown()).default([]),
@@ -80,6 +81,23 @@ export async function decideCapabilityChange(
     },
   );
   if (!response.ok) throw new Error(`Capability decision failed (${response.status})`);
+  return CapabilityChangeApprovalSchema.parse(await response.json());
+}
+
+/** Reload a proposal's durable decision state using the verified owner boundary. */
+export async function getCapabilityChange(
+  controlOrigin: string,
+  proposalId: string,
+  accessToken?: string,
+): Promise<CapabilityChangeApproval> {
+  const response = await fetch(
+    `${controlOrigin.replace(/\/$/, "")}/api/capability-approvals/${encodeURIComponent(proposalId)}`,
+    {
+      credentials: "include",
+      headers: accessToken ? { authorization: `Bearer ${accessToken}` } : undefined,
+    },
+  );
+  if (!response.ok) throw new Error(`Capability lookup failed (${response.status})`);
   return CapabilityChangeApprovalSchema.parse(await response.json());
 }
 

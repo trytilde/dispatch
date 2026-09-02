@@ -107,6 +107,83 @@ describe("capability approval proxy", () => {
     expect(response.status).toBe(403);
     expect(upstream).not.toHaveBeenCalled();
   });
+
+  it("does not expose upstream errors to the owner client", async () => {
+    const app = createApp({
+      authProvider: testAuthProvider(),
+      tildeProxy: {
+        apiKey: "machine",
+        orgId: "org",
+        teamId: "team",
+        baseUrl: "https://tilde.test",
+        fetch: vi
+          .fn()
+          .mockResolvedValue(
+            Response.json({ error: "provider client_secret was rejected" }, { status: 409 }),
+          ),
+      },
+    });
+    const response = await app.request(
+      "https://openbot.test/api/capability-approvals/proposal-a/decision",
+      {
+        method: "POST",
+        headers: { authorization: "Bearer human-token", "content-type": "application/json" },
+        body: JSON.stringify({
+          approval_id: "approval-a",
+          proposal_hash: "hash-a",
+          proposal_generation: 1,
+          decision: "approve",
+        }),
+      },
+    );
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({ error: "Capability decision failed" });
+  });
+
+  it("reloads durable decision state with the verified owner bearer", async () => {
+    const upstream = vi.fn(async (_input: URL | string, init?: RequestInit) => {
+      expect(new Headers(init?.headers).get("authorization")).toBe("Bearer human-token");
+      expect(init?.method).toBeUndefined();
+      return Response.json({
+        id: "proposal-a",
+        status: "executed",
+        title: "Add Stripe",
+        rationale: "Revenue",
+        category: "connector",
+        preview: {
+          permissions: [],
+          credentials: [],
+          cost_summary: "$0",
+          security_summary: "Read-only",
+          rollback_plan: "Remove",
+        },
+        approval: {
+          approval_id: "approval-a",
+          proposal_id: "proposal-a",
+          proposal_hash: "hash-a",
+          proposal_generation: 1,
+          status: "completed",
+          title: "Add Stripe",
+          instructions: "Revenue",
+        },
+      });
+    });
+    const app = createApp({
+      authProvider: testAuthProvider(),
+      tildeProxy: {
+        apiKey: "machine",
+        orgId: "org",
+        teamId: "team",
+        baseUrl: "https://tilde.test",
+        fetch: upstream as typeof fetch,
+      },
+    });
+    const response = await app.request("https://openbot.test/api/capability-approvals/proposal-a", {
+      headers: { authorization: "Bearer human-token" },
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ id: "proposal-a", status: "executed" });
+  });
 });
 
 function expectStringBody(body: unknown): string {

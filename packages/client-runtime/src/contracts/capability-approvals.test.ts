@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { capabilityChangeApprovalFromPart } from "./capability-approvals.js";
+import { capabilityChangeApprovalFromPart, getCapabilityChange } from "./capability-approvals.js";
 
 const proposal = {
   id: "proposal-1",
@@ -48,5 +48,16 @@ describe("capabilityChangeApprovalFromPart", () => {
     expect(
       capabilityChangeApprovalFromPart({ type: "tool", tool_name: "bash", output: proposal }),
     ).toBeUndefined();
+  });
+
+  it("reloads durable status without accepting a decision in free text", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => Response.json({ ...proposal, status: "executed" });
+    try {
+      const current = await getCapabilityChange("https://openbot.test", proposal.id);
+      expect(current.status).toBe("executed");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

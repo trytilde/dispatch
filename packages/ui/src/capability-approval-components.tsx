@@ -1,24 +1,44 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CapabilityChangeApproval } from "@tryopenbot/client-runtime";
 
 export interface CapabilityApprovalCardProps {
   approval: CapabilityChangeApproval;
-  onDecision?: (decision: "approve" | "reject") => Promise<void>;
+  loadCurrent?: () => Promise<CapabilityChangeApproval>;
+  onDecision?: (decision: "approve" | "reject") => Promise<CapabilityChangeApproval>;
 }
 
 /** Render a server-authored capability change with exact human Yes/No actions. */
-export function CapabilityApprovalCard({ approval, onDecision }: CapabilityApprovalCardProps) {
+export function CapabilityApprovalCard({
+  approval,
+  loadCurrent,
+  onDecision,
+}: CapabilityApprovalCardProps) {
   const [busy, setBusy] = useState(false);
   const [answered, setAnswered] = useState<"approve" | "reject">();
   const [error, setError] = useState("");
-  const pending = approval.approval.status === "pending" && !answered;
+  const [currentStatus, setCurrentStatus] = useState(approval.status);
+  const pending = currentStatus === "pending" && !answered;
+
+  useEffect(() => {
+    if (!loadCurrent || currentStatus !== "pending") return;
+    let active = true;
+    void loadCurrent()
+      .then((current) => {
+        if (active) setCurrentStatus(current.status);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [currentStatus, loadCurrent]);
 
   const decide = async (decision: "approve" | "reject"): Promise<void> => {
     if (!onDecision || busy) return;
     setBusy(true);
     setError("");
     try {
-      await onDecision(decision);
+      const current = await onDecision(decision);
+      setCurrentStatus(current.status);
       setAnswered(decision);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Decision failed");
@@ -74,7 +94,7 @@ export function CapabilityApprovalCard({ approval, onDecision }: CapabilityAppro
           </>
         ) : (
           <span>
-            {answered === "approve" || approval.approval.status === "completed"
+            {answered === "approve" || ["approved", "executing", "executed"].includes(currentStatus)
               ? "Approved"
               : "Declined"}
           </span>

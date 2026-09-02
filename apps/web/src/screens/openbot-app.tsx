@@ -13,6 +13,7 @@ import {
   type ChatMessage,
   type CapabilityChangeApproval,
   decideCapabilityChange,
+  getCapabilityChange,
   connectorAuthorizedReturnUrl,
   type ConnectorProvider,
   type CreateConnectorAccountResult,
@@ -554,10 +555,11 @@ export function OpenBotApp() {
     },
   };
   const capabilityApprovalActions = {
+    loadCurrent: (approval: CapabilityChangeApproval) => getCapabilityChange("", approval.id),
     onDecision: async (
       approval: CapabilityChangeApproval,
       decision: "approve" | "reject",
-    ): Promise<void> => {
+    ): Promise<CapabilityChangeApproval> => {
       let updated: CapabilityChangeApproval;
       try {
         updated = await decideCapabilityChange("", approval, decision);
@@ -569,10 +571,11 @@ export function OpenBotApp() {
           text: `Capability change ${decision === "approve" ? "approved" : "declined"} by the authenticated owner. proposal_id=${updated.id}. Continue the original task from this durable decision and use only server-provided setup continuations.`,
         });
       } catch {
-        throw new Error(
-          "The decision was recorded, but the agent could not be resumed. Please try again.",
+        openBotRuntime.actions.setError(
+          "The capability decision was recorded, but the agent could not be resumed.",
         );
       }
+      return updated;
     },
   };
 

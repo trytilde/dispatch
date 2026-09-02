@@ -51,7 +51,8 @@ export interface MessageContentProps {
     onDecision: (
       approval: CapabilityChangeApproval,
       decision: "approve" | "reject",
-    ) => Promise<void>;
+    ) => Promise<CapabilityChangeApproval>;
+    loadCurrent: (approval: CapabilityChangeApproval) => Promise<CapabilityChangeApproval>;
   };
 }
 
@@ -127,6 +128,11 @@ function renderPart(
       <CapabilityApprovalCard
         approval={capabilityApproval}
         key={key}
+        loadCurrent={
+          capabilityApprovalActions
+            ? () => capabilityApprovalActions.loadCurrent(capabilityApproval)
+            : undefined
+        }
         onDecision={
           capabilityApprovalActions
             ? (decision) => capabilityApprovalActions.onDecision(capabilityApproval, decision)

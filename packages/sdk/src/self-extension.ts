@@ -123,9 +123,9 @@ interface RawProposal {
   team_id: string;
   requesting_agent_id: string;
   calling_subject_id: string;
-  requesting_user_id?: string;
-  session_id?: string;
-  run_id?: string;
+  requesting_user_id?: string | null;
+  session_id?: string | null;
+  run_id?: string | null;
   category: SelfExtensionCategory;
   status: SelfExtensionStatus;
   title: string;
@@ -162,16 +162,16 @@ interface RawProposal {
     instructions: string;
   };
   generation: number;
-  approved_by_user_id?: string;
-  error_message?: string;
+  approved_by_user_id?: string | null;
+  error_message?: string | null;
   outputs_available: boolean;
   continuation?: {
     kind: "provider_setup";
     setup_item_id: string;
     resource_id: string;
-    next_action?: JsonValue;
+    next_action?: JsonValue | null;
     instructions: string;
-  };
+  } | null;
   resources?: Array<{ kind: string; key: string; id: string; created_by_proposal: boolean }>;
   expires_at: string;
   created_at: string;
@@ -311,9 +311,9 @@ function fromRaw(raw: RawProposal): SelfExtensionProposal {
     teamId: raw.team_id,
     requestingAgentId: raw.requesting_agent_id,
     callingSubjectId: raw.calling_subject_id,
-    requestingUserId: raw.requesting_user_id,
-    sessionId: raw.session_id,
-    runId: raw.run_id,
+    requestingUserId: raw.requesting_user_id ?? undefined,
+    sessionId: raw.session_id ?? undefined,
+    runId: raw.run_id ?? undefined,
     category: raw.category,
     status: raw.status,
     title: raw.title,
@@ -350,15 +350,15 @@ function fromRaw(raw: RawProposal): SelfExtensionProposal {
       instructions: raw.approval.instructions,
     },
     generation: raw.generation,
-    approvedByUserId: raw.approved_by_user_id,
-    errorMessage: raw.error_message,
+    approvedByUserId: raw.approved_by_user_id ?? undefined,
+    errorMessage: raw.error_message ?? undefined,
     outputsAvailable: raw.outputs_available,
     continuation: raw.continuation
       ? {
           kind: raw.continuation.kind,
           setupItemId: raw.continuation.setup_item_id,
           resourceId: raw.continuation.resource_id,
-          nextAction: raw.continuation.next_action,
+          nextAction: raw.continuation.next_action ?? undefined,
           instructions: raw.continuation.instructions,
         }
       : undefined,

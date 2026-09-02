@@ -3,6 +3,26 @@ import type { TildeProxyOptions } from "./tilde-proxy.js";
 
 /** Register the owner-only proxy for exact capability-change decisions. */
 export function registerCapabilityApprovalRoutes(app: Hono, configured?: TildeProxyOptions): void {
+  app.get("/api/capability-approvals/:proposalId", async (context) => {
+    const options = configured ?? optionsFromEnvironment();
+    if (!options)
+      return context.json({ error: "Tilde capability approvals are not configured" }, 503);
+    const { ownerAccessToken: accessToken } = context.var as { ownerAccessToken?: string };
+    if (!accessToken) return context.json({ error: "Authentication required" }, 401);
+    const response = await requestProposal(
+      options,
+      accessToken,
+      context.req.param("proposalId"),
+      context.req.raw.signal,
+    );
+    if (!response.ok)
+      return context.json({ error: "Capability lookup failed" }, response.status as 400);
+    const text = await response.text();
+    context.header("content-type", response.headers.get("content-type") ?? "application/json");
+    context.header("cache-control", "no-store");
+    return context.body(text, 200);
+  });
+
   app.post("/api/capability-approvals/:proposalId/decision", async (context) => {
     const options = configured ?? optionsFromEnvironment();
     if (!options)
@@ -25,10 +45,35 @@ export function registerCapabilityApprovalRoutes(app: Hono, configured?: TildePr
         "x-tilde-team-id": options.teamId,
       },
       body: JSON.stringify(body),
+      signal: context.req.raw.signal,
     });
+    if (!response.ok) {
+      return context.json({ error: "Capability decision failed" }, response.status as 400);
+    }
     const text = await response.text();
     context.header("content-type", response.headers.get("content-type") ?? "application/json");
     return context.body(text, response.status as 200);
+  });
+}
+
+function requestProposal(
+  options: TildeProxyOptions,
+  accessToken: string,
+  proposalId: string,
+  signal: AbortSignal,
+): Promise<Response> {
+  const url = new URL(
+    `/api/v1/team/${encodeURIComponent(options.teamId)}/chatkit/self-extension-proposals/${encodeURIComponent(proposalId)}`,
+    options.baseUrl ?? "https://api.trytilde.ai",
+  );
+  return (options.fetch ?? fetch)(url, {
+    headers: {
+      accept: "application/json",
+      authorization: `Bearer ${accessToken}`,
+      "x-tilde-org-id": options.orgId,
+      "x-tilde-team-id": options.teamId,
+    },
+    signal,
   });
 }
 

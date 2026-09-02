@@ -10061,6 +10061,486 @@
         ]
       }
     },
+    "/api/v1/team/{team_id}/chatkit/self-extension-proposals": {
+      "get": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "List safe extension proposals",
+        "description": "Lists redacted proposal review snapshots for the authorized team.",
+        "operationId": "chatkit-list-self-extension-proposals",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SelfExtensionStatus"
+            }
+          },
+          {
+            "name": "requesting_agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SelfExtensionProposal"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Propose a safe agent extension",
+        "description": "Creates a durable, server-validated proposal with a redacted diff, permission and credential requirements, cost and egress implications, affected audiences, and exact rollback plan. The requesting agent cannot approve or execute it.",
+        "operationId": "chatkit-propose-self-extension",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSelfExtensionProposalInner"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfExtensionProposal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}": {
+      "get": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Inspect a safe extension proposal",
+        "description": "Returns the complete redacted review document and durable execution receipts.",
+        "operationId": "chatkit-get-self-extension-proposal",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "proposal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfExtensionProposal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/approve": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Approve a safe extension proposal",
+        "description": "Records an explicit human owner/admin approval and queues durable execution. Agent callers cannot approve.",
+        "operationId": "chatkit-approve-self-extension-proposal",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "proposal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfExtensionProposal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/cancel": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Cancel a safe extension proposal",
+        "description": "Cancels a pending or approved proposal before execution starts.",
+        "operationId": "chatkit-cancel-self-extension-proposal",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "proposal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfExtensionProposal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/decision": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Answer a capability-change approval",
+        "description": "Atomically records an authenticated human Yes/No against the exact proposal hash and generation, completes its linked Human Approval, and queues approved work.",
+        "operationId": "chatkit-decide-capability-change",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "proposal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideCapabilityChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfExtensionProposal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/outputs/claim": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Claim safe extension outputs",
+        "description": "Returns and consumes encrypted one-time execution values to an explicit human owner/admin reviewer. Agent callers cannot claim outputs.",
+        "operationId": "chatkit-claim-self-extension-proposal-outputs",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "proposal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfExtensionProposalOutputs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/reject": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Reject a safe extension proposal",
+        "description": "Records an explicit human owner/admin rejection without creating resources.",
+        "operationId": "chatkit-reject-self-extension-proposal",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "proposal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfExtensionProposal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/rollback": {
+      "post": {
+        "tags": [
+          "chatkit",
+          "v1"
+        ],
+        "summary": "Roll back a safe extension proposal",
+        "description": "Queues durable reverse-order cleanup of only resources recorded as created by this proposal.",
+        "operationId": "chatkit-rollback-self-extension-proposal",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "proposal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfExtensionProposal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/team/{team_id}/chatkit/session": {
       "get": {
         "tags": [
@@ -41426,6 +41906,51 @@
           }
         }
       },
+      "CapabilityChangeApproval": {
+        "type": "object",
+        "description": "Model-visible capability confirmation. It deliberately contains no approval token.",
+        "required": [
+          "approval_id",
+          "proposal_id",
+          "proposal_hash",
+          "proposal_generation",
+          "status",
+          "title",
+          "instructions"
+        ],
+        "properties": {
+          "approval_id": {
+            "type": "string"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "proposal_generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "proposal_hash": {
+            "type": "string"
+          },
+          "proposal_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "CapabilityChangeDecision": {
+        "type": "string",
+        "description": "The only supported decisions for an inline capability confirmation.",
+        "enum": [
+          "approve",
+          "reject"
+        ]
+      },
       "ChangeResourceOwnershipRequest": {
         "type": "object",
         "description": "Body used by root-specific ownership-change operations. The target owner is\nalways the effective actor; APIs do not expose arbitrary user transfer.",
@@ -44520,6 +45045,55 @@
           }
         }
       },
+      "CreateSelfExtensionProposalInner": {
+        "type": "object",
+        "description": "Agent-authored intent submitted to the server for validation and previewing.",
+        "required": [
+          "requesting_agent_id",
+          "idempotency_key",
+          "category",
+          "title",
+          "rationale",
+          "desired_state"
+        ],
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/SelfExtensionCategory"
+          },
+          "desired_state": {
+            "$ref": "#/components/schemas/WrappedJsonValue",
+            "description": "Provider/domain desired state. Plaintext credential fields are rejected."
+          },
+          "expires_in_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "idempotency_key": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "requesting_agent_id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
       "CreateSessionInner": {
         "type": "object",
         "description": "Inner create fields for a ChatKit session.",
@@ -46056,6 +46630,31 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "DecideCapabilityChangeRequest": {
+        "type": "object",
+        "description": "Exact client binding posted when a human presses Yes or No.",
+        "required": [
+          "approval_id",
+          "proposal_hash",
+          "proposal_generation",
+          "decision"
+        ],
+        "properties": {
+          "approval_id": {
+            "type": "string"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/CapabilityChangeDecision"
+          },
+          "proposal_generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "proposal_hash": {
+            "type": "string"
           }
         }
       },
@@ -50487,6 +51086,58 @@
           "canceled"
         ]
       },
+      "ProposalCredentialRequirement": {
+        "type": "object",
+        "description": "A required credential descriptor. It intentionally cannot carry a value.",
+        "required": [
+          "credential_type",
+          "purpose",
+          "brokered_by"
+        ],
+        "properties": {
+          "brokered_by": {
+            "type": "string"
+          },
+          "credential_type": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "required_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ProposalPermissionChange": {
+        "type": "object",
+        "description": "One permission or audience expansion shown before approval.",
+        "required": [
+          "permission",
+          "plane",
+          "reason"
+        ],
+        "properties": {
+          "permission": {
+            "type": "string"
+          },
+          "plane": {
+            "type": "string"
+          },
+          "principals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
       "ProviderAppProvisioningResponse": {
         "type": "object",
         "description": "Response for setup or app provisioning lifecycle calls.",
@@ -54306,6 +54957,255 @@
             "type": "string"
           }
         }
+      },
+      "SelfExtensionCategory": {
+        "type": "string",
+        "description": "Resource families an agent may propose but never directly provision.",
+        "enum": [
+          "connector",
+          "mcp_server",
+          "skill_registry",
+          "custom_tool",
+          "agent",
+          "memory_bank",
+          "wiki"
+        ]
+      },
+      "SelfExtensionPreview": {
+        "type": "object",
+        "description": "Server-authored review document rendered by every client without category branches.",
+        "required": [
+          "resource_diff",
+          "cost_summary",
+          "security_summary",
+          "rollback_plan"
+        ],
+        "properties": {
+          "affected_agents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "affected_users": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cost_summary": {
+            "type": "string"
+          },
+          "credentials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProposalCredentialRequirement"
+            }
+          },
+          "egress_destinations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProposalPermissionChange"
+            }
+          },
+          "resource_diff": {
+            "$ref": "#/components/schemas/WrappedJsonValue",
+            "description": "Concrete desired-state diff with secret references but no secret values."
+          },
+          "rollback_plan": {
+            "type": "string"
+          },
+          "security_summary": {
+            "type": "string"
+          }
+        }
+      },
+      "SelfExtensionProposal": {
+        "type": "object",
+        "description": "Public proposal snapshot. It never returns worker leases or secret material.",
+        "required": [
+          "id",
+          "org_id",
+          "team_id",
+          "requesting_agent_id",
+          "calling_subject_id",
+          "category",
+          "status",
+          "title",
+          "rationale",
+          "desired_state",
+          "preview",
+          "approval",
+          "generation",
+          "outputs_available",
+          "expires_at",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "approval": {
+            "$ref": "#/components/schemas/CapabilityChangeApproval",
+            "description": "Secret-free binding used by clients to render and submit the exact approval."
+          },
+          "approved_by_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "calling_subject_id": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/SelfExtensionCategory"
+          },
+          "continuation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedJsonValue",
+                "description": "Secret-free server-authored provider setup continuation."
+              }
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "desired_state": {
+            "$ref": "#/components/schemas/WrappedJsonValue"
+          },
+          "error_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "outputs_available": {
+            "type": "boolean"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/SelfExtensionPreview"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "requesting_agent_id": {
+            "type": "string"
+          },
+          "requesting_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelfExtensionResource"
+            }
+          },
+          "run_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/SelfExtensionStatus"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          }
+        }
+      },
+      "SelfExtensionProposalOutputs": {
+        "type": "object",
+        "description": "One-time execution values, returned only to an authorized human reviewer.",
+        "properties": {
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SelfExtensionResource": {
+        "type": "object",
+        "description": "A resource receipt used for idempotency and exact rollback ownership.",
+        "required": [
+          "kind",
+          "key",
+          "id",
+          "created_by_proposal"
+        ],
+        "properties": {
+          "created_by_proposal": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          }
+        }
+      },
+      "SelfExtensionStatus": {
+        "type": "string",
+        "description": "Durable proposal lifecycle. Execution and rollback are leased worker states.",
+        "enum": [
+          "pending",
+          "approved",
+          "executing",
+          "executed",
+          "rejected",
+          "cancelled",
+          "expired",
+          "rollback_queued",
+          "rolling_back",
+          "rolled_back",
+          "error"
+        ]
       },
       "SelfProfileAvatarResponse": {
         "type": "object",

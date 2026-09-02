@@ -10,7 +10,11 @@ pnpm add @trytilde/sdk
 ## Public API
 
 - `createConfig(input)` normalizes Tilde team, organization, URL, and authentication settings.
-- `createClient(config?)` creates the core client with ChatKit, MCP, messages, and skills APIs.
+- `createClient(config?)` creates the core client with ChatKit, MCP, messages, skills, and
+  human-reviewed self-extension APIs.
+- `SelfExtensionClient` proposes, inspects, lists, cancels, waits for, or rolls back durable
+  capability changes. Human credentials are required by Tilde for approval, output claims, and
+  provider setup continuation; model-facing code should expose only `propose`.
 - `createTildeGrpcReverseProxy(options)` exposes a credential-injecting gRPC reverse proxy.
 - `wrapMcpClientWithLocalTools(options)` combines remote MCP tools with process-local tools.
 - `ChatKitClient.registerAgentTools(input)` reconciles an agent's process-local tool catalog.

@@ -1520,7 +1520,7 @@ describe("ChatKit AI SDK converters", () => {
             type: "signal",
             data: {
               action: "opened",
-              repository: { full_name: "trytilde/openbot" },
+              repository: { full_name: "trytilde/dispatch" },
               issue: { number: 42, title: "Add GitHub signal handlers" },
             },
             metadata: { signal_type: "github.issue.opened" },
@@ -1531,7 +1531,7 @@ describe("ChatKit AI SDK converters", () => {
             type: "signal",
             data: {
               action: "closed",
-              repository: { full_name: "trytilde/openbot" },
+              repository: { full_name: "trytilde/dispatch" },
               pull_request: {
                 number: 21,
                 title: "Add remote tool endpoint helper",
@@ -1546,7 +1546,7 @@ describe("ChatKit AI SDK converters", () => {
             type: "signal",
             data: {
               action: "completed",
-              repository: { full_name: "trytilde/openbot" },
+              repository: { full_name: "trytilde/dispatch" },
               check_run: {
                 name: "test",
                 status: "completed",
@@ -1571,7 +1571,7 @@ describe("ChatKit AI SDK converters", () => {
         parts: [
           {
             type: "text",
-            text: "trytilde/openbot#42: Add GitHub signal handlers",
+            text: "trytilde/dispatch#42: Add GitHub signal handlers",
           },
         ],
       },
@@ -1859,7 +1859,7 @@ describe("ChatKit AI SDK converters", () => {
             type: "signal",
             data: {
               action: "closed",
-              repository: { full_name: "trytilde/openbot" },
+              repository: { full_name: "trytilde/dispatch" },
               issue: { number: 42, title: "Handled elsewhere" },
             },
             metadata: { signal_type: "github.issue.closed" },
@@ -1870,7 +1870,7 @@ describe("ChatKit AI SDK converters", () => {
             type: "signal",
             data: {
               action: "opened",
-              repository: { full_name: "trytilde/openbot" },
+              repository: { full_name: "trytilde/dispatch" },
               issue: { number: 43 },
             },
             metadata: { signal_type: "github.issue.opened" },
@@ -2149,7 +2149,7 @@ describe("ChatKit AI SDK converters", () => {
             type: "signal",
             data: {
               action: "closed",
-              repository: { full_name: "trytilde/openbot" },
+              repository: { full_name: "trytilde/dispatch" },
               issue: { number: 7, title: "closed issue" },
             },
             metadata: { signal_type: "github.issue.closed" },

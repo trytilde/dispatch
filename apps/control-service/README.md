@@ -8,7 +8,9 @@ The portable Hono control application. It serves health, exposes raw allowlisted
 - `createApp(options)` constructs the portable control application with its configured authentication, Computer preview, ChatKit proxy, background agent-creation executor, and web-root behavior.
 - `registerOwnerAuth(app, provider, options)` installs browser PKCE login, callback, session, and logout routes. Development options preserve a validated loopback browser origin through the Vite proxy.
 - `requireOwner(provider, options)` returns the owner-authentication middleware used to protect browser-facing control routes.
-- `registerTildeChatProxy(app, options)` preserves Tilde ChatKit request, response, and attachment semantics for an exact Client Runtime operation allowlist and exposes only the short-lived ChatKit realtime ticket needed for a direct browser WebSocket.
+- `registerTildeChatProxy(app, options)` preserves Tilde ChatKit request, response, attachment, and
+  room roster/invitation semantics for an exact Client Runtime operation allowlist and exposes only
+  the short-lived ChatKit realtime ticket needed for a direct browser WebSocket.
 - `registerTildeProxy(app, options)` preserves request and response bodies for a strict allowlist of Tilde-owned settings operations while keeping the installation API key out of clients.
 - `registerCapabilityApprovalRoutes(app, options)` forwards an exact approval/hash/generation
   decision using only the owner bearer already verified by `requireOwner`; it never substitutes

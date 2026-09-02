@@ -42,6 +42,7 @@ describe("TildeAgentProvider", () => {
       .spyOn(TildeToolReconciler.prototype, "deployExternalResources")
       .mockResolvedValue();
     const context = await agentContext("scout");
+    context.environment.OPENBOT_PERSONAL_TOOL_FEDERATION_MODE = "all";
     const persistedSecrets: string[] = [];
     context.persistence = {
       setEnvironment: async () => undefined,
@@ -64,7 +65,13 @@ describe("TildeAgentProvider", () => {
           const body = (await request.json()) as { memory?: unknown };
           expect(body).toMatchObject({
             agent: { credential_strategy: "rotate", endpoint: { concurrency_policy: "queue" } },
-            mcp_server: { enabled: true, id: "openbot-scout", enable_tilde_control_plane: true },
+            mcp_server: {
+              enabled: true,
+              id: "openbot-scout",
+              enable_tilde_control_plane: true,
+              user_tool_federation_mode: "all",
+              user_tool_federation_selections: [],
+            },
             skill_registry: {
               enabled: true,
               enabled_skills: { managed: [{ provider_id: "cua" }] },

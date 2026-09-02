@@ -19,7 +19,9 @@ pnpm add @trytilde/sdk @trytilde/sdk-vercel-ai-node zod
   derives the tools and agents reachable from that session from the authenticated agent record;
   callers cannot declare permissions in this client. Inside a tool-mode endpoint,
   `context.session.createMCPClient(options)` also injects the current session's bound provider tools
-  without registering them as authored local tools.
+  without registering them as authored local tools. When Tilde supplies a verified speaker-bound
+  personal-tool capability, this request-scoped helper forwards it privately to MCP with fresh
+  nonce and protocol-session bindings; the capability is removed before application code runs.
 - `createChatKitSessionTools(client, session)` constructs the trusted, provider-aware `sendMessage`,
   reaction, thread, AgentMail, and Linq poll tools used by tool-mode endpoints.
 - `toolEndpoint(options)` exposes signed, Zod-validated custom tool discovery and invocation.

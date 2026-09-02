@@ -16,6 +16,17 @@ import {
 
 const key = "whsec--test";
 
+const mcpMocks = vi.hoisted(() => ({
+  create: vi.fn(async (_config: unknown) => ({
+    serverInfo: { name: "remote", version: "1.0.0" },
+    tools: vi.fn(async () => ({})),
+    callTool: vi.fn(),
+    close: vi.fn(async () => undefined),
+  })),
+}));
+
+vi.mock("@ai-sdk/mcp", () => ({ createMCPClient: mcpMocks.create }));
+
 function testChatKitEndpoint(
   options: Omit<ChatKitEndpointOptions, "client" | "responseMode"> & {
     client?: Config;
@@ -108,6 +119,20 @@ describe("chatKitEndpoint", () => {
       expect(context.session.tools).toHaveProperty("getThread");
       expect(context.$provider?.tools).toBe(context.session.tools);
       expect(context.session.createMCPClient).toBeTypeOf("function");
+      expect(request.headers.has("x-tilde-chatkit-delegated-user-token")).toBe(false);
+      await context.session.createMCPClient?.({ serverId: "shared-agent-server" });
+      const lastCall = mcpMocks.create.mock.calls.at(-1);
+      if (!lastCall) throw new Error("Expected MCP connection");
+      const transport = (lastCall[0] as { transport: { headers: Record<string, string> } })
+        .transport;
+      expect(transport.headers).toMatchObject({
+        "x-api-key": "test-key",
+        "x-tilde-personal-tool-capability": "capability-secret",
+      });
+      expect(transport.headers["x-tilde-personal-tool-client-nonce"]).toMatch(/^[0-9a-f-]{36}$/);
+      expect(transport.headers["x-tilde-personal-tool-protocol-session-id"]).toMatch(
+        /^[0-9a-f-]{36}$/,
+      );
       const forwarded = (await request.json()) as {
         messages: Array<{ role?: string }>;
       };
@@ -129,6 +154,7 @@ describe("chatKitEndpoint", () => {
         "x-tilde-target-instance-id": "target_instance",
         "x-tilde-trigger-message-id": "trigger_1",
         "x-tilde-chat-provider-id": "chatkit.channel.slack",
+        "x-tilde-chatkit-delegated-user-token": "capability-secret",
       }),
     );
 

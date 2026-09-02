@@ -24,6 +24,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/billing/ai-credits/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Commit an AI Gateway receipt
+         * @description Commits the exact providerMetadata.gateway cost idempotently and releases the reservation remainder.
+         */
+        post: operations["billing-ai-credit-receipt-commit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/ai-credits/reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reserve organization AI credits
+         * @description Agent-authenticated preflight that prevents concurrent model calls from double-spending one organization balance.
+         */
+        post: operations["billing-ai-credit-reserve"];
+        /**
+         * Release an AI-credit reservation
+         * @description Releases reserved credits after a model request fails before an authoritative receipt exists.
+         */
+        delete: operations["billing-ai-credit-reservation-release"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/ai-credits/topups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Top up organization AI credits
+         * @description Creates one durable top-up row before requesting an Autumn/Stripe checkout. Replays with the same idempotency key return the same row and payment URL.
+         */
+        post: operations["billing-ai-credit-topup-create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/billing/autumn/{operation}": {
         parameters: {
             query?: never;
@@ -53,72 +117,12 @@ export interface paths {
         };
         /**
          * Get organization billing context
-         * @description Returns product subscriptions, effective access, human seat quantities, payment state, and Hindsight memory-bank capacity from the local billing projection.
+         * @description Returns product subscriptions, effective access, human seat quantities, payment state, and AI-credit balance from the local billing projection.
          */
         get: operations["billing-context-get"];
         put?: never;
         post?: never;
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/billing/internal/memory-banks/quantity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Commit Hindsight memory-bank quantity
-         * @description System-only lifecycle endpoint. A successful creation requires a live reservation_id in the body; omit it when recording a deletion or retrying an already-authoritative quantity.
-         */
-        post: operations["billing-memory-bank-reservation-commit"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/billing/internal/memory-banks/reservations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Reserve Hindsight memory-bank capacity
-         * @description System-only lifecycle endpoint used by the Hindsight resource owner before creating one bank. The returned reservation must be committed or released.
-         */
-        post: operations["billing-memory-bank-reservation-create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/billing/internal/memory-banks/reservations/{reservation_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Release Hindsight memory-bank reservation
-         * @description System-only lifecycle endpoint used when Hindsight resource creation fails after reserving capacity.
-         */
-        delete: operations["billing-memory-bank-reservation-release"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1796,6 +1800,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/automatic-memory/recall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recall automatic memory for a durable message
+         * @description Authenticates the active recipient agent, derives the effective actor from the stored triggering message and session, applies bank visibility, and returns a provenance-bearing projection.
+         */
+        post: operations["chatkit-recall-automatic-memory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/chatkit/agents/{agent_id}/status": {
         parameters: {
             query?: never;
@@ -2774,6 +2798,70 @@ export interface paths {
          * @description Creates a ChatKit session with explicit participants, or wires the session to agent_id and its registered Vercel UI channel when agent_id is provided.
          */
         post: operations["chatkit-create-session"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List ChatKit room invitations
+         * @description Lists durable invitation lifecycle state for a room manager or the canonical invitee.
+         */
+        get: operations["chatkit-list-room-invitations"];
+        put?: never;
+        /**
+         * Invite a user to a ChatKit room
+         * @description Creates or refreshes a pending invitation under session ownership authority. The invitation does not expose room content before acceptance.
+         */
+        post: operations["chatkit-create-room-invitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/invitations/{invitation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a ChatKit room invitation
+         * @description Revokes one pending invitation under session ownership authority.
+         */
+        delete: operations["chatkit-revoke-room-invitation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/invitations/{invitation_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide a ChatKit room invitation
+         * @description Accepts or declines a pending invitation as its canonical invitee. Acceptance grants session visibility and activates the bound human participant.
+         */
+        post: operations["chatkit-decide-room-invitation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4953,9 +5041,29 @@ export interface paths {
         put?: never;
         /**
          * Create a memory bank
-         * @description Create an isolated Hindsight-backed memory bank and its enabled private tool provider.
+         * @description Create an isolated HelixDB graph/vector memory bank and its enabled private tool provider.
          */
         post: operations["create-memory-bank"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/memory/banks/visible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List effective visible memory banks
+         * @description List current-team and personal banks visible to the effective user through public mode, a direct grant, or an Identity group grant.
+         */
+        get: operations["list-visible-memory-banks"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5071,7 +5179,7 @@ export interface paths {
         };
         /**
          * Check memory bank health
-         * @description Check Tilde provisioning state and Hindsight reachability.
+         * @description Check Tilde provisioning state and HelixDB reachability.
          */
         get: operations["check-memory-bank-health"];
         put?: never;
@@ -5352,6 +5460,54 @@ export interface paths {
          * @description Retry every memory-bank binding for a source.
          */
         post: operations["retry-memory-source-sync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/memory/synthesis-sessions/{session_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["delete-synthesis-session-memory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/memory/synthesis-sessions/{session_id}/recall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recall-synthesis-session-memory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/memory/synthesis-sessions/{session_id}/retain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["retain-synthesis-session-memory"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8122,6 +8278,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/user/{user_id}/memory/banks/{bank_id}/synthesizer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Assign a personal bank synthesizer
+         * @description Assigns an agent and creates the bank's stable synthesis session so queued evidence can flush.
+         */
+        put: operations["assign-personal-memory-bank-synthesizer"];
+        post?: never;
+        /**
+         * Clear a personal bank synthesizer
+         * @description Stops background synthesis while preserving queued evidence for a later assignment.
+         */
+        delete: operations["clear-personal-memory-bank-synthesizer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/user/{user_id}/memory/banks/{bank_id}/template": {
         parameters: {
             query?: never;
@@ -8209,15 +8389,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * List personal source memory-bank bindings
-         * @description Inspect selected personal banks and synchronization state for one personal source.
-         */
         get: operations["list-personal-memory-source-bindings"];
-        /**
-         * Replace personal source memory-bank bindings
-         * @description Atomically replace a personal source's selected personal banks and durably queue a full backfill.
-         */
         put: operations["replace-personal-memory-source-bindings"];
         post?: never;
         delete?: never;
@@ -8235,11 +8407,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Retry personal source synchronization
-         * @description Retry every personal memory-bank binding for a personal source.
-         */
-        post: operations["retry-personal-memory-source-sync"];
+        post: operations["retry-personal-memory-source-bindings"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9108,6 +9276,8 @@ export interface components {
             mode: "only";
         };
         AgentSpec: {
+            /** @description Automatic memory selection (`none`, `personal`, `personal_plus_agent`, or `team`). */
+            automatic_memory_mode?: string;
             credential_strategy?: components["schemas"]["AgentCredentialStrategy"];
             display_name: string;
             endpoint: components["schemas"]["AgentEndpointSpec"];
@@ -9135,6 +9305,26 @@ export interface components {
         AgentToolSource: "mcp" | "harness_local" | "endpoint_observed" | "builtin" | "dynamic";
         /** @enum {string} */
         AgentToolStatus: "active" | "unavailable";
+        /** @description A short-lived, single-use reservation for an inference request. */
+        AiCreditReservation: {
+            /** Format: date-time */
+            expires_at: string;
+            id: string;
+            /** Format: int64 */
+            reserved_microusd: number;
+        };
+        /** @description Durable checkout state for one organization AI-credit purchase. */
+        AiCreditTopup: {
+            /** Format: int64 */
+            amount_microusd: number;
+            autumn_reference?: string | null;
+            id: string;
+            idempotency_key: string;
+            last_error?: string | null;
+            org_id: string;
+            payment_url?: string | null;
+            status: string;
+        };
         /** @description Result of an idempotent ontology-template installation. */
         ApplyOntologyTemplateResult: {
             created_page_types: string[];
@@ -9153,6 +9343,10 @@ export interface components {
          * @enum {string}
          */
         ApprovalDecision: "approved" | "rejected";
+        AssignMemoryBankSynthesizerBody: {
+            synthesizer_agent_id: string;
+            synthesizer_team_id: string;
+        };
         /** @description ChatKit-owned attachment metadata. */
         Attachment: {
             bucket: string;
@@ -9207,8 +9401,8 @@ export interface components {
         };
         /** @description Typed billing bootstrap response for the selected organization. */
         BillingContext: {
+            ai_credits: components["schemas"]["OrganizationAiCreditContext"];
             can_manage_billing: boolean;
-            memory_banks: components["schemas"]["MemoryBankBillingContext"];
             org_id: string;
             products: components["schemas"]["ProductBillingContext"][];
         };
@@ -9416,6 +9610,30 @@ export interface components {
          * @enum {string}
          */
         ChatKitAgentTurnQueueStatus: "pending" | "running" | "completed" | "failed" | "cancelled";
+        /** @description One provenance-bearing memory supplied to the active recipient agent. */
+        ChatKitAutomaticMemoryItem: {
+            bank_id: components["schemas"]["WrappedUuidV4"];
+            bank_name: string;
+            content: string;
+            evidence_ids?: string[];
+            learned_by_agent_id?: string | null;
+            memory_id: string;
+            memory_type: string;
+            source?: string | null;
+        };
+        /**
+         * @description High-level automatic-memory policy persisted on an agent or channel.
+         * @enum {string}
+         */
+        ChatKitAutomaticMemoryMode: "none" | "personal" | "personal_plus_agent" | "team";
+        /** @description Bounded deterministic projection intended as a dynamic instruction suffix. */
+        ChatKitAutomaticMemoryProjection: {
+            /** Format: int64 */
+            estimated_tokens: number;
+            items: components["schemas"]["ChatKitAutomaticMemoryItem"][];
+            rendered: string;
+            truncated: boolean;
+        };
         /** @description Provider-specific configuration field for a ChatKit chat provider. */
         ChatKitChatProviderConfigField: {
             field_type: string;
@@ -9456,6 +9674,8 @@ export interface components {
             membership_source: components["schemas"]["ChatKitParticipantMembershipSource"];
             participant_handle: string;
             participant_type: components["schemas"]["ChatKitParticipantType"];
+            principal_user_id?: string | null;
+            role: components["schemas"]["ChatKitParticipantRole"];
         };
         /** @description Participant input for creating or joining a ChatKit session. */
         ChatKitParticipantInput: {
@@ -9478,7 +9698,15 @@ export interface components {
          * @description How a durable conversation participant was admitted to a session.
          * @enum {string}
          */
-        ChatKitParticipantMembershipSource: "explicit" | "provider" | "recipient";
+        ChatKitParticipantMembershipSource: "explicit" | "invitation" | "provider" | "recipient";
+        /**
+         * @description A participant's collaboration role inside a ChatKit room.
+         *
+         *     Session authorization remains authoritative: this role never widens the
+         *     session visibility or ownership planes.
+         * @enum {string}
+         */
+        ChatKitParticipantRole: "owner" | "admin" | "member";
         /**
          * @description ChatKit participant kind for SaaS-facing session APIs.
          * @enum {string}
@@ -9509,6 +9737,37 @@ export interface components {
             /** @description Authenticated Tilde API path that serves the current avatar bytes. */
             url: string;
         };
+        /**
+         * @description One durable room invitation. The participant descriptor is fixed by the
+         *     inviter, while acceptance is restricted to `invitee_user_id`.
+         */
+        ChatKitRoomInvitation: {
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            id: components["schemas"]["WrappedUuidV4"];
+            invited_by_user_id: string;
+            invitee_user_id: string;
+            org_id: string;
+            participant: components["schemas"]["ChatKitParticipantInput"];
+            role: components["schemas"]["ChatKitParticipantRole"];
+            session_id: components["schemas"]["WrappedUuidV4"];
+            status: components["schemas"]["ChatKitRoomInvitationStatus"];
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        /**
+         * @description A user's decision for one pending room invitation.
+         * @enum {string}
+         */
+        ChatKitRoomInvitationDecision: "accept" | "decline";
+        ChatKitRoomInvitationPaginatedResponse: {
+            items: components["schemas"]["ChatKitRoomInvitation"][];
+            next_page_token?: string;
+        };
+        /**
+         * @description Durable lifecycle of an invitation to a private or team ChatKit room.
+         * @enum {string}
+         */
+        ChatKitRoomInvitationStatus: "pending" | "accepted" | "declined" | "revoked";
         /** @description Agent context included when an agent identity or display name matched. */
         ChatKitSearchAgent: {
             display_name: string;
@@ -9737,15 +9996,20 @@ export interface components {
             organizations: components["schemas"]["UserOrganization"][];
             teams: components["schemas"]["UserTeam"][];
         };
-        /** @description Public request body for committing a Hindsight reservation. */
-        CommitMemoryBankReservationBody: {
+        /** @description Public body for committing the exact Gateway receipt after inference. */
+        CommitAiCreditReceiptBody: {
             /** Format: int64 */
-            active_banks: number;
-            /**
-             * @description Provide when committing a successful creation; omit when recording a
-             *     deletion or retrying an already-authoritative quantity.
-             */
-            reservation_id?: string | null;
+            actual_cost_microusd: number;
+            generation_id?: string | null;
+            idempotency_key: string;
+            /** Format: int64 */
+            input_tokens: number;
+            model_id: string;
+            /** Format: int64 */
+            output_tokens: number;
+            provider?: string | null;
+            reservation_id: string;
+            tags: string[];
         };
         CommonProviderInstallationPage: {
             items: components["schemas"]["CommonProviderInstallationSerialized"][];
@@ -9857,6 +10121,12 @@ export interface components {
             last_discovery_error?: string | null;
             tool_group_instance: components["schemas"]["ToolGroupInstanceSerialized"];
         };
+        /** @description Public body for creating an organization AI-credit checkout. */
+        CreateAiCreditTopupBody: {
+            /** Format: int64 */
+            amount_microusd: number;
+            idempotency_key: string;
+        };
         CreateApiKeyInner: {
             description?: string | null;
             id?: string | null;
@@ -9895,6 +10165,12 @@ export interface components {
         /** @description Batch of presigned attachment uploads. */
         CreateAttachmentUploadsResponse: {
             items: components["schemas"]["CreateAttachmentUploadResponse"][];
+        };
+        /** @description Request body for inviting a user to one ChatKit room. */
+        CreateChatKitRoomInvitationRequestInner: {
+            invitee_user_id: string;
+            participant: components["schemas"]["ChatKitParticipantInput"];
+            role?: components["schemas"]["ChatKitParticipantRole"];
         };
         /** @description Request body for creating a ChatKit session. */
         CreateChatKitSessionRequestInner: {
@@ -9995,6 +10271,9 @@ export interface components {
             /** @description Binary Identity user/group grants committed atomically with the bank. */
             initial_grants?: components["schemas"]["ResourceGrantRequest"][];
             name: string;
+            /** @description Synthesis agent. When omitted, the server resolves and persists its configured default. */
+            synthesizer_agent_id?: string | null;
+            synthesizer_team_id?: string | null;
         };
         /** @description Request to create a new message (either text or UI) */
         CreateMessageRequest: (components["schemas"]["CreateTextMessageRequest"] & {
@@ -10394,7 +10673,7 @@ export interface components {
             type_id: string;
         };
         /**
-         * @description Current caller's seat state. Agent identities never consume seats.
+         * @description Current caller's seat state. Machine identities never consume seats.
          * @enum {string}
          */
         CurrentSeatStatus: "active" | "not_assigned" | "not_billable";
@@ -10455,6 +10734,10 @@ export interface components {
             /** Format: int64 */
             proposal_generation: number;
             proposal_hash: string;
+        };
+        /** @description Request body for accepting or declining a room invitation. */
+        DecideChatKitRoomInvitationRequestInner: {
+            decision: components["schemas"]["ChatKitRoomInvitationDecision"];
         };
         DeleteChatKitAgentTurnQueueItemResponse: {
             deleted: boolean;
@@ -11243,6 +11526,12 @@ export interface components {
             enabled: boolean;
             id?: string | null;
             name?: string | null;
+            /**
+             * @description Personal tools the lifecycle MCP server may resolve for an
+             *     authenticated ChatKit speaker.
+             */
+            user_tool_federation_mode?: components["schemas"]["UserToolFederationMode"];
+            user_tool_federation_selections?: components["schemas"]["UserToolFederationSelection"][];
         };
         /** @description Identity attached to a source change and propagated to retained documents. */
         MemoryActorContext: {
@@ -11264,41 +11553,19 @@ export interface components {
             provider_bank_id: string;
             status: components["schemas"]["MemoryBankStatus"];
             status_message?: string | null;
+            synthesis_session_id?: null | components["schemas"]["WrappedUuidV4"];
+            /** @description Concrete agent selected to synthesize this bank's queued evidence. */
+            synthesizer_agent_id?: string | null;
+            synthesizer_team_id?: string | null;
             team_id?: string | null;
             tool_group_instance_id?: string | null;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
-        };
-        /** @description Organization-level Hindsight memory-bank capacity. */
-        MemoryBankBillingContext: {
-            /** Format: int64 */
-            active: number;
-            /** Format: int64 */
-            billable: number;
-            can_create: boolean;
-            /** Format: int64 */
-            confirmed_billable: number;
-            /** Format: int64 */
-            included: number;
-            payment_url?: string | null;
-            /** Format: int64 */
-            pending_reservations: number;
-            requires_payment_method: boolean;
         };
         MemoryBankConfig: {
             /** @description Fully resolved configuration, including inherited defaults. */
             config: unknown;
             /** @description Only values explicitly overridden for this bank. */
             overrides: unknown;
-        };
-        /**
-         * @description A short-lived paid-capacity reservation returned to the Hindsight owner.
-         *     The owner must commit it after resource creation or release it on failure.
-         */
-        MemoryBankCreationReservation: {
-            billing: components["schemas"]["MemoryBankBillingContext"];
-            /** Format: date-time */
-            expires_at: string;
-            reservation_id: string;
         };
         MemoryBankDocumentList: {
             items: unknown[];
@@ -11337,7 +11604,7 @@ export interface components {
             document_id: string;
             metadata?: unknown;
             /**
-             * @description Explicit Hindsight observation scopes. Each inner list is consolidated
+             * @description Explicit actor observation scopes. Each inner list is consolidated
              *     independently, preventing observations from crossing actor boundaries.
              */
             observation_scopes?: string[][];
@@ -11347,10 +11614,9 @@ export interface components {
             result: unknown;
         };
         /** @enum {string} */
-        MemoryProvider: "hindsight";
+        MemoryProvider: "helix";
         MemorySourceBinding: {
             created_at: components["schemas"]["WrappedChronoDateTime"];
-            created_by_user_id?: string | null;
             /** @description True while a detached source is waiting for provider document cleanup. */
             detached: boolean;
             /** Format: int64 */
@@ -11361,6 +11627,7 @@ export interface components {
             last_synced_generation?: number | null;
             memory_bank_id: components["schemas"]["WrappedUuidV4"];
             org_id: string;
+            owner_user_id?: string | null;
             source_id: string;
             source_kind: components["schemas"]["MemorySourceKind"];
             team_id?: string | null;
@@ -11497,6 +11764,22 @@ export interface components {
             name: string;
             slug?: string | null;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        /** @description Organization AI-credit balance expressed in integer micro-US dollars. */
+        OrganizationAiCreditContext: {
+            /** Format: int64 */
+            available_microusd: number;
+            /** Format: date-time */
+            current_period_end?: string | null;
+            /** Format: int64 */
+            granted_microusd: number;
+            org_id: string;
+            /** Format: int64 */
+            reserved_microusd: number;
+            /** Format: int64 */
+            spent_microusd: number;
+            /** Format: int64 */
+            topup_remaining_microusd: number;
         };
         OrganizationMemberWithUser: {
             membership: components["schemas"]["UserOrganization"];
@@ -12023,6 +12306,12 @@ export interface components {
             state?: null | components["schemas"]["PartState"];
             text?: string | null;
         };
+        /** @description Body for recipient-bound recall tied to one durable triggering message. */
+        RecallChatKitAutomaticMemoryBody: {
+            /** Format: int64 */
+            max_tokens?: number | null;
+            message_id: components["schemas"]["WrappedUuidV4"];
+        };
         RecallMemoryBody: {
             /** Format: int64 */
             max_tokens?: number | null;
@@ -12096,6 +12385,8 @@ export interface components {
         /** @description Request body for registering a Vercel AI SDK-compatible HTTP agent. */
         RegisterHttpVercelAiSdkAgentRequestInner: {
             authorization?: components["schemas"]["ResourceAuthorizationModes"];
+            /** @description Automatic recall and retention policy. Disabled unless explicitly selected. */
+            automatic_memory_mode?: components["schemas"]["ChatKitAutomaticMemoryMode"];
             /** @description How new messages are handled while this agent is already responding. */
             concurrency_policy?: components["schemas"]["ChatKitAgentConcurrencyPolicy"];
             display_name: string;
@@ -12105,6 +12396,11 @@ export interface components {
             local_running_endpoint?: boolean;
             /** @description Memory banks that should ingest conversations involving this agent. */
             memory_bank_ids?: components["schemas"]["WrappedUuidV4"][] | null;
+            /**
+             * @description Lifecycle-verified MCP server that may receive invocation-scoped
+             *     personal-tool capabilities for this agent.
+             */
+            personal_tool_mcp_server_instance_id?: string | null;
             streaming?: boolean;
             /** Format: int64 */
             timeout_ms?: number | null;
@@ -12179,6 +12475,10 @@ export interface components {
         };
         /** @enum {string} */
         RelationshipDirectionality: "directed" | "symmetric";
+        /** @description Public body for releasing a reservation when inference fails. */
+        ReleaseAiCreditReservationBody: {
+            reservation_id: string;
+        };
         /** @description Response for removing a ChatKit participant. */
         RemoveChatKitParticipantResponse: {
             success: boolean;
@@ -12229,6 +12529,12 @@ export interface components {
             identity_snapshot?: null | components["schemas"]["WrappedJsonValue"];
             summary?: string | null;
             supports_summary?: boolean;
+        };
+        /** @description Public body for reserving AI credits before one model request. */
+        ReserveAiCreditsBody: {
+            /** Format: int64 */
+            estimated_cost_microusd: number;
+            idempotency_key: string;
         };
         ResolveLoginProviderResponse: {
             provider: components["schemas"]["LoginProviderResolution"];
@@ -12671,6 +12977,8 @@ export interface components {
             membership_source: components["schemas"]["ChatKitParticipantMembershipSource"];
             participant_handle: string;
             participant_type: components["schemas"]["ChatKitParticipantType"];
+            principal_user_id?: string | null;
+            role?: components["schemas"]["ChatKitParticipantRole"];
         };
         /** @description Authorization principal attached to a private ChatKit session. */
         SessionUserMembership: {
@@ -13534,12 +13842,18 @@ export interface components {
         };
         /** @description Request body for updating a registered HTTP Vercel AI SDK agent. */
         UpdateHttpVercelAiSdkAgentRequestInner: {
+            automatic_memory_mode?: null | components["schemas"]["ChatKitAutomaticMemoryMode"];
             concurrency_policy?: null | components["schemas"]["ChatKitAgentConcurrencyPolicy"];
             display_name?: string | null;
             endpoint_url?: string | null;
             local_running_endpoint?: boolean | null;
             /** @description Replaces the complete memory-bank selection when present. */
             memory_bank_ids?: components["schemas"]["WrappedUuidV4"][] | null;
+            /**
+             * @description Replace the MCP server allowed to receive invocation-scoped personal
+             *     tool capabilities. An empty string clears the binding.
+             */
+            personal_tool_mcp_server_instance_id?: string | null;
             streaming?: boolean | null;
             /** Format: int64 */
             timeout_ms?: number | null;
@@ -14157,6 +14471,129 @@ export interface operations {
             };
         };
     };
+    "billing-ai-credit-receipt-commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitAiCreditReceiptBody"];
+            };
+        };
+        responses: {
+            /** @description Updated AI-credit balance */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationAiCreditContext"];
+                };
+            };
+        };
+    };
+    "billing-ai-credit-reserve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReserveAiCreditsBody"];
+            };
+        };
+        responses: {
+            /** @description Reserved AI credits */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiCreditReservation"];
+                };
+            };
+        };
+    };
+    "billing-ai-credit-reservation-release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReleaseAiCreditReservationBody"];
+            };
+        };
+        responses: {
+            /** @description Updated AI-credit balance */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationAiCreditContext"];
+                };
+            };
+        };
+    };
+    "billing-ai-credit-topup-create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAiCreditTopupBody"];
+            };
+        };
+        responses: {
+            /** @description AI-credit checkout */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiCreditTopup"];
+                };
+            };
+            /** @description Invalid amount or idempotency key */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Organization administrator required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "billing-autumn-bridge-post": {
         parameters: {
             query?: never;
@@ -14257,172 +14694,6 @@ export interface operations {
             };
             /** @description Organization membership required */
             403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "billing-memory-bank-reservation-commit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CommitMemoryBankReservationBody"];
-            };
-        };
-        responses: {
-            /** @description Updated memory-bank billing context */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemoryBankBillingContext"];
-                };
-            };
-            /** @description Invalid quantity transition */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description System administrator required */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Reservation expired or consumed */
-            410: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "billing-memory-bank-reservation-create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Reserved memory-bank capacity */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemoryBankCreationReservation"];
-                };
-            };
-            /** @description Authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Stripe payment action required */
-            402: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description System administrator required */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Concurrent reconciliation in progress */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "billing-memory-bank-reservation-release": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Reservation id */
-                reservation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Updated memory-bank billing context */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemoryBankBillingContext"];
-                };
-            };
-            /** @description Authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description System administrator required */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Reservation missing or no longer pending */
-            410: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18972,6 +19243,61 @@ export interface operations {
             };
         };
     };
+    "chatkit-recall-automatic-memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Active recipient agent */
+                agent_id: string;
+                /** @description Session ID */
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecallChatKitAutomaticMemoryBody"];
+            };
+        };
+        responses: {
+            /** @description Bounded automatic-memory projection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitAutomaticMemoryProjection"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "chatkit-set-agent-status": {
         parameters: {
             query?: never;
@@ -21445,6 +21771,175 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-list-room-invitations": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                next_page_token?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitRoomInvitationPaginatedResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-create-room-invitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateChatKitRoomInvitationRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitRoomInvitation"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-revoke-room-invitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                invitation_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitRoomInvitation"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-decide-room-invitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                invitation_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideChatKitRoomInvitationRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitRoomInvitation"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -27023,6 +27518,31 @@ export interface operations {
             };
         };
     };
+    "list-visible-memory-banks": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                next_page_token?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryBankPaginatedResponse"];
+                };
+            };
+        };
+    };
     "get-memory-bank": {
         parameters: {
             query?: never;
@@ -27693,6 +28213,85 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemorySourceBinding"][];
+                };
+            };
+        };
+    };
+    "delete-synthesis-session-memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteMemoryDocumentBody"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "recall-synthesis-session-memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecallMemoryBody"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryOperationResponse"];
+                };
+            };
+        };
+    };
+    "retain-synthesis-session-memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetainMemoryBody"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryOperationResponse"];
                 };
             };
         };
@@ -33423,6 +34022,54 @@ export interface operations {
             };
         };
     };
+    "assign-personal-memory-bank-synthesizer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                bank_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignMemoryBankSynthesizerBody"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryBank"];
+                };
+            };
+        };
+    };
+    "clear-personal-memory-bank-synthesizer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                bank_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryBank"];
+                };
+            };
+        };
+    };
     "export-personal-memory-bank-template": {
         parameters: {
             query?: never;
@@ -33616,7 +34263,7 @@ export interface operations {
             };
         };
     };
-    "retry-personal-memory-source-sync": {
+    "retry-personal-memory-source-bindings": {
         parameters: {
             query?: never;
             header?: never;

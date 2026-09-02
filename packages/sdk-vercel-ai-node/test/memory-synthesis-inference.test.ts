@@ -36,6 +36,8 @@ function harness(
     byok?: boolean;
     reserveFailure?: Error;
     verifyFailure?: Error;
+    commitFailure?: Error;
+    releaseFailure?: Error;
     shared?: ReturnType<typeof state>;
   } = {},
 ) {
@@ -44,9 +46,15 @@ function harness(
     if (options.reserveFailure) throw options.reserveFailure;
     return { id: "reservation-one", reservedMicrousd: 250_000, expiresAt: "later" };
   });
-  const commit = vi.fn(async () => creditContext());
-  const release = vi.fn(async () => creditContext());
-  const verifySession = vi.fn(async () => {
+  const commit = vi.fn(async () => {
+    if (options.commitFailure) throw options.commitFailure;
+    return creditContext();
+  });
+  const release = vi.fn(async () => {
+    if (options.releaseFailure) throw options.releaseFailure;
+    return creditContext();
+  });
+  const validateBatch = vi.fn(async () => {
     if (options.verifyFailure) throw options.verifyFailure;
     return { items: [] };
   });
@@ -87,7 +95,7 @@ function harness(
     reserve,
     commit,
     release,
-    verifySession,
+    validateBatch,
     runStore,
     async create(webhookId = "webhook-one", leaseOwner = "lease-one") {
       return createMemorySynthesisInferenceRun({
@@ -99,7 +107,7 @@ function harness(
         messages: messages("trigger-one", leaseOwner),
         billingEnabled: options.enabled ?? true,
         estimatedCostMicrousd: 250_000,
-        verifySession,
+        validateBatch,
         generationInfo: vi.fn(async (id) => ({
           id,
           totalCost: 0.001234,
@@ -131,10 +139,14 @@ describe("memory synthesis inference", () => {
     ).toThrow(InvalidMemorySynthesisInvocationError);
   });
 
-  it("proves the request is bound to an authorized synthesis session before billing", async () => {
-    const h = harness({ verifyFailure: new Error("not an assigned synthesis session") });
-    await expect(h.create()).rejects.toThrow("not an assigned synthesis session");
-    expect(h.verifySession).toHaveBeenCalledOnce();
+  it("rejects a spoofed lease in a valid synthesis session before run creation or billing", async () => {
+    const h = harness({ verifyFailure: new Error("batch is not the current leased claim") });
+    await expect(h.create()).rejects.toThrow("batch is not the current leased claim");
+    expect(h.validateBatch).toHaveBeenCalledWith({
+      batchId,
+      evidenceIds: [evidenceId],
+      leaseOwner: "lease-one",
+    });
     expect(h.runStore.create).not.toHaveBeenCalled();
     expect(h.reserve).not.toHaveBeenCalled();
   });
@@ -188,6 +200,75 @@ describe("memory synthesis inference", () => {
     });
     expect(h.release).toHaveBeenCalledWith("reservation-one");
     expect(h.commit).not.toHaveBeenCalled();
+  });
+
+  it("replays a committed receipt after settlement fails without repeating inference", async () => {
+    const shared = state();
+    const first = harness({ shared, commitFailure: new Error("commit unavailable") });
+    const firstRun = await first.create("webhook-one");
+    await firstRun.billing.preflight("openai/gpt-5.6-sol");
+    await firstRun.billing.onLanguageModelCallStart({
+      callId: "call-one",
+      modelId: "openai/gpt-5.6-sol",
+    });
+    let failure: unknown;
+    try {
+      await firstRun.billing.onLanguageModelCallEnd({
+        callId: "call-one",
+        providerMetadata: { gateway: { generationId: "generation-one" } },
+      });
+    } catch (error) {
+      failure = error;
+    }
+    await expect(firstRun.fail(failure)).resolves.toBe(true);
+    expect(first.runStore.transition).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: "waiting", reason: "inference_settlement_pending" }),
+    );
+
+    shared.run = { ...shared.run, generation: 2 };
+    const retry = harness({ shared });
+    const retryRun = await retry.create("webhook-two");
+    await expect(retryRun.billing.preflight("openai/gpt-5.6-sol")).rejects.toBeInstanceOf(
+      HostedInferenceReconciliationRequiredError,
+    );
+    expect(retry.commit).toHaveBeenCalledWith(
+      expect.objectContaining({ generationId: "generation-one" }),
+    );
+    expect(retry.reserve).not.toHaveBeenCalled();
+    await retryRun.failForReconciliation();
+    expect(retry.runStore.transition).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: "failed", reason: "inference_reconciliation_required" }),
+    );
+  });
+
+  it("replays a committed BYOK release after a failed release boundary", async () => {
+    const shared = state();
+    const first = harness({ shared, byok: true, releaseFailure: new Error("release unavailable") });
+    const firstRun = await first.create("webhook-one");
+    await firstRun.billing.preflight("openai/gpt-5.6-sol");
+    await firstRun.billing.onLanguageModelCallStart({
+      callId: "call-one",
+      modelId: "openai/gpt-5.6-sol",
+    });
+    let failure: unknown;
+    try {
+      await firstRun.billing.onLanguageModelCallEnd({
+        callId: "call-one",
+        providerMetadata: { gateway: { generationId: "generation-one" } },
+      });
+    } catch (error) {
+      failure = error;
+    }
+    await expect(firstRun.fail(failure)).resolves.toBe(true);
+
+    shared.run = { ...shared.run, generation: 2 };
+    const retry = harness({ shared, byok: true });
+    const retryRun = await retry.create("webhook-two");
+    await expect(retryRun.billing.preflight("openai/gpt-5.6-sol")).rejects.toBeInstanceOf(
+      HostedInferenceReconciliationRequiredError,
+    );
+    expect(retry.release).toHaveBeenCalledWith("reservation-one");
+    expect(retry.reserve).not.toHaveBeenCalled();
   });
 
   it("pauses without starting inference when credits are exhausted", async () => {
@@ -295,6 +376,13 @@ describe("memory synthesis inference", () => {
             ],
           },
         ],
+      }),
+    ).toBe(false);
+    expect(
+      didMemorySynthesisFinish({
+        batchId,
+        text: `SYNTHESIS_COMPLETE:${batchId}`,
+        steps: [{ toolResults: [{ toolName: "finish_synthesis" }] }],
       }),
     ).toBe(false);
     expect(

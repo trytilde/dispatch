@@ -53,10 +53,8 @@ export default chatKitEndpoint({
           webhookId: context.webhookId,
           messages: context.messages,
           billingEnabled: process.env.OPENBOT_HOSTED_INFERENCE_BILLING === "1",
-          verifySession: () =>
-            client.memory
-              .synthesisSession(context.sessionId)
-              .recall("Verify current synthesis session", 1),
+          validateBatch: (input) =>
+            client.memory.synthesisSession(context.sessionId).validateBatch(input),
           estimatedCostMicrousd: positiveIntegerEnv(
             "OPENBOT_HOSTED_INFERENCE_RESERVE_MICROUSD",
             250_000,

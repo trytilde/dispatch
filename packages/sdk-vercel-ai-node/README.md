@@ -52,6 +52,9 @@ pnpm add @trytilde/sdk @trytilde/sdk-vercel-ai-node zod
   Tilde synthesis batch and worker lease, then composes `HostedInferenceBillingController` with
   that run. Redelivery within the same synthesis lease reuses the durable effect ledger; a newly
   reclaimed API lease gets a distinct run and must satisfy its own mutation/completion fencing.
+  Failed commit or BYOK release boundaries leave the run waiting until preflight replays the
+  committed settlement, after which the unrecoverable provider response is terminalized without
+  another provider call.
   `parseMemorySynthesisInvocation(messages, webhookId)` accepts only Tilde's exact batch prompt.
 - `createChatKitCompactionController(options)` implements an agent-owned `prepareStep` compaction
   loop; compose it after provider preparation with `composeChatKitCompactionPrepareStep`.

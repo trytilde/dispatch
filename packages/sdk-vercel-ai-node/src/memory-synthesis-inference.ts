@@ -53,8 +53,12 @@ export type CreateMemorySynthesisInferenceRunOptions = {
   billingEnabled: boolean;
   estimatedCostMicrousd: number;
   tags?: string[];
-  /** Proves the signed request targets a server-bound synthesis session before billing. */
-  verifySession(): Promise<unknown>;
+  /** Proves the exact batch, evidence set, and lease are current before billing. */
+  validateBatch(input: {
+    batchId: string;
+    evidenceIds: string[];
+    leaseOwner: string;
+  }): Promise<unknown>;
   generationInfo?: HostedInferenceBillingControllerOptions["generationInfo"];
 };
 
@@ -98,7 +102,11 @@ export async function createMemorySynthesisInferenceRun(
   options: CreateMemorySynthesisInferenceRunOptions,
 ): Promise<MemorySynthesisInferenceRun> {
   const invocation = parseMemorySynthesisInvocation(options.messages, options.webhookId);
-  await options.verifySession();
+  await options.validateBatch({
+    batchId: invocation.batchId,
+    evidenceIds: invocation.evidenceIds,
+    leaseOwner: invocation.leaseOwner,
+  });
   // A reclaimed API worker receives a new lease owner and must perform its own
   // lease-fenced synthesis turn. Redelivery within one lease shares this run,
   // even if the webhook or trigger message is delivered more than once.
@@ -210,10 +218,8 @@ export async function createMemorySynthesisInferenceRun(
     async fail(error) {
       const reconciliationRequired = await billing.fail(error);
       await transition(
-        reconciliationRequired ? "failed" : "waiting",
-        reconciliationRequired
-          ? "inference_reconciliation_required"
-          : "provider_failed_before_start",
+        "waiting",
+        reconciliationRequired ? "inference_settlement_pending" : "provider_failed_before_start",
       );
       return reconciliationRequired;
     },
@@ -274,7 +280,7 @@ export function didMemorySynthesisFinish(input: {
     step.toolResults.some((result) => {
       if (result.toolName !== "finish_synthesis") return false;
       const output = record(result.output);
-      return output?.isError !== true && output?.is_error !== true;
+      return output !== undefined && output.isError !== true && output.is_error !== true;
     }),
   );
 }

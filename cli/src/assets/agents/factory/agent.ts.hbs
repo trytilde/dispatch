@@ -7,6 +7,9 @@ import {
   convertToAiSdkMessages,
   createChatKitCompactionController,
   createClient,
+  HostedInferenceBillingController,
+  HostedInferenceCreditsExhaustedError,
+  HostedInferenceReconciliationRequiredError,
 } from "@trytilde/sdk-vercel-ai-node";
 import {
   createTildeAttachmentMessageHandlers,
@@ -190,7 +193,13 @@ export default chatKitEndpoint({
       throw new Error("Hidden AgentRun invocation does not match the active run");
     if (!ownsRunLease)
       return Response.json({ status: "run_already_claimed", run_id: currentAgentRun.id }, { status: 202 });
-    if (jobBudget?.max_cost_microusd !== undefined && !costMeterAvailable()) {
+    const hostedInferenceBillingEnabled =
+      process.env.OPENBOT_HOSTED_INFERENCE_BILLING === "1";
+    if (
+      jobBudget?.max_cost_microusd !== undefined &&
+      !hostedInferenceBillingEnabled &&
+      !costMeterAvailable()
+    ) {
       if (ownsRunLease)
         await client.chatkit.runs.transition({
           sessionId: context.sessionId,
@@ -229,7 +238,30 @@ export default chatKitEndpoint({
       mcpClosed = true;
       await closeMcp();
     };
-    const inference = await prepareInference(tools, request.signal, jobModelId);
+    let inference: Awaited<ReturnType<typeof prepareInference>>;
+    try {
+      inference = await prepareInference(tools, request.signal, jobModelId);
+    } catch (error) {
+      await closeMcpOnce();
+      throw error;
+    }
+    const inferenceModelId = jobModelId ?? process.env.AI_MODEL ?? "openai/gpt-5.6-sol";
+    const inferenceBilling = new HostedInferenceBillingController({
+      enabled: hostedInferenceBillingEnabled,
+      credits: client.billing.aiCredits,
+      effects: client.chatkit.runs,
+      sessionId: context.sessionId,
+      agentId: {{{AGENT_ID_JSON}}},
+      runId: currentAgentRun.id,
+      runGeneration: currentAgentRun.generation,
+      workerId: runWorkerId,
+      stepId: `${currentAgentRun.generation}:${currentAgentRun.continuationCount + 1}`,
+      estimatedCostMicrousd: positiveIntegerEnv(
+        "OPENBOT_HOSTED_INFERENCE_RESERVE_MICROUSD",
+        250_000,
+      ),
+      tags: ["hosted-openbot", `agent:${{{AGENT_ID_JSON}}}`],
+    });
     const convertedModelMessages = await convertToModelMessages(messages);
     const modelMessages = [
       ...(history.checkpoint ? [chatKitCompactionCheckpointMessage(history.checkpoint)] : []),
@@ -258,7 +290,40 @@ export default chatKitEndpoint({
       "prepareStep" in inference && typeof inference.prepareStep === "function"
         ? (inference.prepareStep as PrepareStepFunction<ToolSet>)
         : undefined;
-    const result = streamText({
+    try {
+      await inferenceBilling.preflight(inferenceModelId);
+    } catch (error) {
+      await closeMcpOnce();
+      if (
+        error instanceof HostedInferenceCreditsExhaustedError ||
+        error instanceof HostedInferenceReconciliationRequiredError
+      ) {
+        const creditsExhausted = error instanceof HostedInferenceCreditsExhaustedError;
+        const reason = creditsExhausted
+          ? "ai_credits_exhausted"
+          : "inference_reconciliation_required";
+        await client.chatkit.runs.transition({
+          sessionId: context.sessionId,
+          agentId: {{{AGENT_ID_JSON}}},
+          runId: currentAgentRun.id,
+          status: creditsExhausted ? "paused" : "failed",
+          reason,
+          expectedGeneration: currentAgentRun.generation,
+          workerId: runWorkerId,
+        });
+        return Response.json(
+          {
+            error: reason,
+            message: creditsExhausted
+              ? "This organization has no Tilde AI Credits available. Add credits to continue."
+              : "A previous model call was settled or left uncertain without a recoverable response. The run failed safely and no duplicate request was sent.",
+          },
+          { status: creditsExhausted ? 402 : 503 },
+        );
+      }
+      throw error;
+    }
+    const streamOptions = {
       ...inference,
       abortSignal: request.signal,
       instructions,
@@ -267,6 +332,9 @@ export default chatKitEndpoint({
         providerPrepareStep,
         compaction.prepareStep,
       ),
+      onLanguageModelCallStart: inferenceBilling.onLanguageModelCallStart,
+      onLanguageModelCallEnd: inferenceBilling.onLanguageModelCallEnd,
+      onChunk: inferenceBilling.onChunk,
       onFinish: async (finish) => {
         try {
           if (!ownsRunLease) return;
@@ -295,11 +363,13 @@ export default chatKitEndpoint({
             responseFingerprint: finish.text.trim() || undefined,
             inputTokens: usage.inputTokens ?? 0,
             outputTokens: usage.outputTokens ?? 0,
-            costMicrousd: estimateCostMicrousd(
-              usage.inputTokens ?? 0,
-              usage.outputTokens ?? 0,
-              jobBudget?.max_cost_microusd !== undefined,
-            ),
+            costMicrousd: inferenceBilling.enabled
+              ? inferenceBilling.totalCostMicrousd
+              : estimateCostMicrousd(
+                  usage.inputTokens ?? 0,
+                  usage.outputTokens ?? 0,
+                  jobBudget?.max_cost_microusd !== undefined,
+                ),
             elapsedMs: 0,
             outcome: continuationBoundary ? "waiting" : "completed",
             payload: { finishReason: finish.finishReason },
@@ -336,20 +406,61 @@ export default chatKitEndpoint({
         }
       },
       onAbort: async () => {
-        if (ownsRunLease)
+        try {
+          const requiresReconciliation = await inferenceBilling.fail(request.signal.reason);
+          if (ownsRunLease && !requiresReconciliation)
+            await client.chatkit.runs.transition({
+              sessionId: context.sessionId,
+              agentId: {{{AGENT_ID_JSON}}},
+              runId: currentAgentRun.id,
+              status: "waiting",
+              reason: "request_aborted_for_continuation",
+              expectedGeneration: currentAgentRun.generation,
+              workerId: runWorkerId,
+            });
+        } finally {
+          await closeMcpOnce();
+        }
+      },
+      onError: async ({ error }) => {
+        try {
+          const requiresReconciliation = await inferenceBilling.fail(error);
+          if (ownsRunLease && !requiresReconciliation)
+            await client.chatkit.runs.transition({
+              sessionId: context.sessionId,
+              agentId: {{{AGENT_ID_JSON}}},
+              runId: currentAgentRun.id,
+              status: "waiting",
+              reason: "model_failed_before_provider_start",
+              expectedGeneration: currentAgentRun.generation,
+              workerId: runWorkerId,
+            });
+        } finally {
+          await closeMcpOnce();
+        }
+      },
+    } satisfies Parameters<typeof streamText>[0];
+    let result: ReturnType<typeof streamText>;
+    try {
+      result = streamText(streamOptions);
+    } catch (error) {
+      const requiresReconciliation = await inferenceBilling.fail(error);
+      try {
+        if (ownsRunLease && !requiresReconciliation)
           await client.chatkit.runs.transition({
             sessionId: context.sessionId,
             agentId: {{{AGENT_ID_JSON}}},
             runId: currentAgentRun.id,
             status: "waiting",
-            reason: "request_aborted_for_continuation",
+            reason: "model_failed_before_provider_start",
             expectedGeneration: currentAgentRun.generation,
             workerId: runWorkerId,
           });
+      } finally {
         await closeMcpOnce();
-      },
-      onError: async () => closeMcpOnce(),
-    });
+      }
+      throw error;
+    }
     return result.toUIMessageStreamResponse({
       consumeSseStream: consumeStream,
       originalMessages: messages,

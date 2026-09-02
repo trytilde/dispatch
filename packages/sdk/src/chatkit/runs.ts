@@ -221,6 +221,8 @@ export class AgentRunsClient {
     sessionId: string;
     agentId: string;
     runId: string;
+    generation: number;
+    workerId: string;
     stepId: string;
     toolCallId: string;
     toolName: string;
@@ -230,11 +232,14 @@ export class AgentRunsClient {
     return this.#request(`/${input.runId}/effects/prepare`, input.sessionId, input.agentId, {
       method: "POST",
       body: {
+        generation: input.generation,
+        worker_id: input.workerId,
         step_id: input.stepId,
         tool_call_id: input.toolCallId,
         tool_name: input.toolName,
         input_fingerprint: input.inputFingerprint,
         idempotency_key: input.idempotencyKey,
+        status: "planned",
       },
     });
   }
@@ -243,6 +248,8 @@ export class AgentRunsClient {
     sessionId: string;
     agentId: string;
     runId: string;
+    generation: number;
+    workerId: string;
     stepId: string;
     toolCallId: string;
     toolName: string;
@@ -254,6 +261,8 @@ export class AgentRunsClient {
     return this.#request(`/${input.runId}/effects/finish`, input.sessionId, input.agentId, {
       method: "POST",
       body: {
+        generation: input.generation,
+        worker_id: input.workerId,
         step_id: input.stepId,
         tool_call_id: input.toolCallId,
         tool_name: input.toolName,

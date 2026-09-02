@@ -86,6 +86,31 @@ describe("agent scaffolding", () => {
     expect(agentSource).not.toContain("searchSkillRegistry");
     expect(agentSource).not.toContain("TILDE_BASE_URL");
     expect(agentSource).toContain("prepareInference(tools, request.signal, jobModelId)");
+    expect(agentSource).toContain("HostedInferenceBillingController");
+    expect(agentSource).toContain("OPENBOT_HOSTED_INFERENCE_BILLING");
+    expect(agentSource).toContain("onLanguageModelCallStart");
+    expect(agentSource).toContain("onLanguageModelCallEnd");
+    expect(agentSource).toContain("inferenceBilling.preflight");
+    expect(agentSource).toContain("inferenceBilling.fail");
+    expect(agentSource).toContain("status: creditsExhausted ? 402 : 503");
+    const costBudgetGate = agentSource.slice(
+      agentSource.indexOf("jobBudget?.max_cost_microusd"),
+      agentSource.indexOf("const history"),
+    );
+    expect(costBudgetGate).toContain("!costMeterAvailable()");
+    expect(costBudgetGate).toContain("!hostedInferenceBillingEnabled");
+    expect(costBudgetGate).toContain("cost_meter_unavailable");
+    const billingPreflight = agentSource.slice(
+      agentSource.indexOf("await inferenceBilling.preflight"),
+      agentSource.indexOf("const streamOptions"),
+    );
+    expect(billingPreflight).toContain('status: creditsExhausted ? "paused" : "failed"');
+    expect(billingPreflight).not.toContain('status: "waiting"');
+    expect(billingPreflight).toContain("run failed safely");
+    expect(agentSource).toContain("agentRun ??= await client.chatkit.runs.create");
+    expect(agentSource).toContain("idempotencyKey: triggerId");
+    expect(agentSource).toContain("!requiresReconciliation");
+    expect(agentSource).toContain("model_failed_before_provider_start");
     expect(agentSource).not.toContain("@ai-sdk/openai");
     expect(agentSource).not.toContain("OPENAI_API_KEY");
     expect(agentSource).not.toContain("openai(");

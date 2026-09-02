@@ -1,4 +1,11 @@
 export {
+  type GatewayGenerationReceipt,
+  HostedInferenceBillingController,
+  HostedInferenceCreditsExhaustedError,
+  HostedInferenceReconciliationRequiredError,
+  type HostedInferenceBillingControllerOptions,
+} from "./hosted-inference-billing";
+export {
   type AgentRunControllerOptions,
   type AgentRunControllerResult,
   type AgentRunStore,

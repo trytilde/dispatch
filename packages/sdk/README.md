@@ -10,15 +10,18 @@ pnpm add @trytilde/sdk
 ## Public API
 
 - `createConfig(input)` normalizes Tilde team, organization, URL, and authentication settings.
-- `createClient(config?)` creates the core client with ChatKit, MCP, messages, skills, and
-  human-reviewed self-extension APIs.
+- `createClient(config?)` creates the core client with ChatKit, MCP, messages, skills, billing,
+  and human-reviewed self-extension APIs.
+- `client.billing.aiCredits` provides idempotent reserve, exact-receipt commit,
+  and failure-release operations for hosted model calls.
 - `SelfExtensionClient` proposes, inspects, lists, cancels, waits for, or rolls back durable
   capability changes. Human credentials are required by Tilde for approval, output claims, and
   provider setup continuation; model-facing code should expose only `propose`.
 - `client.chatkit.reportCompactionEvent(input)` records an active agent's session compaction
   lifecycle without replacing the canonical transcript.
 - `client.chatkit.runs` creates, claims, accounts, transitions, and recovers provider-neutral
-  durable agent runs and their effect receipts.
+  durable agent runs and their effect receipts. Effect prepare/finish calls carry the claimed
+  run generation and worker ID so stale hosts cannot write receipts into a newer lease.
 - `client.chatkit.work({ agentId, sessionId })` binds durable goals, tasks, and child jobs to one
   authenticated agent conversation.
 - `client.chatkit.routines(agentId)` binds recurring-work operations to one authenticated agent.

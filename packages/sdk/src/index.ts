@@ -79,6 +79,13 @@ export {
 } from "./self-extension";
 export { type Config, configHeaders, createConfig, type NormalizedConfig } from "./config";
 export { ApiError } from "./errors";
+export {
+  type AiCreditContext,
+  type AiCreditReservation,
+  AiCreditsClient,
+  BillingClient,
+  type CommitAiCreditReceiptInput,
+} from "./billing";
 export { isJsonObject, isRecord, parseJsonValue, stringField, trimmedStringField } from "./json.js";
 export {
   type CreateTildeGrpcReverseProxyOptions,

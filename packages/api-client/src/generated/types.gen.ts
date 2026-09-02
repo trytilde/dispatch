@@ -345,10 +345,11 @@ export type AutoProvisionToolGroupInstanceResponse = {
  * Typed billing bootstrap response for the selected organization.
  */
 export type BillingContext = {
-    ai_credits: OrganizationAiCreditContext;
+    ai_credits?: OrganizationAiCreditContext;
     can_manage_billing: boolean;
     org_id: string;
     products: Array<ProductBillingContext>;
+    memory_banks: MemoryBankBillingContext;
 };
 
 /**
@@ -1387,6 +1388,8 @@ export type CreateChatKitSessionRequestInner = {
 export type CreateChatKitWorkspaceSessionRequestInner = {
     lookup_key?: string | null;
     title?: string | null;
+    id?: null | WrappedUuidV4;
+    metadata?: null | WrappedJsonValue;
 };
 
 export type CreateCustomToolProviderRequestInner = {
@@ -1961,7 +1964,7 @@ export type CredentialSourceSerialized = {
 };
 
 /**
- * Current caller's seat state. Machine identities never consume seats.
+ * Current caller's seat state. Agent identities never consume seats.
  */
 export enum CurrentSeatStatus {
     ACTIVE = 'active',
@@ -3125,7 +3128,7 @@ export type MemoryDocument = {
     document_id: string;
     metadata?: unknown;
     /**
-     * Explicit actor observation scopes. Each inner list is consolidated
+     * Explicit Hindsight observation scopes. Each inner list is consolidated
      * independently, preventing observations from crossing actor boundaries.
      */
     observation_scopes?: Array<Array<string>>;
@@ -3137,7 +3140,7 @@ export type MemoryOperationResponse = {
 };
 
 export enum MemoryProvider {
-    HELIX = 'helix'
+    HINDSIGHT = 'hindsight'
 }
 
 export type MemorySourceBinding = {
@@ -3157,6 +3160,7 @@ export type MemorySourceBinding = {
     source_kind: MemorySourceKind;
     team_id?: string | null;
     updated_at: WrappedChronoDateTime;
+    created_by_user_id?: string | null;
 };
 
 export enum MemorySourceKind {
@@ -6579,6 +6583,450 @@ export type WrappedChronoDateTime = string;
 export type WrappedJsonValue = unknown;
 
 export type WrappedUuidV4 = string;
+
+/**
+ * One provider-neutral child execution correlated to a parent conversation.
+ */
+export type AgentJob = {
+    artifacts?: Array<AgentJobArtifact>;
+    budget?: null | AgentJobBudget;
+    child_agent_id: string;
+    child_session_id?: null | WrappedUuidV4;
+    created_at: WrappedChronoDateTime;
+    error?: string | null;
+    id: WrappedUuidV4;
+    metadata?: {
+        [key: string]: unknown;
+    };
+    model_id?: string | null;
+    objective: string;
+    org_id: string;
+    parent_agent_id: string;
+    parent_session_id: WrappedUuidV4;
+    result?: unknown;
+    status: AgentJobStatus;
+    team_id: string;
+    transcript_message_ids?: Array<WrappedUuidV4>;
+    updated_at: WrappedChronoDateTime;
+};
+
+/**
+ * Durable reference to a child-produced artifact.
+ */
+export type AgentJobArtifact = {
+    id: string;
+    media_type?: string | null;
+    metadata?: {
+        [key: string]: unknown;
+    };
+    name?: string | null;
+    uri?: string | null;
+};
+
+/**
+ * Caller-selected hard limits for one child execution.
+ */
+export type AgentJobBudget = {
+    max_cost_microusd?: number | null;
+    max_duration_seconds?: number | null;
+    max_input_tokens?: number | null;
+    max_output_tokens?: number | null;
+};
+
+export type AgentJobPaginatedResponse = {
+    items: Array<AgentJob>;
+    next_page_token?: string;
+};
+
+/**
+ * Durable lifecycle of one delegated child-agent job.
+ */
+export enum AgentJobStatus {
+    QUEUED = 'queued',
+    RUNNING = 'running',
+    INPUT_REQUIRED = 'input-required',
+    PAUSED = 'paused',
+    COMPLETED = 'completed',
+    FAILED = 'failed',
+    STOPPED = 'stopped'
+}
+
+export type AgentRun = {
+    agent_id: string;
+    budget: AgentRunBudget;
+    continuation_count: number;
+    cost_microusd: number;
+    created_at: WrappedChronoDateTime;
+    elapsed_ms: number;
+    error?: string | null;
+    generation: number;
+    goal_id?: null | WrappedUuidV4;
+    id: WrappedUuidV4;
+    input_tokens: number;
+    lease_expires_at?: null | WrappedChronoDateTime;
+    lease_owner?: string | null;
+    no_progress_count: number;
+    objective: string;
+    org_id: string;
+    output_tokens: number;
+    repeated_pattern_count: number;
+    result?: unknown;
+    session_id: WrappedUuidV4;
+    status: AgentRunStatus;
+    step_count: number;
+    team_id: string;
+    updated_at: WrappedChronoDateTime;
+};
+
+export type AgentRunBudget = {
+    max_cost_microusd?: number | null;
+    max_duration_seconds?: number | null;
+    max_input_tokens?: number | null;
+    max_output_tokens?: number | null;
+    max_steps?: number | null;
+};
+
+export type AgentRunEffectReceipt = {
+    created_at: WrappedChronoDateTime;
+    idempotency_key: string;
+    input_fingerprint: string;
+    output?: unknown;
+    run_id: WrappedUuidV4;
+    status?: string;
+    step_id: string;
+    tool_call_id: string;
+    tool_name: string;
+};
+
+export enum AgentRunStatus {
+    ACTIVE = 'active',
+    WAITING = 'waiting',
+    PAUSED = 'paused',
+    STALLED = 'stalled',
+    COMPLETED = 'completed',
+    FAILED = 'failed',
+    CANCELED = 'canceled'
+}
+
+export type AppendAgentRunStepInner = {
+    continuation: number;
+    cost_microusd: number;
+    elapsed_ms: number;
+    input_tokens: number;
+    outcome: string;
+    output_tokens: number;
+    payload: unknown;
+    progress_fingerprint?: string | null;
+    response_fingerprint?: string | null;
+    step_id: string;
+    tool_call_count: number;
+};
+
+/**
+ * Checkpoint metadata plus only messages after its durable transcript boundary.
+ */
+export type ChatKitCompactedHistoryResponse = {
+    checkpoint?: null | ChatKitCompactionCheckpoint;
+    items: Array<Message>;
+    next_page_token?: string | null;
+};
+
+/**
+ * Durable checkpoint used to resume an agent request without replaying compacted context.
+ */
+export type ChatKitCompactionCheckpoint = {
+    agent_id: string;
+    compacted_message_ids?: Array<WrappedUuidV4>;
+    compacted_through_message_id: WrappedUuidV4;
+    compaction_id: WrappedUuidV4;
+    ended_at: WrappedChronoDateTime;
+    event_id: WrappedUuidV4;
+    input_tokens: number;
+    output_tokens: number;
+    retained_message_ids?: Array<WrappedUuidV4>;
+    revision: number;
+    session_id: WrappedUuidV4;
+    summary: string;
+};
+
+/**
+ * Agent-authored lifecycle payload for one context compaction attempt.
+ */
+export type ChatKitCompactionLifecycleInput = {
+    compacted_through_message_id: WrappedUuidV4;
+    estimated_input_tokens: number;
+    input_message_count: number;
+    status: 'started';
+} | {
+    compacted_message_ids?: Array<WrappedUuidV4>;
+    input_tokens: number;
+    output_tokens: number;
+    retained_message_ids?: Array<WrappedUuidV4>;
+    status: 'ended';
+    summary: string;
+} | {
+    error: string;
+    retryable: boolean;
+    status: 'failed';
+};
+
+export type ClaimAgentRunsInner = {
+    lease_seconds: number;
+    limit: number;
+    worker_id: string;
+};
+
+/**
+ * Public request body for committing a Hindsight reservation.
+ */
+export type CommitMemoryBankReservationBody = {
+    active_banks: number;
+    /**
+     * Provide when committing a successful creation; omit when recording a
+     * deletion or retrying an already-authoritative quantity.
+     */
+    reservation_id?: string | null;
+};
+
+export type ControlAgentRunInner = {
+    reason?: string | null;
+    result?: unknown;
+    status: AgentRunStatus;
+};
+
+export type CreateAgentRunInner = {
+    budget?: AgentRunBudget;
+    goal_id?: null | WrappedUuidV4;
+    idempotency_key: string;
+    objective: string;
+};
+
+/**
+ * Fields accepted when an agent creates a goal in its current conversation.
+ */
+export type CreateGoalRequestInner = {
+    objective: string;
+};
+
+/**
+ * Fields accepted when an agent creates a task in its current conversation.
+ */
+export type CreateTaskRequestInner = {
+    context_id?: string | null;
+    dependency_task_ids?: Array<WrappedUuidV4>;
+    goal_id?: null | WrappedUuidV4;
+    inbox_id?: string | null;
+    metadata?: {
+        [key: string]: unknown;
+    };
+    parent_task_id?: string | null;
+    plan?: string | null;
+    summary: string;
+};
+
+/**
+ * Fields accepted when delegating a child job.
+ */
+export type DelegateAgentJobRequestInner = {
+    budget?: null | AgentJobBudget;
+    child_agent_id: string;
+    idempotency_key: string;
+    metadata?: {
+        [key: string]: unknown;
+    };
+    model_id?: string | null;
+    objective: string;
+};
+
+/**
+ * Durable desired outcome owned by one explicit agent in one conversation.
+ */
+export type Goal = {
+    agent_id: string;
+    created_at: WrappedChronoDateTime;
+    id: WrappedUuidV4;
+    objective: string;
+    org_id: string;
+    progress_note?: string | null;
+    progress_percent?: number | null;
+    session_id: WrappedUuidV4;
+    status: GoalStatus;
+    status_reason?: string | null;
+    team_id: string;
+    updated_at: WrappedChronoDateTime;
+};
+
+export type GoalPaginatedResponse = {
+    items: Array<Goal>;
+    next_page_token?: string;
+};
+
+/**
+ * Lifecycle state for a durable agent goal.
+ */
+export enum GoalStatus {
+    ACTIVE = 'active',
+    COMPLETED = 'completed',
+    FAILED = 'failed',
+    CANCELED = 'canceled'
+}
+
+/**
+ * Organization-level Hindsight memory-bank capacity.
+ */
+export type MemoryBankBillingContext = {
+    active: number;
+    billable: number;
+    can_create: boolean;
+    confirmed_billable: number;
+    included: number;
+    payment_url?: string | null;
+    pending_reservations: number;
+    requires_payment_method: boolean;
+};
+
+/**
+ * A short-lived paid-capacity reservation returned to the Hindsight owner.
+ * The owner must commit it after resource creation or release it on failure.
+ */
+export type MemoryBankCreationReservation = {
+    billing: MemoryBankBillingContext;
+    expires_at: string;
+    reservation_id: string;
+};
+
+export type RecordAgentRunEffectInner = {
+    generation: number;
+    idempotency_key: string;
+    input_fingerprint: string;
+    output?: unknown;
+    status: string;
+    step_id: string;
+    tool_call_id: string;
+    tool_name: string;
+    worker_id: string;
+};
+
+/**
+ * Public request body for reporting an agent-owned compaction lifecycle event.
+ */
+export type ReportChatKitCompactionEventInner = {
+    agent_id: string;
+    compaction_id: WrappedUuidV4;
+    lifecycle: ChatKitCompactionLifecycleInput;
+};
+
+/**
+ * Accepted durable compaction lifecycle event.
+ */
+export type ReportChatKitCompactionEventResponse = {
+    event_id: WrappedUuidV4;
+};
+
+/**
+ * Optional instruction supplied when resuming a stopped or paused child.
+ */
+export type ResumeAgentJobRequestInner = {
+    instruction?: string | null;
+};
+
+/**
+ * New instruction durably appended to a running child job.
+ */
+export type SteerAgentJobRequestInner = {
+    idempotency_key: string;
+    instruction: string;
+};
+
+/**
+ * Optional owner-supplied reason for stopping a child.
+ */
+export type StopAgentJobRequestInner = {
+    reason?: string | null;
+};
+
+/**
+ * Executable work item owned by one explicit agent in one conversation.
+ */
+export type Task = {
+    agent_id: string;
+    context_id?: string | null;
+    created_at: WrappedChronoDateTime;
+    dependency_task_ids?: Array<WrappedUuidV4>;
+    goal_id?: null | WrappedUuidV4;
+    id: WrappedUuidV4;
+    inbox_id?: string | null;
+    metadata?: {
+        [key: string]: unknown;
+    };
+    org_id: string;
+    parent_task_id?: string | null;
+    plan?: string | null;
+    progress_note?: string | null;
+    progress_percent?: number | null;
+    session_id: WrappedUuidV4;
+    status: TaskStatus;
+    status_reason?: string | null;
+    status_timestamp: WrappedChronoDateTime;
+    summary?: string | null;
+    team_id: string;
+    updated_at: WrappedChronoDateTime;
+};
+
+export type TaskPaginatedResponse = {
+    items: Array<Task>;
+    next_page_token?: string;
+};
+
+/**
+ * Task lifecycle states retained for ChatKit and A2A interoperability.
+ */
+export enum TaskStatus {
+    SUBMITTED = 'submitted',
+    WORKING = 'working',
+    INPUT_REQUIRED = 'input-required',
+    COMPLETED = 'completed',
+    CANCELED = 'canceled',
+    FAILED = 'failed',
+    REJECTED = 'rejected',
+    AUTH_REQUIRED = 'auth-required',
+    UNKNOWN = 'unknown'
+}
+
+export type TransitionAgentRunInner = {
+    expected_generation: number;
+    reason?: string | null;
+    result?: unknown;
+    status: AgentRunStatus;
+    worker_id: string;
+};
+
+/**
+ * Mutable goal fields. Omitted fields retain their current value.
+ */
+export type UpdateGoalRequestInner = {
+    objective?: string | null;
+    progress_note?: string | null;
+    progress_percent?: number | null;
+    status?: null | GoalStatus;
+    status_reason?: string | null;
+};
+
+/**
+ * Mutable task fields. Omitted fields retain their current value.
+ */
+export type UpdateTaskRequestInner = {
+    dependency_task_ids?: Array<WrappedUuidV4> | null;
+    metadata?: {
+        [key: string]: unknown;
+    } | null;
+    plan?: string | null;
+    progress_note?: string | null;
+    progress_percent?: number | null;
+    status?: null | TaskStatus;
+    status_reason?: string | null;
+    summary?: string | null;
+};
 
 export type ChatkitCompleteSlackProviderProvisionedSetupData = {
     body: CompleteSlackProviderProvisionedSetupRequestInner;
@@ -21773,7 +22221,7 @@ export type ReplacePersonalMemorySourceBindingsResponses = {
 
 export type ReplacePersonalMemorySourceBindingsResponse = ReplacePersonalMemorySourceBindingsResponses[keyof ReplacePersonalMemorySourceBindingsResponses];
 
-export type RetryPersonalMemorySourceBindingsData = {
+export type RetryPersonalMemorySourceSyncData = {
     body: RetryMemorySourceBody;
     path: {
         user_id: string;
@@ -21782,11 +22230,11 @@ export type RetryPersonalMemorySourceBindingsData = {
     url: '/api/v1/user/{user_id}/memory/source-bindings/retry';
 };
 
-export type RetryPersonalMemorySourceBindingsResponses = {
+export type RetryPersonalMemorySourceSyncResponses = {
     200: Array<MemorySourceBinding>;
 };
 
-export type RetryPersonalMemorySourceBindingsResponse = RetryPersonalMemorySourceBindingsResponses[keyof RetryPersonalMemorySourceBindingsResponses];
+export type RetryPersonalMemorySourceSyncResponse = RetryPersonalMemorySourceSyncResponses[keyof RetryPersonalMemorySourceSyncResponses];
 
 export type SignalsListPersonalDeliveriesData = {
     body?: never;
@@ -22860,3 +23308,733 @@ export type RemoveMcpResourceVisibilityGrantData = {
 export type RemoveMcpResourceVisibilityGrantResponses = {
     200: unknown;
 };
+
+export type BillingMemoryBankReservationCommitData = {
+    body: CommitMemoryBankReservationBody;
+    path?: never;
+    query?: never;
+    url: '/api/v1/billing/internal/memory-banks/quantity';
+};
+
+export type BillingMemoryBankReservationCommitErrors = {
+    /**
+     * Invalid quantity transition
+     */
+    400: Error;
+    /**
+     * Authentication failed
+     */
+    401: Error;
+    /**
+     * System administrator required
+     */
+    403: Error;
+    /**
+     * Reservation expired or consumed
+     */
+    410: Error;
+};
+
+export type BillingMemoryBankReservationCommitError = BillingMemoryBankReservationCommitErrors[keyof BillingMemoryBankReservationCommitErrors];
+
+export type BillingMemoryBankReservationCommitResponses = {
+    /**
+     * Updated memory-bank billing context
+     */
+    200: MemoryBankBillingContext;
+};
+
+export type BillingMemoryBankReservationCommitResponse = BillingMemoryBankReservationCommitResponses[keyof BillingMemoryBankReservationCommitResponses];
+
+export type BillingMemoryBankReservationCreateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/billing/internal/memory-banks/reservations';
+};
+
+export type BillingMemoryBankReservationCreateErrors = {
+    /**
+     * Authentication failed
+     */
+    401: Error;
+    /**
+     * Stripe payment action required
+     */
+    402: Error;
+    /**
+     * System administrator required
+     */
+    403: Error;
+    /**
+     * Concurrent reconciliation in progress
+     */
+    503: Error;
+};
+
+export type BillingMemoryBankReservationCreateError = BillingMemoryBankReservationCreateErrors[keyof BillingMemoryBankReservationCreateErrors];
+
+export type BillingMemoryBankReservationCreateResponses = {
+    /**
+     * Reserved memory-bank capacity
+     */
+    200: MemoryBankCreationReservation;
+};
+
+export type BillingMemoryBankReservationCreateResponse = BillingMemoryBankReservationCreateResponses[keyof BillingMemoryBankReservationCreateResponses];
+
+export type BillingMemoryBankReservationReleaseData = {
+    body?: never;
+    path: {
+        /**
+         * Reservation id
+         */
+        reservation_id: string;
+    };
+    query?: never;
+    url: '/api/v1/billing/internal/memory-banks/reservations/{reservation_id}';
+};
+
+export type BillingMemoryBankReservationReleaseErrors = {
+    /**
+     * Authentication failed
+     */
+    401: Error;
+    /**
+     * System administrator required
+     */
+    403: Error;
+    /**
+     * Reservation missing or no longer pending
+     */
+    410: Error;
+};
+
+export type BillingMemoryBankReservationReleaseError = BillingMemoryBankReservationReleaseErrors[keyof BillingMemoryBankReservationReleaseErrors];
+
+export type BillingMemoryBankReservationReleaseResponses = {
+    /**
+     * Updated memory-bank billing context
+     */
+    200: MemoryBankBillingContext;
+};
+
+export type BillingMemoryBankReservationReleaseResponse = BillingMemoryBankReservationReleaseResponses[keyof BillingMemoryBankReservationReleaseResponses];
+
+export type ChatkitListGoalsData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query?: {
+        page_size?: number;
+        next_page_token?: string | null;
+        status?: null | GoalStatus;
+    };
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/goals';
+};
+
+export type ChatkitListGoalsResponses = {
+    200: GoalPaginatedResponse;
+};
+
+export type ChatkitListGoalsResponse = ChatkitListGoalsResponses[keyof ChatkitListGoalsResponses];
+
+export type ChatkitCreateGoalData = {
+    body: CreateGoalRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/goals';
+};
+
+export type ChatkitCreateGoalResponses = {
+    200: Goal;
+};
+
+export type ChatkitCreateGoalResponse = ChatkitCreateGoalResponses[keyof ChatkitCreateGoalResponses];
+
+export type ChatkitGetGoalData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        goal_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/goals/{goal_id}';
+};
+
+export type ChatkitGetGoalResponses = {
+    200: Goal;
+};
+
+export type ChatkitGetGoalResponse = ChatkitGetGoalResponses[keyof ChatkitGetGoalResponses];
+
+export type ChatkitUpdateGoalData = {
+    body: UpdateGoalRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        goal_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/goals/{goal_id}';
+};
+
+export type ChatkitUpdateGoalResponses = {
+    200: Goal;
+};
+
+export type ChatkitUpdateGoalResponse = ChatkitUpdateGoalResponses[keyof ChatkitUpdateGoalResponses];
+
+export type ChatkitListAgentJobsData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query?: {
+        page_size?: number;
+        next_page_token?: string | null;
+        status?: null | AgentJobStatus;
+    };
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs';
+};
+
+export type ChatkitListAgentJobsResponses = {
+    200: AgentJobPaginatedResponse;
+};
+
+export type ChatkitListAgentJobsResponse = ChatkitListAgentJobsResponses[keyof ChatkitListAgentJobsResponses];
+
+export type ChatkitDelegateAgentJobData = {
+    body: DelegateAgentJobRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs';
+};
+
+export type ChatkitDelegateAgentJobResponses = {
+    200: AgentJob;
+};
+
+export type ChatkitDelegateAgentJobResponse = ChatkitDelegateAgentJobResponses[keyof ChatkitDelegateAgentJobResponses];
+
+export type ChatkitGetAgentJobData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        job_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs/{job_id}';
+};
+
+export type ChatkitGetAgentJobResponses = {
+    200: AgentJob;
+};
+
+export type ChatkitGetAgentJobResponse = ChatkitGetAgentJobResponses[keyof ChatkitGetAgentJobResponses];
+
+export type ChatkitCollectAgentJobResultData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        job_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs/{job_id}/collect-result';
+};
+
+export type ChatkitCollectAgentJobResultResponses = {
+    200: AgentJob;
+};
+
+export type ChatkitCollectAgentJobResultResponse = ChatkitCollectAgentJobResultResponses[keyof ChatkitCollectAgentJobResultResponses];
+
+export type ChatkitResumeAgentJobData = {
+    body: ResumeAgentJobRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        job_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs/{job_id}/resume';
+};
+
+export type ChatkitResumeAgentJobResponses = {
+    200: AgentJob;
+};
+
+export type ChatkitResumeAgentJobResponse = ChatkitResumeAgentJobResponses[keyof ChatkitResumeAgentJobResponses];
+
+export type ChatkitSteerAgentJobData = {
+    body: SteerAgentJobRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        job_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs/{job_id}/steer';
+};
+
+export type ChatkitSteerAgentJobResponses = {
+    200: AgentJob;
+};
+
+export type ChatkitSteerAgentJobResponse = ChatkitSteerAgentJobResponses[keyof ChatkitSteerAgentJobResponses];
+
+export type ChatkitStopAgentJobData = {
+    body: StopAgentJobRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        job_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/jobs/{job_id}/stop';
+};
+
+export type ChatkitStopAgentJobResponses = {
+    200: AgentJob;
+};
+
+export type ChatkitStopAgentJobResponse = ChatkitStopAgentJobResponses[keyof ChatkitStopAgentJobResponses];
+
+export type ChatkitCreateAgentRunData = {
+    body: CreateAgentRunInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs';
+};
+
+export type ChatkitCreateAgentRunResponses = {
+    200: AgentRun;
+};
+
+export type ChatkitCreateAgentRunResponse = ChatkitCreateAgentRunResponses[keyof ChatkitCreateAgentRunResponses];
+
+export type ChatkitGetActiveAgentRunData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/active';
+};
+
+export type ChatkitGetActiveAgentRunResponses = {
+    200: null | AgentRun;
+};
+
+export type ChatkitGetActiveAgentRunResponse = ChatkitGetActiveAgentRunResponses[keyof ChatkitGetActiveAgentRunResponses];
+
+export type ChatkitClaimAgentRunsData = {
+    body: ClaimAgentRunsInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/claim';
+};
+
+export type ChatkitClaimAgentRunsResponses = {
+    200: Array<AgentRun>;
+};
+
+export type ChatkitClaimAgentRunsResponse = ChatkitClaimAgentRunsResponses[keyof ChatkitClaimAgentRunsResponses];
+
+export type ChatkitGetAgentRunData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        run_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}';
+};
+
+export type ChatkitGetAgentRunResponses = {
+    200: AgentRun;
+};
+
+export type ChatkitGetAgentRunResponse = ChatkitGetAgentRunResponses[keyof ChatkitGetAgentRunResponses];
+
+export type ChatkitControlAgentRunData = {
+    body: ControlAgentRunInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        run_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}/control';
+};
+
+export type ChatkitControlAgentRunResponses = {
+    200: AgentRun;
+};
+
+export type ChatkitControlAgentRunResponse = ChatkitControlAgentRunResponses[keyof ChatkitControlAgentRunResponses];
+
+export type ChatkitFinishAgentRunEffectData = {
+    body: RecordAgentRunEffectInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        run_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}/effects/finish';
+};
+
+export type ChatkitFinishAgentRunEffectResponses = {
+    200: AgentRunEffectReceipt;
+};
+
+export type ChatkitFinishAgentRunEffectResponse = ChatkitFinishAgentRunEffectResponses[keyof ChatkitFinishAgentRunEffectResponses];
+
+export type ChatkitGetAgentRunEffectData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        run_id: WrappedUuidV4;
+    };
+    query: {
+        tool_name: string;
+        input_fingerprint: string;
+    };
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}/effects/lookup';
+};
+
+export type ChatkitGetAgentRunEffectResponses = {
+    200: null | AgentRunEffectReceipt;
+};
+
+export type ChatkitGetAgentRunEffectResponse = ChatkitGetAgentRunEffectResponses[keyof ChatkitGetAgentRunEffectResponses];
+
+export type ChatkitPrepareAgentRunEffectData = {
+    body: RecordAgentRunEffectInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        run_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}/effects/prepare';
+};
+
+export type ChatkitPrepareAgentRunEffectResponses = {
+    200: AgentRunEffectReceipt;
+};
+
+export type ChatkitPrepareAgentRunEffectResponse = ChatkitPrepareAgentRunEffectResponses[keyof ChatkitPrepareAgentRunEffectResponses];
+
+export type ChatkitAppendAgentRunStepData = {
+    body: AppendAgentRunStepInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        run_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}/steps';
+};
+
+export type ChatkitAppendAgentRunStepResponses = {
+    200: AgentRun;
+};
+
+export type ChatkitAppendAgentRunStepResponse = ChatkitAppendAgentRunStepResponses[keyof ChatkitAppendAgentRunStepResponses];
+
+export type ChatkitTransitionAgentRunData = {
+    body: TransitionAgentRunInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        run_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/runs/{run_id}/transition';
+};
+
+export type ChatkitTransitionAgentRunResponses = {
+    200: AgentRun;
+};
+
+export type ChatkitTransitionAgentRunResponse = ChatkitTransitionAgentRunResponses[keyof ChatkitTransitionAgentRunResponses];
+
+export type ChatkitListTasksData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query?: {
+        page_size?: number;
+        next_page_token?: string | null;
+        goal_id?: null | WrappedUuidV4;
+        status?: null | TaskStatus;
+    };
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/tasks';
+};
+
+export type ChatkitListTasksResponses = {
+    200: TaskPaginatedResponse;
+};
+
+export type ChatkitListTasksResponse = ChatkitListTasksResponses[keyof ChatkitListTasksResponses];
+
+export type ChatkitCreateTaskData = {
+    body: CreateTaskRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/tasks';
+};
+
+export type ChatkitCreateTaskResponses = {
+    200: Task;
+};
+
+export type ChatkitCreateTaskResponse = ChatkitCreateTaskResponses[keyof ChatkitCreateTaskResponses];
+
+export type ChatkitGetTaskData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        task_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/tasks/{task_id}';
+};
+
+export type ChatkitGetTaskResponses = {
+    200: Task;
+};
+
+export type ChatkitGetTaskResponse = ChatkitGetTaskResponses[keyof ChatkitGetTaskResponses];
+
+export type ChatkitUpdateTaskData = {
+    body: UpdateTaskRequestInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        agent_id: string;
+        session_id: WrappedUuidV4;
+        task_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/sessions/{session_id}/tasks/{task_id}';
+};
+
+export type ChatkitUpdateTaskResponses = {
+    200: Task;
+};
+
+export type ChatkitUpdateTaskResponse = ChatkitUpdateTaskResponses[keyof ChatkitUpdateTaskResponses];
+
+export type ChatkitReportCompactionEventData = {
+    body: ReportChatKitCompactionEventInner;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/sessions/{session_id}/compaction-events';
+};
+
+export type ChatkitReportCompactionEventErrors = {
+    400: Error;
+    403: Error;
+    404: Error;
+    409: Error;
+};
+
+export type ChatkitReportCompactionEventError = ChatkitReportCompactionEventErrors[keyof ChatkitReportCompactionEventErrors];
+
+export type ChatkitReportCompactionEventResponses = {
+    200: ReportChatKitCompactionEventResponse;
+};
+
+export type ChatkitReportCompactionEventResponse = ChatkitReportCompactionEventResponses[keyof ChatkitReportCompactionEventResponses];
+
+export type ChatkitGetLatestCompactionData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query: {
+        agent_id: string;
+    };
+    url: '/api/v1/team/{team_id}/chatkit/sessions/{session_id}/compaction-events/latest';
+};
+
+export type ChatkitGetLatestCompactionErrors = {
+    403: Error;
+    404: Error;
+};
+
+export type ChatkitGetLatestCompactionError = ChatkitGetLatestCompactionErrors[keyof ChatkitGetLatestCompactionErrors];
+
+export type ChatkitGetLatestCompactionResponses = {
+    200: null | ChatKitCompactionCheckpoint;
+};
+
+export type ChatkitGetLatestCompactionResponse = ChatkitGetLatestCompactionResponses[keyof ChatkitGetLatestCompactionResponses];
+
+export type ChatkitGetCompactedHistoryData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query: {
+        agent_id: string;
+        page_size?: number;
+        next_page_token?: string | null;
+    };
+    url: '/api/v1/team/{team_id}/chatkit/sessions/{session_id}/messages/from-last-compaction';
+};
+
+export type ChatkitGetCompactedHistoryErrors = {
+    403: Error;
+    404: Error;
+};
+
+export type ChatkitGetCompactedHistoryError = ChatkitGetCompactedHistoryErrors[keyof ChatkitGetCompactedHistoryErrors];
+
+export type ChatkitGetCompactedHistoryResponses = {
+    200: ChatKitCompactedHistoryResponse;
+};
+
+export type ChatkitGetCompactedHistoryResponse = ChatkitGetCompactedHistoryResponses[keyof ChatkitGetCompactedHistoryResponses];

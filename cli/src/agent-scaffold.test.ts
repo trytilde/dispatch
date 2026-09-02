@@ -85,20 +85,20 @@ describe("agent scaffolding", () => {
     expect(agentSource).not.toContain("function addTools");
     expect(agentSource).not.toContain("searchSkillRegistry");
     expect(agentSource).not.toContain("TILDE_BASE_URL");
-    expect(agentSource).toContain("prepareInference(tools, request.signal)");
+    expect(agentSource).toContain("prepareInference(tools, request.signal, jobModelId)");
     expect(agentSource).not.toContain("@ai-sdk/openai");
     expect(agentSource).not.toContain("OPENAI_API_KEY");
     expect(agentSource).not.toContain("openai(");
     expect(agentSource).toContain("instructions,");
     const inferenceSource = await readFile(join(directory, "inference.ts"), "utf8");
-    expect(inferenceSource).toContain('process.env.AI_MODEL ?? "openai/gpt-5.6-sol"');
+    expect(inferenceSource).toContain('modelId ?? process.env.AI_MODEL ?? "openai/gpt-5.6-sol"');
     expect(inferenceSource).toContain('reasoning: "medium"');
     expect(agentSource).not.toContain("Your name is");
     expect(agentSource).not.toContain("lib/identity");
     const instructionsSource = await readFile(join(directory, "instructions.ts"), "utf8");
     expect(instructionsSource).toContain("process.env.AGENT_RESEARCH_ASSISTANT_NAME!");
     expect(instructionsSource).toContain("Your name is ${agentName}.");
-    expect(instructionsSource).toContain("emit user-visible text only");
+    expect(instructionsSource).toContain("acknowledge the request");
     expect(instructionsSource).toContain("Use search_skills");
     expect(instructionsSource).toContain("ordinary direct tools");
     await expect(access(join(directory, "lib/identity.ts"))).rejects.toMatchObject({
@@ -118,6 +118,15 @@ describe("agent scaffolding", () => {
     );
     expect(await readFile(join(directory, "tools/copy_to_computer.ts"), "utf8")).toContain(
       "createCopyToComputerTool",
+    );
+    expect(await readFile(join(directory, "tools/manage_goals.ts"), "utf8")).toContain(
+      'encodeURIComponent("research-assistant")',
+    );
+    expect(await readFile(join(directory, "tools/manage_tasks.ts"), "utf8")).toContain(
+      'encodeURIComponent("research-assistant")',
+    );
+    expect(await readFile(join(directory, "tools/manage_routines.ts"), "utf8")).toContain(
+      'const agentId = "research-assistant"',
     );
     expect(
       await readFile(join(root, "configuration/agent/skills/create-agent/SKILL.md"), "utf8"),

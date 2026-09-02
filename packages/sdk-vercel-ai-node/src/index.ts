@@ -1,4 +1,28 @@
 export {
+  type AgentRunControllerOptions,
+  type AgentRunControllerResult,
+  type AgentRunStore,
+  type AgentRunTurnResult,
+  type AgentRunUsage,
+  UncertainAgentRunEffectError,
+  executeRunEffect,
+  reactivateAgentRun,
+  runAgentObjective,
+  runAgentHostOnce,
+} from "./agent-run-controller";
+export {
+  CHATKIT_COMPACTION_PROMPT,
+  CHATKIT_COMPACTION_SUMMARY_PREFIX,
+  type ChatKitCompactionController,
+  type ChatKitCompactionSummarizer,
+  type ChatKitCompactionSummaryResult,
+  type CreateChatKitCompactionControllerOptions,
+  chatKitCompactionCheckpointMessage,
+  composeChatKitCompactionPrepareStep,
+  createChatKitCompactionController,
+  estimateModelMessagesTokens,
+} from "./chatkit-compaction";
+export {
   type ChatKitAttachmentFilePartHandlerOptions,
   createChatKitAttachmentFilePartHandler,
 } from "./chatkit-attachments";

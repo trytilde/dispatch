@@ -23,6 +23,8 @@ pnpm add @trytilde/sdk
   active turn bound by ChatKit.
 - `ChatKitClient.invokeSessionProviderTool(input)` invokes a reaction, thread, or poll action using
   trusted session routing rather than model-supplied provider identifiers.
+- `ChatKitClient.rooms` creates rooms, manages durable rosters and invitations, and exposes bounded
+  deterministic group-turn orchestration without moving personal credentials into room state.
 - `McpClient.addFunctions(input)` and `McpClient.removeFunctions(input)` atomically reconcile up to 500 function mappings from one tool provider instance.
 - `SkillPackage` and `SkillsClient` discover, download, verify, and materialize managed skills.
 - `recordCodingAgentEvent(options)` records harness-neutral session, message, and tool lifecycle events in canonical ChatKit sessions.

@@ -71,9 +71,18 @@ export async function reconcileAgentResources(
 ): Promise<void> {
   const discoveredSources = await discoverAgents(options.repositoryRoot);
   const selectedAgentIds = options.agentIds ? new Set(options.agentIds) : undefined;
-  const sources = selectedAgentIds
+  let sources = selectedAgentIds
     ? discoveredSources.filter((source) => selectedAgentIds.has(source.slug))
     : discoveredSources;
+  const synthesisSource = discoveredSources.find(({ slug }) => slug === "memory-catcher");
+  if (
+    selectedAgentIds &&
+    synthesisSource &&
+    sources.some(({ slug }) => slug !== "memory-catcher") &&
+    !sources.includes(synthesisSource)
+  ) {
+    sources = [synthesisSource, ...sources];
+  }
   const report = options.report ?? (() => undefined);
   const persistence = serialDeploymentPersistence(repositoryDeploymentPersistence(options));
   const agentServiceOrigin = (

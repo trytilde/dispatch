@@ -33,23 +33,31 @@ export default chatKitEndpoint({
     // This strict allowlist also excludes remote batch wrappers, so they cannot
     // be used to reach a filtered communication or control-plane tool.
     const tools = restrictMemorySynthesisTools(await mcp.mcp.tools(), localTools);
-    const history = await context.session.history();
-    const messages = await convertToAiSdkMessages({
-      messages: [...history.items, ...context.messages],
-      chatkit: context.chatkit,
-    });
-    const result = streamText({
-      model: "zai/glm-5.3-flash",
-      instructions,
-      messages: await convertToModelMessages(messages),
-      tools: tools as ToolSet,
-      stopWhen: stepCountIs(50),
-      abortSignal: request.signal,
-      onFinish: () => void mcp.closeMcp(),
-    });
-    return result.toUIMessageStreamResponse({
-      consumeSseStream: consumeStream,
-      originalMessages: messages,
-    });
+    try {
+      const history = await context.session.history();
+      const messages = await convertToAiSdkMessages({
+        messages: [...history.items, ...context.messages],
+        chatkit: context.chatkit,
+      });
+      const closeMcp = () => void mcp.closeMcp();
+      const result = streamText({
+        model: "zai/glm-5.3-flash",
+        instructions,
+        messages: await convertToModelMessages(messages),
+        tools: tools as ToolSet,
+        stopWhen: stepCountIs(50),
+        abortSignal: request.signal,
+        onFinish: closeMcp,
+        onError: closeMcp,
+        onAbort: closeMcp,
+      });
+      return result.toUIMessageStreamResponse({
+        consumeSseStream: consumeStream,
+        originalMessages: messages,
+      });
+    } catch (error) {
+      await mcp.closeMcp();
+      throw error;
+    }
   },
 });

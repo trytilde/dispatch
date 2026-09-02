@@ -101,6 +101,52 @@ describe("agent resource lifecycle", () => {
     expect(deployedAgentIds).toEqual(["research-assistant"]);
   });
 
+  it("includes Memory Catcher when reconciling one dependent agent", async () => {
+    vi.mocked(discoverAgents).mockResolvedValueOnce([
+      {
+        slug: "memory-catcher",
+        kind: "subagent",
+        directory: "/repository/configuration/agent/subagents/memory-catcher",
+        path: "/repository/configuration/agent/subagents/memory-catcher/agent.ts",
+      },
+      {
+        slug: "research-assistant",
+        kind: "subagent",
+        directory: "/repository/configuration/agent/subagents/research-assistant",
+        path: "/repository/configuration/agent/subagents/research-assistant/agent.ts",
+      },
+      {
+        slug: "unrelated-agent",
+        kind: "subagent",
+        directory: "/repository/configuration/agent/subagents/unrelated-agent",
+        path: "/repository/configuration/agent/subagents/unrelated-agent/agent.ts",
+      },
+    ]);
+    const deployedAgentIds: string[] = [];
+
+    await reconcileAgentResources({
+      repositoryRoot: "/repository",
+      agentIds: ["research-assistant"],
+      environment: {},
+      devMode: true,
+      providers: {
+        agent: {
+          deployable: {
+            plan: async () => ({ summary: "agent" }),
+            deploy: async (context) => {
+              deployedAgentIds.push(context.agentId!);
+            },
+          },
+        } as AgentProvider,
+        agentService: {
+          baseUrl: () => new URL("http://127.0.0.1:4100"),
+        } as unknown as AgentServiceProvider,
+      },
+    });
+
+    expect(deployedAgentIds).toEqual(["memory-catcher", "research-assistant"]);
+  });
+
   it("reconciles up to ten authored agents concurrently", async () => {
     vi.mocked(discoverAgents).mockResolvedValueOnce(
       Array.from({ length: 12 }, (_, index) => ({

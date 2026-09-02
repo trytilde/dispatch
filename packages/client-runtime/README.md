@@ -10,7 +10,8 @@ Framework-neutral client behavior shared by OpenBot web and Electron clients.
 - `contracts/agents` owns the durable background agent-setup start and status payloads.
 - `contracts/messages` owns conversation messages and parts.
 - `contracts/capability-approvals` validates tokenless, proposal-hash-bound approval cards and
-  submits their exact Yes/No binding through the authenticated control-service boundary.
+  submits their exact Yes/No binding through the authenticated control-service boundary. Unknown
+  proposal fields are stripped and the nested approval must bind to the same proposal identifier.
 - `contracts/events` owns generic one-session SSE envelopes, participant lifecycle activity, and the closed ChatKit realtime event union.
 - `contracts/workspace` owns aggregate bootstrap, conversation snapshot, turn-submission,
   and consolidated ChatKit search responses plus the durable event revision used to reconnect the

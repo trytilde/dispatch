@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CapabilityChangeApproval } from "@tryopenbot/client-runtime";
 
 export interface CapabilityApprovalCardProps {
@@ -17,12 +17,18 @@ export function CapabilityApprovalCard({
   const [answered, setAnswered] = useState<"approve" | "reject">();
   const [error, setError] = useState("");
   const [currentStatus, setCurrentStatus] = useState(approval.status);
+  const loadCurrentRef = useRef(loadCurrent);
   const pending = currentStatus === "pending" && !answered;
 
   useEffect(() => {
-    if (!loadCurrent || currentStatus !== "pending") return;
+    loadCurrentRef.current = loadCurrent;
+  }, [loadCurrent]);
+
+  useEffect(() => {
+    if (!loadCurrentRef.current || currentStatus !== "pending") return;
     let active = true;
-    void loadCurrent()
+    void loadCurrentRef
+      .current()
       .then((current) => {
         if (active) setCurrentStatus(current.status);
       })
@@ -30,7 +36,7 @@ export function CapabilityApprovalCard({
     return () => {
       active = false;
     };
-  }, [currentStatus, loadCurrent]);
+  }, [approval.id, currentStatus]);
 
   const decide = async (decision: "approve" | "reject"): Promise<void> => {
     if (!onDecision || busy) return;

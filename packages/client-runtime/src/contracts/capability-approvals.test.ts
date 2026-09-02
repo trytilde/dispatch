@@ -50,6 +50,35 @@ describe("capabilityChangeApprovalFromPart", () => {
     ).toBeUndefined();
   });
 
+  it("strips unknown proposal data and rejects a mismatched approval binding", () => {
+    const approval = capabilityChangeApprovalFromPart({
+      type: "tool",
+      tool_name: "propose_self_extension",
+      output: {
+        ...proposal,
+        desired_state: { client_secret: "must-not-reach-client" },
+        error_message: "secret-shaped diagnostic",
+        preview: {
+          ...proposal.preview,
+          resource_diff: { token: "must-not-reach-client" },
+        },
+      },
+    });
+    expect(approval).toBeDefined();
+    expect(JSON.stringify(approval)).not.toContain("must-not-reach-client");
+    expect(JSON.stringify(approval)).not.toContain("secret-shaped diagnostic");
+    expect(
+      capabilityChangeApprovalFromPart({
+        type: "tool",
+        tool_name: "propose_self_extension",
+        output: {
+          ...proposal,
+          approval: { ...proposal.approval, proposal_id: "proposal-other" },
+        },
+      }),
+    ).toBeUndefined();
+  });
+
   it("reloads durable status without accepting a decision in free text", async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async () => Response.json({ ...proposal, status: "executed" });

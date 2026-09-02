@@ -12,15 +12,13 @@ export const CapabilityChangeApprovalSchema = z
     rationale: z.string(),
     category: z.string(),
     status: z.string().default("pending"),
-    preview: z
-      .object({
-        permissions: z.array(z.unknown()).default([]),
-        credentials: z.array(z.unknown()).default([]),
-        cost_summary: z.string(),
-        security_summary: z.string(),
-        rollback_plan: z.string(),
-      })
-      .passthrough(),
+    preview: z.object({
+      permissions: z.array(z.unknown()).default([]),
+      credentials: z.array(z.unknown()).default([]),
+      cost_summary: z.string(),
+      security_summary: z.string(),
+      rollback_plan: z.string(),
+    }),
     approval: z.object({
       approval_id: z.string().min(1),
       proposal_id: z.string().min(1),
@@ -30,8 +28,24 @@ export const CapabilityChangeApprovalSchema = z
       title: z.string(),
       instructions: z.string(),
     }),
+    continuation: z
+      .object({
+        kind: z.literal("provider_setup"),
+        setup_item_id: z.string().min(1),
+        resource_id: z.string().min(1),
+        instructions: z.string(),
+      })
+      .optional(),
   })
-  .passthrough();
+  .superRefine((proposal, context) => {
+    if (proposal.approval.proposal_id !== proposal.id) {
+      context.addIssue({
+        code: "custom",
+        message: "approval proposal binding does not match proposal id",
+        path: ["approval", "proposal_id"],
+      });
+    }
+  });
 
 export type CapabilityChangeApproval = z.infer<typeof CapabilityChangeApprovalSchema>;
 

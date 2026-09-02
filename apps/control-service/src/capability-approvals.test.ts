@@ -31,6 +31,9 @@ describe("capability approval proxy", () => {
       });
       return Response.json({
         id: "proposal-a",
+        status: "approved",
+        error_message: "provider secret-shaped diagnostic",
+        desired_state: { client_secret: "must-not-reach-browser" },
         title: "Add Stripe",
         rationale: "Revenue",
         category: "connector",
@@ -76,6 +79,32 @@ describe("capability approval proxy", () => {
       },
     );
     expect(response.status).toBe(200);
+    const responseText = await response.text();
+    expect(responseText).not.toContain("must-not-reach-browser");
+    expect(responseText).not.toContain("secret-shaped diagnostic");
+    expect(JSON.parse(responseText)).toEqual({
+      id: "proposal-a",
+      title: "Add Stripe",
+      rationale: "Revenue",
+      category: "connector",
+      status: "approved",
+      preview: {
+        permissions: [],
+        credentials: [],
+        cost_summary: "$0",
+        security_summary: "Read-only",
+        rollback_plan: "Remove",
+      },
+      approval: {
+        approval_id: "approval-a",
+        proposal_id: "proposal-a",
+        proposal_hash: "hash-a",
+        proposal_generation: 1,
+        status: "completed",
+        title: "Add Stripe",
+        instructions: "Revenue",
+      },
+    });
     expect(upstream).toHaveBeenCalledOnce();
   });
 
@@ -183,6 +212,48 @@ describe("capability approval proxy", () => {
     });
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({ id: "proposal-a", status: "executed" });
+  });
+
+  it("rejects an upstream approval bound to a different proposal", async () => {
+    const app = createApp({
+      authProvider: testAuthProvider(),
+      tildeProxy: {
+        apiKey: "machine",
+        orgId: "org",
+        teamId: "team",
+        baseUrl: "https://tilde.test",
+        fetch: vi.fn().mockResolvedValue(
+          Response.json({
+            id: "proposal-b",
+            status: "pending",
+            title: "Add Stripe",
+            rationale: "Revenue",
+            category: "connector",
+            preview: {
+              permissions: [],
+              credentials: [],
+              cost_summary: "$0",
+              security_summary: "Read-only",
+              rollback_plan: "Remove",
+            },
+            approval: {
+              approval_id: "approval-a",
+              proposal_id: "proposal-b",
+              proposal_hash: "hash-a",
+              proposal_generation: 1,
+              status: "pending",
+              title: "Add Stripe",
+              instructions: "Revenue",
+            },
+          }),
+        ),
+      },
+    });
+    const response = await app.request("https://openbot.test/api/capability-approvals/proposal-a", {
+      headers: { authorization: "Bearer human-token" },
+    });
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({ error: "Invalid capability response" });
   });
 });
 

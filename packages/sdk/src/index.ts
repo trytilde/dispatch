@@ -34,6 +34,19 @@ export {
   type ToolExecutionState,
 } from "./chatkit";
 export { Client, createClient } from "./client";
+export {
+  type CapabilityChangeApproval,
+  type ProposeSelfExtensionInput,
+  type ProviderSetupContinuation,
+  type SelfExtensionCategory,
+  SelfExtensionClient,
+  type SelfExtensionCredentialRequirement,
+  type SelfExtensionPermissionChange,
+  type SelfExtensionPreview,
+  type SelfExtensionProposal,
+  type SelfExtensionResource,
+  type SelfExtensionStatus,
+} from "./self-extension";
 export { type Config, configHeaders, createConfig, type NormalizedConfig } from "./config";
 export { ApiError } from "./errors";
 export { isJsonObject, isRecord, parseJsonValue, stringField, trimmedStringField } from "./json.js";

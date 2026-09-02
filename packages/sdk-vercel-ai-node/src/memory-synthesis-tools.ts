@@ -64,7 +64,7 @@ export function createMemorySynthesisTools(memory: MemorySynthesisSessionClient)
           memoryType: input.memory_type,
           ...(input.title === undefined ? {} : { title: input.title }),
           metadata: {
-            ...((input.metadata as JsonObject | undefined) ?? {}),
+            ...(input.metadata as JsonObject | undefined),
             synthesis_batch_id: input.batch_id,
           },
           ...(input.tags === undefined ? {} : { tags: input.tags }),

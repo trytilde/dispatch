@@ -26,7 +26,7 @@ describe("MemoryClient", () => {
 
     const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
     expect(calls.every(([url]) => url.includes("/memory/banks/bank-one/"))).toBe(true);
-    const mutationBody = JSON.parse(String(calls[0]?.[1].body));
+    const mutationBody = JSON.parse(calls[0]?.[1].body as string);
     expect(mutationBody.document.metadata).toMatchObject({
       memory_type: "preferences",
       supersedes_memory_id: "old-memory",
@@ -95,7 +95,7 @@ describe("MemoryClient", () => {
     });
     const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
     expect(calls[0]?.[0]).toContain("/memory/synthesis-sessions/session-one/retain");
-    expect(String(calls[0]?.[1].body)).not.toContain("bank_id");
+    expect(calls[0]?.[1].body as string).not.toContain("bank_id");
   });
 
   it("lets an owner inspect, edit, and delete an attributed explicit fact", async () => {
@@ -132,8 +132,8 @@ describe("MemoryClient", () => {
     expect(calls[0]?.[0]).toContain(
       "/api/v1/user/owner-one/memory/banks/bank-one/documents/manual%3Afact-one",
     );
-    expect(String(calls[1]?.[1].body)).toContain("manual:fact-one");
-    expect(String(calls[2]?.[1].body)).toContain("manual:fact-one");
+    expect(calls[1]?.[1].body as string).toContain("manual:fact-one");
+    expect(calls[2]?.[1].body as string).toContain("manual:fact-one");
   });
 
   it("lists personal banks and controls their optional background synthesizer", async () => {

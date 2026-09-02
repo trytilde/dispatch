@@ -22,12 +22,12 @@ describe("ChatKit automatic memory", () => {
 
     const [[url, init]] = fetchMock.mock.calls as unknown as [[string, RequestInit]];
     expect(url).toContain("/chatkit/agents/agent-one/sessions/session-one/automatic-memory/recall");
-    expect(JSON.parse(String(init.body))).toEqual({
+    expect(JSON.parse(init.body as string)).toEqual({
       message_id: "message-one",
       max_tokens: 512,
     });
-    expect(String(init.body)).not.toContain("user");
-    expect(String(init.body)).not.toContain("identity");
+    expect(init.body as string).not.toContain("user");
+    expect(init.body as string).not.toContain("identity");
   });
 
   it("reads and updates the owner-selected mode and complete bank selection", async () => {
@@ -59,7 +59,7 @@ describe("ChatKit automatic memory", () => {
 
     const calls = fetchMock.mock.calls as unknown as [string, RequestInit][];
     expect(calls[1]?.[1].method).toBe("PATCH");
-    expect(JSON.parse(String(calls[1]?.[1].body))).toEqual({
+    expect(JSON.parse(calls[1]?.[1].body as string)).toEqual({
       automatic_memory_mode: "team",
       memory_bank_ids: ["bank-two"],
     });

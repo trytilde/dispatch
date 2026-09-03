@@ -1,6 +1,6 @@
 ---
 name: improve-codebase-architecture
-description: Find deepening opportunities in OpenBot's TypeScript monorepo using its provider contracts, protobuf API, control-state ownership, runtime composition, and documented decisions. Use for refactoring, consolidation, testability, or AI-navigability reviews.
+description: Find deepening opportunities in Dispatch's TypeScript monorepo using its provider contracts, protobuf API, control-state ownership, runtime composition, and documented decisions. Use for refactoring, consolidation, testability, or AI-navigability reviews.
 ---
 
 # Improve Codebase Architecture
@@ -49,7 +49,7 @@ For each candidate provide:
 - benefits for locality, leverage, and tests
 - compatibility or migration risk
 
-Use OpenBot concepts, not generic placeholders. Do not design interfaces until the user selects a candidate.
+Use Dispatch concepts, not generic placeholders. Do not design interfaces until the user selects a candidate.
 
 ### 3. Grilling loop
 

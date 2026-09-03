@@ -3,15 +3,15 @@ import {
   Onboarding,
   WorkspaceAccessScreen,
   type OnboardingResult,
-} from "@tryopenbot/ui";
+} from "@trytilde/dispatch-ui";
 import {
   completeOnboarding,
   loadOnboarding,
   type OnboardingStorage,
-} from "@tryopenbot/client-runtime";
+} from "@trytilde/dispatch-client-runtime";
 import { type ReactNode, useEffect, useState } from "react";
 import { useStore } from "zustand";
-import { openBotRuntime } from "./runtime.js";
+import { dispatchRuntime } from "./runtime.js";
 import { useClientWorkspace } from "./workspaces.js";
 
 // Onboarding state is owned by the client runtime per ADR-0017; the browser only
@@ -48,7 +48,7 @@ export function AuthGate({
   children: ReactNode;
   skipOnboarding?: boolean;
 }) {
-  const auth = useStore(openBotRuntime.store, (state) => state.auth);
+  const auth = useStore(dispatchRuntime.store, (state) => state.auth);
   const workspace = useClientWorkspace();
   const [signingIn, setSigningIn] = useState(false);
   const [seen, setSeen] = useState<boolean | undefined>(skipOnboarding ? true : undefined);
@@ -56,7 +56,7 @@ export function AuthGate({
   // Settings only need authenticated agent navigation. The workspace upgrades this
   // initialization to include conversations, previews, and the team event stream.
   useEffect(() => {
-    void openBotRuntime.actions.initialize({
+    void dispatchRuntime.actions.initialize({
       workspace: !window.location.pathname.startsWith("/settings"),
     });
   }, []);
@@ -79,7 +79,7 @@ export function AuthGate({
         signingIn={signingIn}
         onSignIn={() => {
           setSigningIn(true);
-          void openBotRuntime.actions
+          void dispatchRuntime.actions
             .signIn({ workspace: !window.location.pathname.startsWith("/settings") })
             .catch(() => undefined)
             .finally(() => setSigningIn(false));
@@ -97,7 +97,7 @@ export function AuthGate({
         onCancelSignIn={() => setSigningIn(false)}
         onSignIn={() => {
           setSigningIn(true);
-          void openBotRuntime.actions
+          void dispatchRuntime.actions
             .signIn()
             .catch(() => undefined)
             .finally(() => setSigningIn(false));

@@ -9,9 +9,9 @@ import {
   deployProviders,
   DeploymentOutputs,
   type DeploymentContext,
-} from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
 import { VercelAgentServiceProvider } from "./vercel/index.js";
-import type { CommandRunner } from "@tryopenbot/control-service-provider";
+import type { CommandRunner } from "@trytilde/dispatch-control-service-provider";
 
 const roots: string[] = [];
 afterEach(async () =>
@@ -117,7 +117,7 @@ describe("agent service artifacts", () => {
         await readFile(
           join(
             root,
-            `.openbot-deploy/vercel/agents/.vercel/output/functions/api/agents/${slug}.func/.vc-config.json`,
+            `.dispatch-deploy/vercel/agents/.vercel/output/functions/api/agents/${slug}.func/.vc-config.json`,
           ),
           "utf8",
         ),
@@ -127,7 +127,7 @@ describe("agent service artifacts", () => {
         await readFile(
           join(
             root,
-            `.openbot-deploy/vercel/agents/.vercel/output/functions/api/agents/${slug}.func/index.mjs`,
+            `.dispatch-deploy/vercel/agents/.vercel/output/functions/api/agents/${slug}.func/index.mjs`,
           ),
           "utf8",
         ),
@@ -168,7 +168,7 @@ describe("agent service artifacts", () => {
       devMode: false,
       dryRun: false,
       repositoryRoot: root,
-      environment: { VERCEL_AGENT_PROJECT: "openbot-agents", VERCEL_TOKEN: "deployment-token" },
+      environment: { VERCEL_AGENT_PROJECT: "dispatch-agents", VERCEL_TOKEN: "deployment-token" },
       initialInputs: {
         outputs: { "agent-service.artifact": artifact, "agent-service.count": "0" },
       },
@@ -181,7 +181,7 @@ describe("agent service artifacts", () => {
         "--cwd",
         artifact,
         "--project",
-        "openbot-agents",
+        "dispatch-agents",
         "--prod",
       ]),
       expect.anything(),
@@ -224,7 +224,7 @@ function context(repositoryRoot: string): DeploymentContext {
   };
 }
 async function temporaryRoot(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "openbot-agent-provider-"));
+  const root = await mkdtemp(join(tmpdir(), "dispatch-agent-provider-"));
   roots.push(root);
   return root;
 }

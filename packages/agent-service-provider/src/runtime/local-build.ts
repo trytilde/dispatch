@@ -1,14 +1,14 @@
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { mkdir } from "node:fs/promises";
-import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
-import { materializeFileTemplate } from "@tryopenbot/utilities";
-import type { CommandRunner } from "@tryopenbot/control-service-provider";
+import type { DeploymentContext, DeploymentResult } from "@trytilde/dispatch-runtime-provider";
+import { materializeFileTemplate } from "@trytilde/dispatch-utilities";
+import type { CommandRunner } from "@trytilde/dispatch-control-service-provider";
 import { bundleOptions } from "../build.js";
 import { discoverAgents } from "../discovery.js";
 import { digestAgents, localAgentTemplateValues } from "../local/build.js";
 
-export const localRuntimeArtifact = ".openbot-deploy/runtime/service.mjs";
+export const localRuntimeArtifact = ".dispatch-deploy/runtime/service.mjs";
 const entryTemplate = fileURLToPath(new URL("./assets/local-entry.ts.hbs", import.meta.url));
 
 export async function buildLocalRuntimeService(
@@ -16,12 +16,12 @@ export async function buildLocalRuntimeService(
   runner: CommandRunner,
 ): Promise<DeploymentResult> {
   const { build } = await import("tsdown");
-  await runner.run("pnpm", ["--filter", "@tryopenbot/web", "build"], {
+  await runner.run("pnpm", ["--filter", "@trytilde/dispatch-web", "build"], {
     cwd: context.repositoryRoot,
     environment: context.environment,
   });
   const agents = await discoverAgents(context.repositoryRoot);
-  const generated = resolve(context.repositoryRoot, ".openbot-deploy/generated/runtime-local.ts");
+  const generated = resolve(context.repositoryRoot, ".dispatch-deploy/generated/runtime-local.ts");
   const outfile = resolve(context.repositoryRoot, localRuntimeArtifact);
   const values = localAgentTemplateValues(context.repositoryRoot, agents);
   await mkdir(dirname(outfile), { recursive: true });

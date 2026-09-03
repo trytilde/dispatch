@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { createOpenBotClient } from "./client.js";
+import { createDispatchClient } from "./client.js";
 import {
   observeChatKitRealtimeSocket,
   type ChatKitRealtimeSocketTicket,
@@ -34,7 +34,7 @@ class TestWebSocket implements WebSocketLike {
   }
 }
 
-describe("OpenBot client", () => {
+describe("Dispatch client", () => {
   it("uses the authenticated installation Tilde origin for signal webhook URLs", async () => {
     const fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = requestUrl(input);
@@ -67,7 +67,7 @@ describe("OpenBot client", () => {
         });
       return Response.json({ error: `Unhandled ${url}` }, { status: 404 });
     });
-    const client = createOpenBotClient({ fetch });
+    const client = createDispatchClient({ fetch });
 
     await client.getSession();
     await expect(client.listSignalInstances()).resolves.toEqual([
@@ -90,7 +90,7 @@ describe("OpenBot client", () => {
       .mockResolvedValueOnce(
         Response.json({ status: "ready", agent: { id: "reviewer", name: "Reviewer" } }),
       );
-    const client = createOpenBotClient({ fetch });
+    const client = createDispatchClient({ fetch });
 
     await expect(client.startAgentSetup("Reviewer")).resolves.toMatchObject({ job_id: jobId });
     await expect(client.getAgentSetup(jobId)).resolves.toEqual({
@@ -106,7 +106,7 @@ describe("OpenBot client", () => {
   it("scopes chat requests to the installation and validates sidebar resources", async () => {
     const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(requestUrl(input)).toBe(
-        "https://openbot.test/api/chat/workspace/sidebar?agent_page_size=50&session_page_size=50&agent_sort=updated_at&session_sort=updated_at",
+        "https://dispatch.test/api/chat/workspace/sidebar?agent_page_size=50&session_page_size=50&agent_sort=updated_at&session_sort=updated_at",
       );
       expect(new Headers(init?.headers).get("authorization")).toBe("Bearer owner-token");
       return Response.json({
@@ -121,8 +121,8 @@ describe("OpenBot client", () => {
         ],
       });
     });
-    const client = createOpenBotClient({
-      baseUrl: "https://openbot.test/",
+    const client = createDispatchClient({
+      baseUrl: "https://dispatch.test/",
       fetch,
       getAccessToken: async () => "owner-token",
     });
@@ -147,31 +147,31 @@ describe("OpenBot client", () => {
       if (typeof init?.body !== "string") throw new Error("Expected a JSON request body");
       expect(JSON.parse(init.body)).toEqual({
         title: "Agent One",
-        lookup_key: "openbot:user:owner-one:agent:agent-one",
+        lookup_key: "dispatch:user:owner-one:agent:agent-one",
       });
       return Response.json({
         session: {
           id: "session-one",
-          lookup_key: "openbot:user:owner-one:agent:agent-one",
+          lookup_key: "dispatch:user:owner-one:agent:agent-one",
           title: "Agent One",
           created_at: "2026-08-25T10:00:00.000Z",
           updated_at: "2026-08-25T10:00:00.000Z",
         },
       });
     });
-    const client = createOpenBotClient({ fetch });
+    const client = createDispatchClient({ fetch });
 
     await expect(
       client.createSession("agent-one", {
         title: "Agent One",
-        lookupKey: "openbot:user:owner-one:agent:agent-one",
+        lookupKey: "dispatch:user:owner-one:agent:agent-one",
       }),
     ).resolves.toMatchObject({ id: "session-one" });
   });
 
   it("updates read state for only the authenticated user", async () => {
     let requestBody: unknown;
-    const client = createOpenBotClient({
+    const client = createDispatchClient({
       fetch: async (input, init) => {
         expect(requestUrl(input)).toBe("/api/chat/workspace/sessions/session-one/read-state");
         expect(init?.method).toBe("PUT");
@@ -195,7 +195,7 @@ describe("OpenBot client", () => {
   });
 
   it("rejects malformed upstream resources at the client boundary", async () => {
-    const client = createOpenBotClient({
+    const client = createDispatchClient({
       fetch: async () => Response.json({ items: [{ id: "missing-fields" }] }),
     });
     await expect(client.getSidebar()).rejects.toThrow();
@@ -229,7 +229,7 @@ describe("OpenBot client", () => {
         next_page_token: "cursor-three",
       });
     });
-    const client = createOpenBotClient({ fetch });
+    const client = createDispatchClient({ fetch });
 
     await expect(
       client.searchChatKit("quarterly review", "session-one", "cursor/two"),
@@ -244,7 +244,7 @@ describe("OpenBot client", () => {
     const controller = new AbortController();
     const socketUrls: string[] = [];
     let socketProtocols: string[] = [];
-    const client = createOpenBotClient({
+    const client = createDispatchClient({
       fetch: async (input, init) => {
         expect(requestUrl(input)).toBe("/api/chat/realtime/socket-ticket");
         expect(JSON.parse(typeof init?.body === "string" ? init.body : "")).toEqual({
@@ -364,7 +364,7 @@ describe("OpenBot client", () => {
   it("requests an explicit native socket ticket only when configured by an adapter", async () => {
     const controller = new AbortController();
     let requestedBody: unknown;
-    const client = createOpenBotClient({
+    const client = createDispatchClient({
       realtimeTransport: "native",
       fetch: async (_input, init) => {
         requestedBody = JSON.parse(typeof init?.body === "string" ? init.body : "");
@@ -427,13 +427,13 @@ describe("OpenBot client", () => {
         { id: "server-two", agent_id: "agent-two", tools: [] },
       ],
       proxied_mcp_servers: [],
-      skills: [{ id: "skill-one", name: "Research", source_kind: "OpenBot" }],
+      skills: [{ id: "skill-one", name: "Research", source_kind: "Dispatch" }],
       skill_providers: [],
       skill_registries: [
         { id: "registry-one", agent_id: "agent-one", skills: [{ id: "skill-one" }] },
       ],
     };
-    const client = createOpenBotClient({
+    const client = createDispatchClient({
       fetch: async (input, init) => {
         const url = requestUrl(input);
         calls.push({ method: init?.method ?? "GET", url });
@@ -467,21 +467,21 @@ describe("OpenBot client", () => {
         { method: "PATCH", url: "/api/tilde/skill-registry/registry-one" },
       ]),
     );
-    expect(calls.some(({ url }) => url.includes("/openbot/plugins/catalog"))).toBe(false);
+    expect(calls.some(({ url }) => url.includes("/dispatch/plugins/catalog"))).toBe(false);
   });
 
   it("rewrites Tilde attachment URLs through the configured bridge", () => {
-    const client = createOpenBotClient({ baseUrl: "https://openbot.test" });
+    const client = createDispatchClient({ baseUrl: "https://dispatch.test" });
     expect(
       client.rewriteTildeUrl(
         "https://api.trytilde.ai/api/v1/team/team-one/chatkit/session/session-one/file",
       ),
-    ).toBe("https://openbot.test/api/chat/session/session-one/file");
+    ).toBe("https://dispatch.test/api/chat/session/session-one/file");
     expect(
       client.rewriteTildeUploadUrl(
         "https://bucket.r2.cloudflarestorage.com/chatkit/org/org-one/team/team-one/file",
       ),
-    ).toContain("https://openbot.test/api/chat/_upload?url=");
+    ).toContain("https://dispatch.test/api/chat/_upload?url=");
   });
 
   it("uses one same-origin room contract for roster and invitation decisions", async () => {
@@ -513,7 +513,7 @@ describe("OpenBot client", () => {
       created_at: "2026-09-01T10:00:00Z",
       updated_at: "2026-09-01T10:00:00Z",
     };
-    const client = createOpenBotClient({
+    const client = createDispatchClient({
       fetch: async (input, init) => {
         const url = requestUrl(input);
         calls.push({
@@ -558,7 +558,7 @@ describe("OpenBot client", () => {
       created_at: "2026-09-01T10:00:00Z",
       updated_at: "2026-09-01T10:00:00Z",
     };
-    const client = createOpenBotClient({
+    const client = createDispatchClient({
       fetch: async (input, init) => {
         const url = requestUrl(input);
         calls.push({

@@ -5,12 +5,12 @@ Status: Approved (user), implementation in progress
 
 ## Summary
 
-OpenBot gains one user-facing concept, **Routines**: per-agent cards with a name, an
+Dispatch gains one user-facing concept, **Routines**: per-agent cards with a name, an
 instruction, and 1–8 OR'd **triggers**. A trigger is either a **schedule** (backed by a
 Tilde ChatKit routine — a UTC cron job) or a **provider event** (backed by a Tilde signal
 rule on a signal provider instance). The UX follows the recovered reference implementation
 routines experience with deliberate, recorded deviations. Signal provider connections
-(webhook URL + signing secret) get an OpenBot-owned setup flow, since a self-hosted
+(webhook URL + signing secret) get a Dispatch-owned setup flow, since a self-hosted
 deployment cannot hide provisioning behind a managed dashboard.
 
 ## Decisions (user-approved)
@@ -24,8 +24,8 @@ deployment cannot hide provisioning behind a managed dashboard.
 4. **Mobile**: deferred with `<FOLLOW UP>`; contracts and runtime state land in
    `client-runtime` so Expo only needs screens later.
 5. **Grouping**: a new optional `metadata: Object` field on Tilde `Routine` and
-   `SignalRule` (upstream `trytilde/api` change). OpenBot stamps
-   `{"openbot": {"group": "<uuid>", "trigger": "<uuid>"}}` and reconstructs unified
+   `SignalRule` (upstream `trytilde/api` change). Dispatch stamps
+   `{"dispatch": {"group": "<uuid>", "trigger": "<uuid>"}}` and reconstructs unified
    cards statelessly from list calls. No local DB, no title markers.
 6. **Tilde SDK abstractions** (added requirement): the SDK's unprocessed-message
    handling must expose a correctly typed shape for every signal provider and signal
@@ -54,7 +54,7 @@ deployment cannot hide provisioning behind a managed dashboard.
 - Keep generated source internal to `@trytilde/api-client`; do not restore retired
   Harness package names or a separately pinned SDK repository.
 
-### Phase 2 — OpenBot backend (`apps/control-service`)
+### Phase 2 — Dispatch backend (`apps/control-service`)
 
 New `src/routines.ts` and `src/signals.ts`, modeled on `src/connectors.ts`
 (env-driven options, `tildeJson` helper, `requireOwner`, registration in `app.ts`),
@@ -84,7 +84,7 @@ Routes:
 
 - Contract groups `contracts/routines.ts`, `contracts/signals.ts` (Zod, passthrough,
   paged, colocated tests) following `contracts/connectors.ts`.
-- `OpenBotClient` methods; `routines` and `signalProviders` slices + actions in
+- `DispatchClient` methods; `routines` and `signalProviders` slices + actions in
   `state/runtime.ts`; polling refresh while the pane is open via the injectable
   `schedule`/`cancelScheduled`; stale-while-revalidate so lists never flash empty.
 

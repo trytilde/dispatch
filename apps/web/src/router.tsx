@@ -1,5 +1,5 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
-import { OpenBotApp } from "./screens/openbot-app.js";
+import { DispatchApp } from "./screens/dispatch-app.js";
 import {
   SettingsApp,
   SettingsGeneralApp,
@@ -37,7 +37,7 @@ function validateWorkspaceSearch(search: Record<string, unknown>): WorkspaceSear
   };
 }
 
-const WorkspaceApp = () => <OpenBotApp />;
+const WorkspaceApp = () => <DispatchApp />;
 
 const rootRoute = createRootRoute({ notFoundComponent: WorkspaceApp });
 const indexRoute = createRoute({

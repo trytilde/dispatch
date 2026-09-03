@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import type { SignalInstance, SignalProvider } from "@tryopenbot/client-runtime";
+import type { SignalInstance, SignalProvider } from "@trytilde/dispatch-client-runtime";
 import { DialogSurface } from "./overlay-components.js";
 import { MarkdownText } from "./rich-message-components.js";
 import { SignalProviderGlyph } from "./signal-provider-glyph.js";

@@ -2,39 +2,29 @@
   "hooks": {
     "SessionStart": [
       {
-        "hooks": [
-          { "type": "command", "command": "openbot plugin audit --cli codex", "async": true }
-        ]
+        "hooks": [{ "type": "command", "command": "tilde plugin audit --cli codex", "async": true }]
       }
     ],
     "UserPromptSubmit": [
       {
-        "hooks": [
-          { "type": "command", "command": "openbot plugin audit --cli codex", "async": true }
-        ]
+        "hooks": [{ "type": "command", "command": "tilde plugin audit --cli codex", "async": true }]
       }
     ],
     "PreToolUse": [
       {
         "matcher": ".*",
-        "hooks": [
-          { "type": "command", "command": "openbot plugin audit --cli codex", "async": true }
-        ]
+        "hooks": [{ "type": "command", "command": "tilde plugin audit --cli codex", "async": true }]
       }
     ],
     "PostToolUse": [
       {
         "matcher": ".*",
-        "hooks": [
-          { "type": "command", "command": "openbot plugin audit --cli codex", "async": true }
-        ]
+        "hooks": [{ "type": "command", "command": "tilde plugin audit --cli codex", "async": true }]
       }
     ],
     "Stop": [
       {
-        "hooks": [
-          { "type": "command", "command": "openbot plugin audit --cli codex", "async": true }
-        ]
+        "hooks": [{ "type": "command", "command": "tilde plugin audit --cli codex", "async": true }]
       }
     ]
   }

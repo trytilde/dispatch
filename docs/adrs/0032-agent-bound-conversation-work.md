@@ -4,7 +4,7 @@
 
 - Use both goals and tasks: one records the desired outcome, the other records executable work.
 - Bind the SDK and agent tools to the current agent and ChatKit session outside model input.
-- Keep Tilde as the durable authority; OpenBot retains no parallel work database.
+- Keep Tilde as the durable authority; Dispatch retains no parallel work database.
 - Give authored agents durable bookkeeping guidance without exposing it as user narration.
 
 ## Decision

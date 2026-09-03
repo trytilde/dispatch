@@ -47,7 +47,7 @@ Use the smallest Mermaid diagram that explains a boundary, flow, hierarchy, or s
 
 Always review a PR diff for major architecture, strongly opinionated code, or durable code/product design decisions. A decision qualifies when it establishes or materially changes a durable rule future work must follow, especially:
 
-- ownership or boundaries between OpenBot, Tilde, providers, database, sandbox, web, or desktop
+- ownership or boundaries between Dispatch, Tilde, providers, database, sandbox, web, or desktop
 - public protocols, compatibility, authentication, secrets, deployment, or failure policy
 - framework, storage, provider, or platform choices with meaningful switching cost
 - cross-package layering or a strong coding convention that future maintainers may otherwise undo

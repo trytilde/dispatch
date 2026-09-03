@@ -132,7 +132,7 @@ export async function runTildeCommand(
 }
 
 export function tildeHelpText(): string {
-  return `Usage: openbot <auth|state|tunnel> [options]
+  return `Usage: tilde <auth|state|tunnel> [options]
 
 Commands:
   auth     Sign in, sign out, select a team, or show the current identity
@@ -145,7 +145,7 @@ Options:
 
 async function runAuthCommand(args: ParsedArgs): Promise<void> {
   if (!args.authAction) {
-    throw new Error("Usage: openbot auth <login|logout|set-team|whoami>");
+    throw new Error("Usage: tilde auth <login|logout|set-team|whoami>");
   }
   if (args.authAction === "login") {
     await runAuthLogin(args);
@@ -215,7 +215,7 @@ async function runAuthWhoami(args: ParsedArgs): Promise<void> {
 async function runStateCommand(args: ParsedArgs): Promise<void> {
   const baseUrl = resolveBaseUrl(args);
   if (!args.stateAction) {
-    throw new Error("Usage: openbot state <import|export> [options] <file>");
+    throw new Error("Usage: tilde state <import|export> [options] <file>");
   }
   if (!args.filePath) {
     throw new Error(stateUsage(args.stateAction));
@@ -251,7 +251,7 @@ async function runStateCommand(args: ParsedArgs): Promise<void> {
 
 async function runTunnelCommand(args: ParsedArgs): Promise<void> {
   if (args.command.length === 0) {
-    throw new Error("Usage: openbot tunnel [-p PORT] -- <command>");
+    throw new Error("Usage: tilde tunnel [-p PORT] -- <command>");
   }
   const baseUrl = resolveBaseUrl(args);
   const options: RunLocalRuntimeTunnelCommandOptions = {
@@ -286,7 +286,7 @@ async function runTunnelCommand(args: ParsedArgs): Promise<void> {
 
 export function parseTildeArgs(args: string[]): ParsedArgs {
   if (args[0] !== "auth" && args[0] !== "state" && args[0] !== "tunnel") {
-    throw new Error("Usage: openbot <auth|state|tunnel> [options]");
+    throw new Error("Usage: tilde <auth|state|tunnel> [options]");
   }
   const parsed: ParsedArgs = { commandName: args[0], command: [] };
   let positionalCount = 0;
@@ -326,10 +326,10 @@ export function parseTildeArgs(args: string[]): ParsedArgs {
     }
     if (parsed.commandName === "auth" && !arg.startsWith("-")) {
       if (parsed.authAction !== undefined) {
-        throw new Error("Usage: openbot auth <login|logout|set-team|whoami>");
+        throw new Error("Usage: tilde auth <login|logout|set-team|whoami>");
       }
       if (arg !== "login" && arg !== "logout" && arg !== "set-team" && arg !== "whoami") {
-        throw new Error("Usage: openbot auth <login|logout|set-team|whoami>");
+        throw new Error("Usage: tilde auth <login|logout|set-team|whoami>");
       }
       parsed.authAction = arg;
       continue;
@@ -337,7 +337,7 @@ export function parseTildeArgs(args: string[]): ParsedArgs {
     if (parsed.commandName === "state" && !arg.startsWith("-")) {
       if (parsed.stateAction === undefined) {
         if (arg !== "import" && arg !== "export") {
-          throw new Error("Usage: openbot state <import|export> [options] <file>");
+          throw new Error("Usage: tilde state <import|export> [options] <file>");
         }
         parsed.stateAction = arg;
         continue;
@@ -395,7 +395,7 @@ function resolveRequiredTeamId(args: ParsedArgs, baseUrl: string): string {
   }
   const selected = readSelectedTeamId(baseUrl);
   if (!selected) {
-    throw new Error("No Tilde team selected. Run `openbot auth set-team` or pass `--team-id`.");
+    throw new Error("No Tilde team selected. Run `tilde auth set-team` or pass `--team-id`.");
   }
   return selected;
 }
@@ -409,12 +409,12 @@ function requiredImportOutputFilePath(args: ParsedArgs): string {
 
 function stateUsage(action?: StateAction): string {
   if (action === "import") {
-    return "Usage: openbot state import [--team-id TEAM_ID] <state-file> <output-file>";
+    return "Usage: tilde state import [--team-id TEAM_ID] <state-file> <output-file>";
   }
   if (action === "export") {
-    return "Usage: openbot state export [--team-id TEAM_ID] <output-file>";
+    return "Usage: tilde state export [--team-id TEAM_ID] <output-file>";
   }
-  return "Usage: openbot state <import|export> [options] <file>";
+  return "Usage: tilde state <import|export> [options] <file>";
 }
 
 async function importState(input: {

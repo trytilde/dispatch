@@ -7,7 +7,7 @@ state_directory="$(dirname "$age_key_file")"
 sandbox_user="$(id -un)"
 sandbox_home="$(getent passwd "$sandbox_user" | cut -d: -f6)"
 profile_loader="$state_directory/profile.sh"
-host_computer="${OPENBOT_HOST_COMPUTER:-0}"
+host_computer="${DISPATCH_HOST_COMPUTER:-0}"
 if [ -L "$source_directory" ]; then
   host_computer=1
 fi
@@ -18,7 +18,7 @@ test -f "$source_directory/configuration/.sops.yaml"
 test -f "$source_directory/configuration/secrets.enc.yaml"
 test -f "$age_key_file"
 
-install -m 0500 /opt/openbot/development-profile.sh "$profile_loader"
+install -m 0500 /opt/dispatch/development-profile.sh "$profile_loader"
 chown "$sandbox_user:$sandbox_user" "$profile_loader" "$age_key_file"
 chmod 0400 "$age_key_file"
 
@@ -43,7 +43,7 @@ if [ -n "${GIT_GITHUB_GIT_PROXY_PROFILE_ID:-}" ] && [ -n "${GIT_GITHUB_REPOSITOR
   git_proxy_url="${TILDE_BASE_URL:-https://api.trytilde.ai}/api/v1/team/${TILDE_TEAM_ID}/reverse-proxy/${GIT_GITHUB_GIT_PROXY_PROFILE_ID}"
   if [ ! -d "$source_directory/.git" ]; then
     git -C "$source_directory" init --initial-branch=main --quiet
-    git -C "$source_directory" config user.name "OpenBot Factory"
+    git -C "$source_directory" config user.name "Dispatch Factory"
     git -C "$source_directory" config user.email "factory@users.noreply.github.com"
     git -C "$source_directory" add --all
     git -C "$source_directory" commit --quiet --message "Seed trusted development sandbox"
@@ -75,10 +75,10 @@ if [ -n "${CODE_STORAGE_ORGANIZATION:-}" ] \
       -c 'credential.helper=!f() { printf "%s\n" "username=t" "password=$CODE_STORAGE_REPOSITORY_TOKEN"; }; f' \
       "$@"
   }
-  source_branch="${OPENBOT_SOURCE_BRANCH:-main}"
+  source_branch="${DISPATCH_SOURCE_BRANCH:-main}"
   if [ ! -d "$source_directory/.git" ]; then
     git -C "$source_directory" init --initial-branch="$source_branch" --quiet
-    git -C "$source_directory" config user.name "OpenBot Factory"
+    git -C "$source_directory" config user.name "Dispatch Factory"
     git -C "$source_directory" config user.email "factory@users.noreply.github.com"
   fi
   git -C "$source_directory" remote get-url origin >/dev/null 2>&1 \
@@ -105,7 +105,7 @@ if [ "$host_computer" != "1" ]; then
 export SOPS_AGE_KEY_FILE="$age_key_file"
 cd "$source_directory"
 while true; do
-  pnpm openbot orchestrate >> "$state_directory/orchestrator.log" 2>&1
+  pnpm tilde orchestrate >> "$state_directory/orchestrator.log" 2>&1
   sleep 5
 done
 SUPERVISOR
@@ -115,7 +115,7 @@ SUPERVISOR
     nohup "$orchestrator_supervisor" >/dev/null 2>&1 &
   fi
 else
-  # A host Computer is already supervised by the outer `openbot dev` process. Clean up a nested
+  # A host Computer is already supervised by the outer `tilde dev` process. Clean up a nested
   # orchestrator left by an interrupted earlier bootstrap before that outer process binds ports.
   pkill -f "$state_directory/orchestrator-supervisor.sh" 2>/dev/null || true
   pkill -f "src/index.tsx -- orchestrate" 2>/dev/null || true

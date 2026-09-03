@@ -17,7 +17,7 @@ export async function runSecrets(argv: readonly string[]): Promise<SecretsRunRes
   const [operation, name, ...extra] = parsed._;
   if (!operation || !name || extra.length)
     throw new Error(
-      "Usage: openbot secrets <set|unset> NAME [--description TEXT] [--stdin] [--json]",
+      "Usage: tilde secrets <set|unset> NAME [--description TEXT] [--stdin] [--json]",
     );
   if (operation === "set") {
     const description = parsed["--description"]?.trim();

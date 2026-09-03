@@ -1,19 +1,19 @@
 ---
-"@tryopenbot/agent-provider": minor
-"openbot": minor
-"@tryopenbot/computer-service-provider": minor
-"@tryopenbot/computer-service": minor
-"@tryopenbot/computer-service-proto": minor
-"@tryopenbot/configuration": minor
-"@tryopenbot/inference-provider": minor
-"@tryopenbot/platform-integrations": minor
-"@tryopenbot/desktop": minor
-"@tryopenbot/control-service-provider": minor
-"@tryopenbot/agent-service-provider": minor
-"@tryopenbot/runtime-provider": minor
-"@tryopenbot/control-service": minor
-"@tryopenbot/ui": minor
-"@tryopenbot/web": minor
+"@trytilde/dispatch-agent-provider": minor
+"@trytilde/cli": minor
+"@trytilde/dispatch-computer-service-provider": minor
+"@trytilde/dispatch-computer-service": minor
+"@trytilde/dispatch-computer-service-proto": minor
+"@trytilde/dispatch-configuration": minor
+"@trytilde/dispatch-inference-provider": minor
+"@trytilde/dispatch-platform-integrations": minor
+"@trytilde/dispatch-desktop": minor
+"@trytilde/dispatch-control-service-provider": minor
+"@trytilde/dispatch-agent-service-provider": minor
+"@trytilde/dispatch-runtime-provider": minor
+"@trytilde/dispatch-control-service": minor
+"@trytilde/dispatch-ui": minor
+"@trytilde/dispatch-web": minor
 ---
 
 Add interactive encrypted configuration initialization and provider-defined onboarding questions.

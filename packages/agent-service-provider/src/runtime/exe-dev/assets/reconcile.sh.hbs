@@ -51,10 +51,10 @@ if [[ "$node_major" != 24 ]]; then
     cd "$node_temporary"
     grep "  ${node_archive}$" SHASUMS256.txt | sha256sum --check --strict -
   )
-  sudo install -d -m 0755 /opt/openbot-node
-  sudo tar -xJf "$node_temporary/$node_archive" -C /opt/openbot-node --strip-components=1
+  sudo install -d -m 0755 /opt/dispatch-node
+  sudo tar -xJf "$node_temporary/$node_archive" -C /opt/dispatch-node --strip-components=1
   for executable in node npm npx corepack; do
-    sudo ln -sfn "/opt/openbot-node/bin/$executable" "/usr/local/bin/$executable"
+    sudo ln -sfn "/opt/dispatch-node/bin/$executable" "/usr/local/bin/$executable"
   done
 fi
 
@@ -92,7 +92,7 @@ if [[ ! -d "$remote_directory/.git" ]]; then
   code_storage_git clone --branch "$source_branch" --single-branch "$source_url" "$remote_directory"
 elif [[ -n "$(git -C "$remote_directory" status --porcelain --untracked-files=no)" ]]; then
   git -C "$remote_directory" remote set-url origin "$source_url"
-  echo "Preserving remote OpenBot edits; skipping source fast-forward"
+  echo "Preserving remote Dispatch edits; skipping source fast-forward"
 else
   git -C "$remote_directory" remote set-url origin "$source_url"
   code_storage_git -C "$remote_directory" fetch --no-tags origin \
@@ -125,11 +125,11 @@ chmod 0600 "$remote_directory/configuration/.env"
 chmod 0600 "$environment_file"
 chmod 0644 "$unit_file"
 # exe.dev's user manager can leave detached watch/tunnel children behind after a unit restart.
-# Reap only the outer OpenBot runtime listeners; Computer RPC and noVNC are separate services.
+# Reap only the outer Dispatch runtime listeners; Computer RPC and noVNC are separate services.
 for port in 4173 4100 17654; do
   fuser -k -TERM "${port}/tcp" >/dev/null 2>&1 || true
 done
 pkill -TERM -f "cloudflared tunnel run" >/dev/null 2>&1 || true
 systemctl --user daemon-reload
-systemctl --user enable --now openbot-dev.service
-systemctl --user restart openbot-dev.service
+systemctl --user enable --now dispatch-dev.service
+systemctl --user restart dispatch-dev.service

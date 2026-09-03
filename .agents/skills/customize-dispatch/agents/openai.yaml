@@ -1,0 +1,4 @@
+interface:
+  display_name: "Customize Dispatch"
+  short_description: "Change repository-owned Dispatch behavior safely"
+  default_prompt: "Inspect this Dispatch fork and implement the requested repository configuration change."

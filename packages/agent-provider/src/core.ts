@@ -1,4 +1,4 @@
-import type { DeployableProvider } from "@tryopenbot/runtime-provider";
+import type { DeployableProvider } from "@trytilde/dispatch-runtime-provider";
 
 export type AgentProviderErrorCode =
   | "invalid_configuration"

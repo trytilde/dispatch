@@ -51,7 +51,7 @@ export function DialogSurface({
   if (!present) return null;
   return (
     <div
-      className="dialog-layer ob-dialog-backdrop"
+      className="dialog-layer dispatch-dialog-backdrop"
       data-state={closing ? "closing" : "open"}
       onMouseDown={(event) => {
         if (open && event.target === event.currentTarget) onClose?.();
@@ -62,25 +62,27 @@ export function DialogSurface({
         aria-describedby={description ? descriptionId : undefined}
         aria-labelledby={titleId}
         aria-modal="true"
-        className={`dialog-surface ob-dialog ${className}`.trim()}
+        className={`dialog-surface dispatch-dialog ${className}`.trim()}
         data-state={closing ? "closing" : "open"}
         ref={surfaceRef}
         role="dialog"
         style={{ width }}
         tabIndex={-1}
       >
-        <header className="dialog-header ob-dialog-header">
-          <h2 className="ob-dialog-title" id={titleId}>
+        <header className="dialog-header dispatch-dialog-header">
+          <h2 className="dispatch-dialog-title" id={titleId}>
             {title}
           </h2>
           {description ? (
-            <p className="ob-dialog-description" id={descriptionId}>
+            <p className="dispatch-dialog-description" id={descriptionId}>
               {description}
             </p>
           ) : null}
         </header>
         {children ? <div className="dialog-body">{children}</div> : null}
-        {actions ? <footer className="dialog-actions ob-dialog-footer">{actions}</footer> : null}
+        {actions ? (
+          <footer className="dialog-actions dispatch-dialog-footer">{actions}</footer>
+        ) : null}
       </div>
     </div>
   );
@@ -246,7 +248,7 @@ export function LocalToolPermissionCard({
   canAlwaysAllow = true,
   alwaysAllowDisabledReason,
   failureNote,
-  productName = "OpenBot",
+  productName = "Dispatch",
   escapeTarget = false,
   onResolve,
 }: LocalToolPermissionCardProps) {

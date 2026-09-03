@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { buildProviders, type DeploymentContext } from "@tryopenbot/runtime-provider";
+import { buildProviders, type DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import {
   agentEndpointCutoverOrigins,
   deploymentScope,
@@ -114,22 +114,22 @@ describe("deploy-prod", () => {
     expect(
       agentEndpointCutoverOrigins({
         consolidatedRuntime: true,
-        environment: { AGENT_SERVICE_ORIGIN: "https://openbot-agents.vercel.app/" },
-        targetOrigin: "https://openbot-runtime.vercel.app/",
+        environment: { AGENT_SERVICE_ORIGIN: "https://dispatch-agents.vercel.app/" },
+        targetOrigin: "https://dispatch-runtime.vercel.app/",
       }),
     ).toEqual({
-      preparationOrigin: "https://openbot-agents.vercel.app",
-      targetOrigin: "https://openbot-runtime.vercel.app",
+      preparationOrigin: "https://dispatch-agents.vercel.app",
+      targetOrigin: "https://dispatch-runtime.vercel.app",
     });
     expect(
       agentEndpointCutoverOrigins({
         consolidatedRuntime: false,
         environment: { AGENT_SERVICE_ORIGIN: "https://stale.example" },
-        targetOrigin: "https://openbot-agents.vercel.app",
+        targetOrigin: "https://dispatch-agents.vercel.app",
       }),
     ).toEqual({
-      preparationOrigin: "https://openbot-agents.vercel.app",
-      targetOrigin: "https://openbot-agents.vercel.app",
+      preparationOrigin: "https://dispatch-agents.vercel.app",
+      targetOrigin: "https://dispatch-agents.vercel.app",
     });
   });
 });

@@ -2,7 +2,7 @@ import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/pr
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vite-plus/test";
-import { DeploymentOutputs } from "@tryopenbot/runtime-provider";
+import { DeploymentOutputs } from "@trytilde/dispatch-runtime-provider";
 import {
   CODEX_AUTH_JSON,
   CodexInferenceProvider,
@@ -45,7 +45,7 @@ describe("CodexInferenceProvider", () => {
       expect.any(String),
     );
     expect(setEnvironment).toHaveBeenCalledWith(
-      "OPENBOT_HOSTED_INFERENCE_BILLING",
+      "DISPATCH_HOSTED_INFERENCE_BILLING",
       "0",
       expect.any(String),
     );
@@ -133,7 +133,7 @@ describe("CodexInferenceProvider", () => {
         setEnvironment: vi.fn(async () => undefined),
         setSecret: vi.fn(async () => undefined),
       }),
-    ).rejects.toThrow("Run openbot init in an interactive terminal");
+    ).rejects.toThrow("Run tilde init in an interactive terminal");
   });
 
   it("refreshes and persists credentials before development or deployment builds", async () => {
@@ -166,7 +166,7 @@ describe("CodexInferenceProvider", () => {
   });
 
   it("packages the Linux Codex executable into each prebuilt Vercel agent function", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-codex-vercel-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-codex-vercel-"));
     try {
       const artifact = join(root, "artifact");
       const functions = join(artifact, ".vercel/output/functions/api/agents");
@@ -207,7 +207,7 @@ describe("CodexInferenceProvider", () => {
   });
 
   it("resolves the pinned Linux Codex executable on a contributor host", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-codex-linux-resolution-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-codex-linux-resolution-"));
     try {
       const artifact = join(root, "artifact");
       await mkdir(join(artifact, ".vercel/output/functions/api/agents"), { recursive: true });

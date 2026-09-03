@@ -17,13 +17,13 @@ describe("non-interactive initialization prompts", () => {
 
   it("answers stable input and selection IDs", async () => {
     const prompts = createNonInteractivePrompts({
-      "repository-name": "agent-openbot",
+      "repository-name": "agent-dispatch",
       "repository-visibility": "private",
     });
 
     await expect(
       prompts.input("GitHub repository name", { id: "repository-name", required: true }),
-    ).resolves.toBe("agent-openbot");
+    ).resolves.toBe("agent-dispatch");
     await expect(
       prompts.select(
         "GitHub repository visibility",
@@ -90,7 +90,7 @@ describe("non-interactive initialization prompts", () => {
   it("validates all Vercel inputs before repository bootstrap can mutate", () => {
     expect(() =>
       validateNonInteractiveCoreAnswers({
-        "repository-name": "agent-openbot",
+        "repository-name": "agent-dispatch",
         "repository-visibility": "private",
         "owner-identity": "aws-kms",
         "aws-kms-key-arn": "arn:aws:kms:us-east-1:123:key/test",
@@ -106,17 +106,17 @@ describe("non-interactive initialization prompts", () => {
       validateNonInteractiveCoreAnswers(
         {
           "owner-identity": "managed-file",
-          "managed-owner-identity-path": "/workspace/.openbot/owner-age-key",
+          "managed-owner-identity-path": "/workspace/.dispatch/owner-age-key",
           runtime: "tilde-cloud",
           inference: "vercel",
-          "vercel-runtime-project": "openbot-research",
-          "openbot-hosted-instance-id": "hosted-openbot-research",
-          "openbot-hosted-computer-id": "openbot-research",
-          "openbot-hosted-computer-service-url": "https://computer.test/rpc",
+          "vercel-runtime-project": "dispatch-research",
+          "dispatch-hosted-instance-id": "hosted-dispatch-research",
+          "dispatch-hosted-computer-id": "dispatch-research",
+          "dispatch-hosted-computer-service-url": "https://computer.test/rpc",
           "tilde-api-key": "instance-key",
           "tilde-org-id": "org-one",
-          "tilde-team-id": "openbot-research",
-          "openbot-deployment-name": "Research",
+          "tilde-team-id": "dispatch-research",
+          "dispatch-deployment-name": "Research",
         },
         { existingRepository: true },
       ),
@@ -135,15 +135,15 @@ describe("non-interactive initialization prompts", () => {
       expect.objectContaining({ const: "vercel" }),
     ]);
     expect(schema.properties["vercel-token"]?.description).toContain("Required for Vercel");
-    expect(schema.properties["vercel-token"]?.["x-openbot-provider"]).toBe("Vercel");
-    expect(schema.properties["vercel-token"]?.["x-openbot-runtimes"]).toEqual(["local", "vercel"]);
+    expect(schema.properties["vercel-token"]?.["x-dispatch-provider"]).toBe("Vercel");
+    expect(schema.properties["vercel-token"]?.["x-dispatch-runtimes"]).toEqual(["local", "vercel"]);
     expect(schema.properties["vercel-token"]?.writeOnly).toBe(true);
     expect(schema.properties["vercel-runtime-project"]?.description).toContain(
       "single Vercel project",
     );
     expect(schema.properties["vercel-agent-project"]).toBeUndefined();
-    expect(schema.properties["tilde-api-key"]?.["x-openbot-provider"]).toBe("Tilde");
-    expect(schema.properties["tilde-api-key"]?.["x-openbot-runtimes"]).toEqual([
+    expect(schema.properties["tilde-api-key"]?.["x-dispatch-provider"]).toBe("Tilde");
+    expect(schema.properties["tilde-api-key"]?.["x-dispatch-runtimes"]).toEqual([
       "local",
       "vercel",
       "tilde-cloud",
@@ -164,7 +164,7 @@ describe("non-interactive initialization prompts", () => {
       "tilde-api-key",
       "tilde-org-id",
       "tilde-team-id",
-      "openbot-deployment-name",
+      "dispatch-deployment-name",
       "github-app-name",
     ]);
   });

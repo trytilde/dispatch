@@ -1,17 +1,17 @@
 import { generateKeyPairSync, sign } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { TildePlatform } from "@tryopenbot/platform-integrations";
-import { DeploymentOutputs } from "@tryopenbot/runtime-provider";
+import { TildePlatform } from "@trytilde/dispatch-platform-integrations";
+import { DeploymentOutputs } from "@trytilde/dispatch-runtime-provider";
 import { TildeAuthProvider } from "./tilde.js";
 
 const environment = {
-  OPENBOT_OIDC_CLIENT_ID: "client-one",
-  OPENBOT_OIDC_AUDIENCE: "urn:tilde:openbot:client-one",
-  OPENBOT_OIDC_ISSUER: "https://team.api.trytilde.ai/api/v1/team/team-one/identity/oauth",
-  OPENBOT_OIDC_SCOPE: "openid openbot:control",
-  OPENBOT_OIDC_AUTHORIZATION_ENDPOINT: "https://api.trytilde.ai/api/v1/identity/oauth/authorize",
-  OPENBOT_OIDC_TOKEN_ENDPOINT: "https://api.trytilde.ai/api/v1/identity/oauth/token",
-  OPENBOT_OIDC_JWKS_URI: "https://api.trytilde.ai/api/v1/identity/.well-known/jwks.json",
+  DISPATCH_OIDC_CLIENT_ID: "client-one",
+  DISPATCH_OIDC_AUDIENCE: "urn:tilde:dispatch:client-one",
+  DISPATCH_OIDC_ISSUER: "https://team.api.trytilde.ai/api/v1/team/team-one/identity/oauth",
+  DISPATCH_OIDC_SCOPE: "openid dispatch:control",
+  DISPATCH_OIDC_AUTHORIZATION_ENDPOINT: "https://api.trytilde.ai/api/v1/identity/oauth/authorize",
+  DISPATCH_OIDC_TOKEN_ENDPOINT: "https://api.trytilde.ai/api/v1/identity/oauth/token",
+  DISPATCH_OIDC_JWKS_URI: "https://api.trytilde.ai/api/v1/identity/.well-known/jwks.json",
 };
 
 afterEach(() => vi.useRealTimers());
@@ -19,10 +19,10 @@ afterEach(() => vi.useRealTimers());
 describe("TildeAuthProvider", () => {
   it("exposes only public native OAuth configuration", () => {
     expect(providerWith({ request: fetch, environment }).nativeClientConfiguration()).toEqual({
-      authorizationEndpoint: environment.OPENBOT_OIDC_AUTHORIZATION_ENDPOINT,
-      tokenEndpoint: environment.OPENBOT_OIDC_TOKEN_ENDPOINT,
-      clientId: environment.OPENBOT_OIDC_CLIENT_ID,
-      scope: environment.OPENBOT_OIDC_SCOPE,
+      authorizationEndpoint: environment.DISPATCH_OIDC_AUTHORIZATION_ENDPOINT,
+      tokenEndpoint: environment.DISPATCH_OIDC_TOKEN_ENDPOINT,
+      clientId: environment.DISPATCH_OIDC_CLIENT_ID,
+      scope: environment.DISPATCH_OIDC_SCOPE,
     });
   });
 
@@ -37,11 +37,11 @@ describe("TildeAuthProvider", () => {
       sub: "human-one",
       email: "owner@example.com",
       groups: ["team-member"],
-      scope: "openid openbot:control",
-      iss: environment.OPENBOT_OIDC_ISSUER,
-      aud: environment.OPENBOT_OIDC_AUDIENCE,
-      azp: environment.OPENBOT_OIDC_CLIENT_ID,
-      typ: "tilde:openbot",
+      scope: "openid dispatch:control",
+      iss: environment.DISPATCH_OIDC_ISSUER,
+      aud: environment.DISPATCH_OIDC_AUDIENCE,
+      azp: environment.DISPATCH_OIDC_CLIENT_ID,
+      typ: "tilde:dispatch",
       exp: Math.floor(Date.now() / 1000) + 300,
       nbf: Math.floor(Date.now() / 1000) - 1,
     });
@@ -51,14 +51,14 @@ describe("TildeAuthProvider", () => {
     });
     const wrongAudience = jwt(privateKey, {
       sub: "human-one",
-      scope: "openbot:control",
-      iss: environment.OPENBOT_OIDC_ISSUER,
-      aud: "urn:tilde:openbot:other",
-      azp: environment.OPENBOT_OIDC_CLIENT_ID,
-      typ: "tilde:openbot",
+      scope: "dispatch:control",
+      iss: environment.DISPATCH_OIDC_ISSUER,
+      aud: "urn:tilde:dispatch:other",
+      azp: environment.DISPATCH_OIDC_CLIENT_ID,
+      typ: "tilde:dispatch",
       exp: Math.floor(Date.now() / 1000) + 300,
     });
-    await expect(provider.verify(wrongAudience)).rejects.toThrow("not valid for this OpenBot");
+    await expect(provider.verify(wrongAudience)).rejects.toThrow("not valid for this Dispatch");
   });
 
   it("loads the signed-in account and selected workspace from whoami", async () => {
@@ -69,7 +69,7 @@ describe("TildeAuthProvider", () => {
       return Response.json({
         identity: { type: "human", sub: "human-one", email: "owner@example.com" },
         organizations: [{ organization_id: "org-one", name: "Tilde", role: "owner" }],
-        teams: [{ team_id: "team-one", org_id: "org-one", name: "OpenBot", role: "owner" }],
+        teams: [{ team_id: "team-one", org_id: "org-one", name: "Dispatch", role: "owner" }],
         groups: [],
       });
     });
@@ -79,13 +79,13 @@ describe("TildeAuthProvider", () => {
         subject: "human-one",
         email: "token@example.com",
         groups: [],
-        scope: ["openbot:control"],
+        scope: ["dispatch:control"],
       }),
     ).resolves.toEqual({
       name: "owner@example.com",
       email: "owner@example.com",
       organization: { id: "org-one", name: "Tilde", role: "owner" },
-      workspace: { id: "team-one", name: "OpenBot", role: "owner" },
+      workspace: { id: "team-one", name: "Dispatch", role: "owner" },
     });
   });
 
@@ -93,17 +93,17 @@ describe("TildeAuthProvider", () => {
     const request = vi.fn<typeof fetch>(async (_input, init) => {
       expect(init?.headers).toMatchObject({ "x-api-key": "tilde-key" });
       expect(JSON.parse(typeof init?.body === "string" ? init.body : "{}")).toMatchObject({
-        name: "My OpenBot",
-        redirect_uris: expect.arrayContaining(["openbot://auth/callback"]),
+        name: "My Dispatch",
+        redirect_uris: expect.arrayContaining(["dispatch://auth/callback"]),
       });
       return Response.json({
         client_id: "client-one",
-        audience: "urn:tilde:openbot:client-one",
-        issuer: environment.OPENBOT_OIDC_ISSUER,
-        scope: environment.OPENBOT_OIDC_SCOPE,
-        authorization_endpoint: environment.OPENBOT_OIDC_AUTHORIZATION_ENDPOINT,
-        token_endpoint: environment.OPENBOT_OIDC_TOKEN_ENDPOINT,
-        jwks_uri: environment.OPENBOT_OIDC_JWKS_URI,
+        audience: "urn:tilde:dispatch:client-one",
+        issuer: environment.DISPATCH_OIDC_ISSUER,
+        scope: environment.DISPATCH_OIDC_SCOPE,
+        authorization_endpoint: environment.DISPATCH_OIDC_AUTHORIZATION_ENDPOINT,
+        token_endpoint: environment.DISPATCH_OIDC_TOKEN_ENDPOINT,
+        jwks_uri: environment.DISPATCH_OIDC_JWKS_URI,
       });
     });
     const setEnvironment = vi.fn(async () => undefined);
@@ -114,15 +114,15 @@ describe("TildeAuthProvider", () => {
         TILDE_ORG_ID: "org-one",
         TILDE_TEAM_ID: "team-one",
         TILDE_BASE_URL: "https://api.trytilde.ai",
-        OPENBOT_DEPLOYMENT_NAME: "My OpenBot",
+        DISPATCH_DEPLOYMENT_NAME: "My Dispatch",
       },
       request,
       setEnvironment,
       setSecret: async () => undefined,
     });
     expect(setEnvironment).toHaveBeenCalledWith(
-      "OPENBOT_OIDC_AUDIENCE",
-      environment.OPENBOT_OIDC_AUDIENCE,
+      "DISPATCH_OIDC_AUDIENCE",
+      environment.DISPATCH_OIDC_AUDIENCE,
       expect.any(String),
     );
   });
@@ -133,12 +133,12 @@ describe("TildeAuthProvider", () => {
       registration = JSON.parse(typeof init?.body === "string" ? init.body : "{}");
       return Response.json({
         client_id: "client-one",
-        audience: "urn:tilde:openbot:client-one",
-        issuer: environment.OPENBOT_OIDC_ISSUER,
-        scope: environment.OPENBOT_OIDC_SCOPE,
-        authorization_endpoint: environment.OPENBOT_OIDC_AUTHORIZATION_ENDPOINT,
-        token_endpoint: environment.OPENBOT_OIDC_TOKEN_ENDPOINT,
-        jwks_uri: environment.OPENBOT_OIDC_JWKS_URI,
+        audience: "urn:tilde:dispatch:client-one",
+        issuer: environment.DISPATCH_OIDC_ISSUER,
+        scope: environment.DISPATCH_OIDC_SCOPE,
+        authorization_endpoint: environment.DISPATCH_OIDC_AUTHORIZATION_ENDPOINT,
+        token_endpoint: environment.DISPATCH_OIDC_TOKEN_ENDPOINT,
+        jwks_uri: environment.DISPATCH_OIDC_JWKS_URI,
       });
     });
     const developmentEnvironment = {
@@ -146,7 +146,7 @@ describe("TildeAuthProvider", () => {
       TILDE_API_KEY: "tilde-key",
       TILDE_ORG_ID: "org-one",
       TILDE_TEAM_ID: "team-one",
-      PUBLIC_ORIGIN: "https://our-ob-control.vercel.app",
+      PUBLIC_ORIGIN: "https://our-dispatch-control.vercel.app",
       PORT: "4100",
       WEB_PORT: "4173",
     };
@@ -164,10 +164,10 @@ describe("TildeAuthProvider", () => {
         "http://127.0.0.1:4173/auth/callback",
         "http://localhost:4173/auth/callback",
         "http://[::1]:4173/auth/callback",
-        "https://our-ob-control.vercel.app/auth/callback",
+        "https://our-dispatch-control.vercel.app/auth/callback",
       ]),
     );
-    expect(registration.deployment_url).toBe("https://our-ob-control.vercel.app");
+    expect(registration.deployment_url).toBe("https://our-dispatch-control.vercel.app");
   });
 
   it("refreshes cached signing keys once when a new kid appears", async () => {
@@ -190,11 +190,11 @@ describe("TildeAuthProvider", () => {
     const provider = providerWith({ request, environment });
     const claims = {
       sub: "human-one",
-      scope: "openbot:control",
-      iss: environment.OPENBOT_OIDC_ISSUER,
-      aud: environment.OPENBOT_OIDC_AUDIENCE,
-      azp: environment.OPENBOT_OIDC_CLIENT_ID,
-      typ: "tilde:openbot",
+      scope: "dispatch:control",
+      iss: environment.DISPATCH_OIDC_ISSUER,
+      aud: environment.DISPATCH_OIDC_AUDIENCE,
+      azp: environment.DISPATCH_OIDC_CLIENT_ID,
+      typ: "tilde:dispatch",
       exp: Math.floor(Date.now() / 1000) + 300,
     };
 

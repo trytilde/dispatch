@@ -157,7 +157,7 @@ async function mergeClaudeHooks(path: string): Promise<string> {
   ];
   for (const event of events) {
     const existing = Array.isArray(hooks[event]) ? hooks[event] : [];
-    const command = "openbot plugin audit --cli claude";
+    const command = "tilde plugin audit --cli claude";
     const hasCommand = JSON.stringify(existing).includes(command);
     hooks[event] = hasCommand
       ? existing
@@ -188,7 +188,7 @@ async function mergeCursorHooks(path: string): Promise<string> {
   ];
   for (const event of events) {
     const existing = Array.isArray(hooks[event]) ? hooks[event] : [];
-    const command = "openbot plugin audit --cli cursor";
+    const command = "tilde plugin audit --cli cursor";
     hooks[event] = existing.some((entry) => isJsonObject(entry) && entry.command === command)
       ? existing
       : [...existing, { command }];
@@ -208,7 +208,7 @@ async function installOpenCodePlugin(homeDir: string): Promise<string> {
 async function mergeGeminiHooks(path: string): Promise<string> {
   const document = await readJsonObject(path);
   const hooks = isJsonObject(document.hooks) ? document.hooks : {};
-  const command = "openbot plugin audit --cli gemini";
+  const command = "tilde plugin audit --cli gemini";
   for (const event of ["SessionStart", "SessionEnd", "BeforeAgent", "AfterAgent", "AfterTool"]) {
     const existing = Array.isArray(hooks[event]) ? hooks[event] : [];
     if (JSON.stringify(existing).includes(command)) continue;

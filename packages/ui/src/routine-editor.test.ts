@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { Routine, SignalDelivery } from "@tryopenbot/client-runtime";
+import type { Routine, SignalDelivery } from "@trytilde/dispatch-client-runtime";
 import { relativeRunTime } from "./relative-time.js";
 import { editableTriggersFrom, routineDraftCommit, routineRunHistory } from "./routine-editor.js";
 

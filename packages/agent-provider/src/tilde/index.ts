@@ -1,15 +1,19 @@
-import type { DeploymentContext, DeploymentPlan } from "@tryopenbot/runtime-provider";
-import { persistEnvironment, persistSecret, unsetEnvironment } from "@tryopenbot/runtime-provider";
+import type { DeploymentContext, DeploymentPlan } from "@trytilde/dispatch-runtime-provider";
+import {
+  persistEnvironment,
+  persistSecret,
+  unsetEnvironment,
+} from "@trytilde/dispatch-runtime-provider";
 import {
   TildePlatform,
   tildeAuthenticationHeaders,
   type TildePlatformConfig,
-} from "@tryopenbot/platform-integrations";
+} from "@trytilde/dispatch-platform-integrations";
 import { createClient } from "@trytilde/sdk";
 import {
   tildeErrorStatus,
   tildeHttpErrorMessage,
-} from "@tryopenbot/platform-integrations/tilde/errors";
+} from "@trytilde/dispatch-platform-integrations/tilde/errors";
 import {
   chatkitClaimAgentResourceBundleOutputs,
   chatkitGetAgentResourceBundleProvisioning,
@@ -38,7 +42,7 @@ export { tildeAgentProviderInitialization } from "./tools.js";
 export interface TildeAgentProviderConfig extends TildePlatformConfig {}
 
 type JsonRecord = Record<string, unknown>;
-const chatKitRealtimeChannelId = "openbot-chatkit-workspace";
+const chatKitRealtimeChannelId = "dispatch-chatkit-workspace";
 const maxConcurrentRequests = 10;
 
 /** Idempotently reconciles every authored agent with Tilde ChatKit. */
@@ -99,7 +103,7 @@ export class TildeAgentProvider implements AgentProvider {
       summary: `Reconcile authored agent ${agent.id} with Tilde`,
       steps: [
         "Create missing ChatKit agents",
-        "Create the shared OpenBot ChatKit workspace channel when missing",
+        "Create the shared Dispatch ChatKit workspace channel when missing",
         "Reconcile Vercel AI SDK endpoint URLs and enabled status",
         "Upload the agent's canonical machine-user avatar",
         "Provision automatic memory for ordinary agents without recursive synthesizer memory",
@@ -155,8 +159,8 @@ export class TildeAgentProvider implements AgentProvider {
           },
           mcp_server: {
             enabled: true,
-            id: context.environment[`${prefix}_MCP_SERVER_ID`]?.trim() || `openbot-${slug}`,
-            name: `OpenBot ${slug}`,
+            id: context.environment[`${prefix}_MCP_SERVER_ID`]?.trim() || `dispatch-${slug}`,
+            name: `Dispatch ${slug}`,
             dynamic_tool_discovery: true,
             enable_tilde_control_plane: true,
             user_tool_federation_mode: personalToolFederationMode(context.environment),
@@ -165,8 +169,8 @@ export class TildeAgentProvider implements AgentProvider {
           skill_registry: {
             enabled: true,
             id: context.environment[`${prefix}_SKILL_REGISTRY_ID`]?.trim(),
-            name: `OpenBot ${slug}`,
-            description: `Skills available to the ${slug} OpenBot agent.`,
+            name: `Dispatch ${slug}`,
+            description: `Skills available to the ${slug} Dispatch agent.`,
             enabled_skills: enabledSkills,
           },
           ...(synthesisOnly
@@ -177,8 +181,8 @@ export class TildeAgentProvider implements AgentProvider {
                     memoryMode === ChatKitAutomaticMemoryMode.PERSONAL_PLUS_AGENT
                       ? {
                           enabled: true,
-                          name: `OpenBot ${slug} memory`,
-                          description: `Memory owned by the ${slug} OpenBot agent.`,
+                          name: `Dispatch ${slug} memory`,
+                          description: `Memory owned by the ${slug} Dispatch agent.`,
                           synthesizer_agent_id: "memory-catcher",
                         }
                       : { enabled: false },
@@ -345,8 +349,8 @@ export class TildeAgentProvider implements AgentProvider {
             id: channelId,
             display_name:
               kind === "primary"
-                ? "OpenBot ChatKit workspace"
-                : `OpenBot ChatKit workspace: ${slug}`,
+                ? "Dispatch ChatKit workspace"
+                : `Dispatch ChatKit workspace: ${slug}`,
             default_agent_inbox_id: defaultAgentId,
           },
           signal,
@@ -426,7 +430,7 @@ function endpointValue(endpointUrl: URL): string {
 function personalToolFederationMode(
   environment: Record<string, string | undefined>,
 ): UserToolFederationMode {
-  const value = environment.OPENBOT_PERSONAL_TOOL_FEDERATION_MODE?.trim().toLowerCase();
+  const value = environment.DISPATCH_PERSONAL_TOOL_FEDERATION_MODE?.trim().toLowerCase();
   if (value === "all") return UserToolFederationMode.ALL;
   if (value === "selected") return UserToolFederationMode.SELECTED;
   return UserToolFederationMode.NONE;
@@ -437,7 +441,8 @@ function automaticMemoryMode(
   agentPrefix: string,
 ): ChatKitAutomaticMemoryMode {
   const value = (
-    environment[`${agentPrefix}_AUTOMATIC_MEMORY_MODE`] ?? environment.OPENBOT_AUTOMATIC_MEMORY_MODE
+    environment[`${agentPrefix}_AUTOMATIC_MEMORY_MODE`] ??
+    environment.DISPATCH_AUTOMATIC_MEMORY_MODE
   )
     ?.trim()
     .toLowerCase();
@@ -447,7 +452,7 @@ function automaticMemoryMode(
   if (value === "team") return ChatKitAutomaticMemoryMode.TEAM;
   throw new AgentProviderError(
     "invalid_configuration",
-    "OPENBOT_AUTOMATIC_MEMORY_MODE must be none, personal, personal_plus_agent, or team",
+    "DISPATCH_AUTOMATIC_MEMORY_MODE must be none, personal, personal_plus_agent, or team",
   );
 }
 

@@ -1,4 +1,4 @@
-import type { OnboardingResult } from "@tryopenbot/client-runtime";
+import type { OnboardingResult } from "@trytilde/dispatch-client-runtime";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AgentAvatar, agentAvatarPalette, type AgentAvatarShapeName } from "./agent-avatar.js";
 import { Button } from "./beautiful-ui/atoms/button.js";
@@ -23,7 +23,7 @@ const STEPS: readonly OnboardingStep[] = [
 ];
 
 // The shape of a completed onboarding is a persisted, cross-client contract owned by
-// `@tryopenbot/client-runtime` per ADR-0017. Import it for local use and re-export it so
+// `@trytilde/dispatch-client-runtime` per ADR-0017. Import it for local use and re-export it so
 // callers keep a single type regardless of which package they import from.
 export type { OnboardingResult };
 
@@ -170,7 +170,7 @@ export function Onboarding({
         ) : null}
         {step === "hand-off" ? (
           <div className="flex flex-col items-center gap-4 py-24">
-            <h1 className="text-[26px] font-semibold tracking-[-0.015em] text-ink">OpenBot</h1>
+            <h1 className="text-[26px] font-semibold tracking-[-0.015em] text-ink">Dispatch</h1>
             <p aria-live="polite">
               <Shimmer className="text-[17px]">
                 {handOffStatus || "Warming up your workspace…"}
@@ -266,11 +266,11 @@ function Landing({
       <AgentAvatar
         className="!size-16"
         color="#1084FE"
-        id="openbot-hero"
+        id="dispatch-hero"
         shape="blob"
         state="happy"
       />
-      <h1 className="text-[26px] font-semibold tracking-[-0.015em] text-ink">OpenBot</h1>
+      <h1 className="text-[26px] font-semibold tracking-[-0.015em] text-ink">Dispatch</h1>
       <p className="max-w-[340px] text-[14px] leading-5 text-ink-2">
         Stand up a bot, hand it the work you keep putting off.
       </p>
@@ -331,12 +331,12 @@ function Meet({ onNext }: { onNext: () => void }) {
 
   const text = typed > 0 ? MEET_TYPED.slice(0, typed) : "";
   return (
-    <StepFrame title="Meet OpenBot">
+    <StepFrame title="Meet Dispatch">
       <div className="flex flex-col items-center gap-10">
         <AgentAvatar
           className="!size-20"
           color="#1084FE"
-          id="openbot-hero"
+          id="dispatch-hero"
           shape="blob"
           state="listening"
         />

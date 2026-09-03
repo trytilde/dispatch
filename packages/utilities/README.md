@@ -1,7 +1,7 @@
-# @tryopenbot/utilities
+# @trytilde/dispatch-utilities
 
 Small shared utilities without domain ownership. It centralizes Handlebars-based file generation
-and JSON value narrowing shared by OpenBot packages.
+and JSON value narrowing shared by Dispatch packages.
 
 ## Public API
 
@@ -21,4 +21,4 @@ and JSON value narrowing shared by OpenBot packages.
 - `JsonPrimitive`, `JsonValue`, and `JsonObject` model JSON-compatible values.
 
 The functions are exported from the package root and the focused
-`@tryopenbot/utilities/file-template` or `@tryopenbot/utilities/json` subpath.
+`@trytilde/dispatch-utilities/file-template` or `@trytilde/dispatch-utilities/json` subpath.

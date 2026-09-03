@@ -1,4 +1,4 @@
-import type { DeploymentContext } from "@tryopenbot/runtime-provider";
+import type { DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 
 export interface VercelCommandRunner {
   run(

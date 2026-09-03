@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
-import { isJsonObject } from "@tryopenbot/utilities/json";
+import { isJsonObject } from "@trytilde/dispatch-utilities/json";
 import { configHeaders, type Client, type JsonObject } from "@trytilde/sdk";
 import type {
   ChatKitEndpointContext,

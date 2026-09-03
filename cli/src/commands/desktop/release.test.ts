@@ -15,67 +15,67 @@ describe("resolveTarget", () => {
   it("defaults to the official bucket and nests the channel under the prefix", () => {
     const target = resolveTarget("latest");
     expect(target.bucket).toBe(officialBucket);
-    expect(target.prefix).toBe("desktop/openbot/latest");
+    expect(target.prefix).toBe("desktop/dispatch/latest");
     expect(target.baseUrl).toBe(
-      `https://${officialBucket}.s3.us-east-1.amazonaws.com/desktop/openbot/latest`,
+      `https://${officialBucket}.s3.us-east-1.amazonaws.com/desktop/dispatch/latest`,
     );
   });
 
   // An unset `vars.DESKTOP_UPDATES_S3_BUCKET` arrives as "", which `??` would accept
   // and resolve the bucket to an empty string.
   it("falls back to the official bucket when the override is set but empty", () => {
-    process.env.OPENBOT_DESKTOP_UPDATES_BUCKET = "";
-    process.env.OPENBOT_DESKTOP_UPDATES_PREFIX = "";
-    process.env.OPENBOT_DESKTOP_UPDATES_BASE_URL = "";
+    process.env.DISPATCH_DESKTOP_UPDATES_BUCKET = "";
+    process.env.DISPATCH_DESKTOP_UPDATES_PREFIX = "";
+    process.env.DISPATCH_DESKTOP_UPDATES_BASE_URL = "";
     try {
       const target = resolveTarget("latest");
       expect(target.bucket).toBe(officialBucket);
-      expect(target.prefix).toBe("desktop/openbot/latest");
+      expect(target.prefix).toBe("desktop/dispatch/latest");
       expect(target.baseUrl).toContain(officialBucket);
     } finally {
-      delete process.env.OPENBOT_DESKTOP_UPDATES_BUCKET;
-      delete process.env.OPENBOT_DESKTOP_UPDATES_PREFIX;
-      delete process.env.OPENBOT_DESKTOP_UPDATES_BASE_URL;
+      delete process.env.DISPATCH_DESKTOP_UPDATES_BUCKET;
+      delete process.env.DISPATCH_DESKTOP_UPDATES_PREFIX;
+      delete process.env.DISPATCH_DESKTOP_UPDATES_BASE_URL;
     }
   });
 
   it("lets a fork redirect the bucket, prefix, and public base url", () => {
-    process.env.OPENBOT_DESKTOP_UPDATES_BUCKET = "a-fork-bucket";
-    process.env.OPENBOT_DESKTOP_UPDATES_PREFIX = "/builds/";
-    process.env.OPENBOT_DESKTOP_UPDATES_BASE_URL = "https://downloads.example.test/";
+    process.env.DISPATCH_DESKTOP_UPDATES_BUCKET = "a-fork-bucket";
+    process.env.DISPATCH_DESKTOP_UPDATES_PREFIX = "/builds/";
+    process.env.DISPATCH_DESKTOP_UPDATES_BASE_URL = "https://downloads.example.test/";
     try {
       const target = resolveTarget("beta");
       expect(target.bucket).toBe("a-fork-bucket");
       expect(target.prefix).toBe("builds/beta");
       expect(target.baseUrl).toBe("https://downloads.example.test/builds/beta");
     } finally {
-      delete process.env.OPENBOT_DESKTOP_UPDATES_BUCKET;
-      delete process.env.OPENBOT_DESKTOP_UPDATES_PREFIX;
-      delete process.env.OPENBOT_DESKTOP_UPDATES_BASE_URL;
+      delete process.env.DISPATCH_DESKTOP_UPDATES_BUCKET;
+      delete process.env.DISPATCH_DESKTOP_UPDATES_PREFIX;
+      delete process.env.DISPATCH_DESKTOP_UPDATES_BASE_URL;
     }
   });
 });
 
 describe("resolveAppId", () => {
   it("defaults to the publisher's identifier", () => {
-    expect(resolveAppId()).toBe("ai.trytilde.openbot");
+    expect(resolveAppId()).toBe("ai.trytilde.dispatch");
   });
 
-  it("honours the OPENBOT_APP_ID a fork sets for desktop", () => {
-    process.env.OPENBOT_APP_ID = "com.example.fork";
+  it("honours the DISPATCH_APP_ID a fork sets for desktop", () => {
+    process.env.DISPATCH_APP_ID = "com.example.fork";
     try {
       expect(resolveAppId()).toBe("com.example.fork");
     } finally {
-      delete process.env.OPENBOT_APP_ID;
+      delete process.env.DISPATCH_APP_ID;
     }
   });
 
   it("falls back when the override is set but empty", () => {
-    process.env.OPENBOT_APP_ID = "";
+    process.env.DISPATCH_APP_ID = "";
     try {
-      expect(resolveAppId()).toBe("ai.trytilde.openbot");
+      expect(resolveAppId()).toBe("ai.trytilde.dispatch");
     } finally {
-      delete process.env.OPENBOT_APP_ID;
+      delete process.env.DISPATCH_APP_ID;
     }
   });
 });
@@ -86,7 +86,7 @@ describe("publicationGuard", () => {
   it("refuses the official bucket from a fork and names the override", () => {
     const message = publicationGuard(forkCheckout(), officialBucket);
     expect(message).toContain("Refusing to publish");
-    expect(message).toContain("OPENBOT_DESKTOP_UPDATES_BUCKET");
+    expect(message).toContain("DISPATCH_DESKTOP_UPDATES_BUCKET");
   });
 
   it("allows a fork that publishes to its own bucket", () => {
@@ -96,13 +96,13 @@ describe("publicationGuard", () => {
 
 describe("artifactKind", () => {
   it("recognises the installable artifacts and ignores builder debris", () => {
-    expect(artifactKind("OpenBot-0.2.0-mac-arm64.dmg")).toBe("dmg");
-    expect(artifactKind("OpenBot-0.2.0-mac-arm64.zip")).toBe("zip");
-    expect(artifactKind("OpenBot-0.2.0-linux-x86_64.AppImage")).toBe("appimage");
-    expect(artifactKind("OpenBot-0.2.0-linux-amd64.deb")).toBe("deb");
-    expect(artifactKind("OpenBot-0.2.0-mac-arm64.zip.blockmap")).toBeUndefined();
+    expect(artifactKind("Dispatch-0.2.0-mac-arm64.dmg")).toBe("dmg");
+    expect(artifactKind("Dispatch-0.2.0-mac-arm64.zip")).toBe("zip");
+    expect(artifactKind("Dispatch-0.2.0-linux-x86_64.AppImage")).toBe("appimage");
+    expect(artifactKind("Dispatch-0.2.0-linux-amd64.deb")).toBe("deb");
+    expect(artifactKind("Dispatch-0.2.0-mac-arm64.zip.blockmap")).toBeUndefined();
     expect(artifactKind("latest-mac.yml")).toBeUndefined();
-    expect(artifactKind(".openbot-release-state.json")).toBeUndefined();
+    expect(artifactKind(".dispatch-release-state.json")).toBeUndefined();
   });
 });
 
@@ -113,15 +113,15 @@ describe("platformEntry", () => {
       releasedAt: "2026-08-19T09:00:00.000Z",
       signed: true,
       notarized: true,
-      baseUrl: "https://downloads.example.test/desktop/openbot/latest",
+      baseUrl: "https://downloads.example.test/desktop/dispatch/latest",
       files: [
-        { name: "OpenBot-0.2.0-mac-arm64.dmg", size: 10, sha512: "aaa" },
-        { name: "OpenBot-0.2.0-mac-arm64.zip.blockmap", size: 1, sha512: "bbb" },
+        { name: "Dispatch-0.2.0-mac-arm64.dmg", size: 10, sha512: "aaa" },
+        { name: "Dispatch-0.2.0-mac-arm64.zip.blockmap", size: 1, sha512: "bbb" },
       ],
     });
     expect(entry.artifacts).toHaveLength(1);
     expect(entry.artifacts[0]?.url).toBe(
-      "https://downloads.example.test/desktop/openbot/latest/OpenBot-0.2.0-mac-arm64.dmg",
+      "https://downloads.example.test/desktop/dispatch/latest/Dispatch-0.2.0-mac-arm64.dmg",
     );
     expect(entry.notarized).toBe(true);
   });
@@ -207,5 +207,5 @@ function entryFor(version: string) {
 
 /** A checkout whose `origin` is not the upstream repository. */
 function forkCheckout(): string {
-  return "/nonexistent-openbot-fork-checkout";
+  return "/nonexistent-dispatch-fork-checkout";
 }

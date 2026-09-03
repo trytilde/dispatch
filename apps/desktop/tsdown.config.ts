@@ -9,7 +9,7 @@ export default defineConfig({
   sourcemap: true,
   // The Electron main bundle is CJS, but the workspace runtime is ESM-only by its exports
   // conditions, so it must be bundled rather than required at runtime.
-  deps: { neverBundle: ["electron"], alwaysBundle: [/^@tryopenbot\//] },
+  deps: { neverBundle: ["electron"], alwaysBundle: [/^@trytilde\/dispatch-/] },
   outputOptions: {
     entryFileNames: "[name].cjs",
     sourcemapExcludeSources: true,

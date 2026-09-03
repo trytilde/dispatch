@@ -6,7 +6,7 @@ import type {
   OAuthTokens,
   OwnerAccount,
   OwnerPrincipal,
-} from "@tryopenbot/auth-provider";
+} from "@trytilde/dispatch-auth-provider";
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -15,10 +15,10 @@ declare module "hono" {
   }
 }
 
-const accessCookie = "openbot_access";
-const refreshCookie = "openbot_refresh";
-const stateCookie = "openbot_oauth_state";
-const verifierCookie = "openbot_oauth_verifier";
+const accessCookie = "dispatch_access";
+const refreshCookie = "dispatch_refresh";
+const stateCookie = "dispatch_oauth_state";
+const verifierCookie = "dispatch_oauth_verifier";
 
 interface OwnerAuthOptions {
   devMode?: boolean;

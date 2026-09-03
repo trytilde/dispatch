@@ -10,11 +10,11 @@ describe("repository root", () => {
   });
 
   it("finds the workspace root when a task runner starts inside a package", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-repository-root-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-repository-root-"));
     try {
       await writeFile(
         join(root, "package.json"),
-        JSON.stringify({ name: "@tryopenbot/workspace" }),
+        JSON.stringify({ name: "@trytilde/dispatch-workspace" }),
       );
       await mkdir(join(root, "cli"));
 

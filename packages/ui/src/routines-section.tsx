@@ -1,5 +1,9 @@
 import { CirclePauseIcon, ClockIcon } from "lucide-react";
-import { routineDetail, type Routine, type SignalProvider } from "@tryopenbot/client-runtime";
+import {
+  routineDetail,
+  type Routine,
+  type SignalProvider,
+} from "@trytilde/dispatch-client-runtime";
 
 /**
  * The details pane's Routines overview: a flush two-line list, enabled

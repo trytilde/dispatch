@@ -3,7 +3,7 @@
 ## In brief
 
 - Tilde owns durable runs, leases, steps, wakeups, budgets, and effect receipts.
-- OpenBot owns model calls and hidden continuation policy.
+- Dispatch owns model calls and hidden continuation policy.
 - Three continuations without a tool call or measurable progress pause the run.
 - Repeated tool/response patterns stall visibly instead of looping forever.
 - Effect intent is written before execution; uncertain non-idempotent effects

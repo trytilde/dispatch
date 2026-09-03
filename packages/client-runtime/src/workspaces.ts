@@ -12,7 +12,7 @@ import {
 
 export type WorkspaceFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
-export const clientWorkspaceStorageKey = "openbot.workspaces.v1";
+export const clientWorkspaceStorageKey = "dispatch.workspaces.v1";
 const emptyRegistry: ClientWorkspaceRegistry = {
   version: 1,
   active_workspace_id: null,
@@ -120,7 +120,7 @@ export function decodeClientWorkspaceTransfer(value: string): ClientWorkspaceReg
 
 export function normalizeControlOrigin(value: string): string {
   const input = value.trim();
-  if (!input) throw new Error("Enter your OpenBot control server URL");
+  if (!input) throw new Error("Enter your Dispatch control server URL");
   const url = new URL(input.includes("://") ? input : `https://${input}`);
   if (url.username || url.password)
     throw new Error("The control server URL cannot contain credentials");
@@ -199,7 +199,7 @@ async function requestJson(request: WorkspaceFetch, url: string): Promise<unknow
       headers: { accept: "application/json" },
       signal: controller.signal,
     });
-    if (!response.ok) throw new Error(`OpenBot discovery failed (${response.status})`);
+    if (!response.ok) throw new Error(`Dispatch discovery failed (${response.status})`);
     return await response.json();
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError")

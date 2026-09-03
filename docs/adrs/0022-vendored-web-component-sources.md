@@ -4,7 +4,7 @@
 
 - Vendor web components by copy: shadcn/ui, Beautiful UI, AI Elements live in `packages/ui` source. No npm UI-kit dependency.
 - `beautiful-ui/upstream/` stays pristine. Every drift recorded in `PROVENANCE.md` against per-file retrieval SHA-256. No unrecorded edit.
-- Unpublished upstream primitives are reconstructed in `beautiful-ui/atoms/`, OpenBot-authored. No pretend provenance.
+- Unpublished upstream primitives are reconstructed in `beautiful-ui/atoms/`, Dispatch-authored. No pretend provenance.
 - Licenses and modifications live in `THIRD_PARTY_NOTICES.md`. Kept current on every vendored change.
 - shadcn `accent` remaps to `hover`/`ink`; Beautiful UI owns `--color-accent`. No token collision.
 - Cost: manual upstream refresh, no automatic updates. Accepted for auditability and offline builds.
@@ -32,8 +32,8 @@ The vendored tree is layered by ownership:
 - `beautiful-ui/upstream/` holds files retrieved from the publisher's live published source. It stays
   pristine. Each file's retrieval SHA-256 is recorded in `PROVENANCE.md`, and the only permitted
   drift — an analytics call removed, import paths rewritten — is recorded there too.
-- `beautiful-ui/atoms/` holds OpenBot-authored reconstructions of primitives the publisher never
-  released as source. They are labeled as OpenBot's own work rather than given borrowed provenance.
+- `beautiful-ui/atoms/` holds Dispatch-authored reconstructions of primitives the publisher never
+  released as source. They are labeled as Dispatch's own work rather than given borrowed provenance.
 - `components/ui/` and `components/ai-elements/` hold shadcn/ui and AI Elements copies, whose
   licenses and modifications are recorded in the root `THIRD_PARTY_NOTICES.md`.
 
@@ -47,7 +47,7 @@ flowchart LR
   I["packages/ui index.ts"] --> S["components/ui\nshadcn, modifications recorded"]
   I --> E["components/ai-elements\nAI Elements, modifications recorded"]
   I --> U["beautiful-ui/upstream\npristine, hashed"]
-  I --> T["beautiful-ui/atoms\nOpenBot-authored"]
+  I --> T["beautiful-ui/atoms\nDispatch-authored"]
   U -. "per-file SHA-256" .-> P["PROVENANCE.md"]
   S -. "license + modifications" .-> N["THIRD_PARTY_NOTICES.md"]
   E -.-> N

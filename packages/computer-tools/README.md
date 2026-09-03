@@ -1,6 +1,6 @@
-# @tryopenbot/computer-tools
+# @trytilde/dispatch-computer-tools
 
-Vercel AI SDK tools for OpenBot's typed computer-service API. Authored agents
+Vercel AI SDK tools for Dispatch's typed computer-service API. Authored agents
 may import these tools without depending on a deployment provider package.
 
 ## Public API

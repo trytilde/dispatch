@@ -1,6 +1,6 @@
 import {
   addClientWorkspace,
-  createOpenBotClient,
+  createDispatchClient,
   decodeClientWorkspaceTransfer,
   discoverControlService,
   encodeClientWorkspaceTransfer,
@@ -13,14 +13,14 @@ import {
   selectClientWorkspace,
   type ClientWorkspaceRegistry,
   type ClientWorkspaceStorage,
-} from "@tryopenbot/client-runtime";
-import { SelectWorkspaceScreen, WorkspaceSelectorDialog } from "@tryopenbot/ui";
+} from "@trytilde/dispatch-client-runtime";
+import { SelectWorkspaceScreen, WorkspaceSelectorDialog } from "@trytilde/dispatch-ui";
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
-const transferParameter = "openbot-workspaces";
-const joinParameter = "openbot-join";
-const joinNameParameter = "openbot-workspace-name";
-const pendingJoinKey = "openbot.pending-workspace";
+const transferParameter = "dispatch-workspaces";
+const joinParameter = "dispatch-join";
+const joinNameParameter = "dispatch-workspace-name";
+const pendingJoinKey = "dispatch.pending-workspace";
 
 interface PendingWorkspaceJoin {
   controlOrigin: string;
@@ -94,7 +94,7 @@ export function ClientWorkspaceGate({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!registry || window.openbotDesktop) return;
+    if (!registry || window.dispatchDesktop) return;
     const activeWorkspace = registry.workspaces.find(
       (item) => item.id === registry.active_workspace_id,
     );
@@ -112,16 +112,16 @@ export function ClientWorkspaceGate({ children }: { children: ReactNode }) {
     try {
       const controlOrigin = normalizeControlOrigin(value);
       if (controlOrigin !== shellControlOrigin) {
-        if (window.openbotDesktop)
+        if (window.dispatchDesktop)
           throw new Error("This desktop build can only use its configured control server");
         safeStorage(() => sessionStorage.removeItem(pendingJoinKey), undefined);
         navigateToWorkspace(controlOrigin, baseRegistry, { controlOrigin, name });
         return;
       }
       await discoverControlService(controlOrigin, workspaceFetch(shellControlOrigin));
-      const session = window.openbotDesktop
-        ? await window.openbotDesktop.authStatus()
-        : await createOpenBotClient({ fetch: workspaceFetch(shellControlOrigin) }).getSession();
+      const session = window.dispatchDesktop
+        ? await window.dispatchDesktop.authStatus()
+        : await createDispatchClient({ fetch: workspaceFetch(shellControlOrigin) }).getSession();
       if (!session) {
         safeStorage(
           () =>
@@ -131,9 +131,9 @@ export function ClientWorkspaceGate({ children }: { children: ReactNode }) {
             ),
           undefined,
         );
-        if (window.openbotDesktop) {
-          await window.openbotDesktop.signIn();
-          if (!(await window.openbotDesktop.authStatus()))
+        if (window.dispatchDesktop) {
+          await window.dispatchDesktop.signIn();
+          if (!(await window.dispatchDesktop.authStatus()))
             throw new Error("Authentication did not complete");
         } else {
           location.assign("/auth/login");
@@ -168,7 +168,7 @@ export function ClientWorkspaceGate({ children }: { children: ReactNode }) {
     const workspace = next.workspaces.find((item) => item.id === next.active_workspace_id);
     if (!workspace) return setRegistry(next);
     if (workspace.control_origin !== shellControlOrigin) {
-      if (window.openbotDesktop) {
+      if (window.dispatchDesktop) {
         setError("This desktop build can only use its configured control server");
         return;
       }
@@ -200,7 +200,7 @@ export function ClientWorkspaceGate({ children }: { children: ReactNode }) {
 
   if (!activeWorkspace) return <SelectWorkspaceScreen {...selectorProps} />;
   if (activeWorkspace.control_origin !== shellControlOrigin) {
-    if (window.openbotDesktop)
+    if (window.dispatchDesktop)
       return (
         <SelectWorkspaceScreen
           {...selectorProps}
@@ -235,8 +235,8 @@ export function ClientWorkspaceGate({ children }: { children: ReactNode }) {
 }
 
 function resolveShellControlOrigin(): string {
-  if (window.openbotDesktop?.controlOrigin)
-    return new URL(window.openbotDesktop.controlOrigin).origin;
+  if (window.dispatchDesktop?.controlOrigin)
+    return new URL(window.dispatchDesktop.controlOrigin).origin;
   const url = new URL(location.href);
   if (["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) && url.port === "4173")
     return `${url.protocol}//${url.hostname}:4100`;

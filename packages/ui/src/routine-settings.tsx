@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 import { MoreHorizontalIcon, SearchIcon } from "lucide-react";
-import { routineDetail, type Routine, type SignalProvider } from "@tryopenbot/client-runtime";
+import {
+  routineDetail,
+  type Routine,
+  type SignalProvider,
+} from "@trytilde/dispatch-client-runtime";
 import {
   DropdownMenu,
   DropdownMenuContent,

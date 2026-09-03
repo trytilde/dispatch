@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "NODE_OPTIONS=--use-system-ca next dev --webpack",
-    "login": "NODE_OPTIONS=--use-system-ca openbot auth login",
-    "whoami": "NODE_OPTIONS=--use-system-ca openbot auth whoami",
-    "tunnel": "NODE_OPTIONS=--use-system-ca openbot tunnel -- next dev --webpack -p '$TUNNEL_PORT'",
+    "login": "NODE_OPTIONS=--use-system-ca tilde auth login",
+    "whoami": "NODE_OPTIONS=--use-system-ca tilde auth whoami",
+    "tunnel": "NODE_OPTIONS=--use-system-ca tilde tunnel -- next dev --webpack -p '$TUNNEL_PORT'",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit"
@@ -20,7 +20,7 @@
     "@trytilde/sdk-vercel-ai-node": "link:../../../sdk-vercel-ai-node",
     "ai": "^6.0.197",
     "next": "^16.2.7",
-    "openbot": "link:../../../../cli",
+    "@trytilde/cli": "link:../../../../cli",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

@@ -1,4 +1,4 @@
 interface:
   display_name: "Implement Provider"
-  short_description: "Build and refactor OpenBot providers safely"
-  default_prompt: "Use $implement-provider to add or refactor an OpenBot provider implementation."
+  short_description: "Build and refactor Dispatch providers safely"
+  default_prompt: "Use $implement-provider to add or refactor a Dispatch provider implementation."

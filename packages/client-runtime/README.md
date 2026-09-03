@@ -1,6 +1,6 @@
-# @tryopenbot/client-runtime
+# @trytilde/dispatch-client-runtime
 
-Framework-neutral client behavior shared by OpenBot web and Electron clients.
+Framework-neutral client behavior shared by Dispatch web and Electron clients.
 
 ## Public API
 
@@ -31,7 +31,7 @@ Framework-neutral client behavior shared by OpenBot web and Electron clients.
   native Tilde settings resources. Their transport uses the installation's operation-allowlisted
   `/api/tilde/*` credential bridge; the control service defines no parallel domain APIs. Plugin
   inventory is assembled from Tilde's generated MCP and Skills resource contracts, with every
-  native continuation token exhausted rather than relying on an OpenBot-specific aggregate.
+  native continuation token exhausted rather than relying on a Dispatch-specific aggregate.
   `createTildePluginsClient` accepts `TildePluginsTransport`, resolves relative provider assets
   against the active Tilde origin, coalesces native and managed entries for one provider, and
   caches the assembled read catalogue briefly while invalidating it after mutations.
@@ -44,7 +44,7 @@ Framework-neutral client behavior shared by OpenBot web and Electron clients.
   `resetOnboarding` own persisted first-run state through a platform-supplied storage port.
 - `contracts/platform` owns the narrow Electron renderer bridge.
 
-The runtime has no React, DOM, Electron, or Node dependency. Applications provide authentication, fetch, storage, lifecycle, and file capabilities at their platform boundary. Tilde remains authoritative for chat resources; these schemas validate only the resource subset consumed by OpenBot clients.
+The runtime has no React, DOM, Electron, or Node dependency. Applications provide authentication, fetch, storage, lifecycle, and file capabilities at their platform boundary. Tilde remains authoritative for chat resources; these schemas validate only the resource subset consumed by Dispatch clients.
 
 The runtime maintains one team-wide ChatKit realtime observer so inactive sessions keep their busy,
 preview, per-user unread, queue, turn, and streamed-message state current. Platform-supplied `agentSetupPersistence` may

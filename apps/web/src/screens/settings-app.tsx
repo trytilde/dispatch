@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useStore } from "zustand";
-import { errorMessage, type SignalInstance } from "@tryopenbot/client-runtime";
+import { errorMessage, type SignalInstance } from "@trytilde/dispatch-client-runtime";
 import {
   connectorAuthorizedReturnUrl,
   waitForConnectorAccountActive,
   type ChatAgent,
   type PluginsCatalog as PluginsCatalogSnapshot,
-} from "@tryopenbot/client-runtime";
+} from "@trytilde/dispatch-client-runtime";
 import {
   BackIcon,
   BotSelectionDialog,
@@ -33,8 +33,8 @@ import {
   type ConnectorSetupSubmit,
   SignalsIcon,
   type ThemePreference,
-} from "@tryopenbot/ui";
-import { openBotRuntime } from "../runtime.js";
+} from "@trytilde/dispatch-ui";
+import { dispatchRuntime } from "../runtime.js";
 import { SignalConnectContainer } from "./agent-details.js";
 
 const settingsSections = [
@@ -154,7 +154,7 @@ function PluginsSettings({
   async function refresh(): Promise<void> {
     setError("");
     try {
-      setCatalog(await openBotRuntime.client.getPluginsCatalog());
+      setCatalog(await dispatchRuntime.client.getPluginsCatalog());
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not load plugins");
     } finally {
@@ -195,7 +195,7 @@ function PluginsSettings({
     setError("");
     setCatalog((current) => updateToolAssignment(current, accountId, agentId, enabled));
     try {
-      await openBotRuntime.client.setToolAccountForAgent(accountId, agentId, enabled);
+      await dispatchRuntime.client.setToolAccountForAgent(accountId, agentId, enabled);
       return true;
     } catch (reason) {
       setCatalog((current) => updateToolAssignment(current, accountId, agentId, previouslyEnabled));
@@ -211,7 +211,7 @@ function PluginsSettings({
   async function deleteToolAccounts(accountIds: readonly string[]): Promise<void> {
     setError("");
     try {
-      await openBotRuntime.client.deleteConnectorAccounts(accountIds);
+      await dispatchRuntime.client.deleteConnectorAccounts(accountIds);
       setCatalog((current) => ({
         ...current,
         tools: current.tools.map((entry) => ({
@@ -244,7 +244,7 @@ function PluginsSettings({
     setError("");
     setCatalog((current) => updateSkillAssignment(current, skillId, agentId, enabled));
     try {
-      await openBotRuntime.client.setSkillForAgent(skillId, agentId, enabled);
+      await dispatchRuntime.client.setSkillForAgent(skillId, agentId, enabled);
     } catch (reason) {
       setCatalog((current) => updateSkillAssignment(current, skillId, agentId, previouslyEnabled));
       setError(reason instanceof Error ? reason.message : "Could not update skill");
@@ -256,7 +256,7 @@ function PluginsSettings({
     const current = setup;
     setSetup({ ...current, submitting: true, error: undefined });
     try {
-      const result = await openBotRuntime.client.createConnectorAccount({
+      const result = await dispatchRuntime.client.createConnectorAccount({
         providerTypeId: current.providerId,
         credentialSourceTypeId: input.credentialSourceTypeId,
         displayName: input.displayName,
@@ -273,7 +273,7 @@ function PluginsSettings({
         setupWatcher.current?.abort();
         const watcher = new AbortController();
         setupWatcher.current = watcher;
-        const active = await waitForConnectorAccountActive(openBotRuntime.client, {
+        const active = await waitForConnectorAccountActive(dispatchRuntime.client, {
           providerTypeId: current.providerId,
           accountId: result.account.id,
           signal: watcher.signal,
@@ -394,8 +394,8 @@ export function SettingsApp({ section = "general" }: SettingsAppProps = {}) {
   const navigate = useNavigate();
   const [theme, setTheme] = useState<ThemePreference>(() => getThemePreference());
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
-  const agents = useStore(openBotRuntime.store, (state) => state.sidebar.agents);
-  const macDesktop = window.openbotDesktop?.platform === "mac";
+  const agents = useStore(dispatchRuntime.store, (state) => state.sidebar.agents);
+  const macDesktop = window.dispatchDesktop?.platform === "mac";
 
   return (
     <motion.main
@@ -575,8 +575,8 @@ function SettingsNavigation({
 }
 
 function RoutineSettingsContainer({ agents }: { agents: readonly ChatAgent[] }) {
-  const signals = useStore(openBotRuntime.store, (state) => state.signals);
-  const routines = useStore(openBotRuntime.store, (state) => state.routines);
+  const signals = useStore(dispatchRuntime.store, (state) => state.signals);
+  const routines = useStore(dispatchRuntime.store, (state) => state.routines);
   const [connectProviderId, setConnectProviderId] = useState("");
   const [creatingForBot, setCreatingForBot] = useState(false);
   const [editing, setEditing] = useState<{ agentId: string; routineId: string | null } | null>(
@@ -590,15 +590,15 @@ function RoutineSettingsContainer({ agents }: { agents: readonly ChatAgent[] }) 
   const noticeTimersRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
-    void openBotRuntime.actions.refreshSignalProviders().catch(() => undefined);
-    void openBotRuntime.actions.refreshSignalInstances().catch(() => undefined);
+    void dispatchRuntime.actions.refreshSignalProviders().catch(() => undefined);
+    void dispatchRuntime.actions.refreshSignalInstances().catch(() => undefined);
   }, []);
 
   const agentIdsKey = agents.map((agent) => agent.id).join("\0");
   useEffect(() => {
-    void Promise.all(agents.map((agent) => openBotRuntime.actions.refreshRoutines(agent.id))).catch(
-      () => undefined,
-    );
+    void Promise.all(
+      agents.map((agent) => dispatchRuntime.actions.refreshRoutines(agent.id)),
+    ).catch(() => undefined);
     // Bot identity, not array identity, controls the remote snapshots.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentIdsKey]);
@@ -655,11 +655,11 @@ function RoutineSettingsContainer({ agents }: { agents: readonly ChatAgent[] }) 
         instances={signals.instances}
         onConnectProvider={setConnectProviderId}
         onDeleteInstance={(instance) =>
-          void withNotice(instance, () => openBotRuntime.actions.deleteSignalInstance(instance.id))
+          void withNotice(instance, () => dispatchRuntime.actions.deleteSignalInstance(instance.id))
         }
         onToggleInstance={(instance, enabled) =>
           void withNotice(instance, async () => {
-            await openBotRuntime.actions.updateSignalInstance(instance.id, {
+            await dispatchRuntime.actions.updateSignalInstance(instance.id, {
               status: enabled ? "enabled" : "disabled",
             });
           })
@@ -672,11 +672,11 @@ function RoutineSettingsContainer({ agents }: { agents: readonly ChatAgent[] }) 
         error={routines.error || undefined}
         onCreate={() => setCreatingForBot(true)}
         onDelete={(routine) =>
-          void openBotRuntime.actions.deleteRoutine(routine.id, routine.agent_id)
+          void dispatchRuntime.actions.deleteRoutine(routine.id, routine.agent_id)
         }
         onEdit={(routine) => setEditing({ agentId: routine.agent_id, routineId: routine.id })}
         onToggle={(routine, enabled) =>
-          void openBotRuntime.actions.updateRoutine(routine.id, routine.agent_id, { enabled })
+          void dispatchRuntime.actions.updateRoutine(routine.id, routine.agent_id, { enabled })
         }
         providers={signals.providers}
         rows={routineRows}
@@ -707,15 +707,15 @@ function RoutineSettingsContainer({ agents }: { agents: readonly ChatAgent[] }) 
                 if (creatingRef.current) return;
                 creatingRef.current = true;
                 const prior = new Set(
-                  (openBotRuntime.store.getState().routines.byAgentId[editing.agentId] ?? []).map(
+                  (dispatchRuntime.store.getState().routines.byAgentId[editing.agentId] ?? []).map(
                     (routine) => routine.id,
                   ),
                 );
-                void openBotRuntime.actions
+                void dispatchRuntime.actions
                   .createRoutine({ agentId: editing.agentId, ...input })
                   .then(() => {
                     const created = (
-                      openBotRuntime.store.getState().routines.byAgentId[editing.agentId] ?? []
+                      dispatchRuntime.store.getState().routines.byAgentId[editing.agentId] ?? []
                     ).find((routine) => !prior.has(routine.id));
                     if (created) setEditing({ agentId: editing.agentId, routineId: created.id });
                   })
@@ -725,7 +725,7 @@ function RoutineSettingsContainer({ agents }: { agents: readonly ChatAgent[] }) 
               }}
               onDelete={() => {
                 if (!editedRoutine) return setEditing(null);
-                void openBotRuntime.actions
+                void dispatchRuntime.actions
                   .deleteRoutine(editedRoutine.id, editing.agentId)
                   .then(() => setEditing(null));
               }}
@@ -733,13 +733,13 @@ function RoutineSettingsContainer({ agents }: { agents: readonly ChatAgent[] }) 
               onTestRun={() => {
                 if (!editedRoutine || running) return;
                 setRunning(true);
-                void openBotRuntime.actions
+                void dispatchRuntime.actions
                   .runRoutine(editedRoutine.id, editing.agentId)
                   .finally(() => setRunning(false));
               }}
               onUpdate={(input) => {
                 if (editedRoutine)
-                  void openBotRuntime.actions.updateRoutine(
+                  void dispatchRuntime.actions.updateRoutine(
                     editedRoutine.id,
                     editing.agentId,
                     input,

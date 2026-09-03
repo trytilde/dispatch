@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, rm } from "node:fs/promises";
 import { relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { materializeFileTemplate } from "@tryopenbot/utilities";
-import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
+import { materializeFileTemplate } from "@trytilde/dispatch-utilities";
+import type { DeploymentContext, DeploymentResult } from "@trytilde/dispatch-runtime-provider";
 import { bundleOptions } from "../build.js";
 import {
   authoredAgentPaths,
@@ -12,7 +12,7 @@ import {
   type AgentSource,
 } from "../discovery.js";
 
-export const agentVercelArtifact = ".openbot-deploy/vercel/agents";
+export const agentVercelArtifact = ".dispatch-deploy/vercel/agents";
 const agentTemplate = fileURLToPath(new URL("./assets/agent-entry.ts.hbs", import.meta.url));
 const healthTemplate = fileURLToPath(new URL("./assets/health.ts.hbs", import.meta.url));
 const digestTemplate = fileURLToPath(new URL("./assets/digest.hbs", import.meta.url));
@@ -33,7 +33,7 @@ export async function buildVercelAgentService(
   const agents = await discoverAgents(context.repositoryRoot);
   const root = resolve(context.repositoryRoot, agentVercelArtifact);
   const output = resolve(root, ".vercel/output");
-  const generated = resolve(context.repositoryRoot, ".openbot-deploy/generated/vercel-agents");
+  const generated = resolve(context.repositoryRoot, ".dispatch-deploy/generated/vercel-agents");
   const healthSource = resolve(generated, "health.ts");
   await rm(generated, { recursive: true, force: true });
   await mkdir(generated, { recursive: true });
@@ -51,7 +51,7 @@ export async function buildVercelAgentService(
     const functionDirectory = resolve(output, `functions/api/agents/${agent.slug}.func`);
     const digest = digests.get(agent.slug)!;
     if (
-      (await readOptional(resolve(functionDirectory, ".openbot-digest")))?.trim() === digest &&
+      (await readOptional(resolve(functionDirectory, ".dispatch-digest")))?.trim() === digest &&
       (await readOptional(resolve(functionDirectory, "index.mjs")))
     )
       return;
@@ -77,7 +77,7 @@ export async function buildVercelAgentService(
         functionConfigTemplate,
         resolve(functionDirectory, ".vc-config.json"),
       ),
-      materializeFileTemplate(digestTemplate, resolve(functionDirectory, ".openbot-digest"), {
+      materializeFileTemplate(digestTemplate, resolve(functionDirectory, ".dispatch-digest"), {
         digest,
       }),
     ]);

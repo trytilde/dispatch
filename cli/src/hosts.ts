@@ -9,7 +9,7 @@ export interface DevHost {
   /** ssh destination, e.g. "root@203.0.113.7" or an ~/.ssh/config alias. */
   ssh: string;
   platform: "linux" | "mac";
-  /** Repository path on the host. Defaults to "~/openbot". */
+  /** Repository path on the host. Defaults to "~/dispatch". */
   path?: string;
   /** Electron shell screen. */
   desktopVncPort?: number;
@@ -27,7 +27,7 @@ export function loadHosts(repositoryRoot: string): Record<string, DevHost> {
 }
 
 // A named host wins; anything else is treated as a raw ssh destination so
-// `openbot connect user@203.0.113.7` needs no configuration at all.
+// `tilde connect user@203.0.113.7` needs no configuration at all.
 export function resolveHost(nameOrSsh: string, hosts: Record<string, DevHost>): DevHost {
   const named = hosts[nameOrSsh];
   if (named) return named;

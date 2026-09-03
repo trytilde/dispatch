@@ -1,6 +1,6 @@
 # Third-party notices
 
-OpenBot itself is licensed under MIT. Third-party materials retain their own
+Dispatch itself is licensed under MIT. Third-party materials retain their own
 copyright and license status.
 
 ## Beautiful UI
@@ -17,9 +17,9 @@ copyright and license status.
 An earlier 2026-08-12 retrieval came from the
 `TurboKach/ai-native-react-components` mirror while the site returned Vercel
 `DEPLOYMENT_DISABLED`; the 2026-08-17 retrieval from the live site supersedes
-it. Per-file SHA-256 values at retrieval and the small recorded OpenBot
+it. Per-file SHA-256 values at retrieval and the small recorded Dispatch
 modifications (analytics removal, import-path rewrites) are documented in
-`packages/ui/src/beautiful-ui/PROVENANCE.md`. OpenBot-specific composition is
+`packages/ui/src/beautiful-ui/PROVENANCE.md`. Dispatch-specific composition is
 kept outside the upstream directory.
 
 ## shadcn/ui
@@ -27,17 +27,17 @@ kept outside the upstream directory.
 - Source: <https://ui.shadcn.com/> (distributed via the shadcn registry CLI)
 - License: MIT
 - Files: `packages/ui/src/components/ui/`
-- OpenBot modifications: import paths rewritten to relative form; the
+- Dispatch modifications: import paths rewritten to relative form; the
   registry's `accent` utilities remapped to the Beautiful UI `hover`/`ink`
   tokens; `dialog.tsx`, `command.tsx`, and `dropdown-menu.tsx` are
-  OpenBot-authored on Radix/cmdk primitives rather than registry copies.
+  Dispatch-authored on Radix/cmdk primitives rather than registry copies.
 
 ## Vercel AI Elements
 
 - Source: <https://elements.ai-sdk.dev/> (distributed via the `ai-elements`
   CLI, Apache-2.0)
 - Files: `packages/ui/src/components/ai-elements/`
-- OpenBot modifications: import paths rewritten to relative form; `accent`
+- Dispatch modifications: import paths rewritten to relative form; `accent`
   utilities remapped as above; a type cast added for the
   `streamdown`/`@streamdown/*` shiki version skew.
 
@@ -56,5 +56,5 @@ kept outside the upstream directory.
 - Bundled skill source commit: `70db98d1bcd92890d778f4978e0eb107a4b66c1b`
 - Bundled files: `packages/agent-provider/src/tilde/assets/cua-driver/`
 - License: MIT
-- OpenBot modifications: none to the bundled canonical skill files; OpenBot's
-  separate computer-use overlay is original OpenBot material.
+- Dispatch modifications: none to the bundled canonical skill files; Dispatch's
+  separate computer-use overlay is original Dispatch material.

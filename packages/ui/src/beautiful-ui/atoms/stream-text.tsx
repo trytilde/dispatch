@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 /* ─────────────────────────────────────────────────────────
  * STREAM TEXT
  * Reveals text word by word with a blinking caret, calling
- * back as it advances. OpenBot reconstruction of the
+ * back as it advances. Dispatch reconstruction of the
  * Beautiful UI atom API.
  * ───────────────────────────────────────────────────────── */
 

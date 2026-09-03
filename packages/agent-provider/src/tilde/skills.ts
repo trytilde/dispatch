@@ -5,16 +5,16 @@ import {
   TildePlatform,
   tildeAuthenticationHeaders,
   type TildePlatformConfig,
-} from "@tryopenbot/platform-integrations";
+} from "@trytilde/dispatch-platform-integrations";
 import {
   tildeErrorMessage,
   tildeErrorStatus,
-} from "@tryopenbot/platform-integrations/tilde/errors";
-import { tildeFetch } from "@tryopenbot/platform-integrations/tilde/fetch";
+} from "@trytilde/dispatch-platform-integrations/tilde/errors";
+import { tildeFetch } from "@trytilde/dispatch-platform-integrations/tilde/fetch";
 import {
   omitUndefinedProperties,
   undefinedWhenFalsy,
-} from "@tryopenbot/platform-integrations/tilde/request";
+} from "@trytilde/dispatch-platform-integrations/tilde/request";
 import {
   createSkillRegistry,
   createSkill,
@@ -35,7 +35,7 @@ import type {
   SkillRegistry,
   SkillReconciliationContext,
 } from "./skills-types.js";
-import { persistEnvironment, type DeploymentContext } from "@tryopenbot/runtime-provider";
+import { persistEnvironment, type DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import { AgentProviderError } from "../core.js";
 import { mapWithConcurrency } from "./concurrency.js";
 import { reconciliationSignal } from "./skills-types.js";
@@ -125,7 +125,7 @@ export class TildeSkillReconciler {
   /** Build the exact skill selection accepted by Tilde's Agent Resource Bundle API. */
   async bundleSkills(context: DeploymentContext): Promise<EnabledSkillsSpec> {
     const { id } = requireAgent(context);
-    const custom = (await desiredOpenBotAgentSkills(context, true)).map((skill) => ({
+    const custom = (await desiredDispatchAgentSkills(context, true)).map((skill) => ({
       key: skill.sourcePath,
       name: teamSkillName(id, skill.name),
       description: skill.description,
@@ -150,8 +150,8 @@ export class TildeSkillReconciler {
         if (!(error instanceof AgentProviderError) || error.code !== "not_found") throw error;
       }
     }
-    const name = `OpenBot ${id}`;
-    const description = `Skills available to the ${id} OpenBot agent.`;
+    const name = `Dispatch ${id}`;
+    const description = `Skills available to the ${id} Dispatch agent.`;
     if (!registry) {
       const existing = await this.listRegistries({ namePrefix: name }, call);
       registry =
@@ -215,7 +215,7 @@ export class TildeSkillReconciler {
   ): Promise<{ skillIds: string[]; staleSkillIds: string[]; ownedSkillIds: Set<string> }> {
     const desired = [
       ...(await authoredSkills(context.repositoryRoot, agentPath)),
-      ...(await openBotComputerSkills(context.repositoryRoot, agentPath)),
+      ...(await dispatchComputerSkills(context.repositoryRoot, agentPath)),
     ];
     const remote = await this.#listAllSkills({ requestId: `agent-lifecycle:${agentId}:skills` });
     const ownedPrefix = `${agentSourcePrefix(context.repositoryRoot, agentPath)}/skills/`;
@@ -235,7 +235,7 @@ export class TildeSkillReconciler {
               name,
               description: skill.description,
               content: skill.content,
-              source_kind: "openbot",
+              source_kind: "dispatch",
               source_path: skill.sourcePath,
             },
             throwOnError: true,
@@ -342,14 +342,14 @@ export interface AuthoredSkill {
 }
 
 /** Read the complete local skill set submitted by the aggregate agent-bundle endpoint. */
-export async function desiredOpenBotAgentSkills(
+export async function desiredDispatchAgentSkills(
   context: DeploymentContext,
   includeCuaFallback: boolean,
 ): Promise<AuthoredSkill[]> {
   const { path } = requireAgent(context);
   return [
     ...(await authoredSkills(context.repositoryRoot, path)),
-    ...(await openBotComputerSkills(context.repositoryRoot, path, includeCuaFallback)),
+    ...(await dispatchComputerSkills(context.repositoryRoot, path, includeCuaFallback)),
   ];
 }
 
@@ -378,22 +378,22 @@ async function authoredSkills(repositoryRoot: string, agentPath: string): Promis
   return result;
 }
 
-async function openBotComputerSkills(
+async function dispatchComputerSkills(
   repositoryRoot: string,
   agentPath: string,
   includeCuaFallback = false,
 ): Promise<AuthoredSkill[]> {
   const assetRoot = resolve(dirname(fileURLToPath(import.meta.url)), "assets");
-  const sourcePrefix = `${agentSourcePrefix(repositoryRoot, agentPath)}/skills/.openbot`;
+  const sourcePrefix = `${agentSourcePrefix(repositoryRoot, agentPath)}/skills/.dispatch`;
   const overlayContent = await readFile(
-    resolve(assetRoot, "openbot-computer-use", "SKILL.md.hbs"),
+    resolve(assetRoot, "dispatch-computer-use", "SKILL.md.hbs"),
     "utf8",
   );
   const skills: AuthoredSkill[] = [
     {
-      ...skillMetadata(overlayContent, "openbot-computer-use"),
+      ...skillMetadata(overlayContent, "dispatch-computer-use"),
       content: overlayContent,
-      sourcePath: `${sourcePrefix}/openbot-computer-use/SKILL.md`,
+      sourcePath: `${sourcePrefix}/dispatch-computer-use/SKILL.md`,
     },
   ];
   if (includeCuaFallback) {
@@ -440,7 +440,7 @@ function agentSourcePrefix(repositoryRoot: string, agentPath: string): string {
 
 function isOwnedSkill(skill: TildeSkill, sourcePrefix: string, namePrefix: string): boolean {
   return (
-    skill.source_kind === "openbot" &&
+    skill.source_kind === "dispatch" &&
     (skill.source_path?.startsWith(sourcePrefix) === true || skill.name.startsWith(namePrefix))
   );
 }

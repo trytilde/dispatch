@@ -3,7 +3,7 @@ import type {
   RoutineTriggerSpec,
   SignalInstance,
   SignalProvider,
-} from "@tryopenbot/client-runtime";
+} from "@trytilde/dispatch-client-runtime";
 import { providerForSpec, triggerSpecSentence } from "./trigger-card.js";
 
 const github: SignalProvider = {

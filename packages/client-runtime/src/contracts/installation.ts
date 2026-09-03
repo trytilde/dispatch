@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const ControlServiceHealthSchema = z.object({
   ok: z.literal(true),
-  service: z.literal("openbot"),
+  service: z.literal("dispatch"),
 });
 export type ControlServiceHealth = z.infer<typeof ControlServiceHealthSchema>;
 

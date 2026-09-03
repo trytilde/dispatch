@@ -1,20 +1,20 @@
 ---
-"@tryopenbot/agent-provider": minor
-"@tryopenbot/agent-service-provider": minor
-"openbot": minor
-"@tryopenbot/computer-service-provider": minor
-"@tryopenbot/computer-tools": minor
-"@tryopenbot/computer-service": minor
-"@tryopenbot/computer-service-proto": minor
-"@tryopenbot/configuration": minor
-"@tryopenbot/desktop": minor
-"@tryopenbot/utilities": minor
-"@tryopenbot/platform-integrations": minor
-"@tryopenbot/control-service-provider": minor
-"@tryopenbot/runtime-provider": minor
-"@tryopenbot/control-service": minor
-"@tryopenbot/ui": minor
-"@tryopenbot/web": minor
+"@trytilde/dispatch-agent-provider": minor
+"@trytilde/dispatch-agent-service-provider": minor
+"@trytilde/cli": minor
+"@trytilde/dispatch-computer-service-provider": minor
+"@trytilde/dispatch-computer-tools": minor
+"@trytilde/dispatch-computer-service": minor
+"@trytilde/dispatch-computer-service-proto": minor
+"@trytilde/dispatch-configuration": minor
+"@trytilde/dispatch-desktop": minor
+"@trytilde/dispatch-utilities": minor
+"@trytilde/dispatch-platform-integrations": minor
+"@trytilde/dispatch-control-service-provider": minor
+"@trytilde/dispatch-runtime-provider": minor
+"@trytilde/dispatch-control-service": minor
+"@trytilde/dispatch-ui": minor
+"@trytilde/dispatch-web": minor
 ---
 
-Add the complete reusable OpenBot workspace component system, exact light palette, motion curves, agent identity artwork, continuous chat composition, rich message content, activity surface, and Computer pane to `@tryopenbot/ui`.
+Add the complete reusable Dispatch workspace component system, exact light palette, motion curves, agent identity artwork, continuous chat composition, rich message content, activity surface, and Computer pane to `@trytilde/dispatch-ui`.

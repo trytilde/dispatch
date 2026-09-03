@@ -10,12 +10,12 @@ export const repositoryVisibilityChoices = [
   {
     value: "private",
     label: "Private",
-    description: "Create an independent private mirror of OpenBot.",
+    description: "Create an independent private mirror of Dispatch.",
   },
   {
     value: "public",
     label: "Public",
-    description: "Create a public GitHub fork of OpenBot.",
+    description: "Create a public GitHub fork of Dispatch.",
   },
 ] as const;
 
@@ -25,7 +25,7 @@ export interface RepositoryBootstrapOptions {
   runner: InitializationCommandRunner;
 }
 
-export async function bootstrapOpenBotRepository(
+export async function bootstrapDispatchRepository(
   options: RepositoryBootstrapOptions,
 ): Promise<void> {
   await assertEmptyDirectory(options.destination);
@@ -91,7 +91,7 @@ export async function bootstrapOpenBotRepository(
 function parseCanonicalHead(result: { stdout: string }): string {
   const head = result.stdout.trim().split(/\s+/)[0];
   if (!head || !/^[0-9a-f]{40}$/i.test(head))
-    throw new Error("Git did not return the canonical OpenBot HEAD revision");
+    throw new Error("Git did not return the canonical Dispatch HEAD revision");
   return head;
 }
 
@@ -117,11 +117,11 @@ async function assertCanonicalRevisionCompatible(
       name?: unknown;
     };
   } catch {
-    throw new Error("GitHub returned an invalid canonical OpenBot package manifest");
+    throw new Error("GitHub returned an invalid canonical Dispatch package manifest");
   }
-  if (manifest.name !== "@tryopenbot/workspace")
+  if (manifest.name !== "@trytilde/dispatch-workspace")
     throw new Error(
-      "The canonical OpenBot repository is older than this CLI; publish the matching OpenBot source before running init",
+      "The canonical Dispatch repository is older than this CLI; publish the matching Dispatch source before running init",
     );
 }
 
@@ -150,11 +150,11 @@ async function ensureUpstreamRemote(options: RepositoryBootstrapOptions): Promis
       })
     ).stdout.trim();
     if (existing.replace(/\.git$/, "") === canonicalRepositoryUrl.replace(/\.git$/, "")) return;
-    throw new Error("Existing upstream remote does not point to canonical OpenBot");
+    throw new Error("Existing upstream remote does not point to canonical Dispatch");
   } catch (error) {
     if (
       error instanceof Error &&
-      error.message === "Existing upstream remote does not point to canonical OpenBot"
+      error.message === "Existing upstream remote does not point to canonical Dispatch"
     )
       throw error;
   }
@@ -166,9 +166,7 @@ async function ensureUpstreamRemote(options: RepositoryBootstrapOptions): Promis
 async function assertEmptyDirectory(destination: string): Promise<void> {
   const entries = await readdir(destination);
   if (entries.length)
-    throw new Error(
-      "openbot init requires a completely empty directory, including no hidden files",
-    );
+    throw new Error("tilde init requires a completely empty directory, including no hidden files");
 }
 
 async function createPrivateMirror(
@@ -178,8 +176,8 @@ async function createPrivateMirror(
   await options.runner.run("gh", ["repo", "create", ownedRepository, "--private"], {
     cwd: options.destination,
   });
-  const temporaryDirectory = await mkdtemp(resolve(tmpdir(), "openbot-mirror-"));
-  const bareRepository = resolve(temporaryDirectory, "openbot.git");
+  const temporaryDirectory = await mkdtemp(resolve(tmpdir(), "dispatch-mirror-"));
+  const bareRepository = resolve(temporaryDirectory, "dispatch.git");
   try {
     await options.runner.run("git", ["clone", "--bare", canonicalRepositoryUrl, bareRepository], {
       cwd: options.destination,
@@ -200,13 +198,13 @@ async function assertClonedRepository(
   const manifest = JSON.parse(
     await readFile(resolve(options.destination, "package.json"), "utf8"),
   ) as { name?: unknown };
-  if (manifest.name !== "@tryopenbot/workspace")
-    throw new Error("The cloned repository is not a compatible OpenBot workspace");
+  if (manifest.name !== "@trytilde/dispatch-workspace")
+    throw new Error("The cloned repository is not a compatible Dispatch workspace");
   const clonedHead = (
     await options.runner.run("git", ["rev-parse", "HEAD"], { cwd: options.destination })
   ).stdout.trim();
   if (clonedHead !== canonicalHead)
-    throw new Error("The cloned repository does not match the OpenBot revision verified by init");
+    throw new Error("The cloned repository does not match the Dispatch revision verified by init");
   const origin = (
     await options.runner.run("git", ["remote", "get-url", "origin"], {
       cwd: options.destination,
@@ -218,7 +216,7 @@ async function assertClonedRepository(
     })
   ).stdout.trim();
   if (!origin.includes(ownedRepository))
-    throw new Error(`OpenBot origin does not point to ${ownedRepository}`);
+    throw new Error(`Dispatch origin does not point to ${ownedRepository}`);
   if (upstream.replace(/\.git$/, "") !== canonicalRepositoryUrl.replace(/\.git$/, ""))
-    throw new Error("OpenBot upstream does not point to the canonical repository");
+    throw new Error("Dispatch upstream does not point to the canonical repository");
 }

@@ -20,14 +20,14 @@ and Signals remain execution substrates rather than derived authorization resour
 
 ### Authoritative Tilde root and legacy migration
 
-OpenBot creates or replaces one Routine through the compatibility `/automations` path. Tilde
-validates the complete trigger set and atomically persists the root and children. OpenBot sends the
+Dispatch creates or replaces one Routine through the compatibility `/automations` path. Tilde
+validates the complete trigger set and atomically persists the root and children. Dispatch sends the
 current `version` as `expected_version`, and preserves server-owned action/session/metadata fields
 when editing the presentation subset. List/get return native trigger membership; run uses a durable
 client run ID.
 
 Tilde's data migration copies prior Automation roots/members and standalone SignalRules before the
-native API starts. OpenBot has no metadata scan or mapping database.
+native API starts. Dispatch has no metadata scan or mapping database.
 
 ```mermaid
 flowchart LR
@@ -71,7 +71,7 @@ rebuilds the root from derived ChatKit/SignalRule collections.
 ### Provider connections
 
 Signal provider instances are managed inline from the trigger card and inventoried
-at `/settings/signals`. OpenBot is self-hosted, so provisioning is user-visible: the
+at `/settings/signals`. Dispatch is self-hosted, so provisioning is user-visible: the
 client runtime pre-assigns `spi_` ids to render the deterministic webhook URL, and
 the signing secret is supplied by the owner, write-only, placed in
 `configuration.provider_webhook_signing_key`. Providers are catalog-driven, not
@@ -103,10 +103,10 @@ Work: render the routines list, editor, and provider connect flow natively again
   `webhook_verification` descriptor in the signals provider catalog.
 - `@trytilde/api-client`: generated routines, signals, metadata, and webhook
   verification contracts. Stable hand-authored behavior remains owned by
-  `@trytilde/sdk`; OpenBot does not reintroduce the retired Harness package names.
+  `@trytilde/sdk`; Dispatch does not reintroduce the retired Harness package names.
 
 ## Updates
 
-- 2026-08-26T16:18:13+01:00: Replaced OpenBot's stateless metadata composition and mutation fan-out with Tilde's persisted Automation aggregate, retaining a thin owner-authenticated compatibility facade and automatic legacy adoption.
+- 2026-08-26T16:18:13+01:00: Replaced Dispatch's stateless metadata composition and mutation fan-out with Tilde's persisted Automation aggregate, retaining a thin owner-authenticated compatibility facade and automatic legacy adoption.
 - 2026-08-29T00:34:00+02:00: Removed the Routines and Signals domain facades. Client Runtime now validates and projects the native Tilde resources through one operation-allowlisted credential bridge, retaining the HttpOnly installation session without duplicating Tilde APIs.
 - 2026-08-29T03:18:00+02:00: Replaced materialized ChatKit Routine and SignalRule members with Tilde's native Routine triggers. Client Runtime now preserves optimistic versions and native trigger metadata, pages Signals completely, and uses trigger IDs for delivery history.

@@ -1,5 +1,8 @@
-import type { AgentProvider } from "@tryopenbot/agent-provider";
-import { discoverAgents, type AgentServiceProvider } from "@tryopenbot/agent-service-provider";
+import type { AgentProvider } from "@trytilde/dispatch-agent-provider";
+import {
+  discoverAgents,
+  type AgentServiceProvider,
+} from "@trytilde/dispatch-agent-service-provider";
 import {
   DeploymentOutputs,
   persistEnvironment,
@@ -9,7 +12,7 @@ import {
   type DeploymentReporter,
   type DeployableProvider,
   runProviderLifecycleHook,
-} from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
 import {
   setEncryptedSecret,
   setEnvironmentValue,
@@ -76,7 +79,7 @@ export async function reconcileAgentResources(
     const prefix = `AGENT_${source.slug.replaceAll("-", "_").toUpperCase()}`;
     const value =
       options.environment[`${prefix}_AUTOMATIC_MEMORY_MODE`] ??
-      options.environment.OPENBOT_AUTOMATIC_MEMORY_MODE;
+      options.environment.DISPATCH_AUTOMATIC_MEMORY_MODE;
     return (value?.trim().toLowerCase() ?? "none") !== "none";
   });
   let sources = selectedAgentIds

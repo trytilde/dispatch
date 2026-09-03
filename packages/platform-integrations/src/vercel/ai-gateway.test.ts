@@ -14,7 +14,7 @@ describe("Vercel AI Gateway", () => {
       createVercelAiGatewayApiKey({
         token: "vercel-private",
         teamId: "team_123",
-        name: "OpenBot agents",
+        name: "Dispatch agents",
         request,
       }),
     ).resolves.toEqual({ id: "key_123", value: "vck_private" });
@@ -28,7 +28,7 @@ describe("Vercel AI Gateway", () => {
         Authorization: "Bearer vercel-private",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ purpose: "ai-gateway", name: "OpenBot agents" }),
+      body: JSON.stringify({ purpose: "ai-gateway", name: "Dispatch agents" }),
     });
   });
 
@@ -38,7 +38,7 @@ describe("Vercel AI Gateway", () => {
         new Response("private upstream detail", { status: 403 }),
     );
     await expect(
-      createVercelAiGatewayApiKey({ token: "vercel-private", name: "OpenBot", request }),
+      createVercelAiGatewayApiKey({ token: "vercel-private", name: "Dispatch", request }),
     ).rejects.toThrow("Vercel AI Gateway API key creation failed (403)");
   });
 });

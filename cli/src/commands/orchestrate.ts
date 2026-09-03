@@ -16,11 +16,11 @@ import {
 import { runProductionDeploy } from "./deploy.js";
 import { inkPrompts } from "./init.js";
 
-export const SANDBOX_EDITS_BRANCH = "openbot/sandbox-edits";
+export const SANDBOX_EDITS_BRANCH = "dispatch/sandbox-edits";
 
 const settleMs = 30_000;
 const watchedDirectories = ["configuration", "packages", "apps", "cli"] as const;
-const ignoredSegments = new Set([".git", "node_modules", "dist", ".openbot-deploy", ".cache"]);
+const ignoredSegments = new Set([".git", "node_modules", "dist", ".dispatch-deploy", ".cache"]);
 // Lifecycle metadata the pipeline itself persists; watching it would make deploys self-trigger.
 const ignoredRepositoryPaths = new Set([
   "configuration/.env",
@@ -98,7 +98,7 @@ export async function runOrchestrator(): Promise<never> {
     state = "publishing";
     try {
       console.log("Edits settled: verifying the project");
-      await runChecked("pnpm", ["--filter", "openbot", "typecheck"], env);
+      await runChecked("pnpm", ["--filter", "@trytilde/cli", "typecheck"], env);
       if (aborted()) return;
       console.log(`Publishing to ${SANDBOX_EDITS_BRANCH}`);
       await publishSandboxEdits(env);

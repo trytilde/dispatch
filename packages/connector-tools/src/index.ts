@@ -1,5 +1,5 @@
 import type { Tool } from "@ai-sdk/provider-utils";
-import { isRecord } from "@tryopenbot/utilities/json";
+import { isRecord } from "@trytilde/dispatch-utilities/json";
 import { tool } from "ai";
 import { z } from "zod";
 
@@ -101,7 +101,7 @@ const cardShownNote = [
 /**
  * In-chat connector account selection. Lists the team's enabled accounts for
  * one Tilde tool provider and emits a `connector_selection` payload that the
- * OpenBot clients render as an interactive account-picker card.
+ * Dispatch clients render as an interactive account-picker card.
  */
 export function createConfigureConnectorTool(options: ConnectorToolOptions): Tool {
   return tool({

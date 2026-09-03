@@ -2,16 +2,16 @@ import { execFile } from "node:child_process";
 import { createServer } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
-import { TildePlatform } from "@tryopenbot/platform-integrations";
-import { tildeErrorMessage } from "@tryopenbot/platform-integrations/tilde/errors";
+import { TildePlatform } from "@trytilde/dispatch-platform-integrations";
+import { tildeErrorMessage } from "@trytilde/dispatch-platform-integrations/tilde/errors";
 import type {
   DeploymentContext,
   DeploymentPlan,
   DeploymentReporter,
   ProviderInitialization,
   ProviderInitializationContext,
-} from "@tryopenbot/runtime-provider";
-import { persistEnvironment } from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
+import { persistEnvironment } from "@trytilde/dispatch-runtime-provider";
 import {
   autoProvisionToolGroupInstance,
   createTildeApiClient,
@@ -38,22 +38,22 @@ export const githubGitProxyEnvironmentName = "GIT_GITHUB_GIT_PROXY_PROFILE_ID";
 export const githubToolGroupSourceTypeId = "github";
 const githubCredentialSourceTypeId = "server_token_exchange";
 const githubProviderProvisionerId = "provider_provisioner.github";
-const restProxyProfileId = "openbot-github-rest";
-const gitProxyProfileId = "openbot-github-git";
+const restProxyProfileId = "dispatch-github-rest";
+const gitProxyProfileId = "dispatch-github-git";
 const restProxyProviderId = "github";
 const gitProxyProviderId = "github_git_https";
 
 export const gitHubGitProviderInitialization: ProviderInitialization = {
   id: "github-git",
   label: "GitHub",
-  description: "Connect the GitHub repository that holds this OpenBot fork.",
+  description: "Connect the GitHub repository that holds this Dispatch fork.",
   questions: [
     {
       id: "github-app-name",
       prompt: "GitHub App name",
       description:
         "Name of the GitHub App created for this installation. GitHub App names are globally unique, so include something identifying; GitHub lets you adjust it on the creation page.",
-      defaultValue: "OpenBot",
+      defaultValue: "Dispatch",
       input: "text",
       required: true,
       destination: { kind: "environment", key: githubAppNameEnvironmentName },
@@ -111,7 +111,7 @@ export class GitHubGitProvider implements GitProvider {
         await context.setEnvironment(
           githubRepositoryEnvironmentName,
           repository,
-          "GitHub repository (owner/name) holding this OpenBot fork.",
+          "GitHub repository (owner/name) holding this Dispatch fork.",
         );
     }
     const report = context.report ?? (() => undefined);
@@ -391,7 +391,7 @@ async function resumeGitHubAppProvisioning(
 function githubAppDisplayName(environment: NodeJS.ProcessEnv): string {
   const configured = environment[githubAppNameEnvironmentName]?.trim();
   if (configured) return configured;
-  return `${environment.OPENBOT_DEPLOYMENT_NAME?.trim() || "OpenBot"} GitHub`;
+  return `${environment.DISPATCH_DEPLOYMENT_NAME?.trim() || "Dispatch"} GitHub`;
 }
 
 /** GitHub's manifest flow targets an organization through its dedicated creation URL. */
@@ -477,7 +477,7 @@ async function surfaceProvisioningAction(
       event: "git.github.authorization.required",
       details: {
         url: action.action_url,
-        hint: "Run openbot init in an interactive terminal to complete the GitHub App authorization.",
+        hint: "Run tilde init in an interactive terminal to complete the GitHub App authorization.",
       },
     });
   }
@@ -495,9 +495,9 @@ export function authorizationFormPage(actionUrl: string, fields: unknown): strin
   return [
     "<!doctype html>",
     '<meta charset="utf-8" />',
-    "<title>Authorize the OpenBot GitHub App</title>",
+    "<title>Authorize the Dispatch GitHub App</title>",
     '<body onload="document.forms[0].submit()">',
-    "  <p>Redirecting to GitHub to create and install the OpenBot GitHub App…</p>",
+    "  <p>Redirecting to GitHub to create and install the Dispatch GitHub App…</p>",
     `  <form method="post" action="${escapeHtml(actionUrl)}">`,
     inputs,
     '    <button type="submit">Continue to GitHub</button>',

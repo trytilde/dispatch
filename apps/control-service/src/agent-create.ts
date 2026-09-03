@@ -3,8 +3,8 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-node";
 import type { Hono } from "hono";
-import { ComputerService } from "@tryopenbot/computer-service-proto";
-import { agentIdFromName } from "@tryopenbot/utilities";
+import { ComputerService } from "@trytilde/dispatch-computer-service-proto";
+import { agentIdFromName } from "@trytilde/dispatch-utilities";
 
 export interface AgentCreationOptions {
   environment?: NodeJS.ProcessEnv;
@@ -80,7 +80,7 @@ export function registerAgentCreation(app: Hono, options: AgentCreationOptions =
         ? {
             agentId: "factory",
             command: "pnpm",
-            arguments: ["openbot", "new-agent", name, "--json"],
+            arguments: ["tilde", "new-agent", name, "--json"],
             cwd: options.repositoryRoot,
             timeoutMilliseconds: createTimeoutMs,
             background: true,
@@ -90,7 +90,7 @@ export function registerAgentCreation(app: Hono, options: AgentCreationOptions =
             command: "bash",
             arguments: [
               "-lc",
-              `source /workspace/.openbot/development/profile.sh && cd /workspace/openbot && pnpm openbot new-agent ${shellQuote(name)} --json`,
+              `source /workspace/.dispatch/development/profile.sh && cd /workspace/dispatch && pnpm tilde new-agent ${shellQuote(name)} --json`,
             ],
             cwd: "",
             timeoutMilliseconds: createTimeoutMs,

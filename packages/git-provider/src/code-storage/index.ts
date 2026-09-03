@@ -7,7 +7,7 @@ import {
   type DeploymentPlan,
   type ProviderInitialization,
   type ProviderInitializationContext,
-} from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
 import type { GitProvider } from "../core.js";
 import { GitProviderError } from "../core.js";
 
@@ -25,7 +25,7 @@ export const codeStorageGitHubDefaultBranchEnvironmentName = "CODE_STORAGE_GITHU
 export const codeStorageGitProviderInitialization: ProviderInitialization = {
   id: "code-storage-git",
   label: "Code Storage",
-  description: "Store this OpenBot fork in Code Storage using scoped Git-over-HTTPS JWTs.",
+  description: "Store this Dispatch fork in Code Storage using scoped Git-over-HTTPS JWTs.",
   questions: [
     {
       id: "code-storage-organization",
@@ -39,8 +39,8 @@ export const codeStorageGitProviderInitialization: ProviderInitialization = {
     {
       id: "code-storage-repository",
       prompt: "Code Storage repository ID",
-      description: "Stable repository path, such as team/openbot. It is created when missing.",
-      defaultValue: "openbot",
+      description: "Stable repository path, such as team/dispatch. It is created when missing.",
+      defaultValue: "dispatch",
       input: "text",
       required: true,
       destination: { kind: "environment", key: codeStorageRepositoryEnvironmentName },
@@ -157,7 +157,7 @@ export class CodeStorageGitProvider implements GitProvider {
         await context.setEnvironment(
           codeStorageRepositoryEnvironmentName,
           repository,
-          "Code Storage repository ID holding this OpenBot fork.",
+          "Code Storage repository ID holding this Dispatch fork.",
         );
     }
     const existingToken = context.environment[codeStorageRepositoryTokenSecretName]?.trim();
@@ -190,7 +190,7 @@ export class CodeStorageGitProvider implements GitProvider {
       await context.setSecret(
         codeStorageRepositoryTokenSecretName,
         decodeURIComponent(token),
-        "Repository-scoped Code Storage Git credential for this OpenBot fork.",
+        "Repository-scoped Code Storage Git credential for this Dispatch fork.",
       );
       context.report?.({
         event: "git.code-storage.initialized",
@@ -244,7 +244,7 @@ export class CodeStorageGitProvider implements GitProvider {
         context,
         codeStorageRepositoryEnvironmentName,
         repository,
-        "Code Storage repository ID holding this OpenBot fork.",
+        "Code Storage repository ID holding this Dispatch fork.",
       );
       context.report({
         event: "git.code-storage.reconciled",
@@ -324,7 +324,7 @@ function configuration(environment: NodeJS.ProcessEnv): {
   if (!repositoryToken)
     throw new GitProviderError(
       "invalid_configuration",
-      `${codeStorageRepositoryTokenSecretName} is required; rerun openbot init with the setup-only organization key`,
+      `${codeStorageRepositoryTokenSecretName} is required; rerun tilde init with the setup-only organization key`,
     );
   return { organization, repository, repositoryToken };
 }

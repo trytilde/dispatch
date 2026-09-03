@@ -3,7 +3,7 @@ import { renderFileTemplate } from "./file-template.js";
 
 describe("renderFileTemplate", () => {
   it("renders explicit values and rejects missing values", () => {
-    expect(renderFileTemplate("Hello {{name}}", { name: "OpenBot" })).toBe("Hello OpenBot");
+    expect(renderFileTemplate("Hello {{name}}", { name: "Dispatch" })).toBe("Hello Dispatch");
     expect(() => renderFileTemplate("Hello {{name}}")).toThrow();
   });
 

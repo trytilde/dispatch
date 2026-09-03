@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 
 function emit(payload) {
   return new Promise((resolve) => {
-    const child = spawn("openbot", ["plugin", "audit", "--cli", "opencode"], {
+    const child = spawn("tilde", ["plugin", "audit", "--cli", "opencode"], {
       stdio: ["pipe", "ignore", "inherit"],
     });
     child.once("error", (error) => {

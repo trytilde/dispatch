@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import type { ChildProcess } from "node:child_process";
-import type { OpenBotConfiguration } from "@tryopenbot/configuration";
-import { waitForHealth } from "@tryopenbot/control-service-provider";
+import type { DispatchConfiguration } from "@trytilde/dispatch-configuration";
+import { waitForHealth } from "@trytilde/dispatch-control-service-provider";
 import { runLocalRuntimeTunnelCommand } from "../tilde/runtime-tunnel.js";
 import { formatAgentLifecycleProgress, reconcileAgentResources } from "../agent-lifecycle.js";
 import { loadConfigurationModule } from "../configuration-loader.js";
@@ -26,7 +26,7 @@ export async function runDevelopment(): Promise<never> {
   const serverPort = env.PORT ?? "4100";
   const configuration = await loadDevelopmentConfiguration(env);
   const infrastructureProgress = createStreamingProgress(
-    "Preparing OpenBot development infrastructure",
+    "Preparing Dispatch development infrastructure",
   );
   try {
     await reconcileDevelopmentInfrastructure({
@@ -43,9 +43,9 @@ export async function runDevelopment(): Promise<never> {
         if (label) infrastructureProgress.setLabel(label);
       },
     });
-    infrastructureProgress.succeed("OpenBot development infrastructure ready");
+    infrastructureProgress.succeed("Dispatch development infrastructure ready");
   } catch (error) {
-    infrastructureProgress.fail("OpenBot development infrastructure failed");
+    infrastructureProgress.fail("Dispatch development infrastructure failed");
     throw error;
   }
   await runChecked("pnpm", ["contracts:generate"], env);
@@ -63,13 +63,13 @@ export async function runDevelopment(): Promise<never> {
   process.once("exit", () => computerWatcher.close());
 
   const webPort = env.WEB_PORT ?? "4173";
-  console.log(`OpenBot web: http://127.0.0.1:${webPort}`);
-  console.log(`OpenBot control and agent HMR server: http://127.0.0.1:${serverPort}`);
+  console.log(`Dispatch web: http://127.0.0.1:${webPort}`);
+  console.log(`Dispatch control and agent HMR server: http://127.0.0.1:${serverPort}`);
 
   const [serverCommand, serverArguments] = developmentServerCommand();
   const server = await startTunneledAgentService(serverCommand, serverArguments, env);
   await writeLiveAgentServiceOrigin(repositoryRoot, server.agentServiceOrigin);
-  if (env.OPENBOT_SKIP_AGENT_RECONCILE === "1") {
+  if (env.DISPATCH_SKIP_AGENT_RECONCILE === "1") {
     console.log("Agent resource reconciliation skipped by operator configuration");
   } else
     try {
@@ -91,13 +91,13 @@ export async function runDevelopment(): Promise<never> {
     }
   const web = run(
     "pnpm",
-    developmentPackageCommand("@tryopenbot/web", "dev", [
+    developmentPackageCommand("@trytilde/dispatch-web", "dev", [
       "--port",
       webPort,
       "--host",
       env.WEB_HOST ?? "127.0.0.1",
     ]),
-    developmentChildEnvironment(shellEnvironment, { OPENBOT_CONTROL_PORT: serverPort }),
+    developmentChildEnvironment(shellEnvironment, { DISPATCH_CONTROL_PORT: serverPort }),
   );
   const children = [server.child, web];
 
@@ -111,10 +111,12 @@ export async function runDevelopment(): Promise<never> {
       CONTROL_ORIGIN: `http://127.0.0.1:${serverPort}`,
       DESKTOP_DEV_URL: `http://127.0.0.1:${webPort}`,
     });
-    children.push(run("pnpm", developmentPackageCommand("@tryopenbot/desktop", "dev"), desktopEnv));
+    children.push(
+      run("pnpm", developmentPackageCommand("@trytilde/dispatch-desktop", "dev"), desktopEnv),
+    );
   } else {
     console.log(
-      "OpenBot desktop: skipped (set DISPLAY/WAYLAND_DISPLAY, or run on macOS; NO_DESKTOP=1 disables it explicitly)",
+      "Dispatch desktop: skipped (set DISPLAY/WAYLAND_DISPLAY, or run on macOS; NO_DESKTOP=1 disables it explicitly)",
     );
   }
 
@@ -129,14 +131,14 @@ export async function runDevelopment(): Promise<never> {
 
 export async function loadDevelopmentConfiguration(
   environment: NodeJS.ProcessEnv,
-): Promise<OpenBotConfiguration> {
+): Promise<DispatchConfiguration> {
   const path = resolve(repositoryRoot, "configuration/index.ts");
-  const module = await loadConfigurationModule<{ default?: OpenBotConfiguration }>(
+  const module = await loadConfigurationModule<{ default?: DispatchConfiguration }>(
     path,
     environment,
   );
   if (!module.default)
-    throw new Error("configuration/index.ts must export the OpenBot configuration as default");
+    throw new Error("configuration/index.ts must export the Dispatch configuration as default");
   return module.default;
 }
 
@@ -180,7 +182,7 @@ export function developmentTunnelOptions(
   if (!apiKey || !orgId || !teamId) return undefined;
   const port = Number(environment.PORT ?? "4100");
   if (!Number.isSafeInteger(port) || port < 1 || port > 65_535)
-    throw new Error(`Invalid OpenBot development server port: ${environment.PORT}`);
+    throw new Error(`Invalid Dispatch development server port: ${environment.PORT}`);
   return {
     baseUrl: environment.TILDE_BASE_URL?.trim() || "https://api.trytilde.ai",
     apiKey,

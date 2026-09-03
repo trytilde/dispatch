@@ -23,8 +23,10 @@ describe("AgentAvatar package entry", () => {
   });
 
   it("does not require client-runtime for the standalone entry", () => {
-    expect(manifest.dependencies?.["@tryopenbot/client-runtime"]).toBeUndefined();
-    expect(manifest.peerDependencies?.["@tryopenbot/client-runtime"]).toBe("0.1.0");
-    expect(manifest.peerDependenciesMeta?.["@tryopenbot/client-runtime"]?.optional).toBe(true);
+    expect(manifest.dependencies?.["@trytilde/dispatch-client-runtime"]).toBeUndefined();
+    expect(manifest.peerDependencies?.["@trytilde/dispatch-client-runtime"]).toBe("0.1.0");
+    expect(manifest.peerDependenciesMeta?.["@trytilde/dispatch-client-runtime"]?.optional).toBe(
+      true,
+    );
   });
 });

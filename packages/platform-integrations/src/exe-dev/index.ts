@@ -1,4 +1,4 @@
-import type { Platform, ProviderInitialization } from "@tryopenbot/runtime-provider";
+import type { Platform, ProviderInitialization } from "@trytilde/dispatch-runtime-provider";
 
 export const exeDevVmEnvironmentName = "EXE_DEV_VM";
 export const exeDevCpuEnvironmentName = "EXE_DEV_CPU";
@@ -9,7 +9,7 @@ export const exeDevPublicOriginEnvironmentName = "EXE_DEV_PUBLIC_ORIGIN";
 const initialization: ProviderInitialization = {
   id: "exe-dev",
   label: "exe.dev",
-  description: "Run the complete trusted OpenBot development stack on one persistent exe.dev VM.",
+  description: "Run the complete trusted Dispatch development stack on one persistent exe.dev VM.",
   questions: [
     {
       id: "exe-dev-vm",
@@ -46,8 +46,8 @@ const initialization: ProviderInitialization = {
     },
     {
       id: "exe-dev-remote-directory",
-      prompt: "OpenBot directory on the exe.dev VM",
-      defaultValue: "/home/exedev/openbot",
+      prompt: "Dispatch directory on the exe.dev VM",
+      defaultValue: "/home/exedev/dispatch",
       input: "text",
       required: true,
       validation: { pattern: "^/[^\\r\\n\\0]+$", message: "Use an absolute Linux path." },
@@ -55,7 +55,7 @@ const initialization: ProviderInitialization = {
     },
     {
       id: "exe-dev-public-origin",
-      prompt: "Public OpenBot origin (blank for the exe.xyz hostname)",
+      prompt: "Public Dispatch origin (blank for the exe.xyz hostname)",
       description: "Optional custom HTTPS origin already routed to this VM.",
       input: "text",
       destination: { kind: "environment", key: exeDevPublicOriginEnvironmentName },
@@ -94,7 +94,7 @@ export class ExeDevPlatform implements Platform {
     const remoteDirectory =
       this.config.remoteDirectory ??
       environment[exeDevRemoteDirectoryEnvironmentName]?.trim() ??
-      "/home/exedev/openbot";
+      "/home/exedev/dispatch";
     if (!vm || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(vm))
       throw new Error(`${exeDevVmEnvironmentName} must be a valid exe.dev VM name`);
     if (!Number.isSafeInteger(cpu) || cpu < 1)

@@ -1,14 +1,14 @@
 import { resolve } from "node:path";
 import arg from "arg";
-import type { OpenBotConfiguration } from "@tryopenbot/configuration";
-import { discoverAgentWorkspaces } from "@tryopenbot/agent-service-provider";
+import type { DispatchConfiguration } from "@trytilde/dispatch-configuration";
+import { discoverAgentWorkspaces } from "@trytilde/dispatch-agent-service-provider";
 import {
   buildProviders,
   deployProviders,
   type DeploymentContext,
   type DeploymentEvent,
   type DeploymentParticipant,
-} from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
 import {
   discoveredAgentIds,
   persistAgentSandboxUrls,
@@ -49,9 +49,9 @@ export function deploymentScope(
 }
 
 export function serviceDeploymentParticipants(options: {
-  agentService: OpenBotConfiguration["providers"]["agentService"];
-  controlService: OpenBotConfiguration["providers"]["controlService"];
-  inference: OpenBotConfiguration["providers"]["inference"];
+  agentService: DispatchConfiguration["providers"]["agentService"];
+  controlService: DispatchConfiguration["providers"]["controlService"];
+  inference: DispatchConfiguration["providers"]["inference"];
   deployAgents: boolean;
   consolidatedRuntime: boolean;
 }): DeploymentParticipant[] {
@@ -158,9 +158,9 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
     options.service,
     consolidatedRuntime,
   );
-  const computerId = deploymentConfiguration.environment.COMPUTER_ID?.trim() || "openbot-computer";
+  const computerId = deploymentConfiguration.environment.COMPUTER_ID?.trim() || "dispatch-computer";
   const developmentSandboxId =
-    deploymentConfiguration.environment.DEVELOPMENT_SANDBOX_ID?.trim() || "openbot-development";
+    deploymentConfiguration.environment.DEVELOPMENT_SANDBOX_ID?.trim() || "dispatch-development";
   const git = configuration.providers.git;
   const participants: DeploymentParticipant[] = [
     ...(deployAgents && git
@@ -216,7 +216,7 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
             provider: {
               deployable: {
                 plan: async (_context: DeploymentContext) => ({
-                  summary: "Seed or resume the trusted OpenBot development sandbox",
+                  summary: "Seed or resume the trusted Dispatch development sandbox",
                   steps: [
                     "Preserve its mutable source tree",
                     "Install the aggregate deployment environment and SOPS identity",
@@ -327,10 +327,10 @@ export async function runProductionDeploy(argv: readonly string[]): Promise<void
     });
 }
 
-async function loadRepositoryConfiguration(): Promise<OpenBotConfiguration> {
+async function loadRepositoryConfiguration(): Promise<DispatchConfiguration> {
   const path = resolve(repositoryRoot, "configuration/index.ts");
-  const module = await loadConfigurationModule<{ default?: OpenBotConfiguration }>(path);
+  const module = await loadConfigurationModule<{ default?: DispatchConfiguration }>(path);
   if (!module.default)
-    throw new Error("configuration/index.ts must export the OpenBot configuration as default");
+    throw new Error("configuration/index.ts must export the Dispatch configuration as default");
   return module.default;
 }

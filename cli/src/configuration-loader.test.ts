@@ -23,7 +23,7 @@ afterEach(async () => {
 
 describe("configuration loader", () => {
   it("maps generated .js specifiers to fork-owned TypeScript files", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-configuration-loader-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-configuration-loader-"));
     temporaryDirectories.push(root);
     await writeFile(
       join(root, "index.ts"),
@@ -31,7 +31,7 @@ describe("configuration loader", () => {
     );
     await writeFile(
       join(root, "providers.ts"),
-      "export default { marker: process.env.OPENBOT_LOADER_MARKER };\n",
+      "export default { marker: process.env.DISPATCH_LOADER_MARKER };\n",
     );
 
     const configurationPath = join(root, "index.ts");
@@ -44,11 +44,11 @@ describe("configuration loader", () => {
       import { loadConfigurationModule } from ${JSON.stringify(loaderUrl.href)};
       await runWithTypeScriptLoader(async () => {
         const loaded = await loadConfigurationModule(${JSON.stringify(configurationPath)}, {
-          OPENBOT_LOADER_MARKER: "loaded",
+          DISPATCH_LOADER_MARKER: "loaded",
         });
         await writeFile(${JSON.stringify(resultPath)}, JSON.stringify({
           loaded: loaded.default,
-          restored: process.env.OPENBOT_LOADER_MARKER,
+          restored: process.env.DISPATCH_LOADER_MARKER,
         }));
       });
       `,
@@ -63,7 +63,7 @@ describe("configuration loader", () => {
   });
 
   it("selects development exports for unbuilt workspace packages", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-workspace-loader-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-workspace-loader-"));
     temporaryDirectories.push(root);
     const packageRoot = join(root, "node_modules", "@example", "provider");
     await mkdir(join(packageRoot, "src"), { recursive: true });

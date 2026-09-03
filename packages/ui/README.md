@@ -1,6 +1,6 @@
-# @tryopenbot/ui
+# @trytilde/dispatch-ui
 
-Shared React UI components and the vendored Beautiful UI surface used by OpenBot applications.
+Shared React UI components and the vendored Beautiful UI surface used by Dispatch applications.
 
 ## Public API
 
@@ -44,26 +44,26 @@ The package root exports the complete workspace surface:
   `BeautifulSidebarNav`, `StreamingText`, `TaskRows`, `Thinking`, and
   `ToolChips`.
 
-`@tryopenbot/ui/beautiful-ui.css` exports the upstream stylesheet. `@tryopenbot/ui/beautiful-ui/*` exposes the vendored component modules for consumers that need a specific upstream file. Changes to vendored files must retain provenance in the repository notices.
+`@trytilde/dispatch-ui/beautiful-ui.css` exports the upstream stylesheet. `@trytilde/dispatch-ui/beautiful-ui/*` exposes the vendored component modules for consumers that need a specific upstream file. Changes to vendored files must retain provenance in the repository notices.
 
-`@tryopenbot/ui/openbot-ui.css` exports the complete OpenBot workspace palette,
+`@trytilde/dispatch-ui/dispatch-ui.css` exports the complete Dispatch workspace palette,
 geometry, responsive layout, component states, and motion system. Applications
 should consume the package stylesheet instead of maintaining local overrides.
 
 Consumers that need only the avatar can import `AgentAvatar` from
-`@tryopenbot/ui/agent-avatar` and its component-scoped layout from
-`@tryopenbot/ui/agent-avatar.css`. The standalone entry does not require the
-OpenBot global stylesheet, theme tokens, or `@tryopenbot/client-runtime`.
+`@trytilde/dispatch-ui/agent-avatar` and its component-scoped layout from
+`@trytilde/dispatch-ui/agent-avatar.css`. The standalone entry does not require the
+Dispatch global stylesheet, theme tokens, or `@trytilde/dispatch-client-runtime`.
 
 ## Storybook
 
 Run the package-owned component catalog from the repository root:
 
 ```bash
-pnpm --filter @tryopenbot/ui storybook
+pnpm --filter @trytilde/dispatch-ui storybook
 ```
 
-Build its static output with `pnpm --filter @tryopenbot/ui storybook:build`.
+Build its static output with `pnpm --filter @trytilde/dispatch-ui storybook:build`.
 The stories cover every public visual component that can run in isolation,
 including responsive compositions and loading, error, permission, reconnect,
 and deployment lifecycle states.

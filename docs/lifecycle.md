@@ -1,14 +1,14 @@
-# OpenBot lifecycle
+# Dispatch lifecycle
 
-OpenBot uses typed lifecycle hooks. Hooks own work. Events only report progress.
+Dispatch uses typed lifecycle hooks. Hooks own work. Events only report progress.
 
 ## Initialization
 
-`openbot init` creates or revisits fork-owned configuration. Shared platforms are collected once, even when several providers use them.
+`tilde init` creates or revisits fork-owned configuration. Shared platforms are collected once, even when several providers use them.
 
 ```mermaid
 flowchart TD
-  A["openbot init"] --> B{"Initialized repository?"}
+  A["tilde init"] --> B{"Initialized repository?"}
   B -- "No" --> C["Verify canonical revision and GitHub access"]
   C --> D["Create public fork or private mirror"]
   D --> E["Clone and verify owned repository"]
@@ -49,11 +49,11 @@ Keep initialization deterministic. It should collect configuration, validate acc
 
 ## Adding an agent
 
-`openbot new-agent` materializes source, then runs the same idempotent development reconciliation used by `openbot dev`. Production deployment runs that lifecycle again with the deployed agent-service base URL.
+`tilde new-agent` materializes source, then runs the same idempotent development reconciliation used by `tilde dev`. Production deployment runs that lifecycle again with the deployed agent-service base URL.
 
 ```mermaid
 flowchart TD
-  A["openbot new-agent"] --> B["Normalize display name into agent ID"]
+  A["tilde new-agent"] --> B["Normalize display name into agent ID"]
   B --> C{"Agent directory exists?"}
   C -- "Yes" --> D["Stop without overwriting"]
   C -- "No" --> E["Load configuration/templates/agent/**/*.hbs"]
@@ -100,14 +100,14 @@ Repository builds and deployment artifact builds are related but distinct.
 
 ```mermaid
 flowchart TD
-  A["openbot build"] --> B["Delegate to pnpm build"]
+  A["tilde build"] --> B["Delegate to pnpm build"]
   B --> C["Generate protobuf contracts"]
   C --> D["Run workspace package builds"]
   D --> E["Type-check and bundle packages and apps"]
   E --> F["Copy package assets"]
   F --> G["Verify published package artifacts and standalone CLI"]
 
-  H["openbot deploy"] --> I["Select deployment participants"]
+  H["tilde deploy"] --> I["Select deployment participants"]
   I --> J{"Participant exposes buildable?"}
   J -- "Yes" --> K["Buildable.check"]
   K --> L["Buildable.build"]
@@ -127,11 +127,11 @@ Package `build` scripts compile publishable workspace packages. They are not pro
 
 ## Deploying
 
-`openbot deploy` builds first, plans every deployable participant, configures prerequisites, then deploys the runtime last.
+`tilde deploy` builds first, plans every deployable participant, configures prerequisites, then deploys the runtime last.
 
 ```mermaid
 flowchart TD
-  A["openbot deploy"] --> B["Load decrypted deployment configuration"]
+  A["tilde deploy"] --> B["Load decrypted deployment configuration"]
   B --> C["Compose selected participants"]
   C --> D["Buildable.check for each buildable participant"]
   D --> E["Buildable.build for each buildable participant"]

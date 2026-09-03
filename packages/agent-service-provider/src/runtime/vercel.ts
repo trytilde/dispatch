@@ -3,14 +3,14 @@ import type {
   DeploymentPlan,
   DeploymentResult,
   ProviderInitialization,
-} from "@tryopenbot/runtime-provider";
-import { isDevelopmentLifecycle, persistEnvironment } from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
+import { isDevelopmentLifecycle, persistEnvironment } from "@trytilde/dispatch-runtime-provider";
 import {
   processRunner,
   VercelControlServiceProvider,
   type CommandRunner,
-} from "@tryopenbot/control-service-provider";
-import { TildePlatform, VercelPlatform } from "@tryopenbot/platform-integrations";
+} from "@trytilde/dispatch-control-service-provider";
+import { TildePlatform, VercelPlatform } from "@trytilde/dispatch-platform-integrations";
 import { VercelAgentServiceProvider } from "../vercel/index.js";
 import { buildVercelRuntimeService } from "./vercel-build.js";
 
@@ -25,11 +25,11 @@ export interface VercelRuntimeServiceProviderOptions {
 export class VercelRuntimeServiceProvider {
   readonly initialization: ProviderInitialization = {
     id: "vercel-runtime",
-    label: "Vercel OpenBot runtime",
+    label: "Vercel Dispatch runtime",
     questions: [
       {
         id: "vercel-runtime-project",
-        prompt: "Vercel project for the OpenBot runtime",
+        prompt: "Vercel project for the Dispatch runtime",
         description:
           "Name of the single Vercel project that will host the web app, control API, and isolated agent functions.",
         input: "text",
@@ -71,7 +71,7 @@ export class VercelRuntimeServiceProvider {
   async plan(context: DeploymentContext): Promise<DeploymentPlan> {
     if (isDevelopmentLifecycle(context))
       return {
-        summary: "Use the watched combined OpenBot runtime in development",
+        summary: "Use the watched combined Dispatch runtime in development",
         steps: ["Skip Vercel project configuration and deployment"],
       };
     return {
@@ -93,7 +93,7 @@ export class VercelRuntimeServiceProvider {
       context,
       "VERCEL_RUNTIME_PROJECT",
       project,
-      "Vercel project hosting the combined OpenBot runtime.",
+      "Vercel project hosting the combined Dispatch runtime.",
     );
     const origin = this.baseUrl(context).toString().replace(/\/$/, "");
     return {
@@ -125,7 +125,7 @@ export class VercelRuntimeServiceProvider {
 function runtimeProject(environment: NodeJS.ProcessEnv): string {
   const project =
     environment.VERCEL_RUNTIME_PROJECT?.trim() ?? environment.VERCEL_CONTROL_PROJECT?.trim();
-  if (!project) throw new Error("VERCEL_RUNTIME_PROJECT is required for the OpenBot runtime");
+  if (!project) throw new Error("VERCEL_RUNTIME_PROJECT is required for the Dispatch runtime");
   return project;
 }
 

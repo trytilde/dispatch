@@ -1,5 +1,5 @@
-import { ExeDevPlatform, exeDevPlatform } from "@tryopenbot/platform-integrations";
-import type { DeploymentContext } from "@tryopenbot/runtime-provider";
+import { ExeDevPlatform, exeDevPlatform } from "@trytilde/dispatch-platform-integrations";
+import type { DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import type {
   ComputerCallContext,
   ComputerExecRequest,
@@ -43,7 +43,7 @@ export class ExeDevComputerProvider implements ComputerProvider {
   async previewAgentDesktop(agentId: string, context: ComputerCallContext) {
     const endpoint = await this.#computer.previewAgentDesktop(agentId, context);
     const publicUrl = new URL(
-      "/computer-vnc/openbot.html",
+      "/computer-vnc/dispatch.html",
       this.platform.connection(context.environment ?? process.env).publicOrigin,
     );
     for (const [name, value] of endpoint.url.searchParams) publicUrl.searchParams.set(name, value);

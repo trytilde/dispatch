@@ -5,7 +5,7 @@ import {
   type OnboardingStorage,
 } from "./contracts/onboarding.js";
 
-const storageKey = "openbot.onboarding";
+const storageKey = "dispatch.onboarding";
 
 const notOnboarded: OnboardingState = { completed: false };
 

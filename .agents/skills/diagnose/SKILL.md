@@ -7,7 +7,7 @@ description: Disciplined diagnosis loop for hard bugs and performance regression
 
 A discipline for hard bugs. Skip phases only when explicitly justified.
 
-When exploring OpenBot, start with `README.md`, `AGENTS.md`, the public route or protobuf method, the owning provider interface/adapter, and nearby tests. Check `CONTEXT.md` or ADRs only when they exist.
+When exploring Dispatch, start with `README.md`, `AGENTS.md`, the public route or protobuf method, the owning provider interface/adapter, and nearby tests. Check `CONTEXT.md` or ADRs only when they exist.
 
 ## Phase 1 — Build a feedback loop
 
@@ -53,7 +53,7 @@ Do not proceed to Phase 2 until you have a loop you believe in.
 ### Frontend and e2e bugs
 
 For frontend-visible behavior, use the root Playwright setup or run
-`OPENBOT_NO_DESKTOP=1 pnpm dev`. Inspect DOM, console, network, relevant
+`DISPATCH_NO_DESKTOP=1 pnpm dev`. Inspect DOM, console, network, relevant
 ConnectRPC/HTTP responses, and visible state. Store ad hoc screenshots or traces
 outside git and reference them by absolute path. Do not treat server tests as
 sufficient when the user-visible flow can be exercised in the browser.

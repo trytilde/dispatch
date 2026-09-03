@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { CapabilityChangeApproval } from "@tryopenbot/client-runtime";
+import type { CapabilityChangeApproval } from "@trytilde/dispatch-client-runtime";
 
 export interface CapabilityApprovalCardProps {
   approval: CapabilityChangeApproval;

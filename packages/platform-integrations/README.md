@@ -1,15 +1,15 @@
-# @tryopenbot/platform-integrations
+# @trytilde/dispatch-platform-integrations
 
-Canonical installation-level integrations for platforms shared by multiple OpenBot domain providers.
+Canonical installation-level integrations for platforms shared by multiple Dispatch domain providers.
 
 ## Public API
 
-- `TildePlatform` implements `Platform` for the installation API key, organization, team, and API origin shared by Tilde agent, skills, and tools providers. The API key authenticates as its owning human or agent user; OpenBot never combines it with a bearer token. Initialization persists `https://api.trytilde.ai` as the default origin so an unrelated host override cannot retarget a configured repository. `tildePlatform` is the default shared instance.
+- `TildePlatform` implements `Platform` for the installation API key, organization, team, and API origin shared by Tilde agent, skills, and tools providers. The API key authenticates as its owning human or agent user; Dispatch never combines it with a bearer token. Initialization persists `https://api.trytilde.ai` as the default origin so an unrelated host override cannot retarget a configured repository. `tildePlatform` is the default shared instance.
 - `VercelPlatform` implements `Platform` for the Vercel credential and optional team scope shared by Vercel control-service, agent-service, and computer providers. `vercelPlatform` is the default shared instance.
 - `ExeDevPlatform` owns the shared VM name, 2-vCPU/8-GB sizing defaults, remote checkout path, SSH
   hostname, and public HTTPS origin consumed by the exe.dev runtime and Computer providers.
 - `tilde/errors` and `tilde/fetch` normalize Tilde client failures and compose provider cancellation into platform requests.
-- `deployHostedOpenBotRelease` uploads prebuilt Tilde Cloud releases and forwards only the narrow
+- `deployHostedDispatchRelease` uploads prebuilt Tilde Cloud releases and forwards only the narrow
   runtime configuration allowlist, including the non-secret hosted-inference billing marker while
   excluding Vercel credentials and other control-plane secrets.
 - `vercel/deployment` owns project lookup/creation, account scoping, runtime environment installation, and deployment URL parsing. `vercel/registry` owns Container Registry account resolution.

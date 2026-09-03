@@ -17,7 +17,7 @@ import {
   UnreadDivider,
 } from "../src/index.js";
 
-const meta = { title: "OpenBot/Transcript" } satisfies Meta;
+const meta = { title: "Dispatch/Transcript" } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 const noop = () => undefined;

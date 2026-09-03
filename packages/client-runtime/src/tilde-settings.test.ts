@@ -8,7 +8,7 @@ const automation = {
   instruction: "Check deploy health",
   enabled: true,
   version: 4,
-  metadata: { source: "openbot" },
+  metadata: { source: "dispatch" },
   status: "active",
   generation: 3,
   applied_generation: 3,
@@ -46,7 +46,7 @@ const automation = {
 };
 
 describe("Tilde settings clients", () => {
-  it("pages and projects native Tilde automations without an OpenBot routine API", async () => {
+  it("pages and projects native Tilde automations without a Dispatch routine API", async () => {
     const requestJson = vi
       .fn()
       .mockResolvedValueOnce({ items: [automation], next_page_token: "page-2" })
@@ -92,7 +92,7 @@ describe("Tilde settings clients", () => {
     );
     expect(JSON.parse(String(request?.body))).toMatchObject({
       expected_version: 4,
-      metadata: { source: "openbot" },
+      metadata: { source: "dispatch" },
       triggers: [
         { id: "schedule-1", enabled: true, metadata: { color: "blue" } },
         {

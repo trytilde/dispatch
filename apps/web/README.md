@@ -1,6 +1,6 @@
-# @tryopenbot/web
+# @trytilde/dispatch-web
 
-The React 19 and Vite owner interface for OpenBot. It uses TanStack Router and is served by the control service locally or by the runtime provider's static CDN artifact on Vercel.
+The React 19 and Vite owner interface for Dispatch. It uses TanStack Router and is served by the control service locally or by the runtime provider's static CDN artifact on Vercel.
 
 ## Public API
 

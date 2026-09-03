@@ -23,8 +23,8 @@ describe("developmentChildEnvironment", () => {
     for (const name of [
       "TILDE_API_KEY",
       "SOPS_AGE_KEY",
-      "OPENBOT_OIDC_TOKEN_ENDPOINT",
-      "OPENBOT_OIDC_CLIENT_ID",
+      "DISPATCH_OIDC_TOKEN_ENDPOINT",
+      "DISPATCH_OIDC_CLIENT_ID",
     ])
       expect(child).not.toHaveProperty(name);
   });

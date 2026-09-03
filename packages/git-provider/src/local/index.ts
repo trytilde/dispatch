@@ -7,14 +7,14 @@ import {
   type DeploymentContext,
   type DeploymentPlan,
   type ProviderInitialization,
-} from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
 import type { GitProvider } from "../core.js";
 import { GitProviderError } from "../core.js";
 
 const execFileAsync = promisify(execFile);
 
 export const localGitRepositoryEnvironmentName = "GIT_LOCAL_REPOSITORY";
-export const defaultLocalGitRepository = ".openbot/git/openbot.git";
+export const defaultLocalGitRepository = ".dispatch/git/dispatch.git";
 
 export const localGitProviderInitialization: ProviderInitialization = {
   id: "local-git",
@@ -23,23 +23,23 @@ export const localGitProviderInitialization: ProviderInitialization = {
     "Keep the installation repository entirely on this Computer's persistent filesystem.",
   questions: [
     {
-      id: "openbot-hosted-instance-id",
-      prompt: "Tilde hosted OpenBot instance ID",
+      id: "dispatch-hosted-instance-id",
+      prompt: "Tilde hosted Dispatch instance ID",
       description: "Instance capability boundary used for managed releases.",
       input: "text",
       required: true,
-      destination: { kind: "environment", key: "OPENBOT_HOSTED_INSTANCE_ID" },
+      destination: { kind: "environment", key: "DISPATCH_HOSTED_INSTANCE_ID" },
     },
     {
-      id: "openbot-hosted-computer-id",
-      prompt: "Tilde hosted OpenBot computer ID",
+      id: "dispatch-hosted-computer-id",
+      prompt: "Tilde hosted Dispatch computer ID",
       input: "text",
       required: true,
       destination: { kind: "environment", key: "COMPUTER_ID" },
     },
     {
-      id: "openbot-hosted-computer-service-url",
-      prompt: "Tilde hosted OpenBot computer service URL",
+      id: "dispatch-hosted-computer-service-url",
+      prompt: "Tilde hosted Dispatch computer service URL",
       input: "text",
       required: true,
       destination: { kind: "environment", key: "COMPUTER_SERVICE_URL" },

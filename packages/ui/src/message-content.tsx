@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import {
   capabilityChangeApprovalFromPart,
   type CapabilityChangeApproval,
-} from "@tryopenbot/client-runtime";
+} from "@trytilde/dispatch-client-runtime";
 import { CapabilityApprovalCard } from "./capability-approval-components.js";
 import {
   ConnectorAccountGrid,

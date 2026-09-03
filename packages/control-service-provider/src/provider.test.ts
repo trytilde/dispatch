@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { deployProviders, DeploymentOutputs } from "@tryopenbot/runtime-provider";
+import { deployProviders, DeploymentOutputs } from "@trytilde/dispatch-runtime-provider";
 import { LocalControlServiceProvider } from "./local/index.js";
 import { deploymentUrl, VercelControlServiceProvider } from "./vercel/index.js";
 import { buildVercelControlService } from "./vercel/build.js";
@@ -36,11 +36,11 @@ describe("control service providers", () => {
     await mkdir(join(root, "configuration"), { recursive: true });
     await writeFile(
       join(root, "apps/web/dist/index.html"),
-      "<!doctype html><title>OpenBot</title>",
+      "<!doctype html><title>Dispatch</title>",
     );
     await writeFile(
       join(root, "apps/control-service/src/app.ts"),
-      "export function createApp() { return { fetch: () => Response.json({ service: 'openbot-control' }) }; }\n",
+      "export function createApp() { return { fetch: () => Response.json({ service: 'dispatch-control' }) }; }\n",
     );
     await writeFile(
       join(root, "configuration/index.ts"),
@@ -58,7 +58,7 @@ describe("control service providers", () => {
       { run },
     );
     const artifact = result.outputs?.["control-service.artifact"];
-    expect(artifact).toBe(join(root, ".openbot-deploy/vercel/control"));
+    expect(artifact).toBe(join(root, ".dispatch-deploy/vercel/control"));
     const outputConfiguration = JSON.parse(
       await readFile(join(artifact!, ".vercel/output/config.json"), "utf8"),
     ) as { version: number; routes: Array<{ src?: string; dest?: string }> };
@@ -72,10 +72,10 @@ describe("control service providers", () => {
       join(artifact!, ".vercel/output/functions/control.func/index.mjs"),
       "utf8",
     );
-    expect(functionSource).toContain("openbot-control");
+    expect(functionSource).toContain("dispatch-control");
     expect(functionSource).not.toContain("Cannot find native binding");
     expect(await readFile(join(artifact!, ".vercel/output/static/index.html"), "utf8")).toContain(
-      "OpenBot",
+      "Dispatch",
     );
   });
 
@@ -104,24 +104,24 @@ describe("control service providers", () => {
       },
     );
     const unit = await readFile(
-      join(root, "home/.config/systemd/user/openbot-control.service"),
+      join(root, "home/.config/systemd/user/dispatch-control.service"),
       "utf8",
     );
     const environment = await readFile(
-      join(repository, ".openbot-deploy/control-service.env"),
+      join(repository, ".dispatch-deploy/control-service.env"),
       "utf8",
     );
     expect(unit).toContain(`WorkingDirectory=${root}/repository\\x20with\\x20spaces`);
     expect(unit).not.toContain('WorkingDirectory="');
     expect(unit).toContain(
-      `EnvironmentFile=${root}/repository\\x20with\\x20spaces/.openbot-deploy/control-service.env`,
+      `EnvironmentFile=${root}/repository\\x20with\\x20spaces/.dispatch-deploy/control-service.env`,
     );
     expect(unit).not.toContain('EnvironmentFile="');
     expect(unit).not.toContain("private-value");
     expect(environment).toContain('API_KEY="private-value"');
     expect(run).toHaveBeenCalledWith(
       "systemctl",
-      ["--user", "restart", "openbot-control.service"],
+      ["--user", "restart", "dispatch-control.service"],
       expect.anything(),
     );
   });
@@ -143,7 +143,7 @@ describe("control service providers", () => {
         dryRun: false,
         repositoryRoot: root,
         environment: {
-          VERCEL_CONTROL_PROJECT: "openbot-control",
+          VERCEL_CONTROL_PROJECT: "dispatch-control",
           VERCEL_TOKEN: "deployment-token",
         },
         initialInputs: { outputs: { "control-service.artifact": artifact } },
@@ -157,7 +157,7 @@ describe("control service providers", () => {
         "--cwd",
         artifact,
         "--project",
-        "openbot-control",
+        "dispatch-control",
         "--prod",
       ]),
       expect.anything(),
@@ -176,13 +176,13 @@ describe("control service providers", () => {
     await provider.configure({
       devMode: false,
       repositoryRoot: "/repo",
-      environment: { VERCEL_CONTROL_PROJECT: "openbot-control" },
+      environment: { VERCEL_CONTROL_PROJECT: "dispatch-control" },
       inputs: new DeploymentOutputs(),
       report: () => undefined,
     });
     expect(run).toHaveBeenCalledWith(
       "pnpm",
-      expect.arrayContaining(["project", "add", "openbot-control"]),
+      expect.arrayContaining(["project", "add", "dispatch-control"]),
       expect.anything(),
     );
   });
@@ -233,7 +233,7 @@ describe("control service providers", () => {
       },
     );
     const plist = await readFile(
-      join(root, "home/Library/LaunchAgents/ai.openbot.openbot-control.plist"),
+      join(root, "home/Library/LaunchAgents/ai.dispatch.dispatch-control.plist"),
       "utf8",
     );
     expect(plist).toContain("--env-file=");
@@ -247,7 +247,7 @@ describe("control service providers", () => {
 });
 
 async function temporaryRoot(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "openbot-control-provider-"));
+  const root = await mkdtemp(join(tmpdir(), "dispatch-control-provider-"));
   roots.push(root);
   return root;
 }

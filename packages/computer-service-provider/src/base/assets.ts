@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { materializeFileTemplate } from "@tryopenbot/utilities";
+import { materializeFileTemplate } from "@trytilde/dispatch-utilities";
 
 const providerAssetDirectory = fileURLToPath(new URL("./assets/", import.meta.url));
 
@@ -14,10 +14,10 @@ export const computerImageAssets = {
   developmentProfile: resolve(providerAssetDirectory, "development-profile.sh.hbs"),
   developmentSetup: resolve(providerAssetDirectory, "development-setup.sh.hbs"),
   marker: resolve(providerAssetDirectory, "marker.hbs"),
-  openbotBrowser: resolve(providerAssetDirectory, "openbot-browser.sh.hbs"),
-  openbotBrowserDesktop: resolve(providerAssetDirectory, "openbot-browser.desktop.hbs"),
-  openbotFilesDesktop: resolve(providerAssetDirectory, "openbot-files.desktop.hbs"),
-  openbotVnc: resolve(providerAssetDirectory, "openbot-vnc.html.hbs"),
+  dispatchBrowser: resolve(providerAssetDirectory, "dispatch-browser.sh.hbs"),
+  dispatchBrowserDesktop: resolve(providerAssetDirectory, "dispatch-browser.desktop.hbs"),
+  dispatchFilesDesktop: resolve(providerAssetDirectory, "dispatch-files.desktop.hbs"),
+  dispatchVnc: resolve(providerAssetDirectory, "dispatch-vnc.html.hbs"),
   start: resolve(providerAssetDirectory, "start.sh.hbs"),
   xfcePanel: resolve(providerAssetDirectory, "xfce4-panel.xml.hbs"),
 } as const;
@@ -60,7 +60,7 @@ export async function materializeComputerImageContext(
 ): Promise<MaterializedComputerImageContext> {
   const contextDirectory = resolve(
     repositoryRoot,
-    ".openbot-deploy",
+    ".dispatch-deploy",
     "computer-images",
     providerId,
     "context",
@@ -105,20 +105,20 @@ export async function materializeComputerImageContext(
       resolve(assetDestination, "development-profile.sh"),
     ),
     materializeFileTemplate(
-      computerImageAssets.openbotVnc,
-      resolve(assetDestination, "openbot-vnc.html"),
+      computerImageAssets.dispatchVnc,
+      resolve(assetDestination, "dispatch-vnc.html"),
     ),
     materializeFileTemplate(
-      computerImageAssets.openbotBrowser,
-      resolve(assetDestination, "openbot-browser.sh"),
+      computerImageAssets.dispatchBrowser,
+      resolve(assetDestination, "dispatch-browser.sh"),
     ),
     materializeFileTemplate(
-      computerImageAssets.openbotBrowserDesktop,
-      resolve(assetDestination, "openbot-browser.desktop"),
+      computerImageAssets.dispatchBrowserDesktop,
+      resolve(assetDestination, "dispatch-browser.desktop"),
     ),
     materializeFileTemplate(
-      computerImageAssets.openbotFilesDesktop,
-      resolve(assetDestination, "openbot-files.desktop"),
+      computerImageAssets.dispatchFilesDesktop,
+      resolve(assetDestination, "dispatch-files.desktop"),
     ),
     materializeFileTemplate(computerImageAssets.start, resolve(assetDestination, "start.sh")),
     materializeFileTemplate(

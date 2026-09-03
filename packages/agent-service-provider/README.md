@@ -1,6 +1,6 @@
-# @tryopenbot/agent-service-provider
+# @trytilde/dispatch-agent-service-provider
 
-Build and deployment providers for independently compiled agent entrypoints. It discovers Eve-shaped agent folders, runs instrumentation hooks, and can combine the agent functions with the web and control API in one deployable OpenBot runtime.
+Build and deployment providers for independently compiled agent entrypoints. It discovers Eve-shaped agent folders, runs instrumentation hooks, and can combine the agent functions with the web and control API in one deployable Dispatch runtime.
 
 ## Public API
 
@@ -24,7 +24,7 @@ Build and deployment providers for independently compiled agent entrypoints. It 
 
 Compose the same runtime-provider instance as both `controlService` and `agentService`. Lifecycle coordination recognizes that shared identity and checks, builds, configures, and deploys it once. Agent endpoints keep separate Vercel Function directories even though releases and rollbacks are atomic with control and web.
 
-Both service providers leave development startup to OpenBot's watched Hono process. The Vercel
+Both service providers leave development startup to Dispatch's watched Hono process. The Vercel
 adapter performs its check but skips artifact creation, project configuration, and remote deployment
 when `DeploymentContext.devMode` is `true`.
 
@@ -33,6 +33,6 @@ when `DeploymentContext.devMode` is `true`.
 - `AgentServiceProvider` combines `Buildable`, `Deployable`, and `InitializableProvider`.
 
 Authored instrumentation helpers and types live in
-`@tryopenbot/configuration/instrumentation`.
+`@trytilde/dispatch-configuration/instrumentation`.
 
 Each agent must default-export `chatKitEndpoint(...)` from `agent.ts`. Global instrumentation runs before optional agent-local instrumentation and before the endpoint import. Each agent must explicitly contain `bash.ts`, `await_shell.ts`, `read_file.ts`, `write_file.ts`, `copy_to_computer.ts`, `copy_from_computer.ts`, `glob.ts`, `grep.ts`, and `screenshot.ts`. Those Zod-schema Vercel AI SDK tools are imported by `agent.ts`, use the typed computer-service transport, and hide their fixed agent ID from model input; arbitrary authored tools and skills are not directory-loaded.

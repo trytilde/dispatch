@@ -19,13 +19,13 @@ describe("development agent diagnostics", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const app = await createAgentServiceApp(root);
 
-    const response = await app.request("http://openbot.test/api/agents/factory", {
+    const response = await app.request("http://dispatch.test/api/agents/factory", {
       method: "POST",
     });
 
     expect(response.status).toBe(500);
     expect(error).toHaveBeenCalledWith(
-      "[openbot-agent] request failed",
+      "[dispatch-agent] request failed",
       expect.objectContaining({
         agentId: "factory",
         method: "POST",
@@ -46,13 +46,13 @@ describe("development agent diagnostics", () => {
     `);
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const app = await createAgentServiceApp(root);
-    const response = await app.request("http://openbot.test/api/agents/factory", {
+    const response = await app.request("http://dispatch.test/api/agents/factory", {
       method: "POST",
     });
 
     await expect(response.text()).rejects.toThrow("stream exploded");
     expect(error).toHaveBeenCalledWith(
-      "[openbot-agent] request failed",
+      "[dispatch-agent] request failed",
       expect.objectContaining({ agentId: "factory", phase: "stream" }),
       expect.objectContaining({ message: "stream exploded" }),
     );
@@ -68,7 +68,7 @@ describe("development agent diagnostics", () => {
       `export default async function endpoint() { return new Response("helloy", { status: 202 }) }\n`,
     );
 
-    const response = await app.request("http://openbot.test/api/agents/helloy", {
+    const response = await app.request("http://dispatch.test/api/agents/helloy", {
       method: "POST",
     });
 
@@ -92,7 +92,7 @@ describe("development agent diagnostics", () => {
     );
 
     try {
-      const response = await app.request("http://openbot.test/api/agents/helloy", {
+      const response = await app.request("http://dispatch.test/api/agents/helloy", {
         method: "POST",
       });
 
@@ -107,7 +107,7 @@ describe("development agent diagnostics", () => {
 });
 
 async function agentRoot(source: string): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "openbot-agent-diagnostics-"));
+  const root = await mkdtemp(join(tmpdir(), "dispatch-agent-diagnostics-"));
   roots.push(root);
   const directory = join(root, "configuration/agent");
   await writeAgent(directory, source);

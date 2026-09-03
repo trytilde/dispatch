@@ -16,7 +16,7 @@ afterEach(async () => {
 
 describe("live agent service state", () => {
   it("round-trips the live lifecycle origin and clears only its own state", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-live-agent-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-live-agent-"));
     roots.push(root);
 
     await writeLiveAgentServiceOrigin(root, "https://local.trytilde-sb.com/");
@@ -26,7 +26,7 @@ describe("live agent service state", () => {
   });
 
   it("rejects stale state owned by a process that is no longer running", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-live-agent-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-live-agent-"));
     roots.push(root);
     await writeLiveAgentServiceOrigin(root, "https://local.trytilde-sb.com");
     await writeFile(

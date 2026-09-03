@@ -5,7 +5,7 @@ import {
   type ToolChipRow,
 } from "./beautiful-ui/blocks/tool-chips-block.js";
 import { isConnectorSelectionPart } from "./connector-components.js";
-import { capabilityChangeApprovalFromPart } from "@tryopenbot/client-runtime";
+import { capabilityChangeApprovalFromPart } from "@trytilde/dispatch-client-runtime";
 import { stringify, type MessagePart } from "./rich-message-components.js";
 
 /* Assistant output is split into standalone blocks: text stays in chat

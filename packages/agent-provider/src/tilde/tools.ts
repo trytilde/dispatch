@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import { type Client, type McpServer } from "@trytilde/sdk";
-import { TildePlatform } from "@tryopenbot/platform-integrations";
-import { tildeErrorMessage } from "@tryopenbot/platform-integrations/tilde/errors";
-import type { ProviderInitialization } from "@tryopenbot/runtime-provider";
-import { persistEnvironment, type DeploymentContext } from "@tryopenbot/runtime-provider";
+import { TildePlatform } from "@trytilde/dispatch-platform-integrations";
+import { tildeErrorMessage } from "@trytilde/dispatch-platform-integrations/tilde/errors";
+import type { ProviderInitialization } from "@trytilde/dispatch-runtime-provider";
+import { persistEnvironment, type DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import {
   bulkAddMcpServerInstanceFunctions,
   connectProxiedMcpServer,
@@ -66,7 +66,7 @@ export const tildeAgentProviderInitialization: ProviderInitialization = {
           description: "Recall authorized team memory without provisioning a bot-owned bank.",
         },
       ],
-      destination: { kind: "environment", key: "OPENBOT_AUTOMATIC_MEMORY_MODE" },
+      destination: { kind: "environment", key: "DISPATCH_AUTOMATIC_MEMORY_MODE" },
     },
   ],
 };
@@ -156,13 +156,13 @@ export class TildeToolReconciler {
     const prefix = `AGENT_${id.replaceAll("-", "_").toUpperCase()}`;
     const server = await this.ensureServer(
       {
-        id: context.environment[`${prefix}_MCP_SERVER_ID`]?.trim() || `openbot-${id}`,
-        name: `OpenBot ${id}`,
+        id: context.environment[`${prefix}_MCP_SERVER_ID`]?.trim() || `dispatch-${id}`,
+        name: `Dispatch ${id}`,
         dynamicToolDiscovery: true,
       },
       {
         requestId: `agent-lifecycle:${id}:mcp-server`,
-        idempotencyKey: `openbot:${id}:mcp-server`,
+        idempotencyKey: `dispatch:${id}:mcp-server`,
       },
     );
     await persistEnvironment(
@@ -235,8 +235,8 @@ export class TildeToolReconciler {
     prefix: string,
     serverId: string,
   ): Promise<void> {
-    const desiredId = `openbot-${agentId}-tilde-control-plane`;
-    const displayName = `OpenBot ${agentId} Tilde control plane`;
+    const desiredId = `dispatch-${agentId}-tilde-control-plane`;
+    const displayName = `Dispatch ${agentId} Tilde control plane`;
     const { data: listed } = await listToolGroupInstances({
       client: this.#api,
       path: { team_id: this.#teamId },
@@ -359,7 +359,7 @@ export class TildeToolReconciler {
     const serverIdName = `${prefix}_VERCEL_MCP_SERVER_ID`;
     const tokenHash = createHash("sha256").update(token).digest("hex");
     const previousCredentialId = context.environment[credentialIdName]?.trim();
-    const credentialDisplayName = `OpenBot ${agentId} Vercel MCP`;
+    const credentialDisplayName = `Dispatch ${agentId} Vercel MCP`;
     const { data: credentials } = await listResourceServerCredentials({
       client: this.#api,
       path: { team_id: this.#teamId },
@@ -393,7 +393,7 @@ export class TildeToolReconciler {
       credentialId = data.id;
     }
 
-    const displayName = `OpenBot ${agentId} Vercel`;
+    const displayName = `Dispatch ${agentId} Vercel`;
     const { data: servers } = await listProxiedMcpServers({
       client: this.#api,
       path: { team_id: this.#teamId },

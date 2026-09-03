@@ -7,7 +7,7 @@ description: Self-refresh loop for exposing intentional Tilde API changes throug
 
 ## Process
 
-1. Run `pnpm openbot sdk refresh`.
+1. Run `pnpm tilde sdk refresh`.
 2. Inspect OpenAPI operation and schema diffs.
 3. Confirm every Tilde-owned value is an explicit schema field. Do not accept
    message/session metadata as a substitute for typed identity, audience,
@@ -24,4 +24,4 @@ description: Self-refresh loop for exposing intentional Tilde API changes throug
 - Use camelCase in TypeScript APIs.
 - Preserve existing public names unless the user explicitly asks for a breaking change.
 - When the upstream API lacks a typed core field, fix the upstream contract;
-  do not add a hand-authored metadata parser in OpenBot.
+  do not add a hand-authored metadata parser in Dispatch.

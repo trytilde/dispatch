@@ -2,7 +2,7 @@
 //
 // On a machine with a display this simply opens a window. On a display-less host —
 // the remote Linux build box — Electron gets a virtual screen published over loopback
-// VNC. Reach it with `openbot connect <host>`.
+// VNC. Reach it with `tilde connect <host>`.
 import { spawn } from "node:child_process";
 import arg from "arg";
 import { ensureVirtualScreen, ensureVncServer, hasNativeDisplay } from "../../virtual-display.js";
@@ -31,11 +31,11 @@ export async function runDesktopDev(argv: readonly string[]): Promise<number> {
     });
     await ensureVncServer({ displayNumber, vncPort });
     console.log(
-      `electron will render on :${displayNumber}; view it with openbot connect <host> (VNC ${vncPort})`,
+      `electron will render on :${displayNumber}; view it with tilde connect <host> (VNC ${vncPort})`,
     );
   }
 
-  return spawnPnpm(["--filter", "@tryopenbot/desktop", "dev"], environment);
+  return spawnPnpm(["--filter", "@trytilde/dispatch-desktop", "dev"], environment);
 }
 
 function spawnPnpm(args: readonly string[], environment: Record<string, string>): Promise<number> {

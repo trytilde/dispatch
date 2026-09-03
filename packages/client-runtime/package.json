@@ -1,7 +1,7 @@
 {
-  "name": "@tryopenbot/client-runtime",
+  "name": "@trytilde/dispatch-client-runtime",
   "version": "0.1.0",
-  "description": "Shared OpenBot client contracts, transport, and state runtime",
+  "description": "Shared Dispatch client contracts, transport, and state runtime",
   "license": "MIT",
   "files": [
     "dist",

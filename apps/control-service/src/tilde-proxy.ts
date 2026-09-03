@@ -25,7 +25,7 @@ interface AllowedRoute {
 const methods = (...values: AllowedMethod[]): ReadonlySet<AllowedMethod> => new Set(values);
 
 /**
- * Owner-facing Tilde resources that OpenBot renders but does not own. This is
+ * Owner-facing Tilde resources that Dispatch renders but does not own. This is
  * deliberately an operation allowlist rather than an unrestricted API proxy.
  */
 const allowedRoutes: readonly AllowedRoute[] = [

@@ -1,8 +1,8 @@
 ---
-"@tryopenbot/control-service": minor
-"@tryopenbot/client-runtime": minor
-"@tryopenbot/ui": minor
-"@tryopenbot/web": minor
+"@trytilde/dispatch-control-service": minor
+"@trytilde/dispatch-client-runtime": minor
+"@trytilde/dispatch-ui": minor
+"@trytilde/dispatch-web": minor
 ---
 
 Add routines and signals: per-agent routines with schedule and provider-event

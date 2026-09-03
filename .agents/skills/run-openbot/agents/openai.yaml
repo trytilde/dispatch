@@ -1,4 +1,0 @@
-interface:
-  display_name: "Run OpenBot"
-  short_description: "Set up, validate, and run this OpenBot fork"
-  default_prompt: "Set up and run this OpenBot fork, diagnosing any configuration problem."

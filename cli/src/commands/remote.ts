@@ -14,7 +14,7 @@ export async function runRemote(argv: readonly string[]): Promise<number> {
   const [name, task = "desktop"] = options._;
   if (!name || !(task in tasks)) {
     console.error(
-      `Usage: openbot remote <host> <${Object.keys(tasks).join("|")}>  (default: desktop)`,
+      `Usage: tilde remote <host> <${Object.keys(tasks).join("|")}>  (default: desktop)`,
     );
     return 1;
   }
@@ -22,7 +22,7 @@ export async function runRemote(argv: readonly string[]): Promise<number> {
   // Electron Builder targets the host platform, so a mac artifact needs a mac host.
   if (task === "desktop-package" && host.platform !== "mac")
     console.log(`note: ${name} is ${host.platform}; this produces ${host.platform} artifacts only`);
-  const repositoryPath = host.path ?? "~/openbot";
+  const repositoryPath = host.path ?? "~/dispatch";
   const command = `cd ${repositoryPath} && ${tasks[task]}`;
   console.log(`${host.ssh}: ${command}`);
   // -t keeps interactive desktop development attached to this terminal.
@@ -36,6 +36,6 @@ export async function runRemote(argv: readonly string[]): Promise<number> {
       resolvePromise(exitCode ?? 0);
     });
   });
-  if (code === 0 && task === "desktop") console.log(`next: openbot connect ${name}`);
+  if (code === 0 && task === "desktop") console.log(`next: tilde connect ${name}`);
   return code;
 }

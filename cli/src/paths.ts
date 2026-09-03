@@ -8,17 +8,17 @@ export function resolveRepositoryRoot(
 ): string {
   if (explicitDirectory) return resolve(explicitDirectory);
   const invocationDirectory = resolve(initialDirectory ?? currentDirectory);
-  return findOpenBotWorkspaceRoot(invocationDirectory) ?? invocationDirectory;
+  return findDispatchWorkspaceRoot(invocationDirectory) ?? invocationDirectory;
 }
 
-function findOpenBotWorkspaceRoot(startDirectory: string): string | undefined {
+function findDispatchWorkspaceRoot(startDirectory: string): string | undefined {
   let directory = startDirectory;
   while (true) {
     try {
       const manifest = JSON.parse(readFileSync(resolve(directory, "package.json"), "utf8")) as {
         name?: unknown;
       };
-      if (manifest.name === "@tryopenbot/workspace") return directory;
+      if (manifest.name === "@trytilde/dispatch-workspace") return directory;
     } catch {
       // Keep looking: standalone init also starts in a directory without a package manifest.
     }
@@ -31,5 +31,5 @@ function findOpenBotWorkspaceRoot(startDirectory: string): string | undefined {
 export const repositoryRoot = resolveRepositoryRoot(
   process.cwd(),
   process.env.INIT_CWD,
-  process.env.OPENBOT_REPOSITORY_ROOT,
+  process.env.DISPATCH_REPOSITORY_ROOT,
 );

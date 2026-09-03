@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
-import type { AuthProvider } from "@tryopenbot/auth-provider";
-import type { ComputerProvider } from "@tryopenbot/computer-service-provider";
+import type { AuthProvider } from "@trytilde/dispatch-auth-provider";
+import type { ComputerProvider } from "@trytilde/dispatch-computer-service-provider";
 import { registerAgentCreation, type AgentCreationOptions } from "./agent-create.js";
 import { registerTildeChatProxy, type TildeChatProxyOptions } from "./chat-proxy.js";
 import { registerTildeProxy, type TildeProxyOptions } from "./tilde-proxy.js";
@@ -34,7 +34,7 @@ export function createApp(options: AppOptions = {}): Hono {
   const app = new Hono();
   const webRoot = options.webRoot ?? defaultWebRoot;
   app.use("*", secureHeaders());
-  app.get("/healthz", (context) => context.json({ ok: true, service: "openbot" }));
+  app.get("/healthz", (context) => context.json({ ok: true, service: "dispatch" }));
   if (options.authProvider) {
     registerOwnerAuth(app, options.authProvider, options);
     const middleware = requireOwner(options.authProvider, options);

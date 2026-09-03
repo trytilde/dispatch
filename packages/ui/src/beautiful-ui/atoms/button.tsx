@@ -3,7 +3,7 @@
 /* ─────────────────────────────────────────────────────────
  * BUTTON
  * Token-driven button in the Beautiful UI idiom.
- * OpenBot reconstruction of the Beautiful UI atom API.
+ * Dispatch reconstruction of the Beautiful UI atom API.
  * ───────────────────────────────────────────────────────── */
 
 export type ButtonVariant = "primary" | "secondary" | "accent" | "success" | "quiet";

@@ -121,7 +121,7 @@ describe("PluginsCatalog loading and avatars", () => {
             accounts: [
               {
                 id: "vercel-factory",
-                accountName: "OpenBot factory Vercel",
+                accountName: "Dispatch factory Vercel",
                 assignedAgentIds: ["factory"],
               },
             ],

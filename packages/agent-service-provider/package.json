@@ -1,5 +1,5 @@
 {
-  "name": "@tryopenbot/agent-service-provider",
+  "name": "@trytilde/dispatch-agent-service-provider",
   "version": "0.1.0",
   "files": [
     "dist",
@@ -33,11 +33,11 @@
   },
   "dependencies": {
     "@hono/node-server": "1.19.1",
-    "@tryopenbot/computer-service-provider": "workspace:*",
-    "@tryopenbot/control-service-provider": "workspace:*",
-    "@tryopenbot/platform-integrations": "workspace:*",
-    "@tryopenbot/runtime-provider": "workspace:*",
-    "@tryopenbot/utilities": "workspace:*",
+    "@trytilde/dispatch-computer-service-provider": "workspace:*",
+    "@trytilde/dispatch-control-service-provider": "workspace:*",
+    "@trytilde/dispatch-platform-integrations": "workspace:*",
+    "@trytilde/dispatch-runtime-provider": "workspace:*",
+    "@trytilde/dispatch-utilities": "workspace:*",
     "hono": "4.13.1",
     "tsdown": "0.22.14",
     "vercel": "58.9.4"

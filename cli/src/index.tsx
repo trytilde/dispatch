@@ -88,7 +88,7 @@ function isHelpInvocation(argv: readonly string[]): boolean {
 function referenceUnexpectedExit(log: CliRunLog): void {
   if (process.argv.includes("--json"))
     printJson({ error: "Command exited unsuccessfully", log: log.path });
-  else process.stderr.write(`OpenBot exited unsuccessfully. Full details: ${log.path}\n`);
+  else process.stderr.write(`Tilde exited unsuccessfully. Full details: ${log.path}\n`);
 }
 
 function showFailure(error: unknown, log: CliRunLog): void {
@@ -112,6 +112,6 @@ function sensitiveEnvironmentValues(environment: NodeJS.ProcessEnv): string[] {
 
 runWithTypeScriptLoader(runLoggedCli).catch((error) => {
   const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
-  process.stderr.write(`OpenBot CLI failed before logging could start:\n${message}\n`);
+  process.stderr.write(`Tilde CLI failed before logging could start:\n${message}\n`);
   process.exitCode = 1;
 });

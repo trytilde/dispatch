@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import { watch, type FSWatcher } from "node:fs";
 import { lstat, readFile, readdir, readlink, stat } from "node:fs/promises";
 import { relative, resolve } from "node:path";
-import type { OpenBotConfiguration } from "@tryopenbot/configuration";
-import { discoverAgentWorkspaces } from "@tryopenbot/agent-service-provider";
+import type { DispatchConfiguration } from "@trytilde/dispatch-configuration";
+import { discoverAgentWorkspaces } from "@trytilde/dispatch-agent-service-provider";
 import {
   buildProviders,
   deployProviders,
@@ -12,7 +12,7 @@ import {
   type DeploymentContext,
   type DeploymentParticipant,
   type DeploymentReporter,
-} from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
 import {
   discoveredAgentIds,
   persistAgentSandboxUrls,
@@ -22,7 +22,7 @@ import {
 export interface DevelopmentLifecycleOptions {
   repositoryRoot: string;
   environment: NodeJS.ProcessEnv;
-  providers: OpenBotConfiguration["providers"];
+  providers: DispatchConfiguration["providers"];
   report?: DeploymentReporter;
   interactive?: boolean;
 }
@@ -66,7 +66,7 @@ export async function reconcileDevelopmentInfrastructure(
       provider: {
         deployable: {
           plan: async () => ({
-            summary: "Seed or resume the trusted OpenBot development sandbox",
+            summary: "Seed or resume the trusted Dispatch development sandbox",
             steps: [
               "Preserve its mutable source tree and git remotes",
               "Install the aggregate deployment environment and SOPS identity",
@@ -75,7 +75,7 @@ export async function reconcileDevelopmentInfrastructure(
           }),
           deploy: async (context: DeploymentContext) => {
             const computerId =
-              options.environment.DEVELOPMENT_SANDBOX_ID?.trim() || "openbot-development";
+              options.environment.DEVELOPMENT_SANDBOX_ID?.trim() || "dispatch-development";
             const agentIds = await discoveredAgentIds(context.repositoryRoot);
             const result = await options.providers.computer.deployDevelopmentSandbox(
               { computerId, agentWorkspaceIds: agentIds },
@@ -235,7 +235,7 @@ async function reconcileParticipants(
   });
   if (!participants.some(({ id }) => id === "computer")) return;
 
-  const computerId = options.environment.COMPUTER_ID?.trim() || "openbot-computer";
+  const computerId = options.environment.COMPUTER_ID?.trim() || "dispatch-computer";
   await runProviderLifecycleHook(
     options.providers.computer,
     "Computer Provider",

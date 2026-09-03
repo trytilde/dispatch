@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
-import type { Routine, SignalInstance, SignalProvider } from "@tryopenbot/client-runtime";
+import type { Routine, SignalInstance, SignalProvider } from "@trytilde/dispatch-client-runtime";
 import { AgentDetailsPane } from "./agent-details-pane.js";
 import { ChatHeader } from "./chat-components.js";
 import { RoutineEditor } from "./routine-editor.js";
@@ -111,7 +111,7 @@ describe("routines surfaces render", () => {
   it("uses the routines affordance and panel header actions", () => {
     const header = renderToStaticMarkup(
       <ChatHeader
-        agentName="OpenBot"
+        agentName="Dispatch"
         computerOpen={false}
         onToggleComputer={noop}
         onToggleDetails={noop}

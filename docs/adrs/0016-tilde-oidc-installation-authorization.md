@@ -2,7 +2,7 @@
 
 ## In brief
 
-- Tilde Identity default authority. OpenBot installation stays OIDC client and resource server. No per-installation identity provider.
+- Tilde Identity default authority. Dispatch installation stays OIDC client and resource server. No per-installation identity provider.
 - One installation, one resource identifier, one access-token audience. Scope says allowed action, never installation identity.
 - Web gets host-only HttpOnly cookies. Electron main and mobile get native PKCE credentials. UI gets no token.
 - Central Tilde login gives multi-installation SSO. Installation cookies and access tokens never cross installations.
@@ -11,7 +11,7 @@
 
 ## Context
 
-OpenBot serves the same owner workspace from a local control service, a Vercel control deployment,
+Dispatch serves the same owner workspace from a local control service, a Vercel control deployment,
 and an Electron shell. The control service currently has no owner authentication or control
 database, even though its chat, attachment, and Computer-preview operations can expose sensitive
 installation data and capabilities.
@@ -26,18 +26,18 @@ and audience-restricted JWT verification.
 OAuth audience and scope are not interchangeable. The audience identifies where a token may be
 redeemed; scope describes what access is granted there. OAuth Resource Indicators explicitly warn
 against overloading scope with resource identity and define a standard mechanism for selecting an
-audience-restricted token. Sharing one cookie or one broad token among OpenBot installations would
+audience-restricted token. Sharing one cookie or one broad token among Dispatch installations would
 enlarge the replay and revocation boundary.
 
 Better Auth remains useful as an application session framework, but deploying an identity authority
-inside every OpenBot installation would duplicate accounts and make every installation responsible
+inside every Dispatch installation would duplicate accounts and make every installation responsible
 for issuer keys, discovery, consent, client registration, and recovery. Its OIDC Provider plugin is
 also documented as active development, with incomplete JWKS support and planned replacement by its
 OAuth Provider plugin. It is not the default trust anchor.
 
 ## Decision
 
-Tilde Identity is OpenBot's default OAuth authorization server and OpenID Provider. An OpenBot
+Tilde Identity is Dispatch's default OAuth authorization server and OpenID Provider. A Dispatch
 installation is registered to a Tilde Team during onboarding, and any current team member may
 authorize it. Registration assigns a stable installation ID, an issuer-assigned resource URI, and
 OAuth client metadata for the installation's supported web and native redirects. The client is
@@ -58,13 +58,13 @@ The OAuth client and protected resource remain distinct concepts:
   operating agents, or administering the installation. Installation IDs are never encoded as scope
   names.
 - Subject membership, owner role, and other installation entitlements use subject, role, group, or
-  entitlement claims and server-side authorization policy. Possessing a generic OpenBot scope is
+  entitlement claims and server-side authorization policy. Possessing a generic Dispatch scope is
   not proof that the subject owns this installation.
 
-Tilde's own login cookie provides SSO at the authorization-server origin. Opening another OpenBot
+Tilde's own login cookie provides SSO at the authorization-server origin. Opening another Dispatch
 installation starts a new PKCE authorization flow for that installation resource; an existing Tilde
 session can complete it without prompting the Owner again. Each installation still receives its own
-audience-restricted access token and host-only session cookies. OpenBot does not issue a default
+audience-restricted access token and host-only session cookies. Dispatch does not issue a default
 multi-audience token and never shares an installation cookie across origins.
 
 Browser clients use Authorization Code with PKCE. The control-service callback exchanges the code
@@ -79,7 +79,7 @@ Electron uses the system browser and a registered native redirect. The Electron 
 the PKCE verifier, callback, refresh lifecycle, and operating-system-protected token storage. Its
 existing loopback renderer proxy attaches the access token as an Authorization bearer when calling
 the control service. The preload bridge exposes only bounded authentication state and sign-in or
-sign-out commands. The renderer never receives tokens or an unrestricted auth client. OpenBot does
+sign-out commands. The renderer never receives tokens or an unrestricted auth client. Dispatch does
 not rely on the external browser and Electron sharing a cookie jar.
 
 Expo mobile uses the same public-client Authorization Code with PKCE flow and a registered app-scheme
@@ -90,7 +90,7 @@ or AsyncStorage. Mobile and Electron may share server-side OAuth client registra
 registration explicitly allowlists both native redirects.
 
 Mobile selects the installation before authentication. The Owner enters a control-service origin;
-the app verifies its public OpenBot health response and reads the provider-owned public client ID,
+the app verifies its public Dispatch health response and reads the provider-owned public client ID,
 scope, authorization endpoint, and token endpoint from `/auth/native-config`. This route has no
 credentials, tenant overrides, tokens, issuer signing material, or authorization decision. Hosted
 origins and OAuth endpoints require HTTPS. The selected origin and token record are associated, and
@@ -103,7 +103,7 @@ configured issuer, installation audience, authorized client, token purpose, subj
 link, and route scope. It then supplies a typed owner principal to handlers and provider calls.
 Static application assets, health, public native-auth discovery, and the narrowly bounded login,
 callback, session-refresh, and logout routes are the only public control surfaces. Installation registration belongs to the Tilde
-team API and is never exposed by the OpenBot control service.
+team API and is never exposed by the Dispatch control service.
 
 Owner authentication does not replace other trust boundaries. Signed Tilde callbacks and tools,
 agent-service endpoints, Computer-service requests, deployment credentials, and future user-desktop
@@ -114,21 +114,21 @@ registration-revocation operation is introduced. The initial implementation has 
 Logout clears the local cookies or Electron credentials and revokes upstream refresh authority when
 supported. Already issued access tokens remain valid only for their short lifetime; expired tokens
 fail closed when the issuer is unavailable. Immediate per-request revocation would require
-introspection or OpenBot control persistence and is intentionally not introduced by this decision.
+introspection or Dispatch control persistence and is intentionally not introduced by this decision.
 
 Alternative OIDC issuers may implement the same contract. They must support discovery, Authorization
 Code with PKCE, installation-specific resource audiences, required JWT validation claims, and the
 configured web and native redirects. The audience may be fixed by a one-resource client registration
 or selected with RFC 8707 when a client can address multiple resources. Operators may supply client
 registration manually when the issuer does not support dynamic registration. Better Auth may back
-such a centralized issuer or a future session adapter, but OpenBot does not deploy its OIDC Provider
+such a centralized issuer or a future session adapter, but Dispatch does not deploy its OIDC Provider
 plugin per installation.
 
 ```mermaid
 flowchart LR
   O["Owner"] -->|"central login"| I["Tilde Identity"]
-  I -->|"aud: installation A"| A["OpenBot A control"]
-  I -->|"aud: installation B"| B["OpenBot B control"]
+  I -->|"aud: installation A"| A["Dispatch A control"]
+  I -->|"aud: installation B"| B["Dispatch B control"]
   W["Web"] -->|"host-only cookie"| A
   E["Electron main"] -->|"bearer via loopback proxy"| A
   M["Expo mobile"] -->|"bearer from SecureStore"| A

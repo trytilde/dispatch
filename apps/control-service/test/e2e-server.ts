@@ -1,8 +1,8 @@
 import { serve } from "@hono/node-server";
-import type { AuthProvider } from "@tryopenbot/auth-provider";
+import type { AuthProvider } from "@trytilde/dispatch-auth-provider";
 import { createApp } from "../src/app.js";
 
-const controlPort = Number(process.env.OPENBOT_E2E_CONTROL_PORT || "4100");
+const controlPort = Number(process.env.DISPATCH_E2E_CONTROL_PORT || "4100");
 const computerApiKey = "e2e-computer-service-api-key-000000";
 const agentSetupJobId = "33333333-3333-4333-8333-333333333333";
 let agentSetupChecks = 0;
@@ -12,7 +12,7 @@ const authProvider: AuthProvider = {
     authorizationEndpoint: "https://identity.test/authorize",
     tokenEndpoint: "https://identity.test/token",
     clientId: "e2e-client",
-    scope: "openid openbot:control",
+    scope: "openid dispatch:control",
   }),
   authorizationUrl: ({ redirectUri }) => {
     const url = new URL("https://identity.test/authorize");
@@ -31,14 +31,14 @@ const authProvider: AuthProvider = {
       subject: "e2e-owner",
       email: "owner@example.com",
       groups: ["e2e-team-member"],
-      scope: ["openbot:control"],
+      scope: ["dispatch:control"],
     };
   },
   account: async () => ({
     name: "Daniel Blignaut",
     email: "owner@example.com",
     organization: { id: "org-one", name: "Tilde", role: "owner" },
-    workspace: { id: "team-one", name: "OpenBot", role: "owner" },
+    workspace: { id: "team-one", name: "Dispatch", role: "owner" },
   }),
 };
 
@@ -55,7 +55,7 @@ const app = createApp({
       if (options.authorization !== `Bearer ${computerApiKey}`)
         return { exitCode: 1, stdout: "", stderr: "Computer service API key required" };
       const script = request.arguments.at(-1) ?? "";
-      if (!script.includes("source /workspace/.openbot/development/profile.sh"))
+      if (!script.includes("source /workspace/.dispatch/development/profile.sh"))
         return {
           exitCode: 1,
           stdout: "",

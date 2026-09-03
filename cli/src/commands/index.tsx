@@ -56,7 +56,7 @@ export async function runCommand(command: string, args: readonly string[]): Prom
       );
       return;
     }
-    return show(<Success title="OpenBot configuration initialized" />);
+    return show(<Success title="Dispatch configuration initialized" />);
   }
   if (command === "new-agent") {
     const result = await runNewAgent(args);
@@ -72,7 +72,7 @@ export async function runCommand(command: string, args: readonly string[]): Prom
   }
   if (command === "dev") {
     rejectArguments(command, args);
-    if (process.stdout.isTTY) show(<Success title="Starting OpenBot development" />);
+    if (process.stdout.isTTY) show(<Success title="Starting Dispatch development" />);
     return runDevelopment();
   }
   if (command === "orchestrate") {

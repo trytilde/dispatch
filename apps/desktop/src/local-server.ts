@@ -44,7 +44,7 @@ export async function startRendererServer(
       if (response.headersSent) response.destroy(error instanceof Error ? error : undefined);
       else {
         response.writeHead(502, { "content-type": "application/json; charset=utf-8" });
-        response.end(JSON.stringify({ error: "The OpenBot control server is unavailable." }));
+        response.end(JSON.stringify({ error: "The Dispatch control server is unavailable." }));
       }
     });
   });
@@ -69,7 +69,7 @@ async function handleRequest(
   tildeSocketOrigin: string,
   options: RendererServerOptions,
 ): Promise<void> {
-  const url = new URL(request.url ?? "/", "http://openbot.local");
+  const url = new URL(request.url ?? "/", "http://dispatch.local");
   if (isControlPath(url.pathname)) {
     await proxyRequest(
       request,

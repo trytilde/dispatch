@@ -1,4 +1,4 @@
-# Routines & Signals — OpenBot wire contract
+# Routines & Signals — Dispatch wire contract
 
 Companion to `2026-08-24-routines-signals-design.md`. This is the authoritative shape
 for the owner routes served by `apps/control-service` and validated by
@@ -9,12 +9,12 @@ missing (connectors pattern).
 ## Unified routine
 
 A unified routine is reconstructed from Tilde resources stamped with
-`metadata.openbot = { group: "<uuid>", trigger: "<uuid>" }`:
+`metadata.dispatch = { group: "<uuid>", trigger: "<uuid>" }`:
 
 - schedule trigger ↔ ChatKit routine (`title` = name, `prompt` = instruction)
 - event trigger ↔ signal rule (`display_name` = name)
 
-Tilde resources without an `openbot.group` stamp are ignored by the unified list.
+Tilde resources without an `dispatch.group` stamp are ignored by the unified list.
 
 ```jsonc
 // Routine
@@ -51,7 +51,7 @@ Tilde resources without an `openbot.group` stamp are ignored by the unified list
 
 - `GET /api/routines?agent_id=<id>` → `{ "items": Routine[] }`
   Lists all pages of Tilde routines + signal rules for the team, groups by
-  `metadata.openbot.group`, filters to the agent (`agent_inbox_id` on routines,
+  `metadata.dispatch.group`, filters to the agent (`agent_inbox_id` on routines,
   `action.agent_inbox_id` on rules). `agent_id` required.
 - `POST /api/routines` body:
   ```jsonc
@@ -88,7 +88,7 @@ client refreshes separately).
   `signal_type`, `filter: { json_equals: filters }`,
   `action: { type: "invoke_chatkit_agent", agent_inbox_id }`,
   `session_policy` resolved at create time from the provider catalog's signal type:
-  `{ type: "session_key_template", namespace: "openbot",
+  `{ type: "session_key_template", namespace: "dispatch",
      template: <default_session_key_template>,
      create_if_missing: true,
      title_template: <default_session_title_template ?? name> }`,
@@ -167,7 +167,7 @@ week / Every month) and `cronForPreset(...)` — all pure, shared web/Expo.
 `SignalDeliverySchema`, inputs `CreateSignalInstanceInput`,
 `UpdateSignalInstanceInput`, `TestSignalInstanceInput`.
 
-`OpenBotClient` methods: `listRoutines(agentId)`, `createRoutine(input)`,
+`DispatchClient` methods: `listRoutines(agentId)`, `createRoutine(input)`,
 `updateRoutine(groupId, agentId, input)`, `deleteRoutine(groupId, agentId)`,
 `runRoutine(groupId, agentId)`, `listSignalProviders()`, `listSignalInstances()`,
 `createSignalInstance(input)`, `updateSignalInstance(id, input)`,

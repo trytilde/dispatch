@@ -15,7 +15,7 @@ describe("loadHosts", () => {
     writeFileSync(
       join(root, "configuration", "dev-hosts.json"),
       JSON.stringify({
-        hosts: { build: { ssh: "root@198.51.100.7", platform: "linux", path: "~/openbot" } },
+        hosts: { build: { ssh: "root@198.51.100.7", platform: "linux", path: "~/dispatch" } },
       }),
     );
     expect(loadHosts(root).build?.ssh).toBe("root@198.51.100.7");

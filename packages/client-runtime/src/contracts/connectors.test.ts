@@ -130,8 +130,8 @@ describe("connector hand-back messages", () => {
 
 describe("connectorAuthorizedReturnUrl", () => {
   it("builds the universal return target per client", () => {
-    expect(connectorAuthorizedReturnUrl("https://openbot.test/", "electron")).toBe(
-      "https://openbot.test/connectors/authorized?client=electron",
+    expect(connectorAuthorizedReturnUrl("https://dispatch.test/", "electron")).toBe(
+      "https://dispatch.test/connectors/authorized?client=electron",
     );
   });
 });

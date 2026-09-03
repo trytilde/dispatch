@@ -13,7 +13,7 @@ export async function runSdk(args: readonly string[]): Promise<void> {
   if (!isSdkAction(action)) throw new Error(sdkUsage());
   if (action === "publish") {
     if (rest.length !== 1 || rest[0] !== "--yes")
-      throw new Error("Publishing Tilde SDK packages requires `openbot sdk publish --yes`.");
+      throw new Error("Publishing Tilde SDK packages requires `tilde sdk publish --yes`.");
     await runScript("scripts/publish-tilde-sdk-packages.mjs", "node");
     return;
   }
@@ -48,7 +48,7 @@ Commands:
 }
 
 function sdkUsage(): string {
-  return "Usage: openbot sdk <refresh|validate|smoke|publish>";
+  return "Usage: tilde sdk <refresh|validate|smoke|publish>";
 }
 
 async function validateOpenApi(): Promise<void> {

@@ -30,7 +30,7 @@ The `In brief` bullets use caveman style: terse fragments, exact nouns, explicit
 
 ## Decision
 
-{What OpenBot will do, including the important no.}
+{What Dispatch will do, including the important no.}
 
 ```mermaid
 flowchart LR

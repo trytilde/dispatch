@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
+import { DeploymentOutputs, type DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import {
   CodeStorageGitProvider,
   codeStorageGitHubDefaultBranchEnvironmentName,
@@ -41,7 +41,7 @@ describe("CodeStorageGitProvider", () => {
         [codeStorageSetupPrivateKeyTransientName]: "organization-private-key",
         [codeStorageGitHubSyncModeEnvironmentName]: "github-app",
         [codeStorageGitHubOwnerEnvironmentName]: "trytilde",
-        [codeStorageGitHubRepositoryEnvironmentName]: "openbot",
+        [codeStorageGitHubRepositoryEnvironmentName]: "dispatch",
         [codeStorageGitHubDefaultBranchEnvironmentName]: "main",
       },
       setEnvironment: vi.fn(),
@@ -52,7 +52,7 @@ describe("CodeStorageGitProvider", () => {
     expect(createRepo).toHaveBeenCalledWith({
       id: "trytilde/dispatch",
       defaultBranch: "main",
-      baseRepo: { owner: "trytilde", name: "openbot", defaultBranch: "main" },
+      baseRepo: { owner: "trytilde", name: "dispatch", defaultBranch: "main" },
     });
     expect(getRemoteURL).toHaveBeenCalledWith({
       permissions: ["git:read", "git:write"],
@@ -79,7 +79,7 @@ describe("CodeStorageGitProvider", () => {
       repositoryRoot: "/repo",
       environment: {
         [codeStorageOrganizationEnvironmentName]: "tilde",
-        [codeStorageRepositoryEnvironmentName]: "openbot",
+        [codeStorageRepositoryEnvironmentName]: "dispatch",
         [codeStorageRepositoryTokenSecretName]: "repository-jwt",
       },
       setEnvironment: vi.fn(),
@@ -95,7 +95,7 @@ describe("CodeStorageGitProvider", () => {
       runGit: async (_cwd, args, environment) => {
         calls.push({ args: [...args], environment });
         if (args.join(" ") === "remote get-url origin")
-          return "https://github.com/acme/openbot.git\n";
+          return "https://github.com/acme/dispatch.git\n";
         if (args.join(" ") === "remote get-url upstream") return "";
         if (args.join(" ") === "branch --show-current") return "main\n";
         return "";
@@ -191,7 +191,7 @@ describe("CodeStorageGitProvider", () => {
       provider.deployable.deploy(
         context({
           [codeStorageOrganizationEnvironmentName]: "tilde",
-          [codeStorageRepositoryEnvironmentName]: "openbot",
+          [codeStorageRepositoryEnvironmentName]: "dispatch",
           [codeStorageRepositoryTokenSecretName]: "repository-jwt",
         }),
       ),

@@ -1,10 +1,10 @@
 ---
-"openbot": minor
-"@tryopenbot/agent-provider": minor
-"@tryopenbot/agent-service-provider": minor
-"@tryopenbot/computer-service-provider": minor
-"@tryopenbot/computer-tools": minor
-"@tryopenbot/configuration": minor
+"@trytilde/cli": minor
+"@trytilde/dispatch-agent-provider": minor
+"@trytilde/dispatch-agent-service-provider": minor
+"@trytilde/dispatch-computer-service-provider": minor
+"@trytilde/dispatch-computer-tools": minor
+"@trytilde/dispatch-configuration": minor
 ---
 
 Separate chat APIs from agent provisioning, remove unused model-facing provider

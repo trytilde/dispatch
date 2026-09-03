@@ -1,4 +1,4 @@
 interface:
   display_name: "Contribute Upstream"
-  short_description: "Prepare a focused OpenBot upstream contribution"
-  default_prompt: "Turn this fork change into a focused, validated upstream OpenBot pull request."
+  short_description: "Prepare a focused Dispatch upstream contribution"
+  default_prompt: "Turn this fork change into a focused, validated upstream Dispatch pull request."

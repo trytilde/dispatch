@@ -23,7 +23,7 @@ Governing decision: [ADR-0038](adrs/0038-metadata-is-extension-data.md)
 | AgentMail, GitHub, Slack and Linq message metadata | Provider-specific; parsed by the corresponding ChatKit provider adapter | `packages/sdk-vercel-ai-node/src/chatkit-provider-metadata.ts` |
 | AI SDK attachment `providerMetadata` | Provider wire extension | `packages/sdk-vercel-ai-node/src/chatkit-attachments.ts`; `packages/computer-tools/src/attachments.ts` |
 | Coding-agent source/session/cwd/model annotations | Client-opaque message extension; Tilde core does not interpret them | `packages/sdk/src/chatkit/coding-agent.ts` |
-| Routine, task and job metadata exposed unchanged by SDK wrappers | Client-opaque while Tilde/OpenBot do not interpret it | `packages/sdk/src/chatkit/{routines,work,jobs}.ts` |
+| Routine, task and job metadata exposed unchanged by SDK wrappers | Client-opaque while Tilde/Dispatch do not interpret it | `packages/sdk/src/chatkit/{routines,work,jobs}.ts` |
 | Link-preview metadata | Typed presentation object, not a generic domain control bag | `packages/ui/src/content-components.tsx` |
 
 ## Excluded lexical uses
@@ -39,5 +39,5 @@ ADR-0038.
 2. Typed Signal and message summary fields.
 3. Typed credential/provider catalogue descriptors.
 
-The corresponding Tilde fields must land first; OpenBot must refresh generated
+The corresponding Tilde fields must land first; Dispatch must refresh generated
 contracts rather than replacing one magic metadata parser with another.

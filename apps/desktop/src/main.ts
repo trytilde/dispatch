@@ -4,7 +4,7 @@ import { startRendererServer, type RendererServer } from "./local-server.js";
 import { DesktopAuth } from "./auth.js";
 
 if (process.platform === "win32")
-  throw new Error("OpenBot Desktop currently supports macOS and Linux");
+  throw new Error("Dispatch Desktop currently supports macOS and Linux");
 
 // A packaged build takes its mark from the app bundle, but an unpackaged run would otherwise
 // show the stock Electron icon. build/icon.png is not shipped in the package, so resolve it
@@ -19,13 +19,13 @@ let desktopAuth: DesktopAuth | undefined;
 const pendingProtocolUrls: string[] = [];
 
 if (!app.requestSingleInstanceLock()) app.quit();
-app.setAsDefaultProtocolClient("openbot");
+app.setAsDefaultProtocolClient("dispatch");
 app.on("open-url", (event, url) => {
   event.preventDefault();
   void handleProtocolUrl(url);
 });
 app.on("second-instance", (_event, argv) => {
-  const url = argv.find((value) => value.startsWith("openbot://"));
+  const url = argv.find((value) => value.startsWith("dispatch://"));
   if (url) void handleProtocolUrl(url);
   window?.show();
   window?.focus();
@@ -67,7 +67,7 @@ async function createWindow(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  ipcMain.handle("openbot:open-external", async (_event, value: unknown) => {
+  ipcMain.handle("dispatch:open-external", async (_event, value: unknown) => {
     if (typeof value !== "string") throw new Error("A URL is required");
     const url = new URL(value);
     if (url.protocol !== "https:" && url.protocol !== "http:")
@@ -80,9 +80,9 @@ async function main(): Promise<void> {
   if (developmentIcon && process.platform === "darwin") app.dock?.setIcon(developmentIcon);
   desktopAuth = new DesktopAuth(join(app.getPath("userData"), "auth.enc"), controlOrigin);
   await desktopAuth.load();
-  ipcMain.handle("openbot:auth-status", () => desktopAuth!.status());
-  ipcMain.handle("openbot:sign-in", () => desktopAuth!.signIn());
-  ipcMain.handle("openbot:sign-out", () => desktopAuth!.signOut());
+  ipcMain.handle("dispatch:auth-status", () => desktopAuth!.status());
+  ipcMain.handle("dispatch:sign-in", () => desktopAuth!.signIn());
+  ipcMain.handle("dispatch:sign-out", () => desktopAuth!.signOut());
   for (const url of pendingProtocolUrls.splice(0)) await desktopAuth.handleCallback(url);
   await createWindow();
   app.on("activate", () => {
@@ -107,6 +107,6 @@ async function handleProtocolUrl(url: string): Promise<void> {
 }
 
 void main().catch((error: unknown) => {
-  console.error("OpenBot Desktop failed to start", error);
+  console.error("Dispatch Desktop failed to start", error);
   app.quit();
 });

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Edit Dispatch Configuration"
+  short_description: "Edit fork-owned Dispatch configuration safely"
+  default_prompt: "Use $edit-dispatch-configuration to update this fork configuration and its agent template safely."

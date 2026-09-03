@@ -1,4 +1,4 @@
-// Publication of the OpenBot desktop app to the shared app-updates bucket.
+// Publication of the Dispatch desktop app to the shared app-updates bucket.
 //
 // Official publication is upstream-only; forks select their own bucket (ADR-0028).
 // A fork inherits every tracked file, so the official bucket name sitting in this
@@ -24,16 +24,16 @@ import { repositoryRoot } from "../../workspace.js";
 
 /**
  * The shared Tilde bucket, defined in infrastructure-terraform/shared/app_updates.tf.
- * It already carries Tilde's own Electrobun feed under `desktop/`, so OpenBot takes a
+ * It already carries Tilde's own Electrobun feed under `desktop/`, so Dispatch takes a
  * nested prefix; public read is granted to `desktop/*` and therefore covers it.
  */
 const officialUpdatesBucket = "tilde-app-updates-prod";
 /**
  * Reverse-DNS of the publisher, not of the product or platform. A fork may override it
- * through OPENBOT_APP_ID.
+ * through DISPATCH_APP_ID.
  */
-const officialAppId = "ai.trytilde.openbot";
-const officialUpdatesPrefix = "desktop/openbot";
+const officialAppId = "ai.trytilde.dispatch";
+const officialUpdatesPrefix = "desktop/dispatch";
 const officialUpdatesRegion = "us-east-1";
 
 export const releaseSubcommands: readonly (readonly [string, string])[] = [
@@ -45,7 +45,7 @@ export const releaseSubcommands: readonly (readonly [string, string])[] = [
 
 /** The Electron appId, defaulting to the official identifier. */
 export function resolveAppId(): string {
-  return optionalEnvironment("OPENBOT_APP_ID") ?? officialAppId;
+  return optionalEnvironment("DISPATCH_APP_ID") ?? officialAppId;
 }
 
 export interface PublicationTarget {
@@ -60,11 +60,11 @@ export interface PublicationTarget {
  * to publish its own builds; nothing here is required for a fork that never publishes.
  */
 export function resolveTarget(channel: string): PublicationTarget {
-  const bucket = optionalEnvironment("OPENBOT_DESKTOP_UPDATES_BUCKET") ?? officialUpdatesBucket;
-  const root = optionalEnvironment("OPENBOT_DESKTOP_UPDATES_PREFIX") ?? officialUpdatesPrefix;
+  const bucket = optionalEnvironment("DISPATCH_DESKTOP_UPDATES_BUCKET") ?? officialUpdatesBucket;
+  const root = optionalEnvironment("DISPATCH_DESKTOP_UPDATES_PREFIX") ?? officialUpdatesPrefix;
   const region = optionalEnvironment("AWS_REGION") ?? officialUpdatesRegion;
   const prefix = `${trimSlashes(root)}/${channel}`;
-  const configuredBase = optionalEnvironment("OPENBOT_DESKTOP_UPDATES_BASE_URL");
+  const configuredBase = optionalEnvironment("DISPATCH_DESKTOP_UPDATES_BASE_URL");
   const base = configuredBase
     ? trimTrailingSlash(configuredBase)
     : `https://${bucket}.s3.${region}.amazonaws.com`;
@@ -77,10 +77,10 @@ export function publicationGuard(root: string, bucket: string): string | undefin
   if (isUpstreamRepository(root)) return undefined;
   const found = remoteRepository(root) ?? "an unknown remote";
   return (
-    `Refusing to publish to the official OpenBot updates bucket from ${found}.\n` +
+    `Refusing to publish to the official Dispatch updates bucket from ${found}.\n` +
     `Desktop publication belongs to ${upstreamRepository} (ADR-0028). To publish a fork's ` +
-    `own builds, create a bucket for it and set OPENBOT_DESKTOP_UPDATES_BUCKET, plus ` +
-    `optionally OPENBOT_DESKTOP_UPDATES_PREFIX and OPENBOT_DESKTOP_UPDATES_BASE_URL.`
+    `own builds, create a bucket for it and set DISPATCH_DESKTOP_UPDATES_BUCKET, plus ` +
+    `optionally DISPATCH_DESKTOP_UPDATES_PREFIX and DISPATCH_DESKTOP_UPDATES_BASE_URL.`
   );
 }
 
@@ -221,7 +221,7 @@ export async function runRelease(argv: readonly string[], store?: ObjectStore): 
       return runStatus(root, target, store);
     default:
       console.error(
-        `Usage: openbot desktop release <${releaseSubcommands.map(([name]) => name).join("|")}>`,
+        `Usage: tilde desktop release <${releaseSubcommands.map(([name]) => name).join("|")}>`,
       );
       return 1;
   }
@@ -262,7 +262,7 @@ export function resolveSigning(environment: NodeJS.ProcessEnv = process.env): Si
     };
   }
 
-  const directory = mkdtempSync(join(tmpdir(), "openbot-signing-"));
+  const directory = mkdtempSync(join(tmpdir(), "dispatch-signing-"));
   const certificatePath = join(directory, "certificate.p12");
   writeFileSync(certificatePath, Buffer.from(certificate, "base64"), { mode: 0o600 });
   const resolved: Record<string, string> = {
@@ -299,15 +299,15 @@ async function runBuild(
 ): Promise<number> {
   const platform = requested ?? hostPlatform();
   if (platform !== "mac" && platform !== "linux") {
-    console.error(`Unsupported --platform ${platform}. OpenBot desktop releases mac and linux.`);
+    console.error(`Unsupported --platform ${platform}. Dispatch desktop releases mac and linux.`);
     return 1;
   }
   const signing = platform === "mac" ? resolveSigning() : unsignedLinux();
   for (const warning of signing.warnings) console.warn(`! ${warning}`);
   // Both of these are command-line overrides rather than package.json config. Notarization,
-  // so an ordinary `openbot desktop package` never tries to reach Apple; appId, because
+  // so an ordinary `tilde desktop package` never tries to reach Apple; appId, because
   // electron-builder strips `${env.*}` macros out of that field and would otherwise bake a
-  // literal `env.OPENBOTAPPID` into the bundle.
+  // literal `env.DISPATCHAPPID` into the bundle.
   //
   // Passed without a `--` separator: pnpm forwards `--` through to the script verbatim
   // rather than consuming it, and electron-builder then ignores everything after it.
@@ -317,7 +317,7 @@ async function runBuild(
     "pnpm",
     [
       "--filter",
-      "@tryopenbot/desktop",
+      "@trytilde/dispatch-desktop",
       platform === "mac" ? "release:mac" : "release:linux",
       ...overrides,
     ],
@@ -325,7 +325,7 @@ async function runBuild(
     {
       ...signing.environment,
       // Interpolated into latest-*.yml by the generic publish provider.
-      OPENBOT_DESKTOP_UPDATES_URL: target.baseUrl,
+      DISPATCH_DESKTOP_UPDATES_URL: target.baseUrl,
     },
   );
   if (code !== 0) return code;
@@ -367,7 +367,7 @@ async function runPublish(
   const outputDirectory = join(desktopAppDirectory(root), "out");
   if (!existsSync(outputDirectory)) {
     console.error(
-      `No build output at ${outputDirectory}. Run \`openbot desktop release build\` first.`,
+      `No build output at ${outputDirectory}. Run \`tilde desktop release build\` first.`,
     );
     return 1;
   }
@@ -488,7 +488,7 @@ async function runStatus(
 
 /** Records what the build actually did so `publish` reports it rather than guessing. */
 function releaseStatePath(root: string): string {
-  return join(desktopAppDirectory(root), "out", ".openbot-release-state.json");
+  return join(desktopAppDirectory(root), "out", ".dispatch-release-state.json");
 }
 
 function readReleaseState(root: string): { signed: boolean; notarized: boolean } {
@@ -503,7 +503,7 @@ function readReleaseState(root: string): { signed: boolean; notarized: boolean }
 }
 
 export function desktopAppDirectory(root: string): string {
-  return join(root, optionalEnvironment("OPENBOT_DESKTOP_DIR") ?? "apps/desktop");
+  return join(root, optionalEnvironment("DISPATCH_DESKTOP_DIR") ?? "apps/desktop");
 }
 
 function desktopVersion(root: string): string {
@@ -568,7 +568,7 @@ function awsCliStore(bucket: string): ObjectStore {
       await require0(["s3", "cp", localPath, `s3://${bucket}/${key}`]);
     },
     async putText(text, key, contentType) {
-      const directory = mkdtempSync(join(tmpdir(), "openbot-upload-"));
+      const directory = mkdtempSync(join(tmpdir(), "dispatch-upload-"));
       const path = join(directory, basename(key));
       writeFileSync(path, text);
       await require0(["s3", "cp", path, `s3://${bucket}/${key}`, "--content-type", contentType]);
@@ -589,7 +589,7 @@ function awsCliStore(bucket: string): ObjectStore {
       return output.trim() === "" || output.trim() === "None" ? [] : output.trim().split(/\s+/);
     },
     async getText(key) {
-      const directory = mkdtempSync(join(tmpdir(), "openbot-download-"));
+      const directory = mkdtempSync(join(tmpdir(), "dispatch-download-"));
       const path = join(directory, "object");
       const result = await run(["s3", "cp", `s3://${bucket}/${key}`, path]);
       if (result.code !== 0) return undefined;

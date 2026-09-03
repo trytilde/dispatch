@@ -17,13 +17,13 @@ export default defineConfig({
   webServer: [
     {
       command:
-        "pnpm --filter @tryopenbot/control-service exec node --conditions=development --import tsx test/e2e-server.ts",
+        "pnpm --filter @trytilde/dispatch-control-service exec node --conditions=development --import tsx test/e2e-server.ts",
       env: {
         ...process.env,
         TILDE_ORG_ID: "e2e-org",
         TILDE_TEAM_ID: "e2e-team",
-        PUBLIC_ORIGIN: "https://deployed.openbot.test",
-        OPENBOT_E2E_CONTROL_PORT: String(controlPort),
+        PUBLIC_ORIGIN: "https://deployed.dispatch.test",
+        DISPATCH_E2E_CONTROL_PORT: String(controlPort),
         WEB_PORT: String(webPort),
       },
       url: `http://127.0.0.1:${controlPort}/healthz`,
@@ -31,8 +31,8 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: `pnpm --filter @tryopenbot/web exec vp dev --host 127.0.0.1 --port ${webPort}`,
-      env: { ...process.env, OPENBOT_CONTROL_PORT: String(controlPort) },
+      command: `pnpm --filter @trytilde/dispatch-web exec vp dev --host 127.0.0.1 --port ${webPort}`,
+      env: { ...process.env, DISPATCH_CONTROL_PORT: String(controlPort) },
       url: `${webOrigin}/`,
       reuseExistingServer: false,
       timeout: 120_000,

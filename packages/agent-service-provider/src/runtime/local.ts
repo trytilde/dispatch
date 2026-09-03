@@ -4,15 +4,15 @@ import type {
   DeploymentPlan,
   DeploymentResult,
   ProviderInitialization,
-} from "@tryopenbot/runtime-provider";
-import { isDevelopmentLifecycle, persistEnvironment } from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
+import { isDevelopmentLifecycle, persistEnvironment } from "@trytilde/dispatch-runtime-provider";
 import {
   LocalControlServiceProvider,
   processRunner,
   retireLocalService,
   type CommandRunner,
   type LocalControlServiceProviderOptions,
-} from "@tryopenbot/control-service-provider";
+} from "@trytilde/dispatch-control-service-provider";
 import { LocalAgentServiceProvider } from "../local/index.js";
 import { buildLocalRuntimeService } from "./local-build.js";
 
@@ -22,7 +22,7 @@ export type LocalRuntimeServiceProviderOptions = LocalControlServiceProviderOpti
 export class LocalRuntimeServiceProvider {
   readonly initialization: ProviderInitialization = {
     id: "local-runtime",
-    label: "Local OpenBot runtime",
+    label: "Local Dispatch runtime",
     questions: [],
   };
   readonly #control: LocalControlServiceProvider;
@@ -59,11 +59,11 @@ export class LocalRuntimeServiceProvider {
   async plan(context: DeploymentContext): Promise<DeploymentPlan> {
     if (isDevelopmentLifecycle(context))
       return {
-        summary: "Use the watched combined OpenBot runtime in development",
+        summary: "Use the watched combined Dispatch runtime in development",
         steps: ["Skip local service installation"],
       };
     return {
-      summary: "Install the combined local OpenBot runtime",
+      summary: "Install the combined local Dispatch runtime",
       steps: ["Install one user service", "Smoke-test /healthz"],
     };
   }
@@ -98,7 +98,7 @@ export class LocalRuntimeServiceProvider {
   async finalizeEndpointCutover(context: DeploymentContext): Promise<void> {
     if (isDevelopmentLifecycle(context)) return;
     await retireLocalService(context, this.#runner, {
-      id: "openbot-agents",
+      id: "dispatch-agents",
       platform: this.#platform,
       homeDirectory: this.#homeDirectory,
       uid: this.#uid,

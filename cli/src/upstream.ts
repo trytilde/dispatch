@@ -1,4 +1,4 @@
-// Identifies the canonical OpenBot repository.
+// Identifies the canonical Dispatch repository.
 //
 // Official publication targets belong to trytilde/dispatch. A fork inherits tracked
 // configuration, so publication guards must live in code.

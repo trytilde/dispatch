@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
+import { DeploymentOutputs, type DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { TildeAgentProvider } from "./index.js";
 import { TildeSkillReconciler } from "./skills.js";
@@ -28,9 +28,9 @@ describe("TildeAgentProvider", () => {
 
   it("rejects an unknown automatic-memory mode before provisioning", async () => {
     const context = await agentContext("scout");
-    context.environment.OPENBOT_AUTOMATIC_MEMORY_MODE = "surprise";
+    context.environment.DISPATCH_AUTOMATIC_MEMORY_MODE = "surprise";
     await expect(new TildeAgentProvider(config).deployable.deploy(context)).rejects.toThrow(
-      "OPENBOT_AUTOMATIC_MEMORY_MODE must be none, personal, personal_plus_agent, or team",
+      "DISPATCH_AUTOMATIC_MEMORY_MODE must be none, personal, personal_plus_agent, or team",
     );
   });
 
@@ -50,8 +50,8 @@ describe("TildeAgentProvider", () => {
       .spyOn(TildeToolReconciler.prototype, "deployExternalResources")
       .mockResolvedValue();
     const context = await agentContext("scout");
-    context.environment.OPENBOT_PERSONAL_TOOL_FEDERATION_MODE = "all";
-    context.environment.OPENBOT_AUTOMATIC_MEMORY_MODE = "team";
+    context.environment.DISPATCH_PERSONAL_TOOL_FEDERATION_MODE = "all";
+    context.environment.DISPATCH_AUTOMATIC_MEMORY_MODE = "team";
     context.environment.AGENT_SCOUT_AUTOMATIC_MEMORY_MODE = "personal_plus_agent";
     const persistedSecrets: string[] = [];
     context.persistence = {
@@ -81,7 +81,7 @@ describe("TildeAgentProvider", () => {
             },
             mcp_server: {
               enabled: true,
-              id: "openbot-scout",
+              id: "dispatch-scout",
               enable_tilde_control_plane: true,
               user_tool_federation_mode: "all",
               user_tool_federation_selections: [],
@@ -93,7 +93,7 @@ describe("TildeAgentProvider", () => {
             memory: {
               bank: {
                 enabled: true,
-                name: "OpenBot scout memory",
+                name: "Dispatch scout memory",
                 synthesizer_agent_id: "memory-catcher",
               },
             },
@@ -137,7 +137,7 @@ describe("TildeAgentProvider", () => {
             items: channelCreated
               ? [
                   {
-                    id: "openbot-chatkit-workspace-scout",
+                    id: "dispatch-chatkit-workspace-scout",
                     configuration: { default_agent_inbox_id: "scout" },
                   },
                 ]
@@ -145,7 +145,7 @@ describe("TildeAgentProvider", () => {
           });
         if (request.method === "POST" && path.endsWith("/channels/vercel-ui")) {
           channelCreated = true;
-          return Response.json({ id: "openbot-chatkit-workspace-scout", status: "enabled" });
+          return Response.json({ id: "dispatch-chatkit-workspace-scout", status: "enabled" });
         }
         throw new Error(`Unexpected request: ${request.method} ${path}`);
       }),
@@ -158,7 +158,7 @@ describe("TildeAgentProvider", () => {
     expect(context.environment).toMatchObject({
       AGENT_SCOUT_API_KEY: "agent-api-key",
       AGENT_SCOUT_WEBHOOK_SIGNING_KEY: "signing-key",
-      AGENT_SCOUT_MCP_SERVER_ID: "openbot-scout",
+      AGENT_SCOUT_MCP_SERVER_ID: "dispatch-scout",
     });
     expect(requests.some((request) => request.url.endsWith("/provision/outputs/claim"))).toBe(true);
   });
@@ -200,7 +200,7 @@ describe("TildeAgentProvider", () => {
           return Response.json({
             items: [
               {
-                id: "openbot-chatkit-workspace-scout",
+                id: "dispatch-chatkit-workspace-scout",
                 configuration: { default_agent_inbox_id: "scout" },
               },
             ],
@@ -235,7 +235,7 @@ describe("TildeAgentProvider", () => {
 });
 
 async function agentContext(slug: string): Promise<DeploymentContext> {
-  const root = await mkdtemp(join(tmpdir(), "openbot-agent-provider-"));
+  const root = await mkdtemp(join(tmpdir(), "dispatch-agent-provider-"));
   temporaryRoots.push(root);
   const directory = join(root, "configuration", "agents", slug);
   await mkdir(directory, { recursive: true });
@@ -252,7 +252,7 @@ async function agentContext(slug: string): Promise<DeploymentContext> {
   };
 }
 
-function operation(status: string, outputsAvailable: boolean, mcpId = "openbot-scout") {
+function operation(status: string, outputsAvailable: boolean, mcpId = "dispatch-scout") {
   return {
     operation_id: "operation-one",
     org_id: "org-one",

@@ -5,7 +5,7 @@ export interface BrandedLoadingStateProps {
   label: string;
 }
 
-/** Full-screen OpenBot wait state using the same mascot as onboarding. */
+/** Full-screen Dispatch wait state using the same mascot as onboarding. */
 export function BrandedLoadingState({ label }: BrandedLoadingStateProps) {
   return (
     <main
@@ -18,7 +18,7 @@ export function BrandedLoadingState({ label }: BrandedLoadingStateProps) {
         <AgentAvatar
           className="!size-16"
           color="#1084FE"
-          id="openbot-hero-loading"
+          id="dispatch-hero-loading"
           shape="blob"
           state="loading"
         />

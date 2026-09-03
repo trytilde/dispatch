@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
-import type { Routine, SignalInstance, UpdateRoutineInput } from "@tryopenbot/client-runtime";
+import type {
+  Routine,
+  SignalInstance,
+  UpdateRoutineInput,
+} from "@trytilde/dispatch-client-runtime";
 import {
   AgentDetailsPane,
   RoutineEditor,
@@ -9,14 +13,18 @@ import {
   SignalProviderDialog,
   type SignalTestStatus,
   WorkOverview,
-} from "@tryopenbot/ui";
-import { errorMessage, signalProviderById, workConversationKey } from "@tryopenbot/client-runtime";
-import { openBotRuntime } from "../runtime.js";
+} from "@trytilde/dispatch-ui";
+import {
+  errorMessage,
+  signalProviderById,
+  workConversationKey,
+} from "@trytilde/dispatch-client-runtime";
+import { dispatchRuntime } from "../runtime.js";
 
 /**
  * Wires the agent details pane (routines + drill-in editor) and the signal
  * provider connect dialog to the client runtime store. Presentation lives in
- * @tryopenbot/ui; this container owns data and dispatch (ADR-0023).
+ * @trytilde/dispatch-ui; this container owns data and dispatch (ADR-0023).
  */
 
 export interface AgentDetailsContainerProps {
@@ -37,10 +45,10 @@ export function AgentDetailsContainer({
   onClose,
   onOpenRoutine,
 }: AgentDetailsContainerProps) {
-  const routinesState = useStore(openBotRuntime.store, (state) => state.routines);
-  const workState = useStore(openBotRuntime.store, (state) => state.work);
-  const signals = useStore(openBotRuntime.store, (state) => state.signals);
-  const sidebar = useStore(openBotRuntime.store, (state) => state.sidebar);
+  const routinesState = useStore(dispatchRuntime.store, (state) => state.routines);
+  const workState = useStore(dispatchRuntime.store, (state) => state.work);
+  const signals = useStore(dispatchRuntime.store, (state) => state.signals);
+  const sidebar = useStore(dispatchRuntime.store, (state) => state.sidebar);
   const [saveFailed, setSaveFailed] = useState(false);
   const [deleteFailed, setDeleteFailed] = useState(false);
   const [running, setRunning] = useState(false);
@@ -72,16 +80,16 @@ export function AgentDetailsContainer({
 
   useEffect(() => {
     if (!open || !agentId) return;
-    openBotRuntime.actions.startRoutinePolling(agentId);
-    void openBotRuntime.actions.refreshSignalProviders().catch(() => undefined);
-    void openBotRuntime.actions.refreshSignalInstances().catch(() => undefined);
-    return () => openBotRuntime.actions.stopRoutinePolling();
+    dispatchRuntime.actions.startRoutinePolling(agentId);
+    void dispatchRuntime.actions.refreshSignalProviders().catch(() => undefined);
+    void dispatchRuntime.actions.refreshSignalInstances().catch(() => undefined);
+    return () => dispatchRuntime.actions.stopRoutinePolling();
   }, [agentId, open]);
 
   useEffect(() => {
     if (!open || !agentId || !sessionId || routineParam) return;
-    openBotRuntime.actions.startWorkPolling(agentId, sessionId);
-    return () => openBotRuntime.actions.stopWorkPolling();
+    dispatchRuntime.actions.startWorkPolling(agentId, sessionId);
+    return () => dispatchRuntime.actions.stopWorkPolling();
   }, [agentId, open, routineParam, sessionId]);
 
   const routine =
@@ -104,7 +112,7 @@ export function AgentDetailsContainer({
   useEffect(() => {
     if (!eventInstanceIds) return;
     for (const instanceId of eventInstanceIds.split(",")) {
-      void openBotRuntime.actions.refreshSignalDeliveries(instanceId).catch(() => undefined);
+      void dispatchRuntime.actions.refreshSignalDeliveries(instanceId).catch(() => undefined);
     }
   }, [eventInstanceIds]);
 
@@ -140,7 +148,7 @@ export function AgentDetailsContainer({
     const toggling = input.enabled !== undefined;
     if (toggling) setTogglePending(true);
     try {
-      await openBotRuntime.actions.updateRoutine(routine.id, agentId, input);
+      await dispatchRuntime.actions.updateRoutine(routine.id, agentId, input);
       setSaveFailed(false);
     } catch {
       setSaveFailed(true);
@@ -159,7 +167,7 @@ export function AgentDetailsContainer({
     creatingRef.current = true;
     const priorIds = new Set(routines.map((candidate) => candidate.id));
     try {
-      await openBotRuntime.actions.createRoutine({
+      await dispatchRuntime.actions.createRoutine({
         agentId,
         name: input.name,
         instruction: input.instruction,
@@ -167,7 +175,7 @@ export function AgentDetailsContainer({
         triggers: input.triggers,
       });
       setSaveFailed(false);
-      const created = (openBotRuntime.store.getState().routines.byAgentId[agentId] ?? []).find(
+      const created = (dispatchRuntime.store.getState().routines.byAgentId[agentId] ?? []).find(
         (candidate: Routine) => !priorIds.has(candidate.id),
       );
       if (!created) {
@@ -189,7 +197,7 @@ export function AgentDetailsContainer({
     pendingDraftRef.current = null;
     if (!pending) return;
     try {
-      await openBotRuntime.actions.updateRoutine(routineId, agentId, {
+      await dispatchRuntime.actions.updateRoutine(routineId, agentId, {
         name: pending.name,
         instruction: pending.instruction,
         triggers: pending.triggers,
@@ -205,7 +213,7 @@ export function AgentDetailsContainer({
       return;
     }
     try {
-      await openBotRuntime.actions.deleteRoutine(routine.id, agentId);
+      await dispatchRuntime.actions.deleteRoutine(routine.id, agentId);
       setDeleteFailed(false);
       onOpenRoutine(undefined);
     } catch {
@@ -217,7 +225,7 @@ export function AgentDetailsContainer({
     if (!routine || running) return;
     setRunning(true);
     try {
-      await openBotRuntime.actions.runRoutine(routine.id, agentId);
+      await dispatchRuntime.actions.runRoutine(routine.id, agentId);
     } catch {
       setSaveFailed(true);
     } finally {
@@ -228,19 +236,19 @@ export function AgentDetailsContainer({
   function selectSession(sessionId: string): void {
     const agent = sidebar.agents.find((candidate) => candidate.id === agentId);
     const session = agent?.sessions.items.find((candidate) => candidate.id === sessionId);
-    if (session) void openBotRuntime.actions.selectSession(agentId, session);
+    if (session) void dispatchRuntime.actions.selectSession(agentId, session);
   }
 
   async function steerJob(jobId: string, instruction: string): Promise<void> {
-    await openBotRuntime.actions.steerBackgroundJob(agentId, sessionId, jobId, instruction);
+    await dispatchRuntime.actions.steerBackgroundJob(agentId, sessionId, jobId, instruction);
   }
 
   async function stopJob(jobId: string): Promise<void> {
-    await openBotRuntime.actions.stopBackgroundJob(agentId, sessionId, jobId);
+    await dispatchRuntime.actions.stopBackgroundJob(agentId, sessionId, jobId);
   }
 
   async function resumeJob(jobId: string, instruction?: string): Promise<void> {
-    await openBotRuntime.actions.resumeBackgroundJob(agentId, sessionId, jobId, instruction);
+    await dispatchRuntime.actions.resumeBackgroundJob(agentId, sessionId, jobId, instruction);
   }
 
   const connectProvider = connectProviderId
@@ -343,7 +351,7 @@ export function SignalConnectContainer({
   onClose,
   onConnected,
 }: SignalConnectContainerProps) {
-  const signals = useStore(openBotRuntime.store, (state) => state.signals);
+  const signals = useStore(dispatchRuntime.store, (state) => state.signals);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [instance, setInstance] = useState<SignalInstance | undefined>(undefined);
@@ -352,7 +360,7 @@ export function SignalConnectContainer({
 
   useEffect(() => {
     if (signals.providers.length === 0) {
-      void openBotRuntime.actions.refreshSignalProviders().catch(() => undefined);
+      void dispatchRuntime.actions.refreshSignalProviders().catch(() => undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- recover the catalog once
   }, []);
@@ -364,7 +372,7 @@ export function SignalConnectContainer({
     setCreating(true);
     setError("");
     try {
-      const created = await openBotRuntime.actions.createSignalInstance({
+      const created = await dispatchRuntime.actions.createSignalInstance({
         providerType: providerTypeId,
         displayName: input.displayName,
         ...(input.signingSecret ? { signingSecret: input.signingSecret } : {}),
@@ -382,7 +390,7 @@ export function SignalConnectContainer({
     setTestStatus("sending");
     setTestError("");
     try {
-      await openBotRuntime.actions.testSignalInstance(instance.id);
+      await dispatchRuntime.actions.testSignalInstance(instance.id);
       setTestStatus("delivered");
     } catch (reason) {
       setTestStatus("failed");

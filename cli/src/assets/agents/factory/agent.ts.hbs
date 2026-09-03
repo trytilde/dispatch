@@ -18,7 +18,7 @@ import {
   createCuaTools,
   createTildeMediaDownloader,
   createTildeMediaUploader,
-} from "@tryopenbot/computer-tools";
+} from "@trytilde/dispatch-computer-tools";
 import {
   consumeStream,
   convertToModelMessages,
@@ -163,10 +163,10 @@ export default chatKitEndpoint({
       objective: requestObjective(context.messages),
       idempotencyKey: triggerId,
       budget: {
-        maxSteps: positiveIntegerEnv("OPENBOT_AGENT_RUN_MAX_STEPS", 500),
+        maxSteps: positiveIntegerEnv("DISPATCH_AGENT_RUN_MAX_STEPS", 500),
         maxDurationSeconds:
           jobBudget?.max_duration_seconds ??
-          positiveIntegerEnv("OPENBOT_AGENT_RUN_MAX_SECONDS", 3_600),
+          positiveIntegerEnv("DISPATCH_AGENT_RUN_MAX_SECONDS", 3_600),
         maxInputTokens: jobBudget?.max_input_tokens,
         maxOutputTokens: jobBudget?.max_output_tokens,
         maxCostMicrousd: jobBudget?.max_cost_microusd,
@@ -191,7 +191,7 @@ export default chatKitEndpoint({
     if (!ownsRunLease)
       return Response.json({ status: "run_already_claimed", run_id: currentAgentRun.id }, { status: 202 });
     const hostedInferenceBillingEnabled =
-      process.env.OPENBOT_HOSTED_INFERENCE_BILLING === "1";
+      process.env.DISPATCH_HOSTED_INFERENCE_BILLING === "1";
     if (
       jobBudget?.max_cost_microusd !== undefined &&
       !hostedInferenceBillingEnabled &&
@@ -255,10 +255,10 @@ export default chatKitEndpoint({
       stepId: `${currentAgentRun.generation}:${currentAgentRun.continuationCount + 1}`,
       effectScope: `continuation:${currentAgentRun.continuationCount + 1}`,
       estimatedCostMicrousd: positiveIntegerEnv(
-        "OPENBOT_HOSTED_INFERENCE_RESERVE_MICROUSD",
+        "DISPATCH_HOSTED_INFERENCE_RESERVE_MICROUSD",
         250_000,
       ),
-      tags: ["hosted-openbot", `agent:${{{AGENT_ID_JSON}}}`],
+      tags: ["hosted-dispatch", `agent:${{{AGENT_ID_JSON}}}`],
     });
     const triggerMessageId = context.messages.at(-1)?.id;
     const automaticMemory = triggerMessageId
@@ -301,7 +301,7 @@ export default chatKitEndpoint({
               .filter((id): id is string => typeof id === "string" && id.length > 0)
               .at(-1)
           : sourceMessageIds.at(-1),
-      contextWindowTokens: positiveIntegerEnv("OPENBOT_AGENT_CONTEXT_WINDOW_TOKENS", 128_000),
+      contextWindowTokens: positiveIntegerEnv("DISPATCH_AGENT_CONTEXT_WINDOW_TOKENS", 128_000),
     });
     const providerPrepareStep =
       "prepareStep" in inference && typeof inference.prepareStep === "function"
@@ -496,10 +496,10 @@ function estimateCostMicrousd(
   required: boolean,
 ): number {
   const inputPerMillion = Number(
-    process.env.OPENBOT_MODEL_INPUT_COST_MICROUSD_PER_MILLION ?? 0,
+    process.env.DISPATCH_MODEL_INPUT_COST_MICROUSD_PER_MILLION ?? 0,
   );
   const outputPerMillion = Number(
-    process.env.OPENBOT_MODEL_OUTPUT_COST_MICROUSD_PER_MILLION ?? 0,
+    process.env.DISPATCH_MODEL_OUTPUT_COST_MICROUSD_PER_MILLION ?? 0,
   );
   if (required && (!(inputPerMillion > 0) || !(outputPerMillion > 0)))
     throw new Error("cost_meter_unavailable");
@@ -510,8 +510,8 @@ function estimateCostMicrousd(
 
 function costMeterAvailable(): boolean {
   return (
-    Number(process.env.OPENBOT_MODEL_INPUT_COST_MICROUSD_PER_MILLION ?? 0) > 0 &&
-    Number(process.env.OPENBOT_MODEL_OUTPUT_COST_MICROUSD_PER_MILLION ?? 0) > 0
+    Number(process.env.DISPATCH_MODEL_INPUT_COST_MICROUSD_PER_MILLION ?? 0) > 0 &&
+    Number(process.env.DISPATCH_MODEL_OUTPUT_COST_MICROUSD_PER_MILLION ?? 0) > 0
   );
 }
 

@@ -7,7 +7,7 @@ import { motion } from "motion/react";
  * GLIDE MENU
  * Wraps a column of `data-menu-row` buttons and glides a
  * single highlight box behind the hovered / focused row.
- * OpenBot reconstruction of the Beautiful UI primitive API.
+ * Dispatch reconstruction of the Beautiful UI primitive API.
  * ───────────────────────────────────────────────────────── */
 
 export interface GlideMenuProps {

@@ -6,14 +6,14 @@ set -euo pipefail
 
 # Keep all mutable browser and runtime data on the persistent computer workspace.
 export DISPLAY="${DISPLAY:-:1}"
-export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/openbot-runtime}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/dispatch-runtime}"
 export COMPUTER_GEOMETRY="${COMPUTER_GEOMETRY:-1440x810}"
 
-mkdir -p "$XDG_RUNTIME_DIR" /workspace/.openbot/desktops
+mkdir -p "$XDG_RUNTIME_DIR" /workspace/.dispatch/desktops
 chmod 0700 "$XDG_RUNTIME_DIR"
 
 # Serialize startup so create, wake, and retries cannot launch duplicate process trees.
-start_lock=/tmp/openbot-computer-start.lock
+start_lock=/tmp/dispatch-computer-start.lock
 owner_file="$start_lock/owner"
 current_boot="$(cat /proc/sys/kernel/random/boot_id)"
 for _ in $(seq 1 20); do
@@ -45,14 +45,14 @@ pkill -f 'websockify.*6080' >/dev/null 2>&1 || true
 
 # computer-service adds one capability mapping per agent display. Keep the
 # token file across service restarts so live preview URLs remain stable.
-touch /opt/openbot/novnc.tokens
-chmod 0600 /opt/openbot/novnc.tokens
+touch /opt/dispatch/novnc.tokens
+chmod 0600 /opt/dispatch/novnc.tokens
 websockify --web=/usr/share/novnc --token-plugin TokenFile \
-  --token-source /opt/openbot/novnc.tokens 0.0.0.0:6080 \
-  >/var/log/openbot-novnc.log 2>&1 &
+  --token-source /opt/dispatch/novnc.tokens 0.0.0.0:6080 \
+  >/var/log/dispatch-novnc.log 2>&1 &
 
 # Start the API-key-protected service that owns every agent display and input path.
-node /opt/openbot/computer-service/dist/index.js >/var/log/openbot-computer-service.log 2>&1 &
+node /opt/dispatch/computer-service/dist/index.js >/var/log/dispatch-computer-service.log 2>&1 &
 
 # Treat any critical child exiting as a computer startup failure.
 wait -n

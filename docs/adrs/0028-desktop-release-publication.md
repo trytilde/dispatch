@@ -3,11 +3,11 @@
 ## In brief
 
 - One published desktop app. `trytilde/dispatch` owns the artifacts and the update feed.
-- Artifacts go to the existing shared bucket `tilde-app-updates-prod` under `desktop/openbot/<channel>/`.
+- Artifacts go to the existing shared bucket `tilde-app-updates-prod` under `desktop/dispatch/<channel>/`.
 - No new bucket. Tilde's own Electrobun feed already lives at `desktop/`, and public read is granted to `desktop/*`, so the nested prefix inherits it.
 - Forks cannot publish there. The guard is code in the CLI, and a scoped GitHub OIDC role is the backstop.
-- A fork publishes its own builds by setting `OPENBOT_DESKTOP_UPDATES_BUCKET`.
-- `openbot desktop release build|publish|manifest|status`. Nothing uploads without `--yes`.
+- A fork publishes its own builds by setting `DISPATCH_DESKTOP_UPDATES_BUCKET`.
+- `tilde desktop release build|publish|manifest|status`. Nothing uploads without `--yes`.
 - `version.json` is the client contract, keyed by platform. `latest-*.yml` rides along unused for a later electron-updater.
 - macOS is signed with a Developer ID certificate and notarized through notarytool. Missing credentials degrade to an unsigned build, recorded as `signed: false`.
 - Manually triggered only. Nothing releases on a push or a tag.
@@ -16,7 +16,7 @@
 
 ADR-0027 settled mobile publication: one store identity, owned upstream, with the refusal in
 code because a fork inherits every tracked file. The desktop app has the same shape and none of
-the machinery. `openbot desktop package` produces a local unsigned build and stops there.
+the machinery. `tilde desktop package` produces a local unsigned build and stops there.
 
 Three facts about the existing infrastructure shaped this.
 
@@ -39,7 +39,7 @@ are new work here rather than a pattern to copy.
 
 ## Decision
 
-Artifacts go to `s3://tilde-app-updates-prod/desktop/openbot/<channel>/`. Reusing the shared
+Artifacts go to `s3://tilde-app-updates-prod/desktop/dispatch/<channel>/`. Reusing the shared
 bucket costs one shared blast radius and saves a near-duplicate Terraform module; the nested
 prefix inherits both the public-read statement and the lifecycle rule without editing either.
 
@@ -51,7 +51,7 @@ policy names `repo:trytilde/dispatch:*`, is the backstop: a fork cannot assume i
 what the CLI does. Neither workflow carries an `if: github.repository ==` guard, so a fork with
 its own bucket and its own role runs both unmodified.
 
-The version is whatever `@tryopenbot/desktop` already has. Changesets owns it through the fixed
+The version is whatever `@trytilde/dispatch-desktop` already has. Changesets owns it through the fixed
 group, so a release publishes the current version rather than inventing one, and `publish`
 refuses a version already present unless `--overwrite` is passed.
 
@@ -66,10 +66,10 @@ electron-builder also emits `latest-mac.yml` and `latest-linux.yml` through a `g
 provider. Nothing reads them today. They are published anyway so that adopting electron-updater
 later is a client change rather than a re-run of every past release.
 
-The Electron `appId` is `ai.trytilde.openbot`, matching the mobile identifier for the reason
+The Electron `appId` is `ai.trytilde.dispatch`, matching the mobile identifier for the reason
 ADR-0027 gives: the identifier is reverse-DNS of the publisher, not of the product or the
 platform. Desktop and mobile therefore share one identifier, and one variable renames both:
-`OPENBOT_APP_ID`, already read by `apps/mobile/app.config.ts`, now also resolves the Electron
+`DISPATCH_APP_ID`, already read by `apps/mobile/app.config.ts`, now also resolves the Electron
 `appId`. They are distinct records to Apple regardless, because the desktop app is distributed
 with Developer ID rather than through a store, and nothing keys off the two being different.
 
@@ -86,11 +86,11 @@ this decision and additionally releases from a `mobile-v*` tag; this ADR does no
 
 ```mermaid
 flowchart LR
-  U["trytilde/dispatch"] -->|"workflow_dispatch"| C["openbot desktop release"]
+  U["trytilde/dispatch"] -->|"workflow_dispatch"| C["tilde desktop release"]
   F["a fork"] -->|"official bucket"| C
   C -->|"refuse, name the override"| F
   C -->|"allow"| O["GitHub OIDC role"]
-  O --> S["s3://tilde-app-updates-prod/desktop/openbot"]
+  O --> S["s3://tilde-app-updates-prod/desktop/dispatch"]
   S --> V["version.json"]
   S --> Y["latest-*.yml (unused)"]
   F -->|"own bucket + own role"| S2["the fork's own bucket"]
@@ -99,7 +99,7 @@ flowchart LR
 ## Consequences
 
 - One update feed with one owner, and a fork cannot reach it by inheriting tracked files.
-- OpenBot and the Tilde desktop app share a bucket. A policy or lifecycle change to
+- Dispatch and the Tilde desktop app share a bucket. A policy or lifecycle change to
   `tilde-app-updates-prod` affects both.
 - A new GitHub OIDC provider exists in the shared AWS account. It is a trust relationship with
   GitHub, and every future role scoped to it inherits that.
@@ -119,5 +119,5 @@ flowchart LR
 ## Updates
 
 - 2026-08-19T13:30:00+02:00: Initial decision.
-- 2026-08-19T15:10:00+02:00: Moved the Electron `appId` from `dev.openbot.desktop` to `ai.trytilde.openbot`, before the first signed release makes it permanent.
-- 2026-08-19T15:35:00+02:00: Made that identifier environment-overridable through the existing `OPENBOT_APP_ID`, so a fork renames the desktop and Expo clients with one variable instead of editing a tracked file. It is applied as an `electron-builder` command-line override, not a `${env.*}` macro and not a spawn environment variable: electron-builder strips macros out of `appId`, and pnpm forwards a `--` separator through to the script rather than consuming it, so overrides must follow the script name directly. `package.json` keeps the official value as the literal default. Both paths are verified against `CFBundleIdentifier` in a packaged bundle rather than against the config.
+- 2026-08-19T15:10:00+02:00: Moved the Electron `appId` from `dev.dispatch.desktop` to `ai.trytilde.dispatch`, before the first signed release makes it permanent.
+- 2026-08-19T15:35:00+02:00: Made that identifier environment-overridable through the existing `DISPATCH_APP_ID`, so a fork renames the desktop and Expo clients with one variable instead of editing a tracked file. It is applied as an `electron-builder` command-line override, not a `${env.*}` macro and not a spawn environment variable: electron-builder strips macros out of `appId`, and pnpm forwards a `--` separator through to the script rather than consuming it, so overrides must follow the script name directly. `package.json` keeps the official value as the literal default. Both paths are verified against `CFBundleIdentifier` in a packaged bundle rather than against the config.

@@ -1,5 +1,5 @@
 {
-  "name": "@tryopenbot/platform-integrations",
+  "name": "@trytilde/dispatch-platform-integrations",
   "version": "0.1.0",
   "files": [
     "dist",
@@ -85,7 +85,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tryopenbot/runtime-provider": "workspace:*",
+    "@trytilde/dispatch-runtime-provider": "workspace:*",
     "@trytilde/sdk": "workspace:*"
   },
   "devDependencies": {

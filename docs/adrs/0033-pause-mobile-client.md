@@ -10,7 +10,7 @@
 
 ## Context
 
-OpenBot grew an Expo owner client while its control, ChatKit, tools, Computer, authentication, and deployment foundations were still changing quickly. Keeping Android and iOS in every build and parity gate made those foundational changes carry a second renderer, native toolchains, simulators, EAS credentials, and store-release infrastructure before the primary product path was stable.
+Dispatch grew an Expo owner client while its control, ChatKit, tools, Computer, authentication, and deployment foundations were still changing quickly. Keeping Android and iOS in every build and parity gate made those foundational changes carry a second renderer, native toolchains, simulators, EAS credentials, and store-release infrastructure before the primary product path was stable.
 
 The mobile implementation is useful work and must remain recoverable, but leaving it on main implies it is maintained and release-ready. It is neither. A Git branch and deliberately unmergeable PR preserve the exact source and history without keeping that operational promise in the active tree.
 
@@ -40,4 +40,4 @@ Mobile may return only after the web/desktop foundation has stable contracts and
 
 ## Updates
 
-- 2026-08-29T07:28:00+02:00: Initial decision, explicitly requested by the product owner while stabilizing the OpenBot foundation.
+- 2026-08-29T07:28:00+02:00: Initial decision, explicitly requested by the product owner while stabilizing the Dispatch foundation.

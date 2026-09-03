@@ -3,7 +3,7 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
+import { DeploymentOutputs, type DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import { describe, expect, it } from "vite-plus/test";
 import { LocalGitProvider } from "./index.js";
 
@@ -11,11 +11,11 @@ const execFileAsync = promisify(execFile);
 
 describe("LocalGitProvider", () => {
   it("creates an idempotent bare origin and pushes the current branch", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-local-git-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-local-git-"));
     await execFileAsync("git", ["init", "-b", "main"], { cwd: root });
-    await execFileAsync("git", ["config", "user.name", "OpenBot Test"], { cwd: root });
-    await execFileAsync("git", ["config", "user.email", "openbot@example.test"], { cwd: root });
-    await writeFile(join(root, "README.md"), "OpenBot\n");
+    await execFileAsync("git", ["config", "user.name", "Dispatch Test"], { cwd: root });
+    await execFileAsync("git", ["config", "user.email", "dispatch@example.test"], { cwd: root });
+    await writeFile(join(root, "README.md"), "Dispatch\n");
     await execFileAsync("git", ["add", "README.md"], { cwd: root });
     await execFileAsync("git", ["commit", "-m", "initial"], { cwd: root });
     const environment: NodeJS.ProcessEnv = {};
@@ -39,13 +39,13 @@ describe("LocalGitProvider", () => {
     await provider.deployable.deploy(context);
     await provider.deployable.deploy(context);
     expect(persisted.GIT_LOCAL_REPOSITORY).toMatch(/^file:\/\//);
-    expect((await readFile(join(root, ".openbot/git/openbot.git/HEAD"), "utf8")).trim()).toBe(
+    expect((await readFile(join(root, ".dispatch/git/dispatch.git/HEAD"), "utf8")).trim()).toBe(
       "ref: refs/heads/master",
     );
     const remoteHead = (
       await execFileAsync("git", [
         "--git-dir",
-        join(root, ".openbot/git/openbot.git"),
+        join(root, ".dispatch/git/dispatch.git"),
         "rev-parse",
         "refs/heads/main",
       ])

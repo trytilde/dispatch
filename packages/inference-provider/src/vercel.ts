@@ -1,16 +1,16 @@
 import { fileURLToPath } from "node:url";
-import { VercelPlatform } from "@tryopenbot/platform-integrations";
+import { VercelPlatform } from "@trytilde/dispatch-platform-integrations";
 import type {
   ProviderInitialization,
   ProviderInitializationContext,
-} from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
 import type { InferenceProvider } from "./core.js";
 
 const AI_GATEWAY_API_KEY = "AI_GATEWAY_API_KEY";
 const AI_GATEWAY_KEY_NAME = "VERCEL_AI_GATEWAY_API_KEY_NAME";
 const AI_MODEL = "AI_MODEL";
 const INFERENCE_PROVIDER = "INFERENCE_PROVIDER";
-export const HOSTED_INFERENCE_BILLING = "OPENBOT_HOSTED_INFERENCE_BILLING";
+export const HOSTED_INFERENCE_BILLING = "DISPATCH_HOSTED_INFERENCE_BILLING";
 
 export const VERCEL_INFERENCE_PROVIDER = "vercel-ai-gateway";
 export const DEFAULT_VERCEL_MODEL = "openai/gpt-5.6-sol";
@@ -18,12 +18,12 @@ export const DEFAULT_VERCEL_MODEL = "openai/gpt-5.6-sol";
 export const vercelInferenceProviderInitialization: ProviderInitialization = {
   id: "vercel-ai-gateway-inference",
   label: "Vercel AI Gateway",
-  description: "Provision the AI Gateway credential used by authored OpenBot agents.",
+  description: "Provision the AI Gateway credential used by authored Dispatch agents.",
   questions: [
     {
       id: "vercel-ai-gateway-api-key-name",
       prompt: "Vercel AI Gateway API key name",
-      description: "Human-readable label for the API key created for this OpenBot installation.",
+      description: "Human-readable label for the API key created for this Dispatch installation.",
       input: "text",
       required: true,
       destination: { kind: "environment", key: AI_GATEWAY_KEY_NAME },

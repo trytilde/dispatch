@@ -1,6 +1,6 @@
 # Changesets
 
-Add one Markdown file here for owner-visible behavior or package API changes. Every OpenBot workspace package belongs to one fixed version group, so release versions move together.
+Add one Markdown file here for owner-visible behavior or package API changes. Every Dispatch workspace package belongs to one fixed version group, so release versions move together.
 
 ```bash
 pnpm changeset

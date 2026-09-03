@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { connectorSetupFields, type ConnectorSetupField } from "@tryopenbot/client-runtime";
+import { connectorSetupFields, type ConnectorSetupField } from "@trytilde/dispatch-client-runtime";
 import { ExternalLinkIcon, KeyRoundIcon, ShieldCheckIcon, UserRoundIcon } from "lucide-react";
 import { Button } from "./beautiful-ui/atoms/button.js";
 import { Dialog, DialogContent, DialogTitle } from "./components/ui/dialog.js";

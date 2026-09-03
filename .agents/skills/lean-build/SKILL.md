@@ -5,7 +5,7 @@ description: Build feature work with high overbuilding risk. Use for new behavio
 
 # Lean build
 
-OpenBot's provider and ownership boundaries remain mandatory. Turn the feature into the narrowest complete outcome that fits the existing system.
+Dispatch's provider and ownership boundaries remain mandatory. Turn the feature into the narrowest complete outcome that fits the existing system.
 
 - Derive observable acceptance and explicit non-goals from request and repository.
 - Trace entry point through layers owning invariants.

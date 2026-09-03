@@ -3,7 +3,7 @@
 /* ─────────────────────────────────────────────────────────
  * SHIMMER
  * Text with a soft highlight sweeping across it, for busy
- * labels ("Thinking…"). OpenBot reconstruction of the
+ * labels ("Thinking…"). Dispatch reconstruction of the
  * Beautiful UI atom API.
  * ───────────────────────────────────────────────────────── */
 

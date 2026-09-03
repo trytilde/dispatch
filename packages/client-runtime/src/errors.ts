@@ -9,5 +9,5 @@ export class ClientRequestError extends Error {
 }
 
 export function errorMessage(value: unknown): string {
-  return value instanceof Error ? value.message : "OpenBot request failed";
+  return value instanceof Error ? value.message : "Dispatch request failed";
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@tryopenbot/runtime-provider",
+  "name": "@trytilde/dispatch-runtime-provider",
   "version": "0.1.0",
   "files": [
     "dist",

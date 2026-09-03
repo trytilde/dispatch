@@ -28,7 +28,7 @@ export interface SyncReportView {
 }
 
 const commands = [
-  ["init", "Initialize OpenBot interactively"],
+  ["init", "Initialize Dispatch interactively"],
   ["init --non-interactive --json", "Initialize from JSON answers on stdin"],
   ["new-agent NAME --json", "Scaffold an agent non-interactively"],
   ["secrets set NAME --description TEXT --stdin", "Set a described secret from stdin"],
@@ -40,7 +40,7 @@ const commands = [
   ["tunnel", "Run a local command behind a Tilde tunnel"],
   ["plugin", "Configure Tilde resources for a coding-agent CLI"],
   ["sdk", "Develop and verify the Tilde SDK packages"],
-  ["dev", "Start the local OpenBot development environment"],
+  ["dev", "Start the local Dispatch development environment"],
   ["check", "Run repository validation"],
   ["build", "Build the deployable application shell"],
   ["test", "Run repository tests"],
@@ -81,9 +81,9 @@ export function Brand({ subtitle }: { subtitle?: string }) {
   return (
     <Box flexDirection="column" marginBottom={1}>
       <Text bold color="cyan">
-        OPENBOT
+        TILDE
       </Text>
-      <Text dimColor>{subtitle ?? "Fork it. Configure it. Run it."}</Text>
+      <Text dimColor>{subtitle ?? "Dispatch. Fork it. Configure it. Run it."}</Text>
     </Box>
   );
 }
@@ -95,7 +95,7 @@ export function Help() {
       <Text bold>Usage</Text>
       <Text>
         {" "}
-        openbot <Text color="cyan">&lt;command&gt;</Text> <Text dimColor>[options]</Text>
+        tilde <Text color="cyan">&lt;command&gt;</Text> <Text dimColor>[options]</Text>
       </Text>
       <Box flexDirection="column" marginTop={1}>
         <Text bold>Commands</Text>
@@ -538,7 +538,7 @@ function GitHubAuthorizationView({
         {status === "waiting" ? (
           <Text>
             <Text color="cyan">{frame}</Text> Waiting for GitHub… <Text dimColor>{seconds}s</Text>{" "}
-            <Text dimColor>(Ctrl+C exits; openbot dev or deploy resumes authorization)</Text>
+            <Text dimColor>(Ctrl+C exits; tilde dev or deploy resumes authorization)</Text>
           </Text>
         ) : status === "connected" ? (
           <Text color="green">✓ GitHub App connected.</Text>

@@ -1,11 +1,11 @@
 // Packages the Electron app. Electron Builder targets the host platform, so a mac
-// build must run on a mac and a Linux build on Linux; `openbot remote <host> desktop`
+// build must run on a mac and a Linux build on Linux; `tilde remote <host> desktop`
 // covers the cross-platform case.
 import { spawn } from "node:child_process";
 import { repositoryRoot } from "../../workspace.js";
 
 export async function runDesktopPackage(args: readonly string[]): Promise<number> {
-  const child = spawn("pnpm", ["--filter", "@tryopenbot/desktop", "package", ...args], {
+  const child = spawn("pnpm", ["--filter", "@trytilde/dispatch-desktop", "package", ...args], {
     cwd: repositoryRoot(),
     stdio: "inherit",
   });

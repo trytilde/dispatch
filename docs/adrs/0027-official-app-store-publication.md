@@ -5,19 +5,19 @@
 ## In brief
 
 - One published mobile app. `trytilde/dispatch` owns the EAS project, bundle identifier, and both store listings.
-- Tilde publishes, OpenBot is the app. EAS project `ace1107b-b007-451a-8e50-2b571c40593e`, owner `trytilde`, identifier `ai.trytilde.openbot`.
+- Tilde publishes, Dispatch is the app. EAS project `ace1107b-b007-451a-8e50-2b571c40593e`, owner `trytilde`, identifier `ai.trytilde.dispatch`.
 - Forks cannot publish to it. The guard is code in the CLI, not a comment in a config file.
-- A fork releases its own app by setting `OPENBOT_EAS_PROJECT_ID`, `OPENBOT_APP_ID`, and `OPENBOT_EXPO_OWNER`.
+- A fork releases its own app by setting `DISPATCH_EAS_PROJECT_ID`, `DISPATCH_APP_ID`, and `DISPATCH_EXPO_OWNER`.
 - `app.json` becomes `app.config.ts` so store identity can be overridden without editing a tracked file.
-- `openbot mobile release build|submit|status|credentials`. Nothing spends money or publishes without `--yes`.
+- `tilde mobile release build|submit|status|credentials`. Nothing spends money or publishes without `--yes`.
 - `eas-cli` runs through `npx eas-cli@latest`, deliberately unpinned.
 - A `mobile-v*` tag releases through GitHub Actions, which calls the same CLI command a human would.
 - Store credentials stay in EAS and Apple/Google, never in this repository.
 
 ## Context
 
-OpenBot is forkable by design: ADR-0001 makes `configuration/` fork-owned, and every fork is a
-real installation. App store publication does not follow that shape. There is one "OpenBot" in
+Dispatch is forkable by design: ADR-0001 makes `configuration/` fork-owned, and every fork is a
+real installation. App store publication does not follow that shape. There is one "Dispatch" in
 the App Store and Play Store, one bundle identifier, one set of review relationships, and one
 EAS project holding the signing credentials. That identity belongs upstream.
 
@@ -28,30 +28,30 @@ authorization to protect a public listing is not a boundary — it is a hope.
 
 ## Decision
 
-Tilde is the publisher and OpenBot is the app, so the identifier is reverse-DNS of the
-publisher's domain — `ai.trytilde.openbot` — rather than of the product name. The display name
-stays `OpenBot`, and the Expo owner is the `trytilde` account that holds the store
+Tilde is the publisher and Dispatch is the app, so the identifier is reverse-DNS of the
+publisher's domain — `ai.trytilde.dispatch` — rather than of the product name. The display name
+stays `Dispatch`, and the Expo owner is the `trytilde` account that holds the store
 relationships. An identifier cannot be changed after a first store submission, so it is fixed
 before the first release rather than after.
 
-`openbot init` neither asks about EAS nor requires it. Almost no fork publishes its own mobile
+`tilde init` neither asks about EAS nor requires it. Almost no fork publishes its own mobile
 app, so making store publication part of initialization would charge every fork owner a
 question, an account, and a failure mode for something they will never use. Publication is a
-separate, upstream-only workflow reached through `openbot mobile release`; a fork that does want
+separate, upstream-only workflow reached through `tilde mobile release`; a fork that does want
 its own app opts in by setting the environment overrides, and only then.
 
 `trytilde/dispatch` owns store publication. The official EAS project is
 `ace1107b-b007-451a-8e50-2b571c40593e` under owner `trytilde`, with identifier
-`ai.trytilde.openbot`, and `apps/mobile/eas.json` carries the development, preview, and
+`ai.trytilde.dispatch`, and `apps/mobile/eas.json` carries the development, preview, and
 production profiles. Production uses `appVersionSource: remote` with `autoIncrement`, so build
 numbers live in EAS rather than in a tracked file where every fork merge would conflict.
 
 `app.json` becomes `app.config.ts`. Store identity reads from the environment with the official
-values as defaults, so a fork overrides `OPENBOT_EAS_PROJECT_ID`, `OPENBOT_APP_ID`,
-`OPENBOT_EXPO_OWNER`, and optionally the name, slug, and scheme from its own
+values as defaults, so a fork overrides `DISPATCH_EAS_PROJECT_ID`, `DISPATCH_APP_ID`,
+`DISPATCH_EXPO_OWNER`, and optionally the name, slug, and scheme from its own
 `configuration/.env` without editing a file that upstream also owns.
 
-Publication runs through `openbot mobile release`, per ADR-0018. Its guard refuses when the
+Publication runs through `tilde mobile release`, per ADR-0018. Its guard refuses when the
 resolved EAS project is the official one and `origin` is not `trytilde/dispatch`, naming the
 override a fork needs. This is deliberately narrow: a fork with its own EAS project is not
 blocked, because the thing being protected is the official identity, not the act of releasing.
@@ -59,11 +59,11 @@ blocked, because the thing being protected is the official identity, not the act
 `submit` changes a public listing.
 
 Releases are automated by tag rather than by branch. `.github/workflows/mobile-release.yml`
-runs on a `mobile-v*` tag or a manual dispatch, and it invokes `openbot mobile release build`
+runs on a `mobile-v*` tag or a manual dispatch, and it invokes `tilde mobile release build`
 rather than `eas-cli` directly, so CI and a human release through one code path with one guard.
 The job is additionally fenced to `github.repository == 'trytilde/dispatch'`; a fork's Actions run
 would already fail the CLI guard and has no `EXPO_TOKEN`, but a public listing deserves a fence
-that is readable in the workflow file. `openbot check` runs first, because an iOS build costs
+that is readable in the workflow file. `tilde check` runs first, because an iOS build costs
 plan minutes and a queue wait that a typecheck failure should not consume.
 
 CI holds exactly one credential, `EXPO_TOKEN`, and holds it as a repository secret read from the
@@ -82,7 +82,7 @@ Apple and Google consoles. None of them enter this repository, `configuration/`,
 
 ```mermaid
 flowchart LR
-  U["trytilde/dispatch"] -->|"openbot mobile release"| G["upstream guard"]
+  U["trytilde/dispatch"] -->|"tilde mobile release"| G["upstream guard"]
   F["a fork"] -->|"official project id"| G
   G -->|"refuse, name the override"| F
   G -->|"allow"| E["EAS project ace1107b"]
@@ -108,5 +108,5 @@ flowchart LR
 
 - 2026-08-29T07:28:00+02:00: Superseded operationally by ADR-0033. Main no longer contains the mobile app or EAS publication workflow; the complete prior implementation is preserved only on the DO NOT MERGE mobile archive branch.
 - 2026-08-19T10:20:00+02:00: Initial decision.
-- 2026-08-19T10:55:00+02:00: Named Tilde as publisher and OpenBot as the app, moving the identifier from `dev.openbot.mobile` to `ai.trytilde.openbot` before any store submission, and recorded that `openbot init` must never ask about EAS or require it.
-- 2026-08-19T13:40:00+02:00: Hardened the guard against an empty `OPENBOT_EAS_PROJECT_ID`. GitHub Actions substitutes an empty string for an unset repository variable, and `??` accepted it, so the official project compared unequal to itself and the refusal never fired. Overrides now read through `optionalEnvironment`, which treats empty and whitespace as absent.
+- 2026-08-19T10:55:00+02:00: Named Tilde as publisher and Dispatch as the app, moving the identifier from `dev.dispatch.mobile` to `ai.trytilde.dispatch` before any store submission, and recorded that `tilde init` must never ask about EAS or require it.
+- 2026-08-19T13:40:00+02:00: Hardened the guard against an empty `DISPATCH_EAS_PROJECT_ID`. GitHub Actions substitutes an empty string for an unset repository variable, and `??` accepted it, so the official project compared unequal to itself and the refusal never fired. Overrides now read through `optionalEnvironment`, which treats empty and whitespace as absent.

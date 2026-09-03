@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { CRON_DAY_NAMES, isValidTildeSchedule } from "@tryopenbot/client-runtime";
+import { CRON_DAY_NAMES, isValidTildeSchedule } from "@trytilde/dispatch-client-runtime";
 import { clockLabel } from "./relative-time.js";
 import { SelectField, type SelectOption } from "./primitive-components.js";
 

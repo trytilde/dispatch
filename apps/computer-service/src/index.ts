@@ -11,7 +11,7 @@ const server = createServer(
   connectNodeAdapter({ routes: registerComputerService, requestPathPrefix: "/rpc" }),
 );
 server.listen(port, "0.0.0.0", () =>
-  console.log(`OpenBot computer service listening on port ${port}`),
+  console.log(`Dispatch computer service listening on port ${port}`),
 );
 
 async function stop() {

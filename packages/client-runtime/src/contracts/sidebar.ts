@@ -40,10 +40,10 @@ export type ChatSessionPage = Page<ChatSession>;
 export type AgentSortOrder = "updated_at" | "created_at" | "manual";
 export type SessionSortOrder = "updated_at" | "created_at";
 
-const openBotUserSessionPrefix = "openbot:user:";
+const dispatchUserSessionPrefix = "dispatch:user:";
 
 export function userSessionLookupKey(userId: string, agentId: string): string {
-  return `${openBotUserSessionPrefix}${encodeURIComponent(userId)}:agent:${encodeURIComponent(agentId)}`;
+  return `${dispatchUserSessionPrefix}${encodeURIComponent(userId)}:agent:${encodeURIComponent(agentId)}`;
 }
 
 export function userSessionForAgent(agent: ChatAgent, userId: string): ChatSession | undefined {
@@ -51,10 +51,10 @@ export function userSessionForAgent(agent: ChatAgent, userId: string): ChatSessi
   const exact = agent.sessions.items.find((session) => session.lookup_key === expectedKey);
   if (exact) return exact;
 
-  // OpenBot historically exposed only the latest session for each bot. Keep that conversation as
-  // the legacy default until any explicitly keyed OpenBot user session exists for this bot.
+  // Dispatch historically exposed only the latest session for each bot. Keep that conversation as
+  // the legacy default until any explicitly keyed Dispatch user session exists for this bot.
   const hasKeyedUserSession = agent.sessions.items.some((session) =>
-    session.lookup_key?.startsWith(openBotUserSessionPrefix),
+    session.lookup_key?.startsWith(dispatchUserSessionPrefix),
   );
   return hasKeyedUserSession ? undefined : agent.sessions.items[0];
 }

@@ -2061,15 +2061,15 @@
         }
       }
     },
-    "/api/v1/identity/organizations/{org_id}/openbot/deployments": {
+    "/api/v1/identity/organizations/{org_id}/dispatch/deployments": {
       "post": {
         "tags": [
           "identity",
           "v1"
         ],
-        "summary": "Create a hosted OpenBot instance",
+        "summary": "Create a hosted Dispatch instance",
         "description": "Creates an isolated Tilde team, one Vercel runtime project containing the web app, control API, and agent functions, a persistent Vercel Sandbox with local Git and a deterministic Vercel project domain, and OIDC-backed AI Gateway access, then starts deployment. Deprecated control and agent project response fields mirror the runtime project for compatibility. Custom Cloudflare DNS is a follow-up.",
-        "operationId": "create_hosted_openbot_deployment",
+        "operationId": "create_hosted_dispatch_deployment",
         "parameters": [
           {
             "name": "org_id",
@@ -2085,7 +2085,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateHostedOpenBotDeploymentRequest"
+                "$ref": "#/components/schemas/CreateHostedDispatchDeploymentRequest"
               }
             }
           },
@@ -2093,11 +2093,11 @@
         },
         "responses": {
           "200": {
-            "description": "Hosted OpenBot provisioning started",
+            "description": "Hosted Dispatch provisioning started",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HostedOpenBotDeployment"
+                  "$ref": "#/components/schemas/HostedDispatchDeployment"
                 }
               }
             }
@@ -2133,7 +2133,7 @@
             }
           },
           "503": {
-            "description": "Hosted OpenBot provisioning is unavailable",
+            "description": "Hosted Dispatch provisioning is unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -3333,7 +3333,7 @@
           "v1"
         ],
         "summary": "Download my profile avatar",
-        "description": "Return the authenticated user's uploaded image or OpenBot avatar reference.",
+        "description": "Return the authenticated user's uploaded image or Dispatch avatar reference.",
         "operationId": "get-self-avatar",
         "responses": {
           "200": {
@@ -3434,20 +3434,20 @@
         }
       }
     },
-    "/api/v1/identity/profile/avatar/openbot": {
+    "/api/v1/identity/profile/avatar/dispatch": {
       "put": {
         "tags": [
           "identity",
           "v1"
         ],
-        "summary": "Set my OpenBot avatar",
-        "description": "Select a deterministic animated OpenBot avatar by ID.",
-        "operationId": "set-self-openbot-avatar",
+        "summary": "Set my Dispatch avatar",
+        "description": "Select a deterministic animated Dispatch avatar by ID.",
+        "operationId": "set-self-dispatch-avatar",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SetOpenBotAvatarRequest"
+                "$ref": "#/components/schemas/SetDispatchAvatarRequest"
               }
             }
           },
@@ -20318,16 +20318,16 @@
         ]
       }
     },
-    "/api/v1/team/{team_id}/identity/openbot/chatkit-realtime-ticket": {
+    "/api/v1/team/{team_id}/identity/dispatch/chatkit-realtime-ticket": {
       "post": {
         "tags": [
           "identity",
           "chatkit",
           "v1"
         ],
-        "summary": "Issue an OpenBot ChatKit realtime socket ticket",
-        "description": "Exchanges an installation-audience OpenBot bearer token for a 60-second credential accepted only by the requested team's ChatKit realtime WebSocket. Present it as the `tilde.chatkit-realtime.ticket.<ticket>` WebSocket subprotocol; the long-lived access token never enters a URL or browser JavaScript.",
-        "operationId": "issue_openbot_chatkit_realtime_ticket",
+        "summary": "Issue a Dispatch ChatKit realtime socket ticket",
+        "description": "Exchanges an installation-audience Dispatch bearer token for a 60-second credential accepted only by the requested team's ChatKit realtime WebSocket. Present it as the `tilde.chatkit-realtime.ticket.<ticket>` WebSocket subprotocol; the long-lived access token never enters a URL or browser JavaScript.",
+        "operationId": "issue_dispatch_chatkit_realtime_ticket",
         "parameters": [
           {
             "name": "team_id",
@@ -20370,7 +20370,7 @@
             }
           },
           "401": {
-            "description": "Invalid OpenBot access token",
+            "description": "Invalid Dispatch access token",
             "content": {
               "application/json": {
                 "schema": {
@@ -20397,15 +20397,15 @@
         ]
       }
     },
-    "/api/v1/team/{team_id}/identity/openbot/deployments": {
+    "/api/v1/team/{team_id}/identity/dispatch/deployments": {
       "get": {
         "tags": [
           "identity",
           "v1"
         ],
-        "summary": "List OpenBot deployments",
-        "description": "Lists OpenBot OAuth registrations owned by the selected Tilde team.",
-        "operationId": "list_openbot_deployments",
+        "summary": "List Dispatch deployments",
+        "description": "Lists Dispatch OAuth registrations owned by the selected Tilde team.",
+        "operationId": "list_dispatch_deployments",
         "parameters": [
           {
             "name": "team_id",
@@ -20428,11 +20428,11 @@
         ],
         "responses": {
           "200": {
-            "description": "OpenBot deployments",
+            "description": "Dispatch deployments",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListOpenBotDeploymentsResponse"
+                  "$ref": "#/components/schemas/ListDispatchDeploymentsResponse"
                 }
               }
             }
@@ -20472,9 +20472,9 @@
           "identity",
           "v1"
         ],
-        "summary": "Register an OpenBot deployment",
-        "description": "Creates or reconciles a public PKCE OAuth client for an OpenBot deployment owned by the selected Tilde team.",
-        "operationId": "register_openbot_deployment",
+        "summary": "Register a Dispatch deployment",
+        "description": "Creates or reconciles a public PKCE OAuth client for a Dispatch deployment owned by the selected Tilde team.",
+        "operationId": "register_dispatch_deployment",
         "parameters": [
           {
             "name": "team_id",
@@ -20499,7 +20499,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterOpenBotDeploymentRequest"
+                "$ref": "#/components/schemas/RegisterDispatchDeploymentRequest"
               }
             }
           },
@@ -20507,11 +20507,11 @@
         },
         "responses": {
           "200": {
-            "description": "OpenBot deployment registered",
+            "description": "Dispatch deployment registered",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OpenBotDeployment"
+                  "$ref": "#/components/schemas/DispatchDeployment"
                 }
               }
             }
@@ -20547,15 +20547,15 @@
         ]
       }
     },
-    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}": {
+    "/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}": {
       "get": {
         "tags": [
           "identity",
           "v1"
         ],
-        "summary": "Get a hosted OpenBot instance",
-        "description": "Returns the server-owned canonical Vercel runtime project, Sandbox, image, hostname, and lifecycle state for one team-isolated OpenBot instance. Pre-consolidation instances have no runtime project and retain their readable deprecated split control and agent project fields.",
-        "operationId": "get_hosted_openbot_instance",
+        "summary": "Get a hosted Dispatch instance",
+        "description": "Returns the server-owned canonical Vercel runtime project, Sandbox, image, hostname, and lifecycle state for one team-isolated Dispatch instance. Pre-consolidation instances have no runtime project and retain their readable deprecated split control and agent project fields.",
+        "operationId": "get_hosted_dispatch_instance",
         "parameters": [
           {
             "name": "team_id",
@@ -20589,7 +20589,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HostedOpenBotInstance"
+                  "$ref": "#/components/schemas/HostedDispatchInstance"
                 }
               }
             }
@@ -20615,15 +20615,15 @@
         ]
       }
     },
-    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/computer-image": {
+    "/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}/computer-image": {
       "put": {
         "tags": [
           "identity",
           "v1"
         ],
-        "summary": "Set the hosted OpenBot computer image",
+        "summary": "Set the hosted Dispatch computer image",
         "description": "Records an immutable VCR digest owned by this instance's canonical runtime project, or by its legacy control project for a pre-consolidation instance, for subsequent OIDC-authenticated Sandbox creation.",
-        "operationId": "update_hosted_openbot_computer_image",
+        "operationId": "update_hosted_dispatch_computer_image",
         "parameters": [
           {
             "name": "team_id",
@@ -20655,7 +20655,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateHostedOpenBotComputerImageRequest"
+                "$ref": "#/components/schemas/UpdateHostedDispatchComputerImageRequest"
               }
             }
           },
@@ -20667,7 +20667,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HostedOpenBotInstance"
+                  "$ref": "#/components/schemas/HostedDispatchInstance"
                 }
               }
             }
@@ -20693,15 +20693,15 @@
         ]
       }
     },
-    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/configuration": {
+    "/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}/configuration": {
       "put": {
         "tags": [
           "identity",
           "v1"
         ],
-        "summary": "Configure a hosted OpenBot instance",
-        "description": "Installs allowlisted user-owned OpenBot runtime values into the instance's canonical runtime project and derives VERCEL_RUNTIME_PROJECT server-side. Pre-consolidation instances continue to receive values in both existing split projects. Tenant, OAuth, Computer, and platform identity are derived from authenticated server state.",
-        "operationId": "configure_hosted_openbot_instance",
+        "summary": "Configure a hosted Dispatch instance",
+        "description": "Installs allowlisted user-owned Dispatch runtime values into the instance's canonical runtime project and derives VERCEL_RUNTIME_PROJECT server-side. Pre-consolidation instances continue to receive values in both existing split projects. Tenant, OAuth, Computer, and platform identity are derived from authenticated server state.",
+        "operationId": "configure_hosted_dispatch_instance",
         "parameters": [
           {
             "name": "team_id",
@@ -20733,7 +20733,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ConfigureHostedOpenBotInstanceRequest"
+                "$ref": "#/components/schemas/ConfigureHostedDispatchInstanceRequest"
               }
             }
           },
@@ -20745,7 +20745,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HostedOpenBotInstance"
+                  "$ref": "#/components/schemas/HostedDispatchInstance"
                 }
               }
             }
@@ -20771,15 +20771,15 @@
         ]
       }
     },
-    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases": {
+    "/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}/releases": {
       "post": {
         "tags": [
           "identity",
           "v1"
         ],
-        "summary": "Create a hosted OpenBot release",
+        "summary": "Create a hosted Dispatch release",
         "description": "Creates an uploading content-addressed Build Output API release. Consolidated instances require service=runtime and deploy the combined web, control, and agent artifact to the canonical runtime project. Pre-consolidation instances continue to accept the deprecated control and agents services.",
-        "operationId": "create_hosted_openbot_release",
+        "operationId": "create_hosted_dispatch_release",
         "parameters": [
           {
             "name": "team_id",
@@ -20811,7 +20811,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateHostedOpenBotReleaseRequest"
+                "$ref": "#/components/schemas/CreateHostedDispatchReleaseRequest"
               }
             }
           },
@@ -20823,7 +20823,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HostedOpenBotRelease"
+                  "$ref": "#/components/schemas/HostedDispatchRelease"
                 }
               }
             }
@@ -20849,15 +20849,15 @@
         ]
       }
     },
-    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases/{release_id}": {
+    "/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}/releases/{release_id}": {
       "get": {
         "tags": [
           "identity",
           "v1"
         ],
-        "summary": "Get a hosted OpenBot release",
+        "summary": "Get a hosted Dispatch release",
         "description": "Returns upload and deployment status, refreshing an in-progress deployment from Vercel when necessary.",
-        "operationId": "get_hosted_openbot_release",
+        "operationId": "get_hosted_dispatch_release",
         "parameters": [
           {
             "name": "team_id",
@@ -20899,7 +20899,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HostedOpenBotRelease"
+                  "$ref": "#/components/schemas/HostedDispatchRelease"
                 }
               }
             }
@@ -20925,15 +20925,15 @@
         ]
       }
     },
-    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases/{release_id}/files/{sha1}": {
+    "/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}/releases/{release_id}/files/{sha1}": {
       "put": {
         "tags": [
           "identity",
           "v1"
         ],
-        "summary": "Upload a hosted OpenBot release file",
+        "summary": "Upload a hosted Dispatch release file",
         "description": "Validates one declared digest and size, then streams the bytes to Vercel's content-addressed deployment file API without exposing the platform token.",
-        "operationId": "upload_hosted_openbot_release_file",
+        "operationId": "upload_hosted_dispatch_release_file",
         "parameters": [
           {
             "name": "team_id",
@@ -20998,7 +20998,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HostedOpenBotRelease"
+                  "$ref": "#/components/schemas/HostedDispatchRelease"
                 }
               }
             }
@@ -21024,15 +21024,15 @@
         ]
       }
     },
-    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases/{release_id}/finalize": {
+    "/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}/releases/{release_id}/finalize": {
       "post": {
         "tags": [
           "identity",
           "v1"
         ],
-        "summary": "Finalize a hosted OpenBot release",
+        "summary": "Finalize a hosted Dispatch release",
         "description": "Requires every manifest file to be uploaded, derives the canonical runtime project or legacy service-specific project server-side, and idempotently creates its production deployment.",
-        "operationId": "finalize_hosted_openbot_release",
+        "operationId": "finalize_hosted_dispatch_release",
         "parameters": [
           {
             "name": "team_id",
@@ -21074,7 +21074,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HostedOpenBotRelease"
+                  "$ref": "#/components/schemas/HostedDispatchRelease"
                 }
               }
             }
@@ -28534,15 +28534,15 @@
         }
       }
     },
-    "/api/v1/team/{team_id}/openbot/agents/{agent_id}/bundle": {
+    "/api/v1/team/{team_id}/dispatch/agents/{agent_id}/bundle": {
       "put": {
         "tags": [
-          "openbot",
+          "dispatch",
           "v1"
         ],
-        "summary": "Reconcile OpenBot agent bundle",
+        "summary": "Reconcile Dispatch agent bundle",
         "description": "Idempotently reconciles the agent, ChatKit workspace channel, authored skills and registry, MCP server, and tool-group bindings in one request.",
-        "operationId": "reconcile-openbot-agent-bundle",
+        "operationId": "reconcile-dispatch-agent-bundle",
         "parameters": [
           {
             "name": "team_id",
@@ -28574,7 +28574,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReconcileOpenBotAgentBundleBody"
+                "$ref": "#/components/schemas/ReconcileDispatchAgentBundleBody"
               }
             }
           },
@@ -28586,7 +28586,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReconcileOpenBotAgentBundleResponse"
+                  "$ref": "#/components/schemas/ReconcileDispatchAgentBundleResponse"
                 }
               }
             }
@@ -28602,15 +28602,15 @@
         ]
       }
     },
-    "/api/v1/team/{team_id}/openbot/plugins/catalog": {
+    "/api/v1/team/{team_id}/dispatch/plugins/catalog": {
       "get": {
         "tags": [
-          "openbot",
+          "dispatch",
           "v1"
         ],
-        "summary": "Get the OpenBot plugins catalog",
-        "description": "Returns the MCP providers, accounts, servers, skills, providers, and registries needed by the OpenBot plugins screen in one request.",
-        "operationId": "get-openbot-plugins-catalog",
+        "summary": "Get the Dispatch plugins catalog",
+        "description": "Returns the MCP providers, accounts, servers, skills, providers, and registries needed by the Dispatch plugins screen in one request.",
+        "operationId": "get-dispatch-plugins-catalog",
         "parameters": [
           {
             "name": "team_id",
@@ -28636,7 +28636,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OpenBotPluginsCatalogResponse"
+                  "$ref": "#/components/schemas/DispatchPluginsCatalogResponse"
                 }
               }
             }
@@ -48053,7 +48053,7 @@
           }
         }
       },
-      "ConfigureHostedOpenBotInstanceRequest": {
+      "ConfigureHostedDispatchInstanceRequest": {
         "type": "object",
         "required": [
           "environment"
@@ -48676,7 +48676,7 @@
           }
         }
       },
-      "CreateHostedOpenBotDeploymentRequest": {
+      "CreateHostedDispatchDeploymentRequest": {
         "type": "object",
         "required": [
           "title",
@@ -48689,11 +48689,11 @@
           },
           "title": {
             "type": "string",
-            "description": "User-facing title for the isolated OpenBot instance and its Tilde team."
+            "description": "User-facing title for the isolated Dispatch instance and its Tilde team."
           }
         }
       },
-      "CreateHostedOpenBotReleaseFile": {
+      "CreateHostedDispatchReleaseFile": {
         "type": "object",
         "required": [
           "path",
@@ -48718,7 +48718,7 @@
           }
         }
       },
-      "CreateHostedOpenBotReleaseRequest": {
+      "CreateHostedDispatchReleaseRequest": {
         "type": "object",
         "required": [
           "service",
@@ -48729,11 +48729,11 @@
           "files": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CreateHostedOpenBotReleaseFile"
+              "$ref": "#/components/schemas/CreateHostedDispatchReleaseFile"
             }
           },
           "service": {
-            "$ref": "#/components/schemas/HostedOpenBotReleaseService"
+            "$ref": "#/components/schemas/HostedDispatchReleaseService"
           },
           "source_revision": {
             "type": "string"
@@ -51997,7 +51997,7 @@
           }
         }
       },
-      "HostedOpenBotDeployment": {
+      "HostedDispatchDeployment": {
         "type": "object",
         "required": [
           "instance_id",
@@ -52028,7 +52028,7 @@
             "type": "string"
           },
           "oauth": {
-            "$ref": "#/components/schemas/OpenBotDeployment"
+            "$ref": "#/components/schemas/DispatchDeployment"
           },
           "org_id": {
             "type": "string"
@@ -52067,7 +52067,7 @@
           }
         }
       },
-      "HostedOpenBotInstance": {
+      "HostedDispatchInstance": {
         "type": "object",
         "required": [
           "id",
@@ -52118,7 +52118,7 @@
             "type": "string"
           },
           "status": {
-            "$ref": "#/components/schemas/HostedOpenBotInstanceStatus"
+            "$ref": "#/components/schemas/HostedDispatchInstanceStatus"
           },
           "team_id": {
             "type": "string"
@@ -52168,7 +52168,7 @@
           }
         }
       },
-      "HostedOpenBotInstanceStatus": {
+      "HostedDispatchInstanceStatus": {
         "type": "string",
         "enum": [
           "provisioning",
@@ -52177,7 +52177,7 @@
           "deleting"
         ]
       },
-      "HostedOpenBotRelease": {
+      "HostedDispatchRelease": {
         "type": "object",
         "required": [
           "id",
@@ -52210,7 +52210,7 @@
           "files": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/HostedOpenBotReleaseFile"
+              "$ref": "#/components/schemas/HostedDispatchReleaseFile"
             }
           },
           "id": {
@@ -52223,13 +52223,13 @@
             "type": "string"
           },
           "service": {
-            "$ref": "#/components/schemas/HostedOpenBotReleaseService"
+            "$ref": "#/components/schemas/HostedDispatchReleaseService"
           },
           "source_revision": {
             "type": "string"
           },
           "status": {
-            "$ref": "#/components/schemas/HostedOpenBotReleaseStatus"
+            "$ref": "#/components/schemas/HostedDispatchReleaseStatus"
           },
           "team_id": {
             "type": "string"
@@ -52245,7 +52245,7 @@
           }
         }
       },
-      "HostedOpenBotReleaseFile": {
+      "HostedDispatchReleaseFile": {
         "type": "object",
         "required": [
           "path",
@@ -52274,7 +52274,7 @@
           }
         }
       },
-      "HostedOpenBotReleaseService": {
+      "HostedDispatchReleaseService": {
         "type": "string",
         "enum": [
           "runtime",
@@ -52282,7 +52282,7 @@
           "agents"
         ]
       },
-      "HostedOpenBotReleaseStatus": {
+      "HostedDispatchReleaseStatus": {
         "type": "string",
         "enum": [
           "uploading",
@@ -53176,7 +53176,7 @@
               "string",
               "null"
             ],
-            "description": "Required for browser tickets and forbidden for native tickets. Browser\norigins must match this OpenBot registration."
+            "description": "Required for browser tickets and forbidden for native tickets. Browser\norigins must match this Dispatch registration."
           },
           "transport": {
             "$ref": "#/components/schemas/ChatKitRealtimeTicketTransport"
@@ -53288,7 +53288,7 @@
           }
         }
       },
-      "ListOpenBotDeploymentsResponse": {
+      "ListDispatchDeploymentsResponse": {
         "type": "object",
         "required": [
           "items"
@@ -53297,7 +53297,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/OpenBotDeployment"
+              "$ref": "#/components/schemas/DispatchDeployment"
             }
           }
         }
@@ -54891,7 +54891,7 @@
           }
         }
       },
-      "OpenBotAgentSkillInput": {
+      "DispatchAgentSkillInput": {
         "type": "object",
         "required": [
           "name",
@@ -54914,7 +54914,7 @@
           }
         }
       },
-      "OpenBotDeployment": {
+      "DispatchDeployment": {
         "type": "object",
         "required": [
           "client_id",
@@ -54974,9 +54974,9 @@
           }
         }
       },
-      "OpenBotPluginsCatalogResponse": {
+      "DispatchPluginsCatalogResponse": {
         "type": "object",
-        "description": "Inputs needed to render and mutate the OpenBot plugins screen.",
+        "description": "Inputs needed to render and mutate the Dispatch plugins screen.",
         "required": [
           "tool_providers",
           "tool_accounts",
@@ -57487,7 +57487,7 @@
           }
         }
       },
-      "ReconcileOpenBotAgentBundleBody": {
+      "ReconcileDispatchAgentBundleBody": {
         "type": "object",
         "required": [
           "display_name",
@@ -57537,7 +57537,7 @@
           "skills": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/OpenBotAgentSkillInput"
+              "$ref": "#/components/schemas/DispatchAgentSkillInput"
             }
           },
           "tool_group_instance_ids": {
@@ -57548,7 +57548,7 @@
           }
         }
       },
-      "ReconcileOpenBotAgentBundleResponse": {
+      "ReconcileDispatchAgentBundleResponse": {
         "type": "object",
         "required": [
           "agent",
@@ -58138,7 +58138,7 @@
           }
         }
       },
-      "RegisterOpenBotDeploymentRequest": {
+      "RegisterDispatchDeploymentRequest": {
         "type": "object",
         "required": [
           "name",
@@ -60463,7 +60463,7 @@
           }
         }
       },
-      "SetOpenBotAvatarRequest": {
+      "SetDispatchAvatarRequest": {
         "type": "object",
         "required": [
           "avatar_id"
@@ -64424,7 +64424,7 @@
           }
         }
       },
-      "UpdateHostedOpenBotComputerImageRequest": {
+      "UpdateHostedDispatchComputerImageRequest": {
         "type": "object",
         "required": [
           "image"

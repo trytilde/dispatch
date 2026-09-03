@@ -6,8 +6,8 @@ import { cliFailureDetails, createCliRunLog } from "./logging.js";
 
 describe("CLI run logging", () => {
   it("creates a private random run log and removes logs older than three days", async () => {
-    const homeDirectory = await mkdtemp(join(tmpdir(), "openbot-cli-log-"));
-    const directory = join(homeDirectory, ".openbot", "logs");
+    const homeDirectory = await mkdtemp(join(tmpdir(), "dispatch-cli-log-"));
+    const directory = join(homeDirectory, ".dispatch", "logs");
     await mkdir(directory, { recursive: true });
     await chmod(directory, 0o755);
     const oldLog = join(directory, "old.log");
@@ -35,13 +35,13 @@ describe("CLI run logging", () => {
     expect((await stat(directory)).mode & 0o777).toBe(0o700);
     expect((await stat(log.path)).mode & 0o777).toBe(0o600);
     const contents = await readFile(log.path, "utf8");
-    expect(contents).toContain("OpenBot CLI run started");
+    expect(contents).toContain("Tilde CLI run started");
     expect(contents).toContain("Test failure Error: complete stack required");
     expect(contents).toContain("logging.test.ts");
   });
 
   it("redacts sensitive values from complete error stacks", async () => {
-    const homeDirectory = await mkdtemp(join(tmpdir(), "openbot-cli-log-redact-"));
+    const homeDirectory = await mkdtemp(join(tmpdir(), "dispatch-cli-log-redact-"));
     const secret = "do-not-record-this-token";
     const log = await createCliRunLog({
       homeDirectory,
@@ -57,7 +57,7 @@ describe("CLI run logging", () => {
   });
 
   it("adds a stack even when non-Error values are thrown", async () => {
-    const homeDirectory = await mkdtemp(join(tmpdir(), "openbot-cli-log-string-error-"));
+    const homeDirectory = await mkdtemp(join(tmpdir(), "dispatch-cli-log-string-error-"));
     const log = await createCliRunLog({ homeDirectory, randomId: "string-error-run" });
     log.writeError("plain failure");
     log.close();

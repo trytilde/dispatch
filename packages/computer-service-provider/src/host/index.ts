@@ -4,8 +4,8 @@ import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
-import { renderFileTemplatePath } from "@tryopenbot/utilities";
+import type { DeploymentContext, DeploymentResult } from "@trytilde/dispatch-runtime-provider";
+import { renderFileTemplatePath } from "@trytilde/dispatch-utilities";
 import {
   BaseComputerProvider,
   computerWorkspacePath,
@@ -25,7 +25,7 @@ import {
 
 const execute = promisify(execFile);
 const serviceTemplate = fileURLToPath(
-  new URL("./assets/openbot-computer.service.hbs", import.meta.url),
+  new URL("./assets/dispatch-computer.service.hbs", import.meta.url),
 );
 
 export interface HostComputerProviderOptions {
@@ -55,7 +55,7 @@ export class HostComputerProvider extends BaseComputerProvider {
   };
   override readonly deployable = {
     plan: async () => ({
-      summary: "Install the OpenBot Computer directly on this Linux host",
+      summary: "Install the Dispatch Computer directly on this Linux host",
       steps: [
         "Install desktop, browser, Cua, noVNC, and Computer service assets",
         "Create the shared /workspace directory",
@@ -87,11 +87,15 @@ export class HostComputerProvider extends BaseComputerProvider {
   }
 
   async #build(context: DeploymentContext): Promise<DeploymentResult> {
-    await this.#runner.run("pnpm", ["--filter", "@tryopenbot/computer-service...", "build"], {
-      cwd: context.repositoryRoot,
-      environment: context.environment,
-      timeoutMs: 10 * 60 * 1000,
-    });
+    await this.#runner.run(
+      "pnpm",
+      ["--filter", "@trytilde/dispatch-computer-service...", "build"],
+      {
+        cwd: context.repositoryRoot,
+        environment: context.environment,
+        timeoutMs: 10 * 60 * 1000,
+      },
+    );
     const materialized = await materializeComputerImageContext(context.repositoryRoot, "host");
     return { outputs: { HOST_COMPUTER_CONTEXT: materialized.contextDirectory } };
   }
@@ -102,20 +106,20 @@ export class HostComputerProvider extends BaseComputerProvider {
     const installScript = [
       "set -euo pipefail",
       `sudo bash ${shell(resolve(assets, "bootstrap.sh"))}`,
-      "sudo install -d -m 0755 /opt/openbot /usr/local/bin /usr/share/novnc /usr/share/applications",
-      `sudo install -m 0755 ${shell(resolve(assets, "desktop-session.sh"))} /opt/openbot/desktop-session.sh`,
-      `sudo rsvg-convert --width 1440 --height 810 ${shell(resolve(assets, "desktop-wallpaper.svg"))} --output /opt/openbot/desktop-wallpaper.png`,
-      `sudo install -m 0755 ${shell(resolve(assets, "development-profile.sh"))} /opt/openbot/development-profile.sh`,
-      `sudo install -m 0755 ${shell(resolve(assets, "development-setup.sh"))} /usr/local/bin/setup-openbot-development`,
-      `sudo install -m 0755 ${shell(resolve(assets, "openbot-browser.sh"))} /usr/local/bin/openbot-browser`,
-      `sudo install -m 0644 ${shell(resolve(assets, "openbot-browser.desktop"))} /usr/share/applications/openbot-browser.desktop`,
-      `sudo install -m 0644 ${shell(resolve(assets, "openbot-files.desktop"))} /usr/share/applications/openbot-files.desktop`,
-      `sudo install -m 0755 ${shell(resolve(assets, "start.sh"))} /usr/local/bin/start-openbot-computer`,
-      `sudo install -m 0644 ${shell(resolve(assets, "xfce4-panel.xml"))} /opt/openbot/xfce4-panel.xml`,
-      `sudo install -m 0644 ${shell(resolve(assets, "openbot-vnc.html"))} /usr/share/novnc/openbot.html`,
-      `sudo ln -sfn ${shell(resolve(context.repositoryRoot, "apps/computer-service"))} /opt/openbot/computer-service`,
-      "sudo touch /opt/openbot/novnc.tokens /var/log/openbot-novnc.log /var/log/openbot-computer-service.log /var/log/openbot-computer.log",
-      `sudo chown ${process.getuid?.() ?? 1000}:${process.getgid?.() ?? 1000} /opt/openbot/novnc.tokens /var/log/openbot-novnc.log /var/log/openbot-computer-service.log /var/log/openbot-computer.log`,
+      "sudo install -d -m 0755 /opt/dispatch /usr/local/bin /usr/share/novnc /usr/share/applications",
+      `sudo install -m 0755 ${shell(resolve(assets, "desktop-session.sh"))} /opt/dispatch/desktop-session.sh`,
+      `sudo rsvg-convert --width 1440 --height 810 ${shell(resolve(assets, "desktop-wallpaper.svg"))} --output /opt/dispatch/desktop-wallpaper.png`,
+      `sudo install -m 0755 ${shell(resolve(assets, "development-profile.sh"))} /opt/dispatch/development-profile.sh`,
+      `sudo install -m 0755 ${shell(resolve(assets, "development-setup.sh"))} /usr/local/bin/setup-dispatch-development`,
+      `sudo install -m 0755 ${shell(resolve(assets, "dispatch-browser.sh"))} /usr/local/bin/dispatch-browser`,
+      `sudo install -m 0644 ${shell(resolve(assets, "dispatch-browser.desktop"))} /usr/share/applications/dispatch-browser.desktop`,
+      `sudo install -m 0644 ${shell(resolve(assets, "dispatch-files.desktop"))} /usr/share/applications/dispatch-files.desktop`,
+      `sudo install -m 0755 ${shell(resolve(assets, "start.sh"))} /usr/local/bin/start-dispatch-computer`,
+      `sudo install -m 0644 ${shell(resolve(assets, "xfce4-panel.xml"))} /opt/dispatch/xfce4-panel.xml`,
+      `sudo install -m 0644 ${shell(resolve(assets, "dispatch-vnc.html"))} /usr/share/novnc/dispatch.html`,
+      `sudo ln -sfn ${shell(resolve(context.repositoryRoot, "apps/computer-service"))} /opt/dispatch/computer-service`,
+      "sudo touch /opt/dispatch/novnc.tokens /var/log/dispatch-novnc.log /var/log/dispatch-computer-service.log /var/log/dispatch-computer.log",
+      `sudo chown ${process.getuid?.() ?? 1000}:${process.getgid?.() ?? 1000} /opt/dispatch/novnc.tokens /var/log/dispatch-novnc.log /var/log/dispatch-computer-service.log /var/log/dispatch-computer.log`,
       "sudo install -d -m 0755 /workspace",
       `sudo chown ${process.getuid?.() ?? 1000}:${process.getgid?.() ?? 1000} /workspace`,
     ].join("\n");
@@ -125,13 +129,13 @@ export class HostComputerProvider extends BaseComputerProvider {
       timeoutMs: 20 * 60 * 1000,
     });
     if (await exists(this.#environmentFile()))
-      await this.#runner.run("systemctl", ["--user", "restart", "openbot-computer.service"], {
+      await this.#runner.run("systemctl", ["--user", "restart", "dispatch-computer.service"], {
         environment: context.environment,
       });
   }
 
   async create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle> {
-    const id = deterministicComputerId("openbot", spec.id);
+    const id = deterministicComputerId("dispatch", spec.id);
     if (this.#computerId && this.#computerId !== id)
       throw new ComputerProviderError(
         "invalid_configuration",
@@ -143,7 +147,7 @@ export class HostComputerProvider extends BaseComputerProvider {
   }
 
   async get(id: string, context: ComputerCallContext): Promise<ComputerHandle> {
-    const expected = deterministicComputerId("openbot", id);
+    const expected = deterministicComputerId("dispatch", id);
     if (this.#computerId && expected !== this.#computerId)
       throw new ComputerProviderError("not_found", `Host Computer ${id} was not found`);
     try {
@@ -152,7 +156,7 @@ export class HostComputerProvider extends BaseComputerProvider {
       throw new ComputerProviderError("not_found", `Host Computer ${id} was not found`);
     }
     const result = await this.#runner
-      .run("systemctl", ["--user", "is-active", "openbot-computer.service"], {
+      .run("systemctl", ["--user", "is-active", "dispatch-computer.service"], {
         environment: context.environment,
       })
       .catch(() => ({ stdout: "inactive", stderr: "" }));
@@ -168,7 +172,7 @@ export class HostComputerProvider extends BaseComputerProvider {
 
   async sleep(id: string, context: ComputerCallContext): Promise<ComputerHandle> {
     const current = await this.get(id, context);
-    await this.#runner.run("systemctl", ["--user", "stop", "openbot-computer.service"], {
+    await this.#runner.run("systemctl", ["--user", "stop", "dispatch-computer.service"], {
       environment: context.environment,
     });
     return { ...current, state: "sleeping" };
@@ -177,7 +181,7 @@ export class HostComputerProvider extends BaseComputerProvider {
   async delete(id: string, context: ComputerCallContext): Promise<void> {
     await this.get(id, context);
     await this.#runner
-      .run("systemctl", ["--user", "disable", "--now", "openbot-computer.service"], {
+      .run("systemctl", ["--user", "disable", "--now", "dispatch-computer.service"], {
         environment: context.environment,
       })
       .catch(() => undefined);
@@ -229,7 +233,7 @@ export class HostComputerProvider extends BaseComputerProvider {
 
   async vnc(id: string, context: ComputerCallContext) {
     await this.get(id, context);
-    const url = new URL("http://127.0.0.1:6080/openbot.html");
+    const url = new URL("http://127.0.0.1:6080/dispatch.html");
     url.searchParams.set(
       "path",
       `websockify?token=${scopedCapability("vnc", id, context.agentId)}`,
@@ -242,7 +246,7 @@ export class HostComputerProvider extends BaseComputerProvider {
     request: DeployDevelopmentSandboxRequest,
     context: DeploymentContext,
   ) {
-    const sourceLink = "/workspace/openbot";
+    const sourceLink = "/workspace/dispatch";
     await mkdir("/workspace", { recursive: true, mode: 0o755 });
     const metadata = await lstat(sourceLink).catch((error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") return undefined;
@@ -274,7 +278,7 @@ export class HostComputerProvider extends BaseComputerProvider {
     context: ComputerCallContext,
   ): Promise<void> {
     const environmentFile = this.#environmentFile();
-    const unitFile = resolve(this.#homeDirectory, ".config/systemd/user/openbot-computer.service");
+    const unitFile = resolve(this.#homeDirectory, ".config/systemd/user/dispatch-computer.service");
     await mkdir(dirname(environmentFile), { recursive: true, mode: 0o700 });
     await mkdir(dirname(unitFile), { recursive: true, mode: 0o700 });
     await writeFile(
@@ -287,7 +291,7 @@ export class HostComputerProvider extends BaseComputerProvider {
         COMPUTER_ID: id,
         COMPUTER_SERVICE_PORT: "4101",
         COMPUTER_WORKSPACE: "/workspace",
-        OPENBOT_HOST_COMPUTER: "1",
+        DISPATCH_HOST_COMPUTER: "1",
         ...spec.environment,
       }),
       { mode: 0o600 },
@@ -300,18 +304,18 @@ export class HostComputerProvider extends BaseComputerProvider {
       { mode: 0o644 },
     );
     await this.#runner.run("systemctl", ["--user", "daemon-reload"]);
-    await this.#runner.run("systemctl", ["--user", "enable", "openbot-computer.service"]);
+    await this.#runner.run("systemctl", ["--user", "enable", "dispatch-computer.service"]);
     await this.#restart(context);
   }
 
   async #restart(context: ComputerCallContext): Promise<void> {
-    await this.#runner.run("systemctl", ["--user", "restart", "openbot-computer.service"], {
+    await this.#runner.run("systemctl", ["--user", "restart", "dispatch-computer.service"], {
       environment: context.environment,
     });
   }
 
   #environmentFile(): string {
-    return resolve(this.#homeDirectory, ".openbot/computer/environment");
+    return resolve(this.#homeDirectory, ".dispatch/computer/environment");
   }
 
   #handle(id: string, state: "running" | "sleeping"): ComputerHandle {

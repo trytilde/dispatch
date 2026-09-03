@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run Dispatch"
+  short_description: "Set up, validate, and run this Dispatch fork"
+  default_prompt: "Set up and run this Dispatch fork, diagnosing any configuration problem."

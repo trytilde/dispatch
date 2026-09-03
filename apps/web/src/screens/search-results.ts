@@ -1,4 +1,4 @@
-import { messageText, type ChatKitSearchHit } from "@tryopenbot/client-runtime";
+import { messageText, type ChatKitSearchHit } from "@trytilde/dispatch-client-runtime";
 
 export function searchHitId(hit: ChatKitSearchHit): string {
   if (hit.kind === "agent") return `agent:${hit.agent?.id ?? hit.session.id}`;

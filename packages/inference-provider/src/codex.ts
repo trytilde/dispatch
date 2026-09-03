@@ -8,8 +8,8 @@ import type {
   DeploymentContext,
   ProviderInitialization,
   ProviderInitializationContext,
-} from "@tryopenbot/runtime-provider";
-import { persistEnvironment, persistSecret } from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
+import { persistEnvironment, persistSecret } from "@trytilde/dispatch-runtime-provider";
 import type { InferenceProvider } from "./core.js";
 
 export const CODEX_AUTH_JSON = "CODEX_AUTH_JSON";
@@ -19,7 +19,7 @@ export const DEFAULT_CODEX_MODEL = "gpt-5.6-sol";
 const INFERENCE_PROVIDER = "INFERENCE_PROVIDER";
 const AI_MODEL = "AI_MODEL";
 const VERCEL_SUPPORT_LARGE_FUNCTIONS = "VERCEL_SUPPORT_LARGE_FUNCTIONS";
-const HOSTED_INFERENCE_BILLING = "OPENBOT_HOSTED_INFERENCE_BILLING";
+const HOSTED_INFERENCE_BILLING = "DISPATCH_HOSTED_INFERENCE_BILLING";
 const AUTH_DESCRIPTION = "Codex ChatGPT subscription credential cache.";
 
 export const codexInferenceProviderInitialization: ProviderInitialization = {
@@ -297,7 +297,7 @@ export class CodexCliAuthenticationClient implements CodexAuthenticationClient {
           method: "initialize",
           id: 1,
           params: {
-            clientInfo: { name: "openbot", title: "OpenBot", version: "0.1.0" },
+            clientInfo: { name: "dispatch", title: "Dispatch", version: "0.1.0" },
           },
         });
       });
@@ -312,7 +312,7 @@ async function withCodexHome<T>(
   auth: string | undefined,
   run: (codexHome: string) => Promise<T>,
 ): Promise<T> {
-  const codexHome = await mkdtemp(join(tmpdir(), "openbot-codex-auth-"));
+  const codexHome = await mkdtemp(join(tmpdir(), "dispatch-codex-auth-"));
   try {
     await writeFile(
       join(codexHome, "config.toml"),
@@ -345,7 +345,7 @@ function validateAuthJson(auth: string): void {
 
 function reauthenticationRequired(cause?: unknown): Error {
   return new Error(
-    "Codex ChatGPT authentication is missing, expired, or revoked. Run openbot init in an interactive terminal to sign in again with a device code.",
+    "Codex ChatGPT authentication is missing, expired, or revoked. Run tilde init in an interactive terminal to sign in again with a device code.",
     cause === undefined ? undefined : { cause },
   );
 }

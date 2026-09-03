@@ -18,6 +18,6 @@ credential from the Computer.
 `CodeStorageGitProvider` is the machine-oriented hosted alternative. Interactive setup accepts the
 organization PKCS8 key transiently, creates or reuses a stable repository with optional GitHub App
 or public sync, and persists only an effectively long-lived, repository-scoped read/write JWT with force-push
-protection. Deployment keeps the checkout's remote URL credential-free and exposes the JWT only to
-the Git process performing the current fetch or push. The organization key never enters OpenBot
-configuration or lifecycle events.
+protection. Deployment keeps the checkout's remote URL credential-free. A host-scoped helper reads
+the JWT from the managed process environment only when Git authenticates a fetch or push. The
+organization key never enters OpenBot configuration or lifecycle events.

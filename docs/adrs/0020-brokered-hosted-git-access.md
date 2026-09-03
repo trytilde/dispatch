@@ -78,5 +78,5 @@ flowchart LR
   read/write, no-force-push JWT. Repository creation may opt into GitHub App continuous sync or a
   one-time public import.
 - 2026-09-03T02:25:00+02:00: Kept Code Storage checkout remotes credential-free. Reconciliation now
-  exposes the persisted repository-scoped JWT only through a command-scoped Git credential helper
-  for the fetch or push that needs it, including the persistent exe.dev runtime.
+  configures a host-scoped Git credential helper that reads the persisted repository JWT from the
+  managed environment when a fetch or push needs it, including the persistent exe.dev runtime.

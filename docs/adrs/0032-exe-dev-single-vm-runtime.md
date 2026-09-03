@@ -48,7 +48,7 @@ default) JWT restricted to this repository,
 `git:read`, `git:write`, and no force pushes. Only that repository JWT is persisted through SOPS.
 The organization key is never written to `.env`, SOPS, the VM, or a Git remote. The repository JWT
 reaches the trusted VM's mode-`0600` service environment, but the remote URL stays credential-free;
-fetch and push commands receive it only through a command-scoped credential helper.
+a host-scoped helper reads it from that environment only when Git authenticates a fetch or push.
 
 ```mermaid
 flowchart LR
@@ -79,5 +79,5 @@ flowchart LR
 ## Updates
 
 - 2026-09-03T02:25:00+02:00: Stopped persisting the repository JWT in `.git/config`; exe.dev and
-  trusted Computer reconciliation now inject it only into the Git process that performs a fetch or
-  push.
+  trusted Computer reconciliation now persist only a host-scoped helper that reads the managed
+  environment when Git authenticates.

@@ -1,5 +1,5 @@
 {
-  "name": "@tryopenbot/inference-provider",
+  "name": "@trytilde/dispatch-inference-provider",
   "version": "0.1.0",
   "files": [
     "dist",
@@ -32,8 +32,8 @@
   },
   "dependencies": {
     "@openai/codex": "0.144.1",
-    "@tryopenbot/platform-integrations": "workspace:*",
-    "@tryopenbot/runtime-provider": "workspace:*"
+    "@trytilde/dispatch-platform-integrations": "workspace:*",
+    "@trytilde/dispatch-runtime-provider": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

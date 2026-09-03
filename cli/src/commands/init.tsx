@@ -4,9 +4,9 @@ import { Box, Text, render, useApp, useInput } from "ink";
 import {
   builtInRuntimeInitializationProviders,
   inferenceChoices,
-  initializeOpenBot,
-  isInitializedOpenBotRepository,
-  isOpenBotRepository,
+  initializeDispatch,
+  isInitializedDispatchRepository,
+  isDispatchRepository,
   ownerIdentityChoices,
   plainInitializationReporter,
   processCommandRunner,
@@ -17,7 +17,7 @@ import {
 } from "../initialization.js";
 import { repositoryRoot } from "../paths.js";
 import {
-  bootstrapOpenBotRepository,
+  bootstrapDispatchRepository,
   repositoryVisibilityChoices,
 } from "../repository-bootstrap.js";
 import {
@@ -29,7 +29,7 @@ import {
 import {
   collectProviderInitializations,
   type ProviderInitializationQuestion,
-} from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
 
 export type InitializationJsonSchema = Readonly<Record<string, unknown>>;
 
@@ -59,10 +59,10 @@ export async function runInitialization(
   const json = parsed["--json"] ?? false;
   if (!nonInteractive && (!process.stdin.isTTY || !process.stdout.isTTY))
     throw new Error(
-      "openbot init requires an interactive terminal or --non-interactive with JSON answers on stdin",
+      "tilde init requires an interactive terminal or --non-interactive with JSON answers on stdin",
     );
-  const initialized = await isInitializedOpenBotRepository(repositoryRoot);
-  const existingRepository = await isOpenBotRepository(repositoryRoot);
+  const initialized = await isInitializedDispatchRepository(repositoryRoot);
+  const existingRepository = await isDispatchRepository(repositoryRoot);
   const answers = nonInteractive ? await readJsonAnswersFromStdin() : undefined;
   const prompts = answers
     ? createNonInteractivePrompts(
@@ -70,12 +70,12 @@ export async function runInitialization(
       )
     : inkPrompts;
   if (!initialized && !existingRepository)
-    await bootstrapOpenBotRepository({
+    await bootstrapDispatchRepository({
       destination: repositoryRoot,
       prompts,
       runner: processCommandRunner,
     });
-  await initializeOpenBot({
+  await initializeDispatch({
     repositoryRoot,
     prompts,
     interactive: !nonInteractive,
@@ -124,8 +124,8 @@ function createInkInitializationReporter(): InitializationEventReporter {
       const reason = typeof details.reason === "string" ? details.reason : undefined;
       panel.timeout(
         reason
-          ? `${reason}; openbot dev or deploy resumes authorization.`
-          : "Authorization not completed yet; openbot dev or deploy resumes it.",
+          ? `${reason}; tilde dev or deploy resumes authorization.`
+          : "Authorization not completed yet; tilde dev or deploy resumes it.",
       );
       panel = undefined;
       return;
@@ -147,15 +147,15 @@ export function initializationJsonSchema(): InitializationJsonSchema {
         "GitHub repository to create. Use a repository name for the authenticated GitHub account, or owner/name for an organization.",
     },
     "repository-visibility": selectSchema(
-      "Visibility of the GitHub repository created for this OpenBot installation.",
+      "Visibility of the GitHub repository created for this Dispatch installation.",
       repositoryVisibilityChoices,
     ),
     "owner-identity": selectSchema(
-      "Identity system owners will use to encrypt and decrypt OpenBot secrets with SOPS.",
+      "Identity system owners will use to encrypt and decrypt Dispatch secrets with SOPS.",
       ownerIdentityChoices,
     ),
     runtime: selectSchema(
-      "Runtime where OpenBot control, agent, and computer services will be deployed.",
+      "Runtime where Dispatch control, agent, and computer services will be deployed.",
       runtimeChoices,
     ),
     inference: selectSchema(
@@ -208,7 +208,7 @@ export function initializationJsonSchema(): InitializationJsonSchema {
     ),
     "onepassword-vault": conditionedSchema(
       requiredStringSchema(
-        "1Password vault where OpenBot should store the generated owner age identity.",
+        "1Password vault where Dispatch should store the generated owner age identity.",
       ),
       "owner-identity",
       "onepassword",
@@ -242,17 +242,17 @@ export function initializationJsonSchema(): InitializationJsonSchema {
           unknown
         >;
         const runtimes = [
-          ...((existing?.["x-openbot-runtimes"] as string[] | undefined) ?? []),
+          ...((existing?.["x-dispatch-runtimes"] as string[] | undefined) ?? []),
           runtime,
         ];
         const existingWithoutRuntimes = existing && { ...existing };
-        if (existingWithoutRuntimes) delete existingWithoutRuntimes["x-openbot-runtimes"];
+        if (existingWithoutRuntimes) delete existingWithoutRuntimes["x-dispatch-runtimes"];
         if (
           existingWithoutRuntimes &&
           JSON.stringify(existingWithoutRuntimes) !== JSON.stringify(field)
         )
           throw new Error(`Providers define conflicting initialization field: ${question.id}`);
-        properties[question.id] = { ...field, "x-openbot-runtimes": [...new Set(runtimes)] };
+        properties[question.id] = { ...field, "x-dispatch-runtimes": [...new Set(runtimes)] };
         if (question.required) required.add(question.id);
       }
     }
@@ -261,10 +261,10 @@ export function initializationJsonSchema(): InitializationJsonSchema {
 
   return {
     $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "urn:tryopenbot:schema:init-input",
-    title: "OpenBot non-interactive initialization input",
+    $id: "urn:trydispatch:schema:init-input",
+    title: "Dispatch non-interactive initialization input",
     description:
-      "JSON object accepted on standard input by `openbot init --non-interactive --json`. Secret fields must be supplied through stdin, never command arguments.",
+      "JSON object accepted on standard input by `tilde init --non-interactive --json`. Secret fields must be supplied through stdin, never command arguments.",
     type: "object",
     additionalProperties: false,
     properties,
@@ -276,7 +276,7 @@ export function initializationJsonSchema(): InitializationJsonSchema {
       "inference",
     ],
     allOf: conditions,
-    "x-openbot-command": "openbot init --non-interactive --json",
+    "x-tilde-command": "tilde init --non-interactive --json",
   };
 }
 
@@ -303,7 +303,7 @@ function requiredStringSchema(description: string): unknown {
 function conditionedSchema(schema: unknown, field: string, equals: string): unknown {
   return {
     ...(schema as Record<string, unknown>),
-    "x-openbot-condition": { field, equals },
+    "x-dispatch-condition": { field, equals },
   };
 }
 
@@ -324,9 +324,11 @@ function providerQuestionSchema(
   return {
     ...(base as Record<string, unknown>),
     ...(question.validation ? { pattern: question.validation.pattern } : {}),
-    "x-openbot-provider": provider,
-    "x-openbot-destination": question.destination,
-    ...(question.validation ? { "x-openbot-validation-message": question.validation.message } : {}),
+    "x-dispatch-provider": provider,
+    "x-dispatch-destination": question.destination,
+    ...(question.validation
+      ? { "x-dispatch-validation-message": question.validation.message }
+      : {}),
   };
 }
 

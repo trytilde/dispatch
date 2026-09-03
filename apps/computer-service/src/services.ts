@@ -3,7 +3,7 @@ import { createConnection } from "node:net";
 import { posix } from "node:path";
 import { promisify } from "node:util";
 import { Code, ConnectError, type ConnectRouter, type HandlerContext } from "@connectrpc/connect";
-import { ComputerService } from "@tryopenbot/computer-service-proto";
+import { ComputerService } from "@trytilde/dispatch-computer-service-proto";
 import { agentCommand, agentVisiblePath } from "./agent.js";
 import { BackgroundExecRegistry } from "./background-exec.js";
 import { validComputerServiceApiKey } from "./capability.js";
@@ -189,9 +189,9 @@ export function registerComputerService(router: ConnectRouter): void {
     },
     async ensureDesktop(request, context) {
       authorized(context);
-      const requestId = context.requestHeader.get("x-openbot-request-id")?.trim() || undefined;
+      const requestId = context.requestHeader.get("x-dispatch-request-id")?.trim() || undefined;
       const startedAt = Date.now();
-      console.info("[openbot-vnc] computer desktop requested", {
+      console.info("[dispatch-vnc] computer desktop requested", {
         agentId: request.agentId,
         hasCapability: Boolean(request.capability),
         requestId,
@@ -203,7 +203,7 @@ export function registerComputerService(router: ConnectRouter): void {
           context.signal,
           requestId,
         );
-        console.info("[openbot-vnc] computer desktop ready", {
+        console.info("[dispatch-vnc] computer desktop ready", {
           agentId: request.agentId,
           display: desktop.display,
           elapsedMs: Date.now() - startedAt,
@@ -213,7 +213,7 @@ export function registerComputerService(router: ConnectRouter): void {
         return { display: desktop.display, vncPort: desktop.vncPort };
       } catch (error) {
         console.error(
-          "[openbot-vnc] computer desktop failed",
+          "[dispatch-vnc] computer desktop failed",
           { agentId: request.agentId, elapsedMs: Date.now() - startedAt, requestId },
           error instanceof Error ? error : new Error(String(error)),
         );

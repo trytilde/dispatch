@@ -1,22 +1,22 @@
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { OpenBotConfiguration } from "@tryopenbot/configuration";
-import type { DeploymentContext, DeployableProvider } from "@tryopenbot/runtime-provider";
+import type { DispatchConfiguration } from "@trytilde/dispatch-configuration";
+import type { DeploymentContext, DeployableProvider } from "@trytilde/dispatch-runtime-provider";
 import { describe, expect, it, vi } from "vite-plus/test";
 import {
   developmentInputFingerprint,
   reconcileDevelopmentInfrastructure,
 } from "./development-lifecycle.js";
 
-vi.mock("@tryopenbot/agent-service-provider", async (importOriginal) => ({
+vi.mock("@trytilde/dispatch-agent-service-provider", async (importOriginal) => ({
   ...(await importOriginal()),
   discoverAgentWorkspaces: vi.fn(async () => []),
 }));
 
 describe("development lifecycle", () => {
   it("fingerprints watched inputs by content instead of filesystem notifications", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-computer-watch-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-computer-watch-"));
     const source = join(root, "source.ts");
     await writeFile(source, "export const value = 1;\n");
     const before = await developmentInputFingerprint([source]);
@@ -59,7 +59,7 @@ describe("development lifecycle", () => {
       agentService: service("agents"),
       controlService: service("control"),
       auth: provider("auth"),
-    } as unknown as OpenBotConfiguration["providers"];
+    } as unknown as DispatchConfiguration["providers"];
 
     await reconcileDevelopmentInfrastructure({
       repositoryRoot: "/repository",

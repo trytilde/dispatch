@@ -2,7 +2,7 @@
 
 ## In brief
 
-- One `openbot deploy` plans, optionally configures, then deploys opted-in providers.
+- One `tilde deploy` plans, optionally configures, then deploys opted-in providers.
 - Providers without an exposed `deployable` are skipped entirely.
 - `configure()` is optional. Use it only for stable identity or prerequisites.
 - Distinct provider instances deploy independently; one shared runtime instance may satisfy both control and agent roles.
@@ -11,7 +11,7 @@
 
 ## Context
 
-OpenBot can use the same vendor through several domain providers. For example, separate provider implementations might both use Vercel. Automatically collapsing those implementations into one vendor deployment would couple otherwise independent domains and require an infrastructure ownership model that the application does not yet have.
+Dispatch can use the same vendor through several domain providers. For example, separate provider implementations might both use Vercel. Automatically collapsing those implementations into one vendor deployment would couple otherwise independent domains and require an infrastructure ownership model that the application does not yet have.
 
 There is also an ordering cycle: a provider such as Tilde can need the runtime's stable public origin before it deploys, while the runtime needs the secrets and environment variables produced by Tilde before it releases application code.
 
@@ -39,13 +39,13 @@ checks, lets Tilde reconcile external resources, and makes service deployables
 no-op because one watched Hono process owns control and agent routes. Deployment
 environment selection remains separate from this lifecycle-mode flag.
 
-The local runtime implementation writes a private runtime environment file, then installs OpenBot as a user service: systemd on Linux or launchd on macOS. Service definitions contain only the environment-file path, not secret values.
+The local runtime implementation writes a private runtime environment file, then installs Dispatch as a user service: systemd on Linux or launchd on macOS. Service definitions contain only the environment-file path, not secret values.
 
-Do not adopt a general infrastructure state engine yet. Alchemy has a useful resource/output/reconciliation model, but without built-in Vercel and Tilde resources OpenBot would still need custom providers plus another state lifecycle.
+Do not adopt a general infrastructure state engine yet. Alchemy has a useful resource/output/reconciliation model, but without built-in Vercel and Tilde resources Dispatch would still need custom providers plus another state lifecycle.
 
 ```mermaid
 flowchart LR
-  C["openbot deploy"] --> P["Plan every provider"]
+  C["tilde deploy"] --> P["Plan every provider"]
   P --> F["Configure stable identities"]
   F --> D["Deploy non-runtime providers"]
   D --> O["Aggregate outputs, env, and secrets"]

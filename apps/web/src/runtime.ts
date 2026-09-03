@@ -1,18 +1,18 @@
 import {
   createClientAuthAdapter,
-  createOpenBotClient,
-  createOpenBotRuntime,
+  createDispatchClient,
+  createDispatchRuntime,
   type AgentSetupState,
   type ClientAuthAdapter,
-} from "@tryopenbot/client-runtime";
+} from "@trytilde/dispatch-client-runtime";
 
-const client = createOpenBotClient();
+const client = createDispatchClient();
 
-const auth: ClientAuthAdapter = window.openbotDesktop
+const auth: ClientAuthAdapter = window.dispatchDesktop
   ? {
-      getSession: () => window.openbotDesktop!.authStatus(),
-      signIn: () => window.openbotDesktop!.signIn(),
-      signOut: () => window.openbotDesktop!.signOut(),
+      getSession: () => window.dispatchDesktop!.authStatus(),
+      signIn: () => window.dispatchDesktop!.signIn(),
+      signOut: () => window.dispatchDesktop!.signOut(),
     }
   : createClientAuthAdapter(client, {
       async signIn() {
@@ -20,7 +20,7 @@ const auth: ClientAuthAdapter = window.openbotDesktop
       },
     });
 
-const agentSetupStorageKey = "openbot:agent-setup";
+const agentSetupStorageKey = "dispatch:agent-setup";
 
 const agentSetupPersistence = {
   load(): AgentSetupState | null {
@@ -52,4 +52,4 @@ const agentSetupPersistence = {
   },
 };
 
-export const openBotRuntime = createOpenBotRuntime({ client, auth, agentSetupPersistence });
+export const dispatchRuntime = createDispatchRuntime({ client, auth, agentSetupPersistence });

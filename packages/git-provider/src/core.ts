@@ -1,4 +1,4 @@
-import type { DeployableProvider } from "@tryopenbot/runtime-provider";
+import type { DeployableProvider } from "@trytilde/dispatch-runtime-provider";
 
 export type GitProviderErrorCode =
   | "invalid_configuration"
@@ -23,7 +23,7 @@ export class GitProviderError extends Error {
 
 /** Names of environment values a reconciled git provider persists for other lifecycles. */
 export interface GitProviderEnvironment {
-  /** Provider-specific repository locator holding this OpenBot fork. */
+  /** Provider-specific repository locator holding this Dispatch fork. */
   readonly repository: string;
   /** Reverse-proxy profile ID fronting the hosting provider's REST API, when applicable. */
   readonly restProxyProfileId?: string;

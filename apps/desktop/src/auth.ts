@@ -5,11 +5,11 @@ import { safeStorage, shell } from "electron";
 import {
   AuthenticatedSessionSchema,
   type AuthenticatedSession,
-} from "@tryopenbot/client-runtime/contracts/auth";
+} from "@trytilde/dispatch-client-runtime/contracts/auth";
 import {
   NativeAuthConfigurationSchema,
   type NativeAuthConfiguration,
-} from "@tryopenbot/client-runtime/contracts/installation";
+} from "@trytilde/dispatch-client-runtime/contracts/installation";
 
 interface StoredTokens {
   accessToken: string;
@@ -42,7 +42,7 @@ export class DesktopAuth {
         signal: AbortSignal.timeout(10_000),
       });
       if (!response.ok)
-        throw new Error(`OpenBot authentication is not configured (${response.status})`);
+        throw new Error(`Dispatch authentication is not configured (${response.status})`);
       return NativeAuthConfigurationSchema.parse(await response.json());
     })();
     try {
@@ -71,7 +71,7 @@ export class DesktopAuth {
     const configuration = await this.#nativeConfiguration();
     const url = new URL(configuration.authorization_endpoint);
     url.searchParams.set("client_id", configuration.client_id);
-    url.searchParams.set("redirect_uri", "openbot://auth/callback");
+    url.searchParams.set("redirect_uri", "dispatch://auth/callback");
     url.searchParams.set("response_type", "code");
     url.searchParams.set("scope", configuration.scope);
     url.searchParams.set("state", state);
@@ -89,7 +89,7 @@ export class DesktopAuth {
 
   async handleCallback(value: string): Promise<boolean> {
     const url = new URL(value);
-    if (url.protocol !== "openbot:" || url.host !== "auth" || url.pathname !== "/callback")
+    if (url.protocol !== "dispatch:" || url.host !== "auth" || url.pathname !== "/callback")
       return false;
     const pending = this.#pending;
     if (!pending) return true;
@@ -102,7 +102,7 @@ export class DesktopAuth {
         grant_type: "authorization_code",
         code,
         code_verifier: pending.verifier,
-        redirect_uri: "openbot://auth/callback",
+        redirect_uri: "dispatch://auth/callback",
       });
       if (!tokens.refresh_token) throw new Error("OIDC response did not include a refresh token");
       this.#tokens = { accessToken: tokens.access_token, refreshToken: tokens.refresh_token };

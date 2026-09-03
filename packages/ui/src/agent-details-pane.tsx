@@ -12,7 +12,7 @@ import { ArrowLeftIcon, PlusIcon, XIcon } from "lucide-react";
  * collapse threshold closes the pane.
  */
 
-const WIDTH_KEY = "openbot.workspace.details-width";
+const WIDTH_KEY = "dispatch.workspace.details-width";
 const DEFAULT_WIDTH = 320;
 const MIN_WIDTH = 260;
 const MAX_WIDTH = 480;
@@ -85,7 +85,7 @@ export function AgentDetailsPane({
     <section
       aria-hidden={!open}
       aria-label={title}
-      className={`ob-details-pane ${open ? "open" : "closed"}`}
+      className={`dispatch-details-pane ${open ? "open" : "closed"}`}
       inert={!open}
       role="complementary"
       style={{ width: open ? width : 0 }}

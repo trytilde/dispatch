@@ -1,5 +1,5 @@
 {
-  "name": "@tryopenbot/computer-service-provider",
+  "name": "@trytilde/dispatch-computer-service-provider",
   "version": "0.1.0",
   "files": [
     "dist",
@@ -33,10 +33,10 @@
   "dependencies": {
     "@connectrpc/connect": "2.1.2",
     "@connectrpc/connect-node": "2.1.2",
-    "@tryopenbot/computer-service-proto": "workspace:*",
-    "@tryopenbot/platform-integrations": "workspace:*",
-    "@tryopenbot/runtime-provider": "workspace:*",
-    "@tryopenbot/utilities": "workspace:*",
+    "@trytilde/dispatch-computer-service-proto": "workspace:*",
+    "@trytilde/dispatch-platform-integrations": "workspace:*",
+    "@trytilde/dispatch-runtime-provider": "workspace:*",
+    "@trytilde/dispatch-utilities": "workspace:*",
     "@vercel/sandbox": "3.0.0",
     "ai": "7.0.64",
     "microsandbox": "0.6.8",

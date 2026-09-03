@@ -1,6 +1,6 @@
-# OpenBot — AGENTS.md
+# Dispatch — AGENTS.md
 
-OpenBot is a TypeScript monorepo for a local or Vercel-hosted agent workspace. It combines a React/Vite web app, an Electron desktop shell, Hono and ConnectRPC services, provider adapters, Tilde ChatKit, and local or Vercel sandboxes.
+Dispatch is a TypeScript monorepo for a local or Vercel-hosted agent workspace. It combines a React/Vite web app, an Electron desktop shell, Hono and ConnectRPC services, provider adapters, Tilde ChatKit, and local or Vercel sandboxes.
 
 ## Start here
 
@@ -8,7 +8,7 @@ OpenBot is a TypeScript monorepo for a local or Vercel-hosted agent workspace. I
 2. Inspect `git status --short --branch`; preserve unrelated work.
 3. Read the owning package and its tests before editing.
 4. Read relevant records under `docs/adrs/` before changing a recorded decision.
-5. Use `.agents/skills/<name>/SKILL.md` for repository workflows. Runtime skills under the primary `configuration/agent/skills/` or a `configuration/agent/subagents/<id>/skills/` directory serve that OpenBot agent, not the coding-agent process.
+5. Use `.agents/skills/<name>/SKILL.md` for repository workflows. Runtime skills under the primary `configuration/agent/skills/` or a `configuration/agent/subagents/<id>/skills/` directory serve that Dispatch agent, not the coding-agent process.
 
 ## Toolchain and commands
 
@@ -23,18 +23,18 @@ pnpm check
 pnpm build
 pnpm test
 pnpm test:e2e
-pnpm --filter @tryopenbot/desktop package
+pnpm --filter @trytilde/dispatch-desktop package
 ```
 
 Run focused package tests while iterating:
 
 ```bash
-pnpm --filter openbot test
-pnpm --filter @tryopenbot/control-service test
-pnpm --filter openbot test
+pnpm --filter @trytilde/cli test
+pnpm --filter @trytilde/dispatch-control-service test
+pnpm --filter @trytilde/cli test
 ```
 
-Root scripts follow a verb:target taxonomy and delegate to `openbot`:
+Root scripts follow a verb:target taxonomy and delegate to `tilde`:
 
 ```bash
 pnpm connect -- <host>
@@ -43,13 +43,13 @@ pnpm dev:desktop
 pnpm desktop:package
 ```
 
-`openbot` resolves a real Node binary in `cli/src/toolchain.ts`, so no command needs a `PATH` prefix. Extend that module rather than prefixing a command. Remote hosts live in fork-owned `configuration/dev-hosts.json`.
+`tilde` resolves a real Node binary in `cli/src/toolchain.ts`, so no command needs a `PATH` prefix. Extend that module rather than prefixing a command. Remote hosts live in fork-owned `configuration/dev-hosts.json`.
 
-Per ADR-0018, every developer workflow is an `openbot` command — repository gates (`check`, `build`, `test`, `e2e`, `desktop package`), `connect`, and `remote`. Do not add loose `scripts/*.mjs`, package-local helper scripts, or repeat-use command lines that live only in docs; promote them to CLI commands. Root scripts stay thin plumbing the CLI delegates to.
+Per ADR-0018, every developer workflow is a `tilde` command — repository gates (`check`, `build`, `test`, `e2e`, `desktop package`), `connect`, and `remote`. Do not add loose `scripts/*.mjs`, package-local helper scripts, or repeat-use command lines that live only in docs; promote them to CLI commands. Root scripts stay thin plumbing the CLI delegates to.
 
 ## Repository map
 
-- `cli`: React Ink CLI (`openbot`) owning both operator commands for installations and the developer workflow for humans and sandboxed agents — repository gates and remote desktop hosts. Command entrypoints live under `cli/src/commands/`, while shared process, environment, initialization, and UI helpers remain at `cli/src/`. Remote host identity stays in fork-owned `configuration/dev-hosts.json`. See ADR-0018.
+- `cli`: React Ink CLI (`tilde`) owning both operator commands for installations and the developer workflow for humans and sandboxed agents — repository gates and remote desktop hosts. Command entrypoints live under `cli/src/commands/`, while shared process, environment, initialization, and UI helpers remain at `cli/src/`. Remote host identity stays in fork-owned `configuration/dev-hosts.json`. See ADR-0018.
 - `apps/web`: React 19, Vite, TanStack Router, and the browser adapter for the shared client runtime.
 - `apps/control-service`: Hono HTTP routes, the allowlisted Tilde ChatKit REST/SSE bridge, and the local control-service entrypoint.
 - `apps/desktop`: Electron main/preload shell and packaged local server.
@@ -62,7 +62,7 @@ Per ADR-0018, every developer workflow is an `openbot` command — repository ga
 - `packages/connector-tools`: typed Vercel AI SDK tools for in-chat connector (Tilde tool-provider) configuration; a runtime utility, not a provider.
 - `packages/connector-tools`: typed Vercel AI SDK tools for in-chat connector (Tilde tool-provider) configuration; a runtime utility, not a provider.
 - `packages/configuration`: typed contract for the fork-owned composition root.
-- `packages/utilities`: shared OpenBot utilities, including strict Handlebars rendering and domain-neutral JSON guards/accessors. Import browser-safe JSON helpers through `@tryopenbot/utilities/json`.
+- `packages/utilities`: shared Dispatch utilities, including strict Handlebars rendering and domain-neutral JSON guards/accessors. Import browser-safe JSON helpers through `@trytilde/dispatch-utilities/json`.
 - `configuration`: fork-owned Eve-compatible agent directories, future-agent templates, provider composition, and provider plugins.
 - `packages/runtime-provider`: shared build and phased deployment contracts and coordinator.
 - `packages/control-service-provider`, `packages/agent-service-provider`: independent local and Vercel service artifacts and deployment.
@@ -81,7 +81,7 @@ Per ADR-0018, every developer workflow is an `openbot` command — repository ga
 - Client-consumed request, response, and event shapes belong in `packages/client-runtime` contracts, validated where data enters the client. Apps must not re-declare them per surface.
 - Keep `/auth/native-config` public, no-store, and limited to provider-owned public PKCE metadata for the desktop installation.
 - Keep Hono routes for protocol-native HTTP surfaces: setup unlock, ChatKit compatibility, signed Tilde callbacks/tools, and health.
-- Edit `packages/computer-service-proto/proto/openbot/computer/v1/computer.proto` for the internal Computer API, then run `pnpm contracts:generate`.
+- Edit `packages/computer-service-proto/proto/dispatch/computer/v1/computer.proto` for the internal Computer API, then run `pnpm contracts:generate`.
 - Keep handlers thin: validate input, authorize, call the owning provider/store, map to protobuf or HTTP response.
 - Preserve Web-standard `Request`/`Response` behavior so the same server works locally and in Vercel Functions.
 - Preserve raw request bodies and webhook verification on signed Tilde routes.
@@ -90,11 +90,11 @@ Per ADR-0018, every developer workflow is an `openbot` command — repository ga
 
 `metadata`, `providerMetadata`, and similarly named JSON objects are allowed
 only for provider-specific facts that cannot be normalized into a shared
-domain, or for opaque client extensions that OpenBot and Tilde store/forward
+domain, or for opaque client extensions that Dispatch and Tilde store/forward
 without interpreting. A GitHub pull-request number or provider-native content
 fragment is valid provider metadata when the GitHub adapter alone owns it.
 
-Never read or write metadata for OpenBot/Tilde-owned authorization, identity,
+Never read or write metadata for Dispatch/Tilde-owned authorization, identity,
 audience, routing, relationships, lifecycle, retries, state machines, models,
 budgets, runs, jobs, compaction, memory ownership/provenance, or other internal
 semantics. Those values require generated Tilde fields, shared client-runtime
@@ -122,7 +122,7 @@ contracts, provider core contracts, or another typed interface.
 - Define provider contracts in `core.ts` or `core/` inside the owning provider package and keep implementations beside them. Do not expose internal provider interfaces over RPC by default.
 - Use the `implement-provider` skill whenever adding or editing a provider implementation.
 - Keep small implementations in `<provider>.ts`. When one owns multiple responsibilities or runtime files, use `<provider>/index.ts`, cohesive subfiles, and `assets/`.
-- Store generated-file sources as `*.hbs` assets, not TypeScript strings. Provider build and deploy lifecycles render them through `@tryopenbot/utilities` into ignored artifacts; runtime persistence and user-supplied bytes remain byte-preserving data.
+- Store generated-file sources as `*.hbs` assets, not TypeScript strings. Provider build and deploy lifecycles render them through `@trytilde/dispatch-utilities` into ignored artifacts; runtime persistence and user-supplied bytes remain byte-preserving data.
 - Pass `ProviderCallContext` through calls so cancellation, deadlines, request IDs, and idempotency remain available.
 - Convert provider-specific failures to `ProviderError` at the adapter boundary.
 - Keep provider selection in composition code, not UI branches.
@@ -140,7 +140,7 @@ contracts, provider core contracts, or another typed interface.
 - Avoid duplicating remote snapshots or SSE reconciliation in renderers; conversation state keeps one reconciliation owner.
 - Keep `client-runtime` free of React, DOM, Electron, and Node imports. Platform adapters own credentials, uploads, navigation, and presentation-only state.
 - Reuse `packages/ui` for web and Electron; keep direct Beautiful UI modifications documented in its provenance files.
-- Desktop publication is upstream-only too: signed builds go to `desktop/openbot/<channel>/` in the shared `tilde-app-updates-prod` bucket, and `openbot desktop release` refuses the official bucket from another remote. A fork publishes its own builds by setting `OPENBOT_DESKTOP_UPDATES_BUCKET`. `version.json` is the client update contract; `latest-*.yml` is published unused so electron-updater can be adopted later without a re-release. Never commit an Apple certificate or App Store Connect key. See ADR-0028.
+- Desktop publication is upstream-only too: signed builds go to `desktop/dispatch/<channel>/` in the shared `tilde-app-updates-prod` bucket, and `tilde desktop release` refuses the official bucket from another remote. A fork publishes its own builds by setting `DISPATCH_DESKTOP_UPDATES_BUCKET`. `version.json` is the client update contract; `latest-*.yml` is published unused so electron-updater can be adopted later without a re-release. Never commit an Apple certificate or App Store Connect key. See ADR-0028.
 - Adding or changing a user-facing capability in web or desktop obliges an explicit decision about the other client. `create-pr` blocks on the cross-client parity gate, so state per capability whether it is ported, deferred with a `<FOLLOW UP>` block, or genuinely not portable with the platform reason.
 - Electron renderer must not gain direct Node.js access. Keep privileged work in main/preload with a narrow bridge.
 - Preserve same-origin proxying between packaged web assets and the local control server.
@@ -148,16 +148,16 @@ contracts, provider core contracts, or another typed interface.
 ### Tilde and AI runtime
 
 - Use the canonical Tilde skill and `https://trytilde.ai/llms.txt` for current Tilde behavior.
-- Use `openbot sdk refresh` after intentional Tilde OpenAPI changes. Generated source lives only under `packages/api-client/src/generated/`; public SDK behavior belongs in hand-authored `packages/sdk/src/` wrappers.
-- Public SDK names are `@trytilde/sdk*`; do not reintroduce Harness package names, a standalone Tilde CLI, or a plugin helper package. `openbot auth|state|tunnel|plugin` owns those commands.
-- Tilde SDK JSON types, guards, and accessors belong in `@trytilde/sdk/json`; SDK packages must not depend on `@tryopenbot/utilities`.
+- Use `tilde sdk refresh` after intentional Tilde OpenAPI changes. Generated source lives only under `packages/api-client/src/generated/`; public SDK behavior belongs in hand-authored `packages/sdk/src/` wrappers.
+- Public SDK names are `@trytilde/sdk*`; the unified CLI is `@trytilde/cli` with the `tilde` binary. Do not reintroduce Harness package names or a separate plugin helper package. `tilde auth|state|tunnel|plugin` owns those commands.
+- Tilde SDK JSON types, guards, and accessors belong in `@trytilde/sdk/json`; SDK packages must not depend on `@trytilde/dispatch-utilities`.
 - Keep ChatKit webhook verification, history conversion, streaming, and credentials server-side.
-- Reconcile Tilde resources through the typed API client inside idempotent provider lifecycles. OpenBot does not use a Tilde state file during normal operation; operators may use `openbot state` for one-time team-to-team state migration.
+- Reconcile Tilde resources through the typed API client inside idempotent provider lifecycles. Dispatch does not use a Tilde state file during normal operation; operators may use `tilde state` for one-time team-to-team state migration.
 - Do not guess Tilde identifiers or expose one-time API/webhook keys.
 - The agent loop uses Vercel AI SDK. Verify current SDK signatures before changing them.
 - Agent model, MCP, skill, and other external integrations are ordinary authored code. Keep the matching defaults in `configuration/templates/agent/`; migrate existing agents explicitly.
 - The full primary agent lives at `configuration/agent/`; full additional agents live at `configuration/agent/subagents/<id>/`. Nested subagents are unsupported. Follow ADR-0011 for their identical Eve-compatible subset, ChatKit entrypoint, instrumentation ordering, and one-time `/workspace/<id>` seeds on the shared computer.
-- Keep `sandbox/workspace/` as the sole Eve-compatibility naming exception. Use Computer in runtime APIs and require each agent's standard Computer tools to import `@tryopenbot/computer-tools`, which calls the typed computer-service API with that agent's fixed ID.
+- Keep `sandbox/workspace/` as the sole Eve-compatibility naming exception. Use Computer in runtime APIs and require each agent's standard Computer tools to import `@trytilde/dispatch-computer-tools`, which calls the typed computer-service API with that agent's fixed ID.
 
 ### Sandboxes
 
@@ -170,11 +170,11 @@ contracts, provider core contracts, or another typed interface.
 
 ### Fork files
 
-- Repository resources use fixed paths, not `OpenBotConfiguration` options: the primary agent in `configuration/agent/`, additional agents in `configuration/agent/subagents/<id>/`, future-agent templates in `configuration/templates/agent/**/*.hbs`, agent-local skills and workspace seeds inside either full agent directory, and custom providers in `configuration/providers/`. Global `configuration/skills/` and `configuration/sandbox/` directories are unsupported.
+- Repository resources use fixed paths, not `DispatchConfiguration` options: the primary agent in `configuration/agent/`, additional agents in `configuration/agent/subagents/<id>/`, future-agent templates in `configuration/templates/agent/**/*.hbs`, agent-local skills and workspace seeds inside either full agent directory, and custom providers in `configuration/providers/`. Global `configuration/skills/` and `configuration/sandbox/` directories are unsupported.
 
 ## Local development
 
-`pnpm dev` delegates to `openbot dev`, loads `.env.local`, generates contracts, and starts the watched Hono app, web app, and Electron when available.
+`pnpm dev` delegates to `tilde dev`, loads `.env.local`, generates contracts, and starts the watched Hono app, web app, and Electron when available.
 
 - Default web URL: `http://127.0.0.1:4173`.
 - Default control server: `http://127.0.0.1:4100`.
@@ -184,7 +184,7 @@ contracts, provider core contracts, or another typed interface.
 
 ## Security
 
-- Never print, commit, or paste `.env.local`, `.openbot-deploy/`, setup codes, API keys, webhook keys, database tokens, or browser session data.
+- Never print, commit, or paste `.env.local`, `.dispatch-deploy/`, setup codes, API keys, webhook keys, database tokens, or browser session data.
 - Keep tracked environment files as sanitized examples only.
 - Validate paths and capabilities before file, process, or desktop operations.
 - Ask before destructive actions, external publication, paid changes, production deployment, or resource deletion.
@@ -221,7 +221,7 @@ For browser-visible changes, verify the real route, console, network, and visibl
 - `frontend-design`: visual direction across the web and Electron clients.
 - `diagnose`: evidence-led debugging.
 - `implement-provider`: provider implementation structure, assets, lifecycles, and tests.
-- `edit-openbot-configuration`: fork-owned composition, custom providers, and future-agent templates.
+- `edit-dispatch-configuration`: fork-owned composition, custom providers, and future-agent templates.
 - `vercel`, `tilde`: platform-specific work.
 - `update-openapi-generated-client`, `add-sdk-wrapper`, `expose-api-change`: generated Tilde API refresh and stable SDK wrapper work.
 - `safe-refactor`, `surgical-patch`, `migration`, `lean-build`, `verify-and-stop`: scope-specific engineering workflows.

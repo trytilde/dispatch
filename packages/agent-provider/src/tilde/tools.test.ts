@@ -1,5 +1,5 @@
 import { createClient } from "@trytilde/sdk";
-import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
+import { DeploymentOutputs, type DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { TildeToolReconciler } from "./tools.js";
 
@@ -10,8 +10,8 @@ describe("TildeToolReconciler", () => {
     const client = createClient({ teamId: "team-one", apiKey: "secret" });
     vi.spyOn(client.mcp, "getServer").mockRejectedValue({ status: 404 });
     vi.spyOn(client.mcp, "createServer").mockResolvedValue({
-      id: "openbot-scout",
-      name: "OpenBot scout",
+      id: "dispatch-scout",
+      name: "Dispatch scout",
       teamId: "team-one",
       isDynamicToolDiscovery: true,
       tools: [],
@@ -20,10 +20,10 @@ describe("TildeToolReconciler", () => {
     const provider = new TildeToolReconciler({ client });
     await expect(
       provider.ensureServer(
-        { id: "openbot-scout", name: "OpenBot scout", dynamicToolDiscovery: true },
+        { id: "dispatch-scout", name: "Dispatch scout", dynamicToolDiscovery: true },
         { requestId: "request-one" },
       ),
-    ).resolves.toEqual({ id: "openbot-scout" });
+    ).resolves.toEqual({ id: "dispatch-scout" });
     expect("listTools" in provider).toBe(false);
     expect("invoke" in provider).toBe(false);
   });
@@ -45,27 +45,27 @@ describe("TildeToolReconciler", () => {
         const request = input instanceof Request ? input : new Request(input, init);
         const url = new URL(request.url);
         const path = url.pathname;
-        if (request.method === "GET" && path.endsWith("/mcp-server/openbot-scout"))
+        if (request.method === "GET" && path.endsWith("/mcp-server/dispatch-scout"))
           return Response.json({
-            id: "openbot-scout",
-            name: "OpenBot scout",
+            id: "dispatch-scout",
+            name: "Dispatch scout",
             team_id: "team-one",
             is_dynamic_tool_discovery: true,
             tools: [...mappedToolkitTools].map((toolId) => ({
-              tool_group_instance_id: "openbot-scout-tilde-control-plane",
+              tool_group_instance_id: "dispatch-scout-tilde-control-plane",
               tool_group_source_type_id: "tilde_control_plane",
               tool_source_type_id: toolId,
               tool_name: toolId,
             })),
           });
-        if (request.method === "POST" && path.endsWith("/mcp-server/openbot-scout/functions")) {
+        if (request.method === "POST" && path.endsWith("/mcp-server/dispatch-scout/functions")) {
           const body = (await request.json()) as {
             functions: Array<{ tool_source_type_id: string }>;
             tool_group_instance_id: string;
             tool_group_source_type_id: string;
           };
           expect(body).toEqual({
-            tool_group_instance_id: "openbot-scout-tilde-control-plane",
+            tool_group_instance_id: "dispatch-scout-tilde-control-plane",
             tool_group_source_type_id: "tilde_control_plane",
             functions: [
               { tool_name: "tilde_whoami", tool_source_type_id: "tilde_whoami" },
@@ -81,8 +81,8 @@ describe("TildeToolReconciler", () => {
             items: toolkitCreated
               ? [
                   {
-                    id: "openbot-scout-tilde-control-plane",
-                    display_name: "OpenBot scout Tilde control plane",
+                    id: "dispatch-scout-tilde-control-plane",
+                    display_name: "Dispatch scout Tilde control plane",
                     tool_group_source_type_id: "tilde_control_plane",
                   },
                 ]
@@ -92,8 +92,8 @@ describe("TildeToolReconciler", () => {
           toolkitCreated = true;
           mutations.push("create-toolkit");
           return Response.json({
-            id: "openbot-scout-tilde-control-plane",
-            display_name: "OpenBot scout Tilde control plane",
+            id: "dispatch-scout-tilde-control-plane",
+            display_name: "Dispatch scout Tilde control plane",
             tool_group_source_type_id: "tilde_control_plane",
           });
         }
@@ -114,7 +114,7 @@ describe("TildeToolReconciler", () => {
         if (request.method === "GET" && path.endsWith("/mcp/tools"))
           return Response.json({
             items: [...enabledToolkitTools].map((toolId) => ({
-              tool_group_instance_id: "openbot-scout-tilde-control-plane",
+              tool_group_instance_id: "dispatch-scout-tilde-control-plane",
               tool_source_type_id: toolId,
             })),
           });
@@ -148,8 +148,8 @@ describe("TildeToolReconciler", () => {
       "map-toolkit-functions",
     ]);
     expect(context.environment).toMatchObject({
-      AGENT_SCOUT_MCP_SERVER_ID: "openbot-scout",
-      AGENT_SCOUT_TILDE_CONTROL_PLANE_TOOL_GROUP_ID: "openbot-scout-tilde-control-plane",
+      AGENT_SCOUT_MCP_SERVER_ID: "dispatch-scout",
+      AGENT_SCOUT_TILDE_CONTROL_PLANE_TOOL_GROUP_ID: "dispatch-scout-tilde-control-plane",
     });
   });
 
@@ -168,10 +168,10 @@ describe("TildeToolReconciler", () => {
         const request = input instanceof Request ? input : new Request(input, init);
         const url = new URL(request.url);
         const path = url.pathname;
-        if (request.method === "GET" && path.endsWith("/mcp-server/openbot-factory"))
+        if (request.method === "GET" && path.endsWith("/mcp-server/dispatch-factory"))
           return Response.json({
-            id: "openbot-factory",
-            name: "OpenBot factory",
+            id: "dispatch-factory",
+            name: "Dispatch factory",
             team_id: "team-one",
             is_dynamic_tool_discovery: true,
             tools: [],
@@ -180,8 +180,8 @@ describe("TildeToolReconciler", () => {
           return Response.json({
             items: [
               {
-                id: "openbot-factory-tilde-control-plane",
-                display_name: "OpenBot factory Tilde control plane",
+                id: "dispatch-factory-tilde-control-plane",
+                display_name: "Dispatch factory Tilde control plane",
                 tool_group_source_type_id: "tilde_control_plane",
               },
             ],
@@ -251,10 +251,10 @@ describe("TildeToolReconciler", () => {
       vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
         const request = input instanceof Request ? input : new Request(input, init);
         const path = new URL(request.url).pathname;
-        if (request.method === "GET" && path.endsWith("/mcp-server/openbot-scout"))
+        if (request.method === "GET" && path.endsWith("/mcp-server/dispatch-scout"))
           return Response.json({
-            id: "openbot-scout",
-            name: "OpenBot scout",
+            id: "dispatch-scout",
+            name: "Dispatch scout",
             team_id: "team-one",
             is_dynamic_tool_discovery: true,
             tools: [],
@@ -263,8 +263,8 @@ describe("TildeToolReconciler", () => {
           return Response.json({
             items: [
               {
-                id: "openbot-scout-tilde-control-plane",
-                display_name: "OpenBot scout Tilde control plane",
+                id: "dispatch-scout-tilde-control-plane",
+                display_name: "Dispatch scout Tilde control plane",
                 tool_group_source_type_id: "tilde_control_plane",
               },
             ],
@@ -285,7 +285,7 @@ describe("TildeToolReconciler", () => {
           mutations.push("create-vercel-credential");
           vercelCredential = {
             id: "credential-one",
-            metadata: { display_name: "OpenBot scout Vercel MCP" },
+            metadata: { display_name: "Dispatch scout Vercel MCP" },
           };
           return Response.json({ id: "credential-one" });
         }
@@ -296,7 +296,7 @@ describe("TildeToolReconciler", () => {
           vercelServer = {
             server: {
               id: "vercel-provider",
-              display_name: "OpenBot scout Vercel",
+              display_name: "Dispatch scout Vercel",
               endpoint_configuration: {
                 url: "https://mcp.vercel.com",
                 api_key_header_name: "Authorization",
@@ -307,7 +307,7 @@ describe("TildeToolReconciler", () => {
             },
             tool_group_instance: {
               id: "vercel-group",
-              display_name: "OpenBot scout Vercel",
+              display_name: "Dispatch scout Vercel",
               resource_server_credential_id: "credential-one",
             },
             tool_count: 4,

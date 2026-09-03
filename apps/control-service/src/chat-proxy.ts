@@ -88,7 +88,7 @@ export interface TildeChatProxyOptions {
 /**
  * Temporary same-origin bridge for Tilde ChatKit. It intentionally preserves
  * raw request bodies, response bodies, and SSE streams instead of projecting
- * them into OpenBot's narrower control RPC contract.
+ * them into Dispatch's narrower control RPC contract.
  */
 export function registerTildeChatProxy(app: Hono, configuredOptions?: TildeChatProxyOptions): void {
   app.post("/api/chat/realtime/socket-ticket", async (context) => {
@@ -113,7 +113,7 @@ export function registerTildeChatProxy(app: Hono, configuredOptions?: TildeChatP
     if (transport === "browser" && !validHttpOrigin(origin))
       return context.json({ error: "Browser socket tickets require an HTTP Origin" }, 403);
     const ticketUrl = new URL(
-      `/api/v1/team/${encodeURIComponent(options.teamId)}/identity/openbot/chatkit-realtime-ticket`,
+      `/api/v1/team/${encodeURIComponent(options.teamId)}/identity/dispatch/chatkit-realtime-ticket`,
       baseUrl,
     );
     const upstream = await (options.fetch ?? globalThis.fetch)(ticketUrl, {
@@ -196,7 +196,7 @@ export function registerTildeChatProxy(app: Hono, configuredOptions?: TildeChatP
     } catch (error) {
       if (context.req.raw.signal.aborted) throw error;
       console.error(
-        "[openbot-chat-proxy] upstream request threw",
+        "[dispatch-chat-proxy] upstream request threw",
         {
           elapsedMs: Date.now() - startedAt,
           method: context.req.method,
@@ -249,7 +249,7 @@ async function logUpstreamFailure(
   } catch {
     // Preserve the upstream response even when its diagnostic clone cannot be consumed.
   }
-  console.error("[openbot-chat-proxy] upstream request failed", {
+  console.error("[dispatch-chat-proxy] upstream request failed", {
     elapsedMs: Date.now() - startedAt,
     method: context.req.method,
     path,

@@ -12,8 +12,8 @@ export default defineConfig({
     alwaysBundle: [
       /@bufbuild\/protobuf/,
       /@connectrpc\//,
-      /@tryopenbot\/computer-service-proto/,
-      /@tryopenbot\/utilities/,
+      /@trytilde\/dispatch-computer-service-proto/,
+      /@trytilde\/dispatch-utilities/,
       /handlebars/,
     ],
   },

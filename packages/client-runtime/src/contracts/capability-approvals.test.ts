@@ -83,7 +83,7 @@ describe("capabilityChangeApprovalFromPart", () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async () => Response.json({ ...proposal, status: "executed" });
     try {
-      const current = await getCapabilityChange("https://openbot.test", proposal.id);
+      const current = await getCapabilityChange("https://dispatch.test", proposal.id);
       expect(current.status).toBe("executed");
     } finally {
       globalThis.fetch = originalFetch;

@@ -18,7 +18,7 @@ describe("agent conversation sessions", () => {
           },
           {
             id: "continuous",
-            lookup_key: "openbot:user:owner:agent:agent-one",
+            lookup_key: "dispatch:user:owner:agent:agent-one",
             title: "Agent One",
             created_at: "2026-08-25T08:00:00.000Z",
             updated_at: "2026-08-25T08:00:00.000Z",

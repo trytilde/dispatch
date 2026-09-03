@@ -18,7 +18,7 @@ describe("coding-agent audit integration", () => {
       const second = await installCodingAgentAuditHooks({ cli, homeDir, mcpServers: [] });
       expect(second).toBe(first);
       const contents = await readFile(first!, "utf8");
-      expect(contents.match(new RegExp(`openbot plugin audit --cli ${cli}`, "g"))?.length).toBe(
+      expect(contents.match(new RegExp(`tilde plugin audit --cli ${cli}`, "g"))?.length).toBe(
         cli === "gemini" ? 5 : 7,
       );
     },

@@ -1,11 +1,11 @@
 # Providers
 
-Providers adapt OpenBot itself to external systems. Keep a provider only when at least one of these owns the call:
+Providers adapt Dispatch itself to external systems. Keep a provider only when at least one of these owns the call:
 
 - the control service, on behalf of the desktop or web app;
 - initialization or startup provisioning;
 - a `check`, `build`, `plan`, `configure`, or `deploy` lifecycle;
-- reconciliation of external resources required before OpenBot starts.
+- reconciliation of external resources required before Dispatch starts.
 
 Anything else belongs in the code that actually uses it.
 
@@ -28,7 +28,7 @@ Every lifecycle method is idempotent. `check`, `build`, `plan`, `configure`, and
 
 Authored-agent reconciliation discovers agents once and supplies one Agent Provider lifecycle with the agent ID and absolute source path. The Tilde implementation reconciles the endpoint first, then authored skills and exact registry membership, then MCP and tool resources. A partially completed run is safe to repeat.
 
-The built-in Tilde adapters use the typed API client directly. They identify resources by persisted IDs and stable OpenBot names, create missing resources, compare mutable fields, and update only drift. Authored `SKILL.md` files are keyed by repository-relative source path; removed files are removed from the agent-owned remote set and registry membership is exact. OpenBot does not import or export a Tilde state file during normal lifecycles. An operator may use the Tilde CLI manually to export a team's state and import it into another team for one-time setup or environment migration; OpenBot then resumes idempotent API reconciliation against that imported state.
+The built-in Tilde adapters use the typed API client directly. They identify resources by persisted IDs and stable Dispatch names, create missing resources, compare mutable fields, and update only drift. Authored `SKILL.md` files are keyed by repository-relative source path; removed files are removed from the agent-owned remote set and registry membership is exact. Dispatch does not import or export a Tilde state file during normal lifecycles. An operator may use the Tilde CLI manually to export a team's state and import it into another team for one-time setup or environment migration; Dispatch then resumes idempotent API reconciliation against that imported state.
 
 Every Tilde agent receives a dynamic MCP server and a team-scoped Tilde control-plane toolkit. The primary factory agent additionally receives the brokered GitHub toolkit reconciled by the git provider; no raw GitHub token ever enters the repository or a Computer — sandboxes authenticate git through the Tilde reverse proxy. When the selected service deployment platform is Vercel, the Agent Provider's internal tools reconciler also manages Vercel's proxied MCP connection using the configured Vercel token. Development agent endpoints use Tilde local-runtime tunnel mode; production endpoints use their public service origin. Authored local tools execute inside that agent service, so they share its tunnel instead of registering a second custom HTTP endpoint.
 
@@ -36,9 +36,9 @@ Every Tilde agent receives a dynamic MCP server and a team-scoped Tilde control-
 
 Code under `configuration/agent/`, including `subagents/<id>/`, must not import provider packages or `configuration/index.ts`. Providers do not contribute live model objects, prompts, AI SDK tools, arbitrary vendor methods, or generic plugin functions to a running agent. An inference provider may contribute source files while init seeds `configuration/templates/agent/`; those files immediately become fork-owned and import the vendor SDK directly.
 
-Integrate the desired SDK directly in the authored agent. For example, an agent may use OpenAI, Anthropic, Tilde, Composio, or a custom API without first extending a provider interface. This keeps agent development unconstrained by OpenBot's control-plane abstractions.
+Integrate the desired SDK directly in the authored agent. For example, an agent may use OpenAI, Anthropic, Tilde, Composio, or a custom API without first extending a provider interface. This keeps agent development unconstrained by Dispatch's control-plane abstractions.
 
-Shared utilities that are not providers may still be imported. Instrumentation lives in `@tryopenbot/configuration/instrumentation`. The standard typed Computer tools live in `@tryopenbot/computer-tools`; they call the Computer service rather than a Computer provider.
+Shared utilities that are not providers may still be imported. Instrumentation lives in `@trytilde/dispatch-configuration/instrumentation`. The standard typed Computer tools live in `@trytilde/dispatch-computer-tools`; they call the Computer service rather than a Computer provider.
 
 When all future agents need the same integration, update `configuration/templates/agent/`. Template changes affect newly scaffolded agents only, so migrate the primary and existing directories under `configuration/agent/subagents/` explicitly when required.
 
@@ -52,7 +52,7 @@ Initialization questions are collected once per shared platform. Provider-specif
 
 The default `VercelInferenceProvider` shares the installation's `VercelPlatform`. Init asks for the AI Gateway key name, creates the key only when `AI_GATEWAY_API_KEY` is absent, and persists that canonical secret through SOPS. Its template contribution passes a `creator/model` string directly to AI SDK so the built-in default provider routes through AI Gateway.
 
-`CodexInferenceProvider` is available with local and Vercel OpenBot runtimes. It always authenticates through `codex login --device-auth` in an isolated `CODEX_HOME` configured for file credentials. It persists the complete opaque auth document as `CODEX_AUTH_JSON` through SOPS, then uses Codex app-server's account read with refresh during init, development, and non-dry-run deployment checks. Non-interactive deployment never starts a nested login; invalid credentials stop with instructions to run interactive init. Its default-agent contribution uses `ai-sdk-provider-codex-cli` app-server mode and `gpt-5.6-sol`. OpenBot's AI SDK tool definitions are adapted to the package's local MCP tool representation because Codex executes its own tool loop. For Vercel, the inference build runs after the agent-service build, copies the Linux x64 Codex executable into every prebuilt Node function, and persists `VERCEL_SUPPORT_LARGE_FUNCTIONS=1`; the native binary makes Vercel Large Functions a deployment requirement. The provider contract still never crosses into request-time model selection.
+`CodexInferenceProvider` is available with local and Vercel Dispatch runtimes. It always authenticates through `codex login --device-auth` in an isolated `CODEX_HOME` configured for file credentials. It persists the complete opaque auth document as `CODEX_AUTH_JSON` through SOPS, then uses Codex app-server's account read with refresh during init, development, and non-dry-run deployment checks. Non-interactive deployment never starts a nested login; invalid credentials stop with instructions to run interactive init. Its default-agent contribution uses `ai-sdk-provider-codex-cli` app-server mode and `gpt-5.6-sol`. Dispatch's AI SDK tool definitions are adapted to the package's local MCP tool representation because Codex executes its own tool loop. For Vercel, the inference build runs after the agent-service build, copies the Linux x64 Codex executable into every prebuilt Node function, and persists `VERCEL_SUPPORT_LARGE_FUNCTIONS=1`; the native binary makes Vercel Large Functions a deployment requirement. The provider contract still never crosses into request-time model selection.
 
 ## Adding or changing a provider
 
@@ -82,7 +82,7 @@ For continuous private GitHub sync, configure the Code Storage GitHub App integr
    `https://<code-storage-org>.code.storage/webhooks/github`.
 3. Install the App on the selected repository and save its App ID, private key, and webhook secret
    in the Code Storage Integrations dashboard.
-4. Run `openbot init`, select exe.dev and GitHub App sync, then enter the organization key only in
+4. Run `tilde init`, select exe.dev and GitHub App sync, then enter the organization key only in
    the setup-only prompt. Rotate or revoke that organization key after setup.
 
 Public sync is a one-time import and does not forward later pushes. GitHub App sync is continuous

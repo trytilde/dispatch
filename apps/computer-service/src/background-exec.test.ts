@@ -10,7 +10,7 @@ afterEach(async () =>
 );
 
 async function registry(): Promise<BackgroundExecRegistry> {
-  const root = await mkdtemp(join(tmpdir(), "openbot-background-jobs-"));
+  const root = await mkdtemp(join(tmpdir(), "dispatch-background-jobs-"));
   roots.push(root);
   return new BackgroundExecRegistry(root);
 }

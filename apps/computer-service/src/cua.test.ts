@@ -5,7 +5,7 @@ import {
   VerificationStatus,
   type CuaDriverLike,
 } from "@trycua/cua-driver";
-import { CuaActionCompletion } from "@tryopenbot/computer-service-proto";
+import { CuaActionCompletion } from "@trytilde/dispatch-computer-service-proto";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { callCuaTool, cuaTesting, listCuaTools, shutdownCuaWorkers } from "./cua.js";
 

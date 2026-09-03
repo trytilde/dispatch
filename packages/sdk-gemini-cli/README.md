@@ -9,7 +9,7 @@ import { recordGeminiCliHook } from "@trytilde/sdk-gemini-cli";
 await recordGeminiCliHook({ client, agentId, input: hookPayload });
 ```
 
-Use `openbot plugin --cli gemini` to install the hooks, Tilde MCP servers, and skills.
+Use `tilde plugin --cli gemini` to install the hooks, Tilde MCP servers, and skills.
 
 ## Public API
 

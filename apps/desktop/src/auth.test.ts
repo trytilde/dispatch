@@ -60,12 +60,12 @@ describe("DesktopAuth", () => {
     const auth = new DesktopAuth(path, controlOrigin);
     await auth.load();
 
-    await expect(auth.status("https://openbot.example")).resolves.toEqual({
+    await expect(auth.status("https://dispatch.example")).resolves.toEqual({
       authenticated: true,
       user: { subject: "user-1", name: "Owner", email: "owner@example.com" },
     });
     expect(request).toHaveBeenCalledWith(
-      new URL("https://openbot.example/auth/session"),
+      new URL("https://dispatch.example/auth/session"),
       expect.any(Object),
     );
   });
@@ -79,7 +79,7 @@ describe("DesktopAuth", () => {
     const auth = new DesktopAuth(path, controlOrigin);
     await auth.load();
 
-    await expect(auth.status("https://openbot.example")).resolves.toBeNull();
+    await expect(auth.status("https://dispatch.example")).resolves.toBeNull();
     await expect(readFile(path)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
@@ -153,7 +153,7 @@ function requestUrl(input: URL | RequestInfo): string {
 }
 
 async function storedCredentials(expiresIn = 3600): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "openbot-desktop-auth-"));
+  const root = await mkdtemp(join(tmpdir(), "dispatch-desktop-auth-"));
   cleanups.push(async () => rm(root, { recursive: true, force: true }));
   const path = join(root, "auth.enc");
   await writeFile(

@@ -7,18 +7,18 @@ import {
   ExeDevPlatform,
   exeDevPlatform,
   type ExeDevConnection,
-} from "@tryopenbot/platform-integrations";
+} from "@trytilde/dispatch-platform-integrations";
 import type {
   DeploymentContext,
   DeploymentPlan,
   DeploymentResult,
-} from "@tryopenbot/runtime-provider";
-import { isDevelopmentLifecycle, persistEnvironment } from "@tryopenbot/runtime-provider";
-import { renderFileTemplatePath } from "@tryopenbot/utilities";
+} from "@trytilde/dispatch-runtime-provider";
+import { isDevelopmentLifecycle, persistEnvironment } from "@trytilde/dispatch-runtime-provider";
+import { renderFileTemplatePath } from "@trytilde/dispatch-utilities";
 
 const execFileAsync = promisify(execFile);
 const serviceTemplate = fileURLToPath(
-  new URL("./exe-dev/assets/openbot-dev.service.hbs", import.meta.url),
+  new URL("./exe-dev/assets/dispatch-dev.service.hbs", import.meta.url),
 );
 const reconcileTemplate = fileURLToPath(
   new URL("./exe-dev/assets/reconcile.sh.hbs", import.meta.url),
@@ -42,7 +42,7 @@ export interface ExeDevRuntimeServiceProviderOptions {
   currentBranch?: (repositoryRoot: string) => Promise<string>;
 }
 
-/** One persistent exe.dev VM running the complete watched OpenBot development process. */
+/** One persistent exe.dev VM running the complete watched Dispatch development process. */
 export class ExeDevRuntimeServiceProvider {
   readonly platform: ExeDevPlatform;
   readonly platforms: readonly ExeDevPlatform[];
@@ -105,25 +105,25 @@ export class ExeDevRuntimeServiceProvider {
   async #plan(context: DeploymentContext): Promise<DeploymentPlan> {
     if (isDevelopmentLifecycle(context))
       return {
-        summary: "Use the watched OpenBot process already running inside exe.dev",
+        summary: "Use the watched Dispatch process already running inside exe.dev",
         steps: ["Skip recursive remote deployment"],
       };
     const connection = this.platform.connection(context.environment);
     return {
-      summary: `Run the trusted OpenBot development stack on ${connection.vm}`,
+      summary: `Run the trusted Dispatch development stack on ${connection.vm}`,
       steps: [
         `Resize the VM to ${connection.cpu} vCPU and ${connection.memory}`,
         "Publish the Vite owner surface through the exe.dev HTTPS proxy",
         "Clone or fast-forward the Code Storage repository",
         "Install dependencies and supervise pnpm dev with systemd user linger",
-        "Install every decrypted OpenBot configuration value in a mode-0600 environment file",
+        "Install every decrypted Dispatch configuration value in a mode-0600 environment file",
       ],
     };
   }
 
   async #configure(context: DeploymentContext): Promise<DeploymentResult> {
     const origin = this.baseUrl(context).toString().replace(/\/$/, "");
-    await persistEnvironment(context, "PUBLIC_ORIGIN", origin, "OpenBot public origin.");
+    await persistEnvironment(context, "PUBLIC_ORIGIN", origin, "Dispatch public origin.");
     return {
       outputs: {
         "control-service.origin": origin,
@@ -148,9 +148,9 @@ export class ExeDevRuntimeServiceProvider {
     await this.#runner.run("ssh", ["exe.dev", "share", "port", connection.vm, "4173"]);
     await this.#runner.run("ssh", ["exe.dev", "share", "set-public", connection.vm]);
 
-    const stateDirectory = `/home/exedev/.openbot/exe-dev/${connection.vm}`;
+    const stateDirectory = `/home/exedev/.dispatch/exe-dev/${connection.vm}`;
     const environmentFile = `${stateDirectory}/environment`;
-    const unitFile = "/home/exedev/.config/systemd/user/openbot-dev.service";
+    const unitFile = "/home/exedev/.config/systemd/user/dispatch-dev.service";
     const environment = renderRemoteEnvironment(
       {
         ...(context.configuration ?? context.environment),
@@ -275,14 +275,14 @@ function renderRemoteEnvironment(
 ): string {
   const values = {
     ...environment,
-    COMPUTER_ID: environment.COMPUTER_ID?.trim() || "openbot-computer",
-    DEVELOPMENT_SANDBOX_ID: environment.COMPUTER_ID?.trim() || "openbot-computer",
+    COMPUTER_ID: environment.COMPUTER_ID?.trim() || "dispatch-computer",
+    DEVELOPMENT_SANDBOX_ID: environment.COMPUTER_ID?.trim() || "dispatch-computer",
     EXE_DEV_INSIDE_VM: "1",
     EXE_DEV_PUBLIC_ORIGIN: connection.publicOrigin,
     EXE_DEV_COMPUTER_VNC_TARGET: "http://127.0.0.1:6080",
     EXE_DEV_CONFIGURATION_ENV_BASE64: Buffer.from(configurationEnvironment).toString("base64"),
     NO_DESKTOP: "1",
-    OPENBOT_SOURCE_BRANCH: sourceBranch,
+    DISPATCH_SOURCE_BRANCH: sourceBranch,
     WEB_HOST: "0.0.0.0",
   };
   return `${Object.entries(values)

@@ -17,10 +17,10 @@ const WORKSPACE_MIN = 280;
 const WORKSPACE_MAX = 480;
 const CHAT_MIN = 424;
 
-const sidebarWidthKey = "openbot.workspace.sidebar-width";
-const sidebarCollapsedKey = "openbot.workspace.sidebar-collapsed";
-const workspaceWidthKey = "openbot.workspace.computer-width";
-const workspaceOpenKey = "openbot.workspace.computer-open";
+const sidebarWidthKey = "dispatch.workspace.sidebar-width";
+const sidebarCollapsedKey = "dispatch.workspace.sidebar-collapsed";
+const workspaceWidthKey = "dispatch.workspace.computer-width";
+const workspaceOpenKey = "dispatch.workspace.computer-open";
 
 export interface WorkspaceLayout {
   sidebarCollapsed: boolean;

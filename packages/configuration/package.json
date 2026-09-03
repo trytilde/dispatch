@@ -1,5 +1,5 @@
 {
-  "name": "@tryopenbot/configuration",
+  "name": "@trytilde/dispatch-configuration",
   "version": "0.1.0",
   "files": [
     "dist",
@@ -40,14 +40,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tryopenbot/agent-provider": "workspace:*",
-    "@tryopenbot/agent-service-provider": "workspace:*",
-    "@tryopenbot/auth-provider": "workspace:*",
-    "@tryopenbot/computer-service-provider": "workspace:*",
-    "@tryopenbot/control-service-provider": "workspace:*",
-    "@tryopenbot/git-provider": "workspace:*",
-    "@tryopenbot/inference-provider": "workspace:*",
-    "@tryopenbot/runtime-provider": "workspace:*"
+    "@trytilde/dispatch-agent-provider": "workspace:*",
+    "@trytilde/dispatch-agent-service-provider": "workspace:*",
+    "@trytilde/dispatch-auth-provider": "workspace:*",
+    "@trytilde/dispatch-computer-service-provider": "workspace:*",
+    "@trytilde/dispatch-control-service-provider": "workspace:*",
+    "@trytilde/dispatch-git-provider": "workspace:*",
+    "@trytilde/dispatch-inference-provider": "workspace:*",
+    "@trytilde/dispatch-runtime-provider": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

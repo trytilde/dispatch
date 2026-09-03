@@ -1,11 +1,11 @@
 ---
 name: create-pr
-description: Prepare, commit, push, and open or update a draft pull request for OpenBot after focused validation, mandatory architecture and ADR review, contract and state review, final diff inspection, and intentional Git scope selection.
+description: Prepare, commit, push, and open or update a draft pull request for Dispatch after focused validation, mandatory architecture and ADR review, contract and state review, final diff inspection, and intentional Git scope selection.
 ---
 
 # Create PR
 
-Use when the user asks to open, publish, prepare, or update a PR for the current OpenBot branch.
+Use when the user asks to open, publish, prepare, or update a PR for the current Dispatch branch.
 
 ## Required Order
 
@@ -14,7 +14,7 @@ Use when the user asks to open, publish, prepare, or update a PR for the current
 3. Run `pre-commit-checks` and fix in-scope failures.
 4. Review protobuf, Tilde API reconciliation, environment, deployment, package README, public documentation, and Changesets impact.
 5. Run the cross-client parity gate for `apps/desktop` and `apps/web`. Confirm the port/no-port decision with the user before publishing.
-6. Run the CLI ownership gate: every developer workflow and operator behavior belongs in the `openbot` CLI. Refactor before publishing.
+6. Run the CLI ownership gate: every developer workflow and operator behavior belongs in the Tilde CLI. Refactor before publishing.
 7. Run the external dependency gate: if a contributor must install something new or different, update the setup instructions in the same PR.
 8. Run the metadata semantics gate. Internal behavior in metadata blocks publication.
 9. Run the architecture and ADR gate. Resolve any user decision before publishing.
@@ -52,8 +52,8 @@ Add focused checks by surface:
 - protobuf: `pnpm contracts:generate`
 - server/providers: corresponding package tests
 - browser flow: `pnpm test:e2e`
-- Electron packaging: `pnpm --filter @tryopenbot/desktop package`
-- shared client contracts: `pnpm --filter @tryopenbot/client-runtime test`
+- Electron packaging: `pnpm --filter @trytilde/dispatch-desktop package`
+- shared client contracts: `pnpm --filter @trytilde/dispatch-client-runtime test`
 
 Record exact commands and failures. Do not claim checks that did not run.
 
@@ -89,7 +89,7 @@ For an upstream PR, `git ls-files configuration` must print only the sentinel. F
 
 ## Cross-Client Parity Gate
 
-OpenBot has two owner clients: `apps/desktop` (Electron) and `apps/web` (React DOM). This gate is mandatory and never skipped, including for PRs that touch only one of them.
+Dispatch has two owner clients: `apps/desktop` (Electron) and `apps/web` (React DOM). This gate is mandatory and never skipped, including for PRs that touch only one of them.
 
 Ask and answer explicitly: **has this PR added or changed functionality in Electron desktop or the web app that needs to be ported to the other client?**
 
@@ -119,10 +119,10 @@ Record the result in the PR body under a `Cross-client parity` heading as a per-
 
 ## CLI Ownership Gate
 
-Per ADR-0018, the `openbot` CLI is the single command surface for operating an installation and developing the codebase. Before publishing, inspect the diff for logic that landed in the wrong place:
+Per ADR-0018, the Tilde CLI is the single command surface for operating an installation and developing the codebase. Before publishing, inspect the diff for logic that landed in the wrong place:
 
-- new `scripts/*.mjs` files, package-local helper scripts, or multi-step shell one-liners added to package.json scripts — refactor into an `openbot` command; root and package scripts stay thin delegations.
-- command lines that exist only in documentation or skill prose but that developers or agents will run repeatedly — promote to an `openbot` command and have the prose reference it.
+- new `scripts/*.mjs` files, package-local helper scripts, or multi-step shell one-liners added to package.json scripts — refactor into a `tilde` command; root and package scripts stay thin delegations.
+- command lines that exist only in documentation or skill prose but that developers or agents will run repeatedly — promote to a `tilde` command and have the prose reference it.
 - a second CLI, binary, or runner package for developer workflow — fold it into `cli`. That split was tried and reversed; see ADR-0018's Updates.
 - host names, addresses, or machine-specific paths in package code — move them to fork-owned configuration such as `configuration/dev-hosts.json`.
 
@@ -155,7 +155,7 @@ Record the result under an `External dependencies` heading. When nothing changed
 ## Metadata Semantics Gate
 
 Metadata is allowed only for provider-specific facts that cannot be normalized
-and opaque client extensions that OpenBot/Tilde never interpret. Inspect the
+and opaque client extensions that Dispatch/Tilde never interpret. Inspect the
 full PR, generated agent templates, and upstream Tilde contract changes:
 
 ```bash
@@ -181,7 +181,7 @@ Always inspect the complete diff for major architecture, strongly opinionated co
 
 Review at least:
 
-- ownership and boundaries across OpenBot, Tilde, providers, database, sandbox, client runtime, web, and desktop
+- ownership and boundaries across Dispatch, Tilde, providers, database, sandbox, client runtime, web, and desktop
 - public protocols, compatibility, authentication, secrets, deployment, and failure policy
 - framework, storage, provider, or platform choices with meaningful switching cost
 - cross-package layering and strong coding conventions future maintainers may otherwise undo
@@ -214,7 +214,7 @@ Use the checked-in `.github/pull_request_template.md` when present and complete 
 
 ## Changesets Gate
 
-OpenBot uses Changesets and versions all workspace packages as one fixed group. Follow `add-changeset` when a PR changes owner-visible behavior or a package API. Do not edit package versions or changelogs directly; the Changesets workflow owns the unified version pull request. Documentation-only, test-only, CI-only, and internal refactors need no placeholder changeset.
+Dispatch uses Changesets and versions all workspace packages as one fixed group. Follow `add-changeset` when a PR changes owner-visible behavior or a package API. Do not edit package versions or changelogs directly; the Changesets workflow owns the unified version pull request. Documentation-only, test-only, CI-only, and internal refactors need no placeholder changeset.
 
 ## Package README Gate
 
@@ -240,7 +240,7 @@ Use this sequence:
 1. Finish initial validation and commit the implementation, tests, ADRs, READMEs, and ordinary documentation.
 2. Push the branch and open the draft PR before generating the update record.
 3. Read the stable PR number from GitHub; never guess or use a local sequence.
-4. Analyze the full PR diff, commit history, review discussion, and all threads in the coding agent's database on the current machine. Inspect every locally available thread, not only the current chat or task. Retain implementation evidence relevant to this PR in the update record. Preserve actionable but out-of-scope OpenBot feature planning in the PR body or a PR comment using the exact `<FOLLOW UP>` block syntax from `CONTEXT.md`; link an existing issue when one exists, group only work with the same owner and trigger, and include concrete acceptance proof. Do not copy unrelated planning into the repository update record.
+4. Analyze the full PR diff, commit history, review discussion, and all threads in the coding agent's database on the current machine. Inspect every locally available thread, not only the current chat or task. Retain implementation evidence relevant to this PR in the update record. Preserve actionable but out-of-scope Dispatch feature planning in the PR body or a PR comment using the exact `<FOLLOW UP>` block syntax from `CONTEXT.md`; link an existing issue when one exists, group only work with the same owner and trigger, and include concrete acceptance proof. Do not copy unrelated planning into the repository update record.
 5. Create `docs/updates/<pr-number>.md`, commit it, and push it to the same draft PR.
 6. After every later code, test, documentation, rebase, conflict-resolution, or accepted-review change, regenerate the same record from all evidence and push its update before declaring the PR current.
 
@@ -253,7 +253,7 @@ Write the record in detailed caveman style with these exact sections:
 3. `Summarized package changes`
 4. `Critical to apply to forks`, starting with exactly `yes` or `no`, then the reason and concrete fork action
 
-Include breaking imports, path moves, configuration or secret migration, provider obligations, deployment topology, removed behavior, and checks a customized fork must run. State `no updates` only in `configuration/docs/update-notes/<hash>.md` when `openbot update` finds no upstream commits; never use it as an upstream PR update record.
+Include breaking imports, path moves, configuration or secret migration, provider obligations, deployment topology, removed behavior, and checks a customized fork must run. State `no updates` only in `configuration/docs/update-notes/<hash>.md` when `dispatch update` finds no upstream commits; never use it as an upstream PR update record.
 
 Before final handoff, verify:
 

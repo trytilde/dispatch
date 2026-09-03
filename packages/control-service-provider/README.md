@@ -1,4 +1,4 @@
-# @tryopenbot/control-service-provider
+# @trytilde/dispatch-control-service-provider
 
 Build and deployment providers for the control service plus web UI. Local deployment installs a user service; Vercel deployment creates a provider-owned Build Output artifact and serves static UI through Vercel's CDN.
 
@@ -20,7 +20,7 @@ Build and deployment providers for the control service plus web UI. Local deploy
 - `LocalControlServiceProvider` builds and installs the local control/web service and accepts `LocalControlServiceProviderOptions`.
 - `VercelControlServiceProvider` builds and deploys the prebuilt Vercel control/web artifact and accepts `VercelControlServiceProviderOptions`.
 
-Both service providers leave development startup to OpenBot's watched Hono process. The Vercel
+Both service providers leave development startup to Dispatch's watched Hono process. The Vercel
 adapter performs its check but skips artifact creation, project configuration, and remote deployment
 when `DeploymentContext.devMode` is `true`.
 

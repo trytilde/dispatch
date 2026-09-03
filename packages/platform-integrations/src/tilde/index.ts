@@ -1,4 +1,4 @@
-import type { Platform, ProviderInitialization } from "@tryopenbot/runtime-provider";
+import type { Platform, ProviderInitialization } from "@trytilde/dispatch-runtime-provider";
 import { createClient, type Client } from "@trytilde/sdk";
 import { tildeFetch } from "./fetch.js";
 
@@ -12,12 +12,12 @@ export interface TildePlatformConfig {
 const initialization: ProviderInitialization = {
   id: "tilde",
   label: "Tilde",
-  description: "Connect OpenBot to one Tilde organization and team.",
+  description: "Connect Dispatch to one Tilde organization and team.",
   questions: [
     {
       id: "tilde-api-key",
       prompt: "Tilde API key",
-      description: "API key used by OpenBot services to access the selected Tilde team.",
+      description: "API key used by Dispatch services to access the selected Tilde team.",
       input: "secret",
       required: true,
       destination: { kind: "secret", key: "TILDE_API_KEY" },
@@ -25,7 +25,7 @@ const initialization: ProviderInitialization = {
     {
       id: "tilde-org-id",
       prompt: "Tilde organization ID",
-      description: "Organization that owns this OpenBot installation's Tilde resources.",
+      description: "Organization that owns this Dispatch installation's Tilde resources.",
       input: "text",
       required: true,
       destination: { kind: "environment", key: "TILDE_ORG_ID" },
@@ -33,19 +33,19 @@ const initialization: ProviderInitialization = {
     {
       id: "tilde-team-id",
       prompt: "Tilde team ID",
-      description: "Team that owns this OpenBot installation's agents, chats, tools, and skills.",
+      description: "Team that owns this Dispatch installation's agents, chats, tools, and skills.",
       input: "text",
       required: true,
       destination: { kind: "environment", key: "TILDE_TEAM_ID" },
     },
     {
-      id: "openbot-deployment-name",
-      prompt: "OpenBot deployment name",
+      id: "dispatch-deployment-name",
+      prompt: "Dispatch deployment name",
       description: "Name shown to members of the selected Tilde team.",
-      defaultValue: "OpenBot",
+      defaultValue: "Dispatch",
       input: "text",
       required: true,
-      destination: { kind: "environment", key: "OPENBOT_DEPLOYMENT_NAME" },
+      destination: { kind: "environment", key: "DISPATCH_DEPLOYMENT_NAME" },
     },
     {
       id: "tilde-base-url",

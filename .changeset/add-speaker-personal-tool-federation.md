@@ -1,6 +1,6 @@
 ---
-"@tryopenbot/agent-provider": minor
-"openbot": minor
+"@trytilde/dispatch-agent-provider": minor
+"@trytilde/cli": minor
 "@trytilde/sdk-vercel-ai-node": minor
 ---
 

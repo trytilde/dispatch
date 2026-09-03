@@ -5,7 +5,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
 import { Code, ConnectError, createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-node";
-import { ComputerService } from "@tryopenbot/computer-service-proto";
+import { ComputerService } from "@trytilde/dispatch-computer-service-proto";
 import {
   ComputerProviderError,
   type BuiltComputerImage,
@@ -29,9 +29,9 @@ import type {
   DeploymentContext,
   DeploymentResult,
   ProviderInitialization,
-} from "@tryopenbot/runtime-provider";
-import { persistEnvironment } from "@tryopenbot/runtime-provider";
-import { renderFileTemplatePath } from "@tryopenbot/utilities";
+} from "@trytilde/dispatch-runtime-provider";
+import { persistEnvironment } from "@trytilde/dispatch-runtime-provider";
+import { renderFileTemplatePath } from "@trytilde/dispatch-utilities";
 import {
   computerImageAssets,
   computerImageWatchPaths,
@@ -46,7 +46,7 @@ import { computerServiceApiKey, scopedCapability } from "../capability.js";
 const execute = promisify(execFile);
 
 export interface ComputerImageDeploymentConfig {
-  /** OCI repository, for example ghcr.io/example/openbot-computer. */
+  /** OCI repository, for example ghcr.io/example/dispatch-computer. */
   repository?: string;
   tagPrefix?: string;
   buildArguments?: Readonly<Record<string, string>>;
@@ -81,11 +81,11 @@ export abstract class BaseComputerProvider implements ComputerProvider {
         : {
             id: "computer-image",
             label: "Computer image",
-            description: "Build and publish the shared OpenBot computer image.",
+            description: "Build and publish the shared Dispatch computer image.",
             questions: [
               {
                 id: "computer-image-repository",
-                prompt: "Which OCI repository should receive OpenBot computer images?",
+                prompt: "Which OCI repository should receive Dispatch computer images?",
                 description:
                   imageLifecycle.repositoryDescription ??
                   "Use an untagged OCI repository that the deployment environment can push to.",
@@ -225,7 +225,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
         "invalid_configuration",
         "COMPUTER_ID is required to open an agent desktop",
       );
-    console.info("[openbot-vnc] provider preview started", {
+    console.info("[dispatch-vnc] provider preview started", {
       agentId,
       computerId,
       providerId: this.providerId,
@@ -233,7 +233,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     });
     try {
       const desktop = await this.ensureAgentDesktop(computerId, agentId, context);
-      console.info("[openbot-vnc] provider desktop ready", {
+      console.info("[dispatch-vnc] provider desktop ready", {
         agentId,
         computerId,
         display: desktop.display,
@@ -242,7 +242,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
         vncPort: desktop.vncPort,
       });
       const endpoint = await this.vnc(computerId, { ...context, agentId });
-      console.info("[openbot-vnc] provider endpoint ready", {
+      console.info("[dispatch-vnc] provider endpoint ready", {
         agentId,
         computerId,
         elapsedMs: Date.now() - startedAt,
@@ -255,7 +255,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       return endpoint;
     } catch (error) {
       console.error(
-        "[openbot-vnc] provider preview failed",
+        "[dispatch-vnc] provider preview failed",
         {
           agentId,
           computerId,
@@ -304,12 +304,12 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       await this.#registerAgentWorkspace(computer.id, workspace, call);
     for (const workspace of request.workspaces)
       await this.ensureAgentDesktop(computer.id, workspace.agentId, call);
-    await persistEnvironment(context, "COMPUTER_ID", computer.id, "OpenBot computer ID.");
+    await persistEnvironment(context, "COMPUTER_ID", computer.id, "Dispatch computer ID.");
     await persistEnvironment(
       context,
       "COMPUTER_SERVICE_URL",
       await this.computerServiceUrl(computer.id),
-      "OpenBot computer service URL.",
+      "Dispatch computer service URL.",
     );
     return { outputs: { "computer.id": computer.id } };
   }
@@ -328,7 +328,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     const sandboxSpec: ComputerSpec = {
       id: request.computerId,
       ...(image ? { image } : {}),
-      labels: { role: "openbot-development-sandbox" },
+      labels: { role: "dispatch-development-sandbox" },
     };
     let computer;
     try {
@@ -344,8 +344,8 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     }
     if (computer.state === "sleeping") await this.wake(computer.id, call);
 
-    const stateRoot = "/workspace/.openbot/development";
-    const sourceRoot = "/workspace/openbot";
+    const stateRoot = "/workspace/.dispatch/development";
+    const sourceRoot = "/workspace/dispatch";
     const ageKeyFile = `${stateRoot}/sops-age-key.txt`;
     const sourceMarker = `${stateRoot}/source-initialized`;
     let result = await this.exec(
@@ -441,7 +441,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     result = await this.exec(
       computer.id,
       {
-        command: "/usr/local/bin/setup-openbot-development",
+        command: "/usr/local/bin/setup-dispatch-development",
         args: [sourceRoot, ageKeyFile],
         timeoutMs: 1_200_000,
       },
@@ -480,7 +480,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
   ) {
     if (workspace.files.length === 0) return;
     const root = agentWorkspaceRoot(workspace.agentId);
-    const marker = `${root}/.openbot-agent`;
+    const marker = `${root}/.dispatch-agent`;
     let result = await this.exec(computerId, { command: "test", args: ["-f", marker] }, context);
     if (result.exitCode === 0) return;
     result = await this.exec(computerId, { command: "mkdir", args: ["-p", root] }, context);
@@ -537,7 +537,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     const options = {
       headers: {
         authorization: `Bearer ${computerServiceApiKey(context.environment?.COMPUTER_SERVICE_API_KEY)}`,
-        "x-openbot-request-id": context.requestId,
+        "x-dispatch-request-id": context.requestId,
       },
       ...(context.signal ? { signal: context.signal } : {}),
     };
@@ -623,7 +623,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     context: ComputerCallContext,
   ): Promise<BuiltComputerImage> {
     ensureDigest(spec.sourceDigest);
-    const tag = `${spec.tagPrefix ?? "openbot-computer"}-${spec.sourceDigest.slice("sha256:".length, "sha256:".length + 12)}`;
+    const tag = `${spec.tagPrefix ?? "dispatch-computer"}-${spec.sourceDigest.slice("sha256:".length, "sha256:".length + 12)}`;
     const localReference = `${spec.repository}:${tag}`;
     await runDocker(this.buildImageArguments(spec, localReference), context);
     return { sourceDigest: spec.sourceDigest, localReference };
@@ -639,7 +639,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
       "--tag",
       localReference,
       "--label",
-      `org.openbot.computer.source-digest=${spec.sourceDigest}`,
+      `org.dispatch.computer.source-digest=${spec.sourceDigest}`,
     ];
     for (const [name, value] of Object.entries(spec.buildArguments ?? {}).sort(([left], [right]) =>
       left.localeCompare(right),
@@ -656,7 +656,7 @@ export abstract class BaseComputerProvider implements ComputerProvider {
     context: ComputerCallContext,
   ): Promise<PublishedComputerImage> {
     ensureDigest(image.sourceDigest);
-    const tag = `${spec.tagPrefix ?? "openbot-computer"}-${image.sourceDigest.slice("sha256:".length, "sha256:".length + 12)}`;
+    const tag = `${spec.tagPrefix ?? "dispatch-computer"}-${image.sourceDigest.slice("sha256:".length, "sha256:".length + 12)}`;
     const reference = `${spec.repository}:${tag}`;
     if (reference !== image.localReference)
       await runDocker(["tag", image.localReference, reference], context);
@@ -784,7 +784,7 @@ async function localComputerImageRepository(repositoryRoot: string): Promise<str
   } catch {
     // A source archive may not have Git metadata; use a stable local-only fallback.
   }
-  return `openbot/${dockerRepositoryPart(basename(repositoryRoot))}-computer`;
+  return `dispatch/${dockerRepositoryPart(basename(repositoryRoot))}-computer`;
 }
 
 function dockerRepositoryPart(value: string): string {
@@ -792,7 +792,7 @@ function dockerRepositoryPart(value: string): string {
     value
       .toLowerCase()
       .replace(/[^a-z0-9._-]+/g, "-")
-      .replace(/^[._-]+|[._-]+$/g, "") || "openbot"
+      .replace(/^[._-]+|[._-]+$/g, "") || "dispatch"
   );
 }
 

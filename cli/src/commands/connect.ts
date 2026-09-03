@@ -15,7 +15,7 @@ export async function runConnect(argv: readonly string[]): Promise<number> {
   );
   const [name] = options._;
   if (!name) {
-    console.error("Usage: openbot connect <host> [--print] [--no-desktop]");
+    console.error("Usage: tilde connect <host> [--print] [--no-desktop]");
     return 1;
   }
   const host = resolveHost(name, loadHosts(repositoryRoot()));

@@ -1,20 +1,20 @@
 ---
 name: add-api-endpoint
-description: Add or modify an OpenBot Hono HTTP route or ConnectRPC method while preserving authentication, provider boundaries, Web-standard request handling, generated contracts, and focused tests.
+description: Add or modify a Dispatch Hono HTTP route or ConnectRPC method while preserving authentication, provider boundaries, Web-standard request handling, generated contracts, and focused tests.
 metadata:
-  author: openbot
+  author: dispatch
   version: "1.0.0"
   argument-hint: <surface> <change-summary>
 ---
 
 # Add Or Modify An API Endpoint
 
-OpenBot uses ConnectRPC for authenticated control operations and Hono for protocol-native HTTP routes. Keep handlers thin and portable across the local Node server and Vercel Functions.
+Dispatch uses ConnectRPC for authenticated control operations and Hono for protocol-native HTTP routes. Keep handlers thin and portable across the local Node server and Vercel Functions.
 
 ## Process
 
 1. Choose the surface:
-   - ConnectRPC: control-plane methods used by OpenBot clients.
+   - ConnectRPC: control-plane methods used by Dispatch clients.
    - Hono: setup unlock, health, ChatKit compatibility, or signed Tilde webhooks/tools.
 2. For ConnectRPC, edit the owning proto, run `pnpm contracts:generate`, then implement the method in `apps/control-service` or `apps/computer-service`.
 3. For Hono, edit `apps/control-service/src/app.ts` and keep Web-standard request handling.
@@ -22,7 +22,7 @@ OpenBot uses ConnectRPC for authenticated control operations and Hono for protoc
 5. Apply the existing authorization mechanism before business work.
 6. Delegate external behavior to the owning provider package's `src/core.ts` or `src/core/index.ts` contract and matching adapter. Keep route code provider-neutral.
 7. Preserve `Request.signal` through `ProviderCallContext`.
-8. When an OpenBot client consumes the endpoint, add or extend the grouped contract and client call in `packages/client-runtime` in the same change. Web and Electron consume it from there; they never declare the request, response, or event shape themselves.
+8. When a Dispatch client consumes the endpoint, add or extend the grouped contract and client call in `packages/client-runtime` in the same change. Web and Electron consume it from there; they never declare the request, response, or event shape themselves.
 9. Add focused tests beside the server surface. Test status/code, response shape, authorization, and the owning provider call.
 
 ## Authentication And Scope

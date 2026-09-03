@@ -44,7 +44,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
   ): Promise<PublishedComputerImage> {
     const archive = resolve(
       spec.contextDirectory,
-      `.openbot-microsandbox-${image.sourceDigest.slice("sha256:".length, "sha256:".length + 12)}.tar`,
+      `.dispatch-microsandbox-${image.sourceDigest.slice("sha256:".length, "sha256:".length + 12)}.tar`,
     );
     try {
       await this.runDocker(["save", "--output", archive, image.localReference], context);
@@ -61,7 +61,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
   }
 
   async create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle> {
-    const id = deterministicComputerId("openbot", spec.id);
+    const id = deterministicComputerId("dispatch", spec.id);
     if (this.#handles.has(id))
       throw new ComputerProviderError("invalid_configuration", `Computer ${id} already exists`);
     this.#specs.set(id, spec);
@@ -114,7 +114,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
     await runSpecLifecycle(resumed, spec ?? {}, "wake");
     const start = await resumed.exec("bash", [
       "-lc",
-      "nohup /usr/local/bin/start-openbot-computer >/var/log/openbot-computer.log 2>&1 </dev/null &",
+      "nohup /usr/local/bin/start-dispatch-computer >/var/log/dispatch-computer.log 2>&1 </dev/null &",
     ]);
     if (!start.success)
       throw new ComputerProviderError(
@@ -188,9 +188,9 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
     await this.get(id, context);
     const port = this.#desktopPorts.get(id);
     if (!port) throw new ComputerProviderError("not_found", `Computer ${id} has no VNC port`);
-    // Stock noVNC transport, without its settings drawer and toolbar: the OpenBot shell owns the
+    // Stock noVNC transport, without its settings drawer and toolbar: the Dispatch shell owns the
     // take-control, fullscreen, reconnect, and close controls around this canvas.
-    const url = new URL(`http://127.0.0.1:${port}/openbot.html`);
+    const url = new URL(`http://127.0.0.1:${port}/dispatch.html`);
     const capability = scopedCapability("vnc", id, context.agentId);
     // The chrome-free viewer reads its WebSocket path; carry the TokenFile capability there.
     url.searchParams.set("path", `websockify?token=${capability}`);
@@ -236,7 +236,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
       .portBind("127.0.0.1", desktopPort, 6080)
       .portBind("127.0.0.1", servicePort, 4101)
       .volume("/workspace", (mount) =>
-        mount.namedWith("openbot-computer", "ensure-exists", "dir", undefined, 8192),
+        mount.namedWith("dispatch-computer", "ensure-exists", "dir", undefined, 8192),
       )
       .envs({
         DISPLAY: ":1",
@@ -251,7 +251,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
       .create();
 
     try {
-      const bootstrap = await sandbox.exec("bash", ["/opt/openbot/bootstrap.sh"]);
+      const bootstrap = await sandbox.exec("bash", ["/opt/dispatch/bootstrap.sh"]);
       if (!bootstrap.success)
         throw new ComputerProviderError(
           "provider_unavailable",
@@ -261,7 +261,7 @@ export class MicrosandboxComputerProvider extends BaseComputerProvider {
       await runSpecLifecycle(sandbox, spec, phase);
       const start = await sandbox.exec("bash", [
         "-lc",
-        "nohup /usr/local/bin/start-openbot-computer >/var/log/openbot-computer.log 2>&1 </dev/null &",
+        "nohup /usr/local/bin/start-dispatch-computer >/var/log/dispatch-computer.log 2>&1 </dev/null &",
       ]);
       if (!start.success)
         throw new ComputerProviderError(

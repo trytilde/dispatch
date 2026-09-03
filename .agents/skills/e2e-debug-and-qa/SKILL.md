@@ -1,11 +1,11 @@
 ---
 name: e2e-debug-and-qa
-description: Run and inspect OpenBot browser or desktop workflows with the repository Playwright setup. Use for onboarding, setup authentication, chat, provider, sandbox, visual, console, network, or Electron behavior that must be verified on the real surface.
+description: Run and inspect Dispatch browser or desktop workflows with the repository Playwright setup. Use for onboarding, setup authentication, chat, provider, sandbox, visual, console, network, or Electron behavior that must be verified on the real surface.
 ---
 
 # E2E Debug And Q&A
 
-Answer from the running OpenBot surface when static inspection is insufficient.
+Answer from the running Dispatch surface when static inspection is insufficient.
 
 ## Purpose
 
@@ -41,7 +41,7 @@ The checked-in Playwright server uses isolated setup data, disables the desktop 
 For manual inspection:
 
 ```bash
-OPENBOT_NO_DESKTOP=1 pnpm dev
+DISPATCH_NO_DESKTOP=1 pnpm dev
 ```
 
 `pnpm dev` starts the control server on `127.0.0.1:4100` and web app on `127.0.0.1:4173` by default. It uses Tilde Tunnel only when Tilde credentials are configured. Do not add unrelated wildcard DNS, ngrok, or database services to browser setup.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { isValidTildeSchedule } from "@tryopenbot/client-runtime";
+import { isValidTildeSchedule } from "@trytilde/dispatch-client-runtime";
 import {
   buildSchedule,
   customScheduleCommit,

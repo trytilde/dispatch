@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import type { AuthProvider } from "@tryopenbot/auth-provider";
+import type { AuthProvider } from "@trytilde/dispatch-auth-provider";
 import { createApp } from "./app.js";
 
 function testAuthProvider(): AuthProvider {
@@ -10,12 +10,12 @@ function testAuthProvider(): AuthProvider {
       authorizationEndpoint: "https://identity.test/authorize",
       tokenEndpoint: "https://identity.test/token",
       clientId: "client-one",
-      scope: "openid offline_access openbot:control",
+      scope: "openid offline_access dispatch:control",
     }),
     authorizationUrl: () => new URL("https://identity.test/authorize"),
     exchangeCode: async () => ({ accessToken: "human-token", expiresIn: 3600 }),
     refresh: async () => ({ accessToken: "human-token", expiresIn: 3600 }),
-    verify: async () => ({ subject: "owner-one", groups: [], scope: ["openbot:control"] }),
+    verify: async () => ({ subject: "owner-one", groups: [], scope: ["dispatch:control"] }),
   } as unknown as AuthProvider;
 }
 
@@ -66,7 +66,7 @@ describe("capability approval proxy", () => {
       },
     });
     const response = await app.request(
-      "https://openbot.test/api/capability-approvals/proposal-a/decision",
+      "https://dispatch.test/api/capability-approvals/proposal-a/decision",
       {
         method: "POST",
         headers: { authorization: "Bearer human-token", "content-type": "application/json" },
@@ -121,7 +121,7 @@ describe("capability approval proxy", () => {
       },
     });
     const response = await app.request(
-      "https://openbot.test/api/capability-approvals/proposal-a/decision",
+      "https://dispatch.test/api/capability-approvals/proposal-a/decision",
       {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -153,7 +153,7 @@ describe("capability approval proxy", () => {
       },
     });
     const response = await app.request(
-      "https://openbot.test/api/capability-approvals/proposal-a/decision",
+      "https://dispatch.test/api/capability-approvals/proposal-a/decision",
       {
         method: "POST",
         headers: { authorization: "Bearer human-token", "content-type": "application/json" },
@@ -207,9 +207,12 @@ describe("capability approval proxy", () => {
         fetch: upstream as typeof fetch,
       },
     });
-    const response = await app.request("https://openbot.test/api/capability-approvals/proposal-a", {
-      headers: { authorization: "Bearer human-token" },
-    });
+    const response = await app.request(
+      "https://dispatch.test/api/capability-approvals/proposal-a",
+      {
+        headers: { authorization: "Bearer human-token" },
+      },
+    );
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({ id: "proposal-a", status: "executed" });
   });
@@ -249,9 +252,12 @@ describe("capability approval proxy", () => {
         ),
       },
     });
-    const response = await app.request("https://openbot.test/api/capability-approvals/proposal-a", {
-      headers: { authorization: "Bearer human-token" },
-    });
+    const response = await app.request(
+      "https://dispatch.test/api/capability-approvals/proposal-a",
+      {
+        headers: { authorization: "Bearer human-token" },
+      },
+    );
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({ error: "Invalid capability response" });
   });

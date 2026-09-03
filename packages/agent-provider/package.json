@@ -1,5 +1,5 @@
 {
-  "name": "@tryopenbot/agent-provider",
+  "name": "@trytilde/dispatch-agent-provider",
   "version": "0.1.0",
   "files": [
     "dist",
@@ -31,9 +31,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tryopenbot/platform-integrations": "workspace:*",
-    "@tryopenbot/runtime-provider": "workspace:*",
     "@trytilde/api-client": "workspace:*",
+    "@trytilde/dispatch-platform-integrations": "workspace:*",
+    "@trytilde/dispatch-runtime-provider": "workspace:*",
     "@trytilde/sdk": "workspace:*",
     "ai": "7.0.64"
   },

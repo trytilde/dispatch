@@ -12,12 +12,12 @@ afterEach(async () => {
 
 describe("Electron renderer server", () => {
   it("serves SPA fallbacks and streams control requests with loopback cookies", async () => {
-    const staticRoot = await mkdtemp(join(tmpdir(), "openbot-electron-web-"));
-    await writeFile(join(staticRoot, "index.html"), "<main>OpenBot renderer</main>");
+    const staticRoot = await mkdtemp(join(tmpdir(), "dispatch-electron-web-"));
+    await writeFile(join(staticRoot, "index.html"), "<main>Dispatch renderer</main>");
     const upstream = createServer((request, response) => {
       response.setHeader(
         "set-cookie",
-        "openbot_session=example; HttpOnly; Secure; SameSite=Strict",
+        "dispatch_session=example; HttpOnly; Secure; SameSite=Strict",
       );
       response.end(
         `${request.url}:${request.headers.cookie ?? "none"}:${request.headers.authorization ?? "none"}`,
@@ -31,7 +31,7 @@ describe("Electron renderer server", () => {
       `http://127.0.0.1:${address.port}`,
       {
         accessToken: async () => "desktop-token",
-        tildeBaseUrl: "https://openbot-org.api.trytilde.ai/path-is-ignored",
+        tildeBaseUrl: "https://dispatch-org.api.trytilde.ai/path-is-ignored",
       },
     );
     cleanups.push(async () => renderer.close());
@@ -41,9 +41,9 @@ describe("Electron renderer server", () => {
     cleanups.push(async () => rm(staticRoot, { recursive: true, force: true }));
 
     const rendered = await fetch(`${renderer.origin}/agents/one`);
-    expect(await rendered.text()).toContain("OpenBot renderer");
+    expect(await rendered.text()).toContain("Dispatch renderer");
     expect(rendered.headers.get("content-security-policy")).toContain(
-      "connect-src 'self' wss://openbot-org.api.trytilde.ai",
+      "connect-src 'self' wss://dispatch-org.api.trytilde.ai",
     );
     const proxied = await fetch(`${renderer.origin}/healthz`, {
       headers: { cookie: "client=value" },

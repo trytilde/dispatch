@@ -1,12 +1,12 @@
 import type { Sandbox as VercelSandbox } from "@vercel/sandbox";
-import { VercelPlatform, vercelPlatform } from "@tryopenbot/platform-integrations";
+import { VercelPlatform, vercelPlatform } from "@trytilde/dispatch-platform-integrations";
 import {
   resolveVercelProjectCredentials,
   resolveVercelRegistryIdentity,
   VercelPlatformError,
   type VercelProjectCredentials,
   type VercelRegistryIdentity,
-} from "@tryopenbot/platform-integrations/vercel/registry";
+} from "@trytilde/dispatch-platform-integrations/vercel/registry";
 import {
   ComputerProviderError,
   type ComputerCallContext,
@@ -16,7 +16,7 @@ import {
   type ComputerImageSpec,
   type ComputerSpec,
 } from "../core/index.js";
-import type { DeploymentContext } from "@tryopenbot/runtime-provider";
+import type { DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import {
   BaseComputerProvider,
   computerWorkspacePath,
@@ -95,8 +95,8 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
     phase: "build" | "plan" | "deploy",
   ): Promise<string> {
     if (this.#configuredRepository) return super.imageRepository(context, phase);
-    if (phase === "plan") return `the OpenBot ${this.#projectRole} project's Container Registry`;
-    if (phase === "build") return "openbot/vercel-sandbox-computer";
+    if (phase === "plan") return `the Dispatch ${this.#projectRole} project's Container Registry`;
+    if (phase === "build") return "dispatch/vercel-sandbox-computer";
     return (await this.#vercelRegistryIdentity(context)).repository;
   }
 
@@ -151,7 +151,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
   }
 
   async create(spec: ComputerSpec, context: ComputerCallContext): Promise<ComputerHandle> {
-    const id = deterministicComputerId("openbot", spec.id);
+    const id = deterministicComputerId("dispatch", spec.id);
     if (this.#handles.has(id))
       throw new ComputerProviderError("invalid_configuration", `Computer ${id} already exists`);
     const { Sandbox } = await import("@vercel/sandbox");
@@ -173,7 +173,7 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
       persistent: true,
       keepLastSnapshots: { count: 1 },
       tags: {
-        application: "openbot",
+        application: "dispatch",
         component: "computer",
         "image-tag": imageTagOf(image),
         ...spec.labels,
@@ -311,8 +311,8 @@ export class VercelSandboxComputerProvider extends BaseComputerProvider {
   async vnc(id: string, context: ComputerCallContext) {
     const sandbox = await this.#attach(id, context);
     await this.get(id, context);
-    // Keep stock noVNC as the transport while the OpenBot shell owns the viewer chrome.
-    const url = new URL("/openbot.html", sandbox.domain(6080));
+    // Keep stock noVNC as the transport while the Dispatch shell owns the viewer chrome.
+    const url = new URL("/dispatch.html", sandbox.domain(6080));
     const capability = scopedCapability("vnc", id, context.agentId);
     // The chrome-free viewer reads its WebSocket path; carry the TokenFile capability there.
     url.searchParams.set("path", `websockify?token=${capability}`);
@@ -415,7 +415,7 @@ async function startComputer(
   try {
     await sandbox.runCommand({
       cmd: "bash",
-      args: ["/usr/local/bin/start-openbot-computer"],
+      args: ["/usr/local/bin/start-dispatch-computer"],
       detached: true,
       env: computerEnvironment(id, spec),
       signal: context.signal,
@@ -423,7 +423,7 @@ async function startComputer(
   } catch (error) {
     throw new ComputerProviderError(
       "provider_unavailable",
-      `Could not start /usr/local/bin/start-openbot-computer in Vercel Sandbox: ${error instanceof Error ? error.message : "unknown error"}`,
+      `Could not start /usr/local/bin/start-dispatch-computer in Vercel Sandbox: ${error instanceof Error ? error.message : "unknown error"}`,
     );
   }
 }

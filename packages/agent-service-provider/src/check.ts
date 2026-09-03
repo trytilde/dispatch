@@ -1,8 +1,8 @@
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { materializeFileTemplate } from "@tryopenbot/utilities";
-import type { DeploymentContext } from "@tryopenbot/runtime-provider";
-import type { CommandRunner } from "@tryopenbot/control-service-provider";
+import { materializeFileTemplate } from "@trytilde/dispatch-utilities";
+import type { DeploymentContext } from "@trytilde/dispatch-runtime-provider";
+import type { CommandRunner } from "@trytilde/dispatch-control-service-provider";
 import { agentTypeScriptPaths, discoverAgents, globalInstrumentationPath } from "./discovery.js";
 
 const configTemplate = fileURLToPath(new URL("./assets/agents-tsconfig.json.hbs", import.meta.url));
@@ -13,7 +13,7 @@ export async function checkAgentService(
 ): Promise<void> {
   const agents = await discoverAgents(context.repositoryRoot);
   const agentFiles = (await Promise.all(agents.map(agentTypeScriptPaths))).flat();
-  const config = resolve(context.repositoryRoot, ".openbot-deploy/generated/agents.tsconfig.json");
+  const config = resolve(context.repositoryRoot, ".dispatch-deploy/generated/agents.tsconfig.json");
   await materializeFileTemplate(configTemplate, config, {
     FILES: JSON.stringify(
       [

@@ -7,8 +7,8 @@ import type {
   DeploymentResult,
   InitializableProvider,
   ProviderInitialization,
-} from "@tryopenbot/runtime-provider";
-import { isDevelopmentLifecycle, persistEnvironment } from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
+import { isDevelopmentLifecycle, persistEnvironment } from "@trytilde/dispatch-runtime-provider";
 import { checkControlService } from "../check.js";
 import { processRunner, type CommandRunner } from "../command.js";
 import { installLocalService, waitForHealth } from "../local-service.js";
@@ -56,7 +56,7 @@ export class LocalControlServiceProvider implements Buildable, Deployable, Initi
         steps: ["Skip local service installation"],
       };
     return {
-      summary: "Install the local OpenBot control service",
+      summary: "Install the local Dispatch control service",
       steps: ["Install a dedicated user service", "Smoke-test /healthz"],
     };
   }
@@ -69,18 +69,18 @@ export class LocalControlServiceProvider implements Buildable, Deployable, Initi
     if (isDevelopmentLifecycle(context)) return {};
     const origin = this.baseUrl(context).toString().replace(/\/$/, "");
     const port = new URL(origin).port;
-    await persistEnvironment(context, "PUBLIC_ORIGIN", origin, "OpenBot public origin.");
-    await persistEnvironment(context, "PORT", port, "OpenBot control service port.");
+    await persistEnvironment(context, "PUBLIC_ORIGIN", origin, "Dispatch public origin.");
+    await persistEnvironment(context, "PORT", port, "Dispatch control service port.");
     return { outputs: { "control-service.origin": origin, "runtime.origin": origin } };
   }
   async deploy(context: DeploymentContext): Promise<DeploymentResult> {
     if (isDevelopmentLifecycle(context)) return {};
     const artifact = context.inputs.require("control-service.artifact");
     await installLocalService(context, this.#options.runner, {
-      id: "openbot-control",
-      description: "OpenBot control service",
+      id: "dispatch-control",
+      description: "Dispatch control service",
       command: this.#options.command ?? [process.execPath, artifact],
-      environmentFile: ".openbot-deploy/control-service.env",
+      environmentFile: ".dispatch-deploy/control-service.env",
       platform: this.#options.platform,
       homeDirectory: this.#options.homeDirectory,
       uid: this.#options.uid ?? process.getuid?.(),

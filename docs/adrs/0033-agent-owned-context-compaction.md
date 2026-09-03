@@ -3,14 +3,14 @@
 ## In brief
 
 - Every authored agent owns its context-compaction loop through AI SDK `prepareStep`.
-- Tilde records lifecycle and memory evidence; it does not summarize for OpenBot.
+- Tilde records lifecycle and memory evidence; it does not summarize for Dispatch.
 - The default agent compacts near 80% of a configurable context window.
 - A structured handoff precedes a complete recent user-turn tail.
 - Provider preparation runs first and compaction preserves its non-context overrides.
 
 ## Context
 
-OpenBot conversations are durable in Tilde, but model context is request-local.
+Dispatch conversations are durable in Tilde, but model context is request-local.
 Long sessions need a compact representation without deleting or rewriting the
 canonical transcript. Provider-native compaction would couple authored agents to
 one inference adapter, while moving the loop into Tilde would make ChatKit own
@@ -18,10 +18,10 @@ model behavior that belongs to the agent.
 
 ## Decision
 
-The default OpenBot agent creates a request-scoped compaction controller and
+The default Dispatch agent creates a request-scoped compaction controller and
 composes it with any inference-provider `prepareStep`. Before a step, the
 controller estimates the complete persisted context and triggers at 80% of
-`OPENBOT_AGENT_CONTEXT_WINDOW_TOKENS` (128,000 by default).
+`DISPATCH_AGENT_CONTEXT_WINDOW_TOKENS` (128,000 by default).
 
 Compaction uses the active model with tools disabled by omission, a structured
 handoff prompt, up to three attempts, progressive input reduction, and a

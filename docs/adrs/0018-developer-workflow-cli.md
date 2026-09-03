@@ -2,11 +2,11 @@
 
 ## In brief
 
-- The `openbot` CLI owns the entire developer workflow alongside operator commands.
+- The Tilde CLI owns the entire developer workflow alongside operator commands.
 - Repository gates: `check`, `build`, `test`, `e2e`, `desktop package`.
-- Mobile group: `openbot mobile expo|emulator|avd|setup|screenshot|logs|doctor`.
-- Remote hosts: `openbot connect <host>` and `openbot remote <host> <task>`.
-- Every developer workflow lands as an `openbot` command — never loose `scripts/*.mjs`, package-local helpers, or command lines living only in skill prose.
+- Mobile group: `tilde mobile expo|emulator|avd|setup|screenshot|logs|doctor`.
+- Remote hosts: `tilde connect <host>` and `tilde remote <host> <task>`.
+- Every developer workflow lands as a `tilde` command — never loose `scripts/*.mjs`, package-local helpers, or command lines living only in skill prose.
 - Root scripts follow t3code's verb:target taxonomy (`dev:mobile:*`, `connect`, `doctor`) as thin plumbing.
 - Remote host identity is fork-owned `configuration/dev-hosts.json`, never package code.
 - Argv-first with plain output and exit codes; Ink renders only interactive surfaces.
@@ -20,10 +20,10 @@ display-less remote needs a headless emulator, loopback VNC, and ssh tunnels to 
 That logic first accumulated as untested `apps/mobile/scripts/*.mjs` with no owner, no help,
 and no path to a fork developer's or sandboxed agent's hands.
 
-A separate published `@tryopenbot/dev-cli` package was built first, on the theory that the
+A separate published `@trytilde/dispatch-dev-cli` package was built first, on the theory that the
 operator CLI and the developer CLI serve different audiences with different dependency
 weight. That boundary did not survive contact: the fork developer and the sandboxed agent
-already have the `openbot` CLI in hand, the CLI already fronted `check`, `build`, and `test`
+already have the Tilde CLI in hand, the CLI already fronted `check`, `build`, and `test`
 through the same delegation the gates need, versions were locked together by the fixed
 changeset group anyway, and two binaries meant two help surfaces for one repository. The
 package was folded into `cli` and deleted in the same branch that introduced it.
@@ -34,7 +34,7 @@ rather than inline shell.
 
 ## Decision
 
-The `openbot` CLI is the single command surface for operating an installation and developing
+The Tilde CLI is the single command surface for operating an installation and developing
 the codebase. Sandboxed agents may fork, modify, and develop the repository, so the developer
 workflow is product surface and ships in the published CLI.
 
@@ -51,7 +51,7 @@ adb to a workstation; `remote` runs a task on a configured host, and `ios` requi
 host. `connect` and `remote` stay top-level because they address development hosts, not the
 mobile app.
 
-Every developer workflow lands as an `openbot` command, not as loose `scripts/*.mjs` files,
+Every developer workflow lands as a `tilde` command, not as loose `scripts/*.mjs` files,
 package-local scripts, or command lines living only in skill prose. Root `package.json`
 keeps the verb:target taxonomy as thin plumbing; trivial single-filter delegations remain
 plain scripts. `create-pr` enforces this with a CLI ownership gate before publication.
@@ -64,7 +64,7 @@ directory.
 
 ```mermaid
 flowchart LR
-  R["root scripts: dev:mobile:*, connect, doctor"] --> C["openbot CLI"]
+  R["root scripts: dev:mobile:*, connect, doctor"] --> C["Tilde CLI"]
   M["apps/mobile scripts"] --> C
   C -->|"mobile expo, mobile emulator"| L["this machine: mac or linux"]
   C -->|"check, build, test, e2e, desktop package"| G["repository gates"]
@@ -88,7 +88,7 @@ flowchart LR
 ## Updates
 
 - 2026-08-29T07:28:00+02:00: ADR-0033 removed the mobile command group, Android/iOS toolchain resolution, Metro/adb tunnels, and EAS release surface. `connect` and `remote` now serve Electron desktop development only.
-- 2026-08-18T13:30:00+02:00: Initial decision as a separate published `@tryopenbot/dev-cli`.
+- 2026-08-18T13:30:00+02:00: Initial decision as a separate published `@trytilde/dispatch-dev-cli`.
 - 2026-08-18T14:20:00+02:00: Grouped every mobile command under `mobile <subcommand>` and added `avd`, `setup`, `screenshot`, and `logs`.
 - 2026-08-18T15:00:00+02:00: Repository gates became commands; every developer workflow must land as a command; `create-pr` gained the CLI ownership gate.
-- 2026-08-18T15:40:00+02:00: Folded `dev-cli` into the `openbot` CLI and deleted the package. One command surface for operators, developers, and agents; the audience split had produced two binaries with one fixed version and duplicate gate delegation.
+- 2026-08-18T15:40:00+02:00: Folded `dev-cli` into the Tilde CLI and deleted the package. One command surface for operators, developers, and agents; the audience split had produced two binaries with one fixed version and duplicate gate delegation.

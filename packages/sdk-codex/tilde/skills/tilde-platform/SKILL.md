@@ -1,6 +1,6 @@
 ---
 name: tilde-platform
-description: Use Tilde MCP servers and managed skills installed by openbot plugin for platform work.
+description: Use Tilde MCP servers and managed skills installed by tilde plugin for platform work.
 ---
 
 # Tilde platform

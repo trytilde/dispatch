@@ -1,9 +1,9 @@
 ---
 name: implement-provider
-description: Add or refactor an OpenBot provider implementation while preserving narrow control, provisioning, initialization, and deployment boundaries. Use whenever editing a provider package or changing provider-specific build, deploy, initialization, or external resource reconciliation.
+description: Add or refactor a Dispatch provider implementation while preserving narrow control, provisioning, initialization, and deployment boundaries. Use whenever editing a provider package or changing provider-specific build, deploy, initialization, or external resource reconciliation.
 ---
 
-# Implement an OpenBot provider
+# Implement a Dispatch provider
 
 Keep provider-specific behavior behind its domain core contract and keep composition outside the adapter. Read the relevant ADRs, the owning package's `src/core.ts` or `src/core/index.ts`, implementation, runtime selection, and focused tests before editing. Do not create a separate `*-provider-core` package.
 
@@ -11,7 +11,7 @@ Keep provider-specific behavior behind its domain core contract and keep composi
 
 1. Identify the concrete consumer. A provider operation is valid only when used by the control service, initialization/startup provisioning, external resource reconciliation, or a check/build/deploy lifecycle. Remove unused and speculative contract methods. Do not expose an internal provider interface through RPC unless a user-facing service boundary requires it.
 2. Read the matching provider package, configuration composition, and tests. Preserve `ProviderCallContext`, `ProviderError`, cancellation, deadlines, request IDs, and idempotency where the contract defines them. If the change alters provider construction or runtime assumptions in `configuration/index.ts`, inspect `configuration/templates/agent/` too. Update the fork-owned agent template when newly scaffolded agents need different environment variables, tools, prompts, or endpoint wiring.
-3. Add the smallest provider-specific implementation. Keep selection in composition code. Before adding vendor helpers, inspect `@tryopenbot/platform-integrations`: shared platform clients, authentication, request/error normalization, account lookup, deployment commands, and other cross-domain vendor operations belong under `src/<platform>/<responsibility>.ts`. Domain-specific API calls and record mapping stay in the adapter.
+3. Add the smallest provider-specific implementation. Keep selection in composition code. Before adding vendor helpers, inspect `@trytilde/dispatch-platform-integrations`: shared platform clients, authentication, request/error normalization, account lookup, deployment commands, and other cross-domain vendor operations belong under `src/<platform>/<responsibility>.ts`. Domain-specific API calls and record mapping stay in the adapter.
 4. Implement only the initialization or lifecycle capabilities the provider supports. Every hook must be idempotent: repeated calls reconcile stable resources and never create duplicates. Keep vendor-specific get/create/update/delete sequences and configuration persistence inside the adapter; CLI code only schedules hooks. An inference provider may provision accounts or credentials, but providers must not supply model factories, prompts, AI SDK tools, or arbitrary vendor functions to authored agents. Code under `configuration/agent/`, including `subagents/`, must integrate its SDKs directly and must not import provider packages. Put shared non-provider runtime utilities in a purpose-specific package.
 5. Add focused contract and artifact tests, then run the provider package checks before broader repository gates.
 
@@ -47,7 +47,7 @@ types.
 ## Provider-owned assets
 
 - Store TypeScript, JavaScript, JSON, service units, plists, shell files, and every other generated-file source under `assets/` as Handlebars templates with the target extension followed by `.hbs`, such as `entry.ts.hbs` or `vercel.json.hbs`. Do not embed whole files in TypeScript string literals.
-- Resolve templates relative to `import.meta.url` and render them through `@tryopenbot/utilities`. Build and deploy methods must render or bundle every required template into their ignored artifact; do not materialize provider assets with `copyFile()` even when a template is currently static.
+- Resolve templates relative to `import.meta.url` and render them through `@trytilde/dispatch-utilities`. Build and deploy methods must render or bundle every required template into their ignored artifact; do not materialize provider assets with `copyFile()` even when a template is currently static.
 - Put assets shared completely by sibling providers under `src/base/assets/`; add provider-specific asset directories only when their contents or control flow actually diverge.
 - Use strict templates so missing values fail. Escape values for the target format before rendering. Use ordinary Handlebars expressions for text that needs HTML escaping and triple braces only for deliberately pre-encoded target-language fragments such as `JSON.stringify(...)` output.
 - Do not create ad hoc `replaceAll()` renderers, multiline whole-file strings, or alternate template engines.
@@ -76,4 +76,4 @@ types.
 
 Run the focused platform and provider tests and typechecks. Audit the diff for duplicated Tilde/Vercel helpers, cross-domain provider utility imports, provider contract interfaces outside `src/core.ts` or `src/core/index.ts`, embedded whole-file templates, non-Handlebars generation, raw provider-asset copies, stale flat-provider imports, secrets, and unrelated generated output. Run `pnpm check` and `pnpm build` when the change affects deployment artifacts or shared contracts.
 Also audit metadata: every metadata key must be provider-specific, name its sole
-adapter owner, and remain invisible to core OpenBot behavior and renderers.
+adapter owner, and remain invisible to core Dispatch behavior and renderers.

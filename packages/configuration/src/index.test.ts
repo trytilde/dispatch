@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { AgentServiceProvider } from "@tryopenbot/agent-service-provider";
-import type { ControlServiceProvider } from "@tryopenbot/control-service-provider";
+import type { AgentServiceProvider } from "@trytilde/dispatch-agent-service-provider";
+import type { ControlServiceProvider } from "@trytilde/dispatch-control-service-provider";
 import {
   Configuration,
   repositoryDigest,
-  type OpenBotProviders,
+  type DispatchProviders,
   type UserConfiguration,
 } from "./index.js";
 
@@ -13,11 +13,11 @@ const controlServiceProvider = {} as ControlServiceProvider;
 const domainProvider = {};
 const configuration = Configuration({
   providers: {
-    auth: domainProvider as OpenBotProviders["auth"],
+    auth: domainProvider as DispatchProviders["auth"],
     controlService: controlServiceProvider,
     agentService: agentServiceProvider,
-    agent: domainProvider as OpenBotProviders["agent"],
-    computer: domainProvider as OpenBotProviders["computer"],
+    agent: domainProvider as DispatchProviders["agent"],
+    computer: domainProvider as DispatchProviders["computer"],
   },
 });
 
@@ -38,7 +38,7 @@ describe("repository configuration", () => {
       sops: {
         ownerIdentity: {
           kind: "onepassword",
-          reference: "op://Engineering/OpenBot/password",
+          reference: "op://Engineering/Dispatch/password",
         },
       },
     };

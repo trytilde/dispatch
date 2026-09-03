@@ -8,13 +8,13 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import {
   LifecyclePhase,
   type ApplyLifecycleBundleRequest,
-} from "@tryopenbot/computer-service-proto";
-import { materializeFileTemplate } from "@tryopenbot/utilities";
+} from "@trytilde/dispatch-computer-service-proto";
+import { materializeFileTemplate } from "@trytilde/dispatch-utilities";
 
 const execute = promisify(execFile);
 const manifestTemplate = fileURLToPath(new URL("./assets/manifest.json.hbs", import.meta.url));
 function lifecycleRoot(): string {
-  return resolve(process.env.COMPUTER_LIFECYCLE_ROOT ?? "/opt/openbot/lifecycle");
+  return resolve(process.env.COMPUTER_LIFECYCLE_ROOT ?? "/opt/dispatch/lifecycle");
 }
 
 function currentRoot(): string {

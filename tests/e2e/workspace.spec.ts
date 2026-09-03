@@ -45,7 +45,7 @@ test("requires a Tilde owner session", async ({ browser }) => {
 test("loads the bare workspace without setup", async ({ page }) => {
   await routeDefaultWorkspace(page);
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "What should OpenBot do?" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "What should Dispatch do?" })).toHaveCount(0);
   await expect(page.locator(".rail")).toHaveCSS("width", "400px");
   await expect(page.locator(".agent-workspace-pane")).toBeHidden();
   await page.getByRole("button", { name: "Toggle Computer pane" }).click();
@@ -109,7 +109,7 @@ test("loads the bare workspace without setup", async ({ page }) => {
   await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 700);
 
   await page.goto("/api/setup/unlock");
-  await expect(page.getByRole("heading", { name: "What should OpenBot do?" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "What should Dispatch do?" })).toHaveCount(0);
 });
 
 test("lists the user's continuous chat and the agent's named threads", async ({ page }) => {
@@ -135,7 +135,7 @@ test("lists the user's continuous chat and the agent's named threads", async ({ 
                 },
                 {
                   id: "user-session",
-                  lookup_key: "openbot:user:e2e-owner:agent:hello-world",
+                  lookup_key: "dispatch:user:e2e-owner:agent:hello-world",
                   title: "Legacy title is not shown",
                   created_at: defaultUpdatedAt,
                   updated_at: defaultUpdatedAt,
@@ -296,25 +296,31 @@ test("opens a routine and persists its active state", async ({ page }) => {
     }
     await route.fulfill({ status: 404, json: { error: `Unhandled ${request.method()} ${path}` } });
   });
+  await page.route(
+    /\/api\/chat\/agents\/hello-world\/sessions\/session-one\/(?:goals|tasks|jobs)(?:\?.*)?$/,
+    async (route) => {
+      await route.fulfill({ json: { items: [] } });
+    },
+  );
 
   await page.goto("/");
   await page.getByRole("button", { name: "Toggle routines" }).click();
-  const routinesPanel = page.getByRole("complementary", { name: "Routines" });
-  await expect(routinesPanel).toBeVisible();
-  const addRoutine = routinesPanel.getByRole("button", { name: "Add" });
+  const workPanel = page.getByRole("complementary", { name: "Work" });
+  await expect(workPanel).toBeVisible();
+  const addRoutine = workPanel.getByRole("button", { name: "Add" });
   await expect(addRoutine).toBeVisible();
-  await expect(routinesPanel.getByRole("button", { name: "Close routines" })).toBeVisible();
+  await expect(workPanel.getByRole("button", { name: "Close work" })).toBeVisible();
   await addRoutine.click();
   await expect(page.getByRole("complementary", { name: "Routine" })).toBeVisible();
   await expect(page.getByPlaceholder("Name this routine")).toBeVisible();
-  await page.getByRole("button", { name: "Back to Routines" }).click();
+  await page.getByRole("button", { name: "Back to Work" }).click();
   await page.getByRole("button", { name: /Daily briefing/ }).click();
   const active = page.getByRole("switch", { name: "Active" });
   await expect(active).toBeChecked();
   await active.click();
   await expect.poll(() => updateBody).toMatchObject({ enabled: false });
   await expect(active).not.toBeChecked();
-  await page.getByRole("button", { name: "Back to Routines" }).click();
+  await page.getByRole("button", { name: "Back to Work" }).click();
   await expect(page.getByText("Paused", { exact: true })).toBeVisible();
 });
 
@@ -326,7 +332,7 @@ test("shows authenticated account details and account navigation on hover", asyn
     name: "Open account menu for Daniel Blignaut",
   });
   await expect(accountButton.getByText("Daniel Blignaut", { exact: true })).toBeVisible();
-  await expect(accountButton.getByText("OpenBot", { exact: true })).toBeVisible();
+  await expect(accountButton.getByText("Dispatch", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Plugins" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Settings" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Switch workspace" })).toHaveCount(0);
@@ -335,7 +341,7 @@ test("shows authenticated account details and account navigation on hover", asyn
   const accountMenu = page.getByRole("menu", { name: "Account" });
   await expect(accountMenu).toBeVisible();
   await expect(accountMenu.getByText("owner@example.com", { exact: true })).toHaveCount(0);
-  await expect(accountMenu.getByText("OpenBot · Tilde", { exact: true })).toBeVisible();
+  await expect(accountMenu.getByText("Dispatch · Tilde", { exact: true })).toBeVisible();
   await expect(accountMenu.getByRole("separator")).toHaveCount(1);
   await expect(accountMenu.getByRole("menuitem")).toHaveText([
     "Plugins",
@@ -353,7 +359,7 @@ test("floats the Computer preview at the bottom-right in Electron", async ({ bro
     baseURL: "http://127.0.0.1:14173",
     extraHTTPHeaders: { authorization: "Bearer e2e-owner" },
     userAgent:
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 OpenBot Electron/43.4.0",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Dispatch Electron/43.4.0",
     viewport: { width: 1280, height: 720 },
   });
   const page = await context.newPage();
@@ -515,7 +521,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
     }
     await route.fulfill({
       contentType: "text/html",
-      body: '<main>Agent desktop</main><script>parent.postMessage({type:"openbot:vnc",phase:"connected"},"*")</script>',
+      body: '<main>Agent desktop</main><script>parent.postMessage({type:"dispatch:vnc",phase:"connected"},"*")</script>',
     });
   });
 
@@ -765,7 +771,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
               connector: "GitHub",
               variant: "connect",
               reason: "Authorize GitHub so I can work with repositories.",
-              authorizationUrl: "https://github.com/login/oauth/authorize?client_id=openbot-test",
+              authorizationUrl: "https://github.com/login/oauth/authorize?client_id=dispatch-test",
             },
           ],
         },
@@ -875,13 +881,13 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   });
   await expect(accountButton).toBeVisible();
   await expect(accountButton.getByText("Daniel Blignaut", { exact: true })).toBeVisible();
-  await expect(accountButton.getByText("OpenBot", { exact: true })).toBeVisible();
+  await expect(accountButton.getByText("Dispatch", { exact: true })).toBeVisible();
   await expect(page.getByText("Connected", { exact: true })).toHaveCount(0);
   await accountButton.hover();
   const accountMenu = page.getByRole("menu", { name: "Account" });
   await expect(accountMenu).toBeVisible();
   await expect(accountMenu.getByText("owner@example.com", { exact: true })).toHaveCount(0);
-  await expect(accountMenu.getByText("OpenBot · Tilde", { exact: true })).toBeVisible();
+  await expect(accountMenu.getByText("Dispatch · Tilde", { exact: true })).toBeVisible();
   await expect(accountMenu.getByRole("menuitem")).toHaveText([
     "Plugins",
     "Settings",
@@ -1004,7 +1010,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await page.locator('input[type="file"]').setInputFiles({
     name: "brief.txt",
     mimeType: "text/plain",
-    buffer: Buffer.from("OpenBot brief"),
+    buffer: Buffer.from("Dispatch brief"),
   });
   await page.getByRole("textbox", { name: "Message", exact: true }).fill("Read this file");
   await page.getByLabel("Send message").click();
@@ -1036,7 +1042,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await expect(page.locator(".connection-card")).toHaveCSS("border-radius", "9px");
   await expect(page.getByRole("link", { name: "Authorize" })).toHaveAttribute(
     "href",
-    "https://github.com/login/oauth/authorize?client_id=openbot-test",
+    "https://github.com/login/oauth/authorize?client_id=dispatch-test",
   );
   await page.getByLabel("Agent message").first().hover();
   await page.getByLabel("Reply").first().click();
@@ -1365,7 +1371,7 @@ test("queues another turn while the agent is busy", async ({ page }) => {
 });
 
 test("configures a connector through the in-chat account picker", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("openbot.onboarding-seen", "true"));
+  await page.addInitScript(() => localStorage.setItem("dispatch.onboarding-seen", "true"));
   const now = new Date().toISOString();
   const connectorBindRequests: Array<Record<string, unknown>> = [];
   const transcript: Array<Record<string, unknown>> = [
@@ -1516,7 +1522,7 @@ test("configures a connector through the in-chat account picker", async ({ page 
         ],
         mcp_servers: [
           {
-            id: "openbot-hello-world",
+            id: "dispatch-hello-world",
             agent_id: "hello-world",
             tools: connectorBindRequests.map(({ account_id }) => ({
               tool_group_instance_id: account_id,
@@ -1661,7 +1667,7 @@ test("configures a connector through the in-chat account picker", async ({ page 
 test("keeps the server healthy", async ({ request }) => {
   const health = await request.get("/healthz");
   expect(health.ok()).toBeTruthy();
-  await expect(health.json()).resolves.toEqual({ ok: true, service: "openbot" });
+  await expect(health.json()).resolves.toEqual({ ok: true, service: "dispatch" });
 });
 
 // Held, not deleted: the workspace still ships ConversationOutlinePanel and its open state,

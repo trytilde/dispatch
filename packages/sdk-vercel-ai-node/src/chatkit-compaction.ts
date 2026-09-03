@@ -147,7 +147,7 @@ export function chatKitCompactionCheckpointMessage(
     role: "user",
     content: `${CHATKIT_COMPACTION_SUMMARY_PREFIX}\n\n${checkpoint.summary}`,
     providerOptions: {
-      openbot: {
+      dispatch: {
         compactionId: checkpoint.compactionId,
         isCompactionSummary: true,
       },

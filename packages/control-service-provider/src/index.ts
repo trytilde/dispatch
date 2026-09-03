@@ -3,7 +3,7 @@ import type {
   Deployable,
   DeploymentContext,
   InitializableProvider,
-} from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
 
 export type ControlServiceProvider = Buildable &
   Deployable &

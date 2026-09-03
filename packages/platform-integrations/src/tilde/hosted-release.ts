@@ -4,7 +4,7 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import { relative, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
-import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
+import type { DeploymentContext, DeploymentResult } from "@trytilde/dispatch-runtime-provider";
 import type { TildePlatform } from "./index.js";
 
 const execute = promisify(execFile);
@@ -23,16 +23,16 @@ interface HostedRelease {
   error_message?: string | null;
 }
 
-/** Deploy a prebuilt OpenBot service through its instance-scoped Tilde release capability. */
-export async function deployHostedOpenBotRelease(
+/** Deploy a prebuilt Dispatch service through its instance-scoped Tilde release capability. */
+export async function deployHostedDispatchRelease(
   platform: TildePlatform,
   context: DeploymentContext,
   service: HostedService,
   artifactRoot: string,
 ): Promise<DeploymentResult> {
-  const instanceId = required(context.environment, "OPENBOT_HOSTED_INSTANCE_ID");
+  const instanceId = required(context.environment, "DISPATCH_HOSTED_INSTANCE_ID");
   const files = await deploymentFiles(artifactRoot);
-  if (!files.length) throw new Error(`Hosted OpenBot ${service} artifact is empty`);
+  if (!files.length) throw new Error(`Hosted Dispatch ${service} artifact is empty`);
   await configureInstance(platform, context, instanceId);
   let release = await requestJson<HostedRelease>(platform, instanceId, "/releases", {
     method: "POST",
@@ -58,7 +58,7 @@ export async function deployHostedOpenBotRelease(
     );
     if (!response.ok)
       throw new Error(
-        `Hosted OpenBot file upload failed (${response.status}): ${await response.text()}`,
+        `Hosted Dispatch file upload failed (${response.status}): ${await response.text()}`,
       );
   }
   release = await requestJson(platform, instanceId, `/releases/${release.id}/finalize`, {
@@ -71,11 +71,13 @@ export async function deployHostedOpenBotRelease(
   }
   if (release.status !== "ready" || !release.deployment_url)
     throw new Error(
-      release.error_message || `Hosted OpenBot ${service} release did not become ready`,
+      release.error_message || `Hosted Dispatch ${service} release did not become ready`,
     );
   const output =
     service === "control" ? "control-service.deployment-url" : "agent-service.deployment-url";
-  return { outputs: { [output]: release.deployment_url, "hosted-openbot.release-id": release.id } };
+  return {
+    outputs: { [output]: release.deployment_url, "hosted-dispatch.release-id": release.id },
+  };
 }
 
 async function configureInstance(
@@ -95,7 +97,7 @@ async function configureInstance(
 }
 
 function allowedRuntimeName(name: string): boolean {
-  return /^(?:TILDE_(?:API_KEY|ORG_ID|TEAM_ID|BASE_URL)|OPENBOT_(?:DEPLOYMENT_NAME|HOSTED_INSTANCE_ID|HOSTED_INFERENCE_BILLING|OIDC_[A-Z_]+)|COMPUTER_(?:SERVICE_API_KEY|SERVICE_URL|ID)|PUBLIC_ORIGIN|AGENT_SERVICE_ORIGIN|INFERENCE_PROVIDER|AI_MODEL|AGENT_[A-Z0-9_]+)$/.test(
+  return /^(?:TILDE_(?:API_KEY|ORG_ID|TEAM_ID|BASE_URL)|DISPATCH_(?:DEPLOYMENT_NAME|HOSTED_INSTANCE_ID|HOSTED_INFERENCE_BILLING|OIDC_[A-Z_]+)|COMPUTER_(?:SERVICE_API_KEY|SERVICE_URL|ID)|PUBLIC_ORIGIN|AGENT_SERVICE_ORIGIN|INFERENCE_PROVIDER|AI_MODEL|AGENT_[A-Z0-9_]+)$/.test(
     name,
   );
 }
@@ -142,7 +144,7 @@ async function requestJson<T>(
   });
   if (!response.ok)
     throw new Error(
-      `Hosted OpenBot release API failed (${response.status}): ${await response.text()}`,
+      `Hosted Dispatch release API failed (${response.status}): ${await response.text()}`,
     );
   return (await response.json()) as T;
 }
@@ -157,7 +159,7 @@ function request(
   const headers = new Headers(init.headers);
   headers.set("x-api-key", connection.apiKey);
   return fetch(
-    `${connection.baseUrl.replace(/\/$/, "")}/api/v1/team/${encodeURIComponent(connection.teamId)}/identity/openbot/instances/${encodeURIComponent(instanceId)}${suffix}`,
+    `${connection.baseUrl.replace(/\/$/, "")}/api/v1/team/${encodeURIComponent(connection.teamId)}/identity/dispatch/instances/${encodeURIComponent(instanceId)}${suffix}`,
     {
       ...init,
       headers,
@@ -167,6 +169,6 @@ function request(
 
 function required(environment: NodeJS.ProcessEnv, name: string): string {
   const value = environment[name]?.trim();
-  if (!value) throw new Error(`${name} is required for Tilde-hosted OpenBot deployment`);
+  if (!value) throw new Error(`${name} is required for Tilde-hosted Dispatch deployment`);
   return value;
 }

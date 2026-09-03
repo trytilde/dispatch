@@ -1,8 +1,8 @@
-import type { DesktopClientBridge } from "@tryopenbot/client-runtime/contracts/platform";
+import type { DesktopClientBridge } from "@trytilde/dispatch-client-runtime/contracts/platform";
 
 declare global {
   interface Window {
-    openbotDesktop?: DesktopClientBridge;
+    dispatchDesktop?: DesktopClientBridge;
   }
 }
 

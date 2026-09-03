@@ -1,8 +1,8 @@
 import type { ClientAuthAdapter } from "./contracts/auth.js";
-import type { OpenBotClient } from "./chat/client.js";
+import type { DispatchClient } from "./chat/client.js";
 
 export function createClientAuthAdapter(
-  client: OpenBotClient,
+  client: DispatchClient,
   platform: Pick<ClientAuthAdapter, "signIn"> & Partial<Pick<ClientAuthAdapter, "signOut">>,
 ): ClientAuthAdapter {
   return {

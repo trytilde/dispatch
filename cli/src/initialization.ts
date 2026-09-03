@@ -11,31 +11,31 @@ import {
   ExeDevRuntimeServiceProvider,
   LocalRuntimeServiceProvider,
   VercelRuntimeServiceProvider,
-} from "@tryopenbot/agent-service-provider";
-import { TildeAuthProvider } from "@tryopenbot/auth-provider";
-import { tildeAgentProviderInitialization } from "@tryopenbot/agent-provider";
+} from "@trytilde/dispatch-agent-service-provider";
+import { TildeAuthProvider } from "@trytilde/dispatch-auth-provider";
+import { tildeAgentProviderInitialization } from "@trytilde/dispatch-agent-provider";
 import type {
-  OpenBotConfiguration,
+  DispatchConfiguration,
   SopsOwnerIdentityConfiguration,
   UserConfiguration,
-} from "@tryopenbot/configuration";
+} from "@trytilde/dispatch-configuration";
 import {
   ExeDevComputerProvider,
   MicrosandboxComputerProvider,
   VercelSandboxComputerProvider,
-} from "@tryopenbot/computer-service-provider";
+} from "@trytilde/dispatch-computer-service-provider";
 import {
   collectProviderInitializations,
   initializeProviders,
   type InitializableProvider,
   type ProviderInitialization,
   type ProviderInitializationQuestion,
-} from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
 import {
   CodeStorageGitProvider,
   GitHubGitProvider,
   LocalGitProvider,
-} from "@tryopenbot/git-provider";
+} from "@trytilde/dispatch-git-provider";
 import {
   CODEX_INFERENCE_PROVIDER,
   CodexInferenceProvider,
@@ -43,9 +43,13 @@ import {
   type InferenceProvider,
   VERCEL_INFERENCE_PROVIDER,
   VercelInferenceProvider,
-} from "@tryopenbot/inference-provider";
-import { ExeDevPlatform, tildePlatform, VercelPlatform } from "@tryopenbot/platform-integrations";
-import { materializeFileTemplate, renderFileTemplatePath } from "@tryopenbot/utilities";
+} from "@trytilde/dispatch-inference-provider";
+import {
+  ExeDevPlatform,
+  tildePlatform,
+  VercelPlatform,
+} from "@trytilde/dispatch-platform-integrations";
+import { materializeFileTemplate, renderFileTemplatePath } from "@trytilde/dispatch-utilities";
 import {
   agentTemplateDirectory,
   scaffoldAgentTemplates,
@@ -207,7 +211,7 @@ export const runtimeChoices: readonly SelectChoice[] = [
   {
     value: "local",
     label: "Local",
-    description: "Run OpenBot as user services on this computer.",
+    description: "Run Dispatch as user services on this computer.",
   },
   {
     value: "vercel",
@@ -269,8 +273,8 @@ export function inferenceChoicesForRuntime(
     : inferenceChoices;
 }
 
-export async function initializeOpenBot(options: InitializationOptions): Promise<void> {
-  await assertOpenBotRepositoryRoot(options.repositoryRoot);
+export async function initializeDispatch(options: InitializationOptions): Promise<void> {
+  await assertDispatchRepositoryRoot(options.repositoryRoot);
   const runner = options.runner ?? processCommandRunner;
   const configurationDirectory = resolve(options.repositoryRoot, "configuration");
   const environmentPath = resolve(configurationDirectory, ".env");
@@ -285,9 +289,9 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   if (existingMarkers.some(Boolean)) {
     if (!existingMarkers.every(Boolean))
       throw new Error(
-        "OpenBot has an incomplete SOPS configuration; preserve or remove it before retrying init",
+        "Dispatch has an incomplete SOPS configuration; preserve or remove it before retrying init",
       );
-    await reconfigureOpenBot(options, runner, {
+    await reconfigureDispatch(options, runner, {
       configurationPath,
       environmentPath,
       secretsPath,
@@ -301,7 +305,7 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   await createBlankEnvironment(environmentPath);
   const sandboxIdentity = generateAgeIdentity();
   const ownerKind = await options.prompts.select(
-    "How should owners decrypt OpenBot secrets?",
+    "How should owners decrypt Dispatch secrets?",
     ownerIdentityChoices,
     { id: "owner-identity" },
   );
@@ -440,8 +444,8 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   await runner.run("vp", ["install"], { cwd: options.repositoryRoot });
 }
 
-export async function isInitializedOpenBotRepository(repositoryRoot: string): Promise<boolean> {
-  if (!(await isOpenBotRepository(repositoryRoot))) return false;
+export async function isInitializedDispatchRepository(repositoryRoot: string): Promise<boolean> {
+  if (!(await isDispatchRepository(repositoryRoot))) return false;
   const configurationDirectory = resolve(repositoryRoot, "configuration");
   const markers = await Promise.all(
     [".sops.yaml", "secrets.enc.yaml"].map((name) => exists(resolve(configurationDirectory, name))),
@@ -449,16 +453,16 @@ export async function isInitializedOpenBotRepository(repositoryRoot: string): Pr
   return markers.every(Boolean);
 }
 
-export async function isOpenBotRepository(repositoryRoot: string): Promise<boolean> {
+export async function isDispatchRepository(repositoryRoot: string): Promise<boolean> {
   try {
-    await assertOpenBotRepositoryRoot(repositoryRoot);
+    await assertDispatchRepositoryRoot(repositoryRoot);
     return true;
   } catch {
     return false;
   }
 }
 
-async function reconfigureOpenBot(
+async function reconfigureDispatch(
   options: InitializationOptions,
   runner: InitializationCommandRunner,
   paths: {
@@ -476,7 +480,7 @@ async function reconfigureOpenBot(
   const allEnvironmentValues: Record<string, DescribedValue> = Object.fromEntries(
     Object.entries(state.environmentValues).map(([name, value]) => [
       name,
-      { description: "Existing OpenBot environment value.", value },
+      { description: "Existing Dispatch environment value.", value },
     ]),
   );
   const provisioningValues = {
@@ -622,7 +626,7 @@ async function loadExistingInitializationState(
     ? sopsConfiguration.creation_rules[0]
     : undefined;
   if (!creationRule || typeof creationRule !== "object" || Array.isArray(creationRule))
-    throw new Error("configuration/.sops.yaml does not contain an OpenBot creation rule");
+    throw new Error("configuration/.sops.yaml does not contain a Dispatch creation rule");
 
   const resolvedSecrets: Record<string, string> = {};
   for (const [name, described] of Object.entries(secretValues)) {
@@ -683,16 +687,16 @@ async function encryptSecretsDocument(
   return encrypted.stdout;
 }
 
-async function assertOpenBotRepositoryRoot(repositoryRoot: string): Promise<void> {
+async function assertDispatchRepositoryRoot(repositoryRoot: string): Promise<void> {
   try {
     const workspaceManifest = await readFile(resolve(repositoryRoot, "package.json"), "utf8");
     const workspace = JSON.parse(workspaceManifest) as { name?: unknown };
-    if (workspace.name === "@tryopenbot/workspace") return;
+    if (workspace.name === "@trytilde/dispatch-workspace") return;
   } catch {
     // Report one stable repository-boundary error for missing or invalid markers.
   }
   throw new Error(
-    "openbot init must run from the root of a cloned OpenBot repository; change to that directory and retry",
+    "tilde init must run from the root of a cloned Dispatch repository; change to that directory and retry",
   );
 }
 
@@ -1029,9 +1033,9 @@ async function storeInNativeKeychain(
       [
         "store",
         "--label",
-        "OpenBot SOPS identity",
+        "Dispatch SOPS identity",
         "service",
-        "ai.openbot.sops",
+        "ai.dispatch.sops",
         "account",
         "owner",
       ],
@@ -1088,7 +1092,7 @@ async function loadStoredOwnerMetadata(
     if (kind === "onepassword") {
       const reference = await prompts.input("1Password secret reference", {
         id: "onepassword-reference",
-        description: "For example: op://Engineering/OpenBot owner identity/password",
+        description: "For example: op://Engineering/Dispatch owner identity/password",
         required: true,
       });
       ownerIdentity = { kind: "onepassword", reference };
@@ -1112,7 +1116,7 @@ async function readSopsCreationRule(repositoryRoot: string): Promise<SopsCreatio
     | undefined;
   const rule = Array.isArray(document?.creation_rules) ? document.creation_rules[0] : undefined;
   if (!rule || typeof rule !== "object" || Array.isArray(rule))
-    throw new Error("configuration/.sops.yaml does not contain an OpenBot creation rule");
+    throw new Error("configuration/.sops.yaml does not contain a Dispatch creation rule");
   return rule as SopsCreationRule;
 }
 
@@ -1127,22 +1131,22 @@ async function readUserConfiguration(path: string): Promise<UserConfiguration | 
   try {
     value = JSON.parse(await readFile(path, "utf8"));
   } catch (error) {
-    throw new Error(`OpenBot user configuration is invalid JSON: ${path}`, { cause: error });
+    throw new Error(`Dispatch user configuration is invalid JSON: ${path}`, { cause: error });
   }
   if (!value || typeof value !== "object" || Array.isArray(value))
-    throw new Error(`OpenBot user configuration must be a JSON object: ${path}`);
+    throw new Error(`Dispatch user configuration must be a JSON object: ${path}`);
   const configuration = value as Partial<UserConfiguration>;
   if (
     configuration.version !== 1 ||
     (configuration.sops !== undefined &&
       (typeof configuration.sops !== "object" || Array.isArray(configuration.sops)))
   )
-    throw new Error(`OpenBot user configuration has an unsupported schema: ${path}`);
+    throw new Error(`Dispatch user configuration has an unsupported schema: ${path}`);
   if (
     configuration.sops?.ownerIdentity !== undefined &&
     !isSopsOwnerIdentityConfiguration(configuration.sops.ownerIdentity)
   )
-    throw new Error(`OpenBot user SOPS configuration is invalid: ${path}`);
+    throw new Error(`Dispatch user SOPS configuration is invalid: ${path}`);
   return configuration as UserConfiguration;
 }
 
@@ -1184,7 +1188,7 @@ async function storeUserOwnerIdentity(
 
 function missingUserSopsConfigurationError(path: string): Error {
   return new Error(
-    `SOPS owner configuration is missing from ${path}. Run this command in an interactive terminal (or run openbot init) to configure the existing owner identity; non-interactive commands cannot choose it safely.`,
+    `SOPS owner configuration is missing from ${path}. Run this command in an interactive terminal (or run tilde init) to configure the existing owner identity; non-interactive commands cannot choose it safely.`,
   );
 }
 
@@ -1211,7 +1215,7 @@ async function loadStoredOwnerIdentity(
     return (
       await runner.run(
         "secret-tool",
-        ["lookup", "service", "ai.openbot.sops", "account", "owner"],
+        ["lookup", "service", "ai.dispatch.sops", "account", "owner"],
         { cwd: repositoryRoot },
       )
     ).stdout.trim();
@@ -1219,7 +1223,7 @@ async function loadStoredOwnerIdentity(
   return (
     await runner.run(
       "security",
-      ["find-generic-password", "-w", "-s", "ai.openbot.sops", "-a", "owner"],
+      ["find-generic-password", "-w", "-s", "ai.dispatch.sops", "-a", "owner"],
       { cwd: repositoryRoot },
     )
   ).stdout.trim();
@@ -1292,7 +1296,7 @@ function parseSecretsDocument(value: unknown): {
 
 function parseDescribedSecretsDocument(value: unknown): Record<string, DescribedValue> {
   if (!value || typeof value !== "object" || Array.isArray(value))
-    throw new Error("Invalid encrypted OpenBot secrets document");
+    throw new Error("Invalid encrypted Dispatch secrets document");
   const root = value as Record<string, unknown>;
   const result: Record<string, DescribedValue> = {};
   for (const [storedName, entry] of Object.entries(root)) {
@@ -1477,12 +1481,12 @@ export async function selectInitializationProviders(
   onSelected?: InitializationProviderStageHandler,
 ): Promise<InitializationProviderSelection> {
   if (await exists(path)) {
-    const module = await importConfiguredOpenBot(
+    const module = await importConfiguredDispatch(
       path,
       initializationDiscoveryEnvironment(environment ?? process.env),
     );
     if (!module.default)
-      throw new Error("configuration/index.ts must export the OpenBot configuration as default");
+      throw new Error("configuration/index.ts must export the Dispatch configuration as default");
     const currentGroups = configuredInitializationProviderGroups(module.default);
     const currentProviders = [
       ...currentGroups.runtime,
@@ -1493,7 +1497,7 @@ export async function selectInitializationProviders(
     const currentInference = configuredInferenceChoice(module.default);
     const runtime = await selectProviderChoice(
       prompts,
-      "Where should OpenBot run?",
+      "Where should Dispatch run?",
       "runtime",
       runtimeChoices,
       currentRuntime,
@@ -1503,7 +1507,7 @@ export async function selectInitializationProviders(
     if (runtimeChanged) {
       if (runtime === "current" || !currentRuntime || !currentInference)
         throw new Error(
-          "OpenBot cannot automatically rewrite a custom provider composition. Keep the current selections or edit configuration/index.ts explicitly.",
+          "Dispatch cannot automatically rewrite a custom provider composition. Keep the current selections or edit configuration/index.ts explicitly.",
         );
       await assertCanonicalBuiltInConfiguration(path, currentRuntime, currentInference);
     }
@@ -1515,7 +1519,7 @@ export async function selectInitializationProviders(
 
     const inference = await selectProviderChoice(
       prompts,
-      "How should OpenBot run inference?",
+      "How should Dispatch run inference?",
       "inference",
       inferenceChoices,
       currentInference,
@@ -1525,7 +1529,7 @@ export async function selectInitializationProviders(
     if (inferenceChanged) {
       if (inference === "current" || !currentRuntime || !currentInference)
         throw new Error(
-          "OpenBot cannot automatically rewrite a custom provider composition. Keep the current selections or edit configuration/index.ts explicitly.",
+          "Dispatch cannot automatically rewrite a custom provider composition. Keep the current selections or edit configuration/index.ts explicitly.",
         );
       if (!runtimeChanged)
         await assertCanonicalBuiltInConfiguration(path, currentRuntime, currentInference);
@@ -1550,7 +1554,7 @@ export async function selectInitializationProviders(
       };
     if (runtime === "current" || inference === "current")
       throw new Error(
-        "OpenBot cannot automatically rewrite a custom provider composition. Keep the current selections or edit configuration/index.ts explicitly.",
+        "Dispatch cannot automatically rewrite a custom provider composition. Keep the current selections or edit configuration/index.ts explicitly.",
       );
     return {
       providers: [
@@ -1564,7 +1568,7 @@ export async function selectInitializationProviders(
       configurationSource: await renderBuiltInConfiguration(runtime, inference),
     };
   }
-  const runtime = await prompts.select("Where do you want to deploy OpenBot?", runtimeChoices, {
+  const runtime = await prompts.select("Where do you want to deploy Dispatch?", runtimeChoices, {
     id: "runtime",
     initialValue: "vercel",
   });
@@ -1578,7 +1582,7 @@ export async function selectInitializationProviders(
   const runtimeProviders = builtInRuntimeProviderGroup(runtime);
   await onSelected?.({ domain: "runtime", providers: runtimeProviders });
   const inference = await prompts.select(
-    "How should OpenBot run inference?",
+    "How should Dispatch run inference?",
     inferenceChoicesForRuntime(runtime),
     {
       id: "inference",
@@ -1668,17 +1672,17 @@ function initializationDiscoveryEnvironment(environment: NodeJS.ProcessEnv): Nod
   for (const providers of selections) {
     for (const initialization of collectProviderInitializations(providers)) {
       for (const question of initialization.questions) {
-        result[question.destination.key] ??= `openbot-initialization-${question.id}`;
+        result[question.destination.key] ??= `dispatch-initialization-${question.id}`;
       }
     }
   }
   return result;
 }
 
-async function importConfiguredOpenBot(
+async function importConfiguredDispatch(
   path: string,
   environment: NodeJS.ProcessEnv,
-): Promise<{ default?: OpenBotConfiguration }> {
+): Promise<{ default?: DispatchConfiguration }> {
   return loadConfigurationModule(path, environment);
 }
 
@@ -1743,7 +1747,7 @@ function inferenceTemplateFiles(providers: readonly InitializableProvider[]) {
   });
   if (contributions.length > 1)
     throw new Error(
-      `OpenBot supports one inference agent template contribution; found ${contributions.length}`,
+      `Dispatch supports one inference agent template contribution; found ${contributions.length}`,
     );
   return contributions[0]?.files ?? [];
 }
@@ -2003,7 +2007,7 @@ function uniqueInitializationQuestions(
   return [...result.values()];
 }
 
-function configuredInitializationProviderGroups(configuration: OpenBotConfiguration): {
+function configuredInitializationProviderGroups(configuration: DispatchConfiguration): {
   runtime: InitializableProvider[];
   inference: InitializableProvider[];
   shared: InitializableProvider[];
@@ -2026,7 +2030,7 @@ function configuredInitializationProviderGroups(configuration: OpenBotConfigurat
 }
 
 export function configuredRuntimeChoice(
-  configuration: OpenBotConfiguration,
+  configuration: DispatchConfiguration,
 ): RuntimeChoice | undefined {
   if (configuration.providers.controlService !== configuration.providers.agentService)
     return undefined;
@@ -2059,7 +2063,7 @@ export function configuredRuntimeChoice(
 }
 
 function configuredInferenceChoice(
-  configuration: OpenBotConfiguration,
+  configuration: DispatchConfiguration,
 ): InferenceChoice | undefined {
   switch (constructorName(configuration.providers.inference)) {
     case "VercelInferenceProvider":
@@ -2219,7 +2223,7 @@ const macKeychainStoreProgram = `
 import Foundation
 import Security
 let data = FileHandle.standardInput.readDataToEndOfFile()
-let deleteQuery: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: "ai.openbot.sops", kSecAttrAccount as String: "owner"]
+let deleteQuery: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: "ai.dispatch.sops", kSecAttrAccount as String: "owner"]
 SecItemDelete(deleteQuery as CFDictionary)
 var addQuery = deleteQuery
 addQuery[kSecValueData as String] = data
@@ -2257,7 +2261,7 @@ export const processCommandRunner: InitializationCommandRunner = {
     });
   },
   async runWithInputFile(command, args, options) {
-    const directory = await mkdtemp(resolve(tmpdir(), "openbot-sops-"));
+    const directory = await mkdtemp(resolve(tmpdir(), "dispatch-sops-"));
     const pipe = resolve(directory, "input");
     try {
       await processCommandRunner.run("mkfifo", [pipe], {

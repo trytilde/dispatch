@@ -2,8 +2,8 @@
 
 ## In brief
 
-- OpenBot owns token values. Vendored `globals.css` owns the utility mapping. No edit inside `beautiful-ui/upstream/`.
-- Override by import order. `openbot-ui.css` after `beautiful-ui.css`. Provenance hashes stay valid.
+- Dispatch owns token values. Vendored `globals.css` owns the utility mapping. No edit inside `beautiful-ui/upstream/`.
+- Override by import order. `dispatch-ui.css` after `beautiful-ui.css`. Provenance hashes stay valid.
 - Tokens are semantic, not chromatic: `--page`, `--canvas`, `--surface`, `--inset`, `--ink`/`-2`/`-3`, `--line`/`--line-strong`, `--hover`/`--hover-2`. No `--grey-400`.
 - Hover and selected fills are alpha on grey, not solid greys. They hold on any surface.
 - Theming is class-based: `.dark` plus `color-scheme` on `documentElement`, set by `theme.ts`. Never `prefers-color-scheme` alone — a media query cannot express an explicit override.
@@ -16,7 +16,7 @@
 ## Context
 
 The vendored Beautiful UI stylesheet already maps every Tailwind utility onto raw custom properties,
-so whoever sets those properties owns the product's entire visual identity. That should be OpenBot,
+so whoever sets those properties owns the product's entire visual identity. That should be Dispatch,
 not the vendor — but ADR-0022 requires `beautiful-ui/upstream/` to stay byte-pristine, because its
 per-file SHA-256 values are the provenance evidence. Editing the vendored `globals.css` to change a
 color would invalidate them.
@@ -31,8 +31,8 @@ quietly losing to a reset, with nothing failing.
 
 ## Decision
 
-OpenBot owns token values; the vendored stylesheet keeps owning the utility mapping. The values are
-overridden by import order — `openbot-ui.css` imported after `beautiful-ui.css` — never by editing
+Dispatch owns token values; the vendored stylesheet keeps owning the utility mapping. The values are
+overridden by import order — `dispatch-ui.css` imported after `beautiful-ui.css` — never by editing
 inside `beautiful-ui/upstream/`. That keeps ADR-0022's provenance hashes valid.
 
 Tokens are semantic rather than chromatic. `--page`, `--canvas`, `--surface`, `--inset`, the `--ink`
@@ -51,7 +51,7 @@ Element resets live in `@layer base`.
 ```mermaid
 flowchart LR
   V["beautiful-ui/upstream/globals.css\n@theme inline mapping"] --> U["Tailwind utilities"]
-  C["openbot-ui.css\ntoken values, :root and .dark"] -->|"later import wins"| U
+  C["dispatch-ui.css\ntoken values, :root and .dark"] -->|"later import wins"| U
   T["theme.ts"] -->|".dark + color-scheme"| R["documentElement"]
   R --> C
 ```

@@ -42,11 +42,11 @@ describe("onboarding state", () => {
   });
 
   it("treats malformed stored state as not onboarded rather than throwing", async () => {
-    expect(await loadOnboarding(memoryStorage({ "openbot.onboarding": "{not json" }))).toEqual({
+    expect(await loadOnboarding(memoryStorage({ "dispatch.onboarding": "{not json" }))).toEqual({
       completed: false,
     });
     expect(
-      await loadOnboarding(memoryStorage({ "openbot.onboarding": '{"completed":"yes"}' })),
+      await loadOnboarding(memoryStorage({ "dispatch.onboarding": '{"completed":"yes"}' })),
     ).toEqual({ completed: false });
   });
 

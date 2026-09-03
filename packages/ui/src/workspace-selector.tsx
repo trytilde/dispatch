@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ClientWorkspace } from "@tryopenbot/client-runtime";
+import type { ClientWorkspace } from "@trytilde/dispatch-client-runtime";
 import { ChevronRightIcon } from "lucide-react";
 import { AgentAvatar } from "./agent-avatar.js";
 import { Dialog, DialogContent, DialogTitle } from "./components/ui/dialog.js";
@@ -69,7 +69,7 @@ export function WorkspaceSelector({
         {presentation === "dialog" ? (
           <div className="workspace-selector-heading">
             <span>Add a workspace</span>
-            <small>Name it and enter its OpenBot control server URL.</small>
+            <small>Name it and enter its Dispatch control server URL.</small>
           </div>
         ) : null}
         <div className="workspace-selector-fields">
@@ -91,7 +91,7 @@ export function WorkspaceSelector({
               disabled={joining}
               id="workspace-control-origin"
               onChange={(event) => setOrigin(event.target.value)}
-              placeholder="https://openbot.example.com"
+              placeholder="https://dispatch.example.com"
               spellCheck={false}
               inputMode="url"
               type="text"

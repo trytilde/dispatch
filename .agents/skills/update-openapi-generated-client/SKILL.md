@@ -9,8 +9,8 @@ Use this when `/root/tilde-api/openapi.cloud.json` or a worktree OpenAPI file ch
 
 ## Process
 
-1. Run `pnpm openbot sdk refresh`.
-2. Run `pnpm openbot sdk validate`.
+1. Run `pnpm tilde sdk refresh`.
+2. Run `pnpm tilde sdk validate`.
 3. Inspect generated type diffs.
 4. Do not manually edit generated files.
 5. Update hand-authored wrappers only when operation names or schema shapes changed.

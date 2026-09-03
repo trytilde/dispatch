@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { SignalProvider } from "@tryopenbot/client-runtime";
+import type { SignalProvider } from "@trytilde/dispatch-client-runtime";
 import {
   eventEditorConfig,
   fieldValuesFromFilters,

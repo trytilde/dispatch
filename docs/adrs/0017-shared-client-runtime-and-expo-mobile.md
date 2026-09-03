@@ -10,7 +10,7 @@
 - Tilde REST and SSE stay wire authority. No duplicate server protocol package.
 - Mobile owns onboarding, workspace selection, auth, chat-list navigation, rich chat, prompt queues, attachments, and Computer take-over. No offline or background sending.
 - Runtime is mandatory for major UX surfaces and state interactions. Presentation-only state stays local.
-- assistant-ui native supplies transcript and composer behavior over the external OpenBot store. No second chat authority.
+- assistant-ui native supplies transcript and composer behavior over the external Dispatch store. No second chat authority.
 - BNA UI plus repository-owned native components supply mobile presentation. Tokens in `theme/colors.ts`.
 
 ## Context
@@ -23,10 +23,10 @@ APIs or reduce the native app to web-shaped UI.
 
 ## Decision
 
-`@tryopenbot/client-runtime` owns the framework-neutral owner-client boundary. Its contracts are
+`@trytilde/dispatch-client-runtime` owns the framework-neutral owner-client boundary. Its contracts are
 small Zod schemas and inferred types grouped by UI capability: installation, authentication,
 sidebar, messages, events, queue, attachments, and platform bridges. The schemas validate data where it enters the
-client. They describe what OpenBot UI needs from Tilde's existing REST/SSE wire shapes; they do not
+client. They describe what Dispatch UI needs from Tilde's existing REST/SSE wire shapes; they do not
 create a new control-service protocol or claim ownership of Tilde resources.
 
 The package also owns the fetch/SSE client, pure event reducers, auth adapter contract, and a
@@ -53,7 +53,7 @@ contract; Expo owns PKCE, SecureStore, navigation, native file selection, and Re
 Web and mobile therefore share contracts and behavior but render separate component trees.
 
 Before authentication, Expo asks the Owner for a control-service origin. It requires HTTPS outside
-loopback development, verifies the OpenBot health response, loads public native PKCE metadata from
+loopback development, verifies the Dispatch health response, loads public native PKCE metadata from
 `/auth/native-config`, and persists only the normalized origin in SecureStore. A service change
 clears installation-scoped credentials before creating a new runtime.
 
@@ -76,7 +76,7 @@ layer is reviewable, patchable, and diffable in this repository like any other c
 Native chat uses assistant-ui's React Native external-store runtime and primitives. assistant-ui
 owns transcript virtualization, message context, auto-scroll, and composer interaction only;
 `client-runtime` remains the sole source of messages, sessions, streaming state, attachments, and
-queued turns. Tilde remains wire and resource authority. OpenBot does not adopt Assistant Cloud;
+queued turns. Tilde remains wire and resource authority. Dispatch does not adopt Assistant Cloud;
 the `assistant-cloud` package is present only because assistant-ui's Metro bundle statically resolves
 that optional peer.
 

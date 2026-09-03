@@ -10,12 +10,12 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { discoverAgents } from "@tryopenbot/agent-service-provider";
+import { discoverAgents } from "@trytilde/dispatch-agent-service-provider";
 import { setImmediate } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { VercelAgentServiceProvider } from "@tryopenbot/agent-service-provider";
-import { CodexInferenceProvider } from "@tryopenbot/inference-provider";
-import { DeploymentOutputs } from "@tryopenbot/runtime-provider";
+import { VercelAgentServiceProvider } from "@trytilde/dispatch-agent-service-provider";
+import { CodexInferenceProvider } from "@trytilde/dispatch-inference-provider";
+import { DeploymentOutputs } from "@trytilde/dispatch-runtime-provider";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import {
   agentIdFromName,
@@ -61,8 +61,8 @@ describe("agent scaffolding", () => {
     expect(agentSource).not.toContain("runtime-providers");
     expect(agentSource).toContain("context.mcp.connect");
     expect(agentSource).not.toContain("createMCPClient({");
-    expect(agentSource).not.toContain("@tryopenbot/agent-provider");
-    expect(agentSource).not.toContain("@tryopenbot/tools-provider");
+    expect(agentSource).not.toContain("@trytilde/dispatch-agent-provider");
+    expect(agentSource).not.toContain("@trytilde/dispatch-tools-provider");
     expect(agentSource).toContain("AGENT_RESEARCH_ASSISTANT_MCP_SERVER_ID");
     expect(agentSource).toContain("tools: await localTools(sessionId)");
     expect(agentSource).toContain("createCuaTools");
@@ -89,7 +89,7 @@ describe("agent scaffolding", () => {
     expect(agentSource).not.toContain("TILDE_BASE_URL");
     expect(agentSource).toContain("prepareInference(tools, request.signal, jobModelId)");
     expect(agentSource).toContain("HostedInferenceBillingController");
-    expect(agentSource).toContain("OPENBOT_HOSTED_INFERENCE_BILLING");
+    expect(agentSource).toContain("DISPATCH_HOSTED_INFERENCE_BILLING");
     expect(agentSource).toContain("onLanguageModelCallStart");
     expect(agentSource).toContain("onLanguageModelCallEnd");
     expect(agentSource).toContain("inferenceBilling.preflight");
@@ -158,10 +158,10 @@ describe("agent scaffolding", () => {
     );
     expect(
       await readFile(join(root, "configuration/agent/skills/create-agent/SKILL.md"), "utf8"),
-    ).toContain('pnpm openbot new-agent "<display name>"');
+    ).toContain('pnpm tilde new-agent "<display name>"');
     expect(
-      await readFile(join(root, "configuration/agent/skills/develop-openbot/SKILL.md"), "utf8"),
-    ).toContain("openbot/sandbox-edits");
+      await readFile(join(root, "configuration/agent/skills/develop-dispatch/SKILL.md"), "utf8"),
+    ).toContain("dispatch/sandbox-edits");
     // Factory-only skills never scaffold into subagents; subagents get self-edit instead.
     await expect(access(join(directory, "skills/create-agent/SKILL.md"))).rejects.toMatchObject({
       code: "ENOENT",
@@ -236,7 +236,7 @@ describe("agent scaffolding", () => {
     expect(catcherSource).toContain('message.role !== "system"');
     expect(catcherSource).toContain("messages: context.messages");
     expect(catcherSource).not.toContain("context.session.history()");
-    expect(catcherSource).toContain("OPENBOT_HOSTED_INFERENCE_BILLING");
+    expect(catcherSource).toContain("DISPATCH_HOSTED_INFERENCE_BILLING");
     expect(catcherSource).toContain("onLanguageModelCallStart");
     expect(catcherSource).toContain("failForReconciliation");
     expect(catcherSource).not.toContain('model: "zai/glm-5.3-flash"');
@@ -297,7 +297,7 @@ describe("agent scaffolding", () => {
 
   it("accepts an inference-provider contribution for future agents", async () => {
     const workspaceRoot = fileURLToPath(new URL("../../", import.meta.url));
-    const root = await mkdtemp(join(workspaceRoot, ".openbot-agent-typecheck-"));
+    const root = await mkdtemp(join(workspaceRoot, ".dispatch-agent-typecheck-"));
     temporaryDirectories.push(root);
     await Promise.all(
       ["tsconfig.base.json", "tsconfig.node.json"].map((name) =>
@@ -350,13 +350,13 @@ describe("agent scaffolding", () => {
   it("requires init to seed the fork-owned agent template", async () => {
     const root = await temporaryRepository();
     await expect(scaffoldPrimaryAgent(root, "Factory")).rejects.toThrow(
-      `${agentTemplateDirectory} is missing; run openbot init`,
+      `${agentTemplateDirectory} is missing; run tilde init`,
     );
   });
 
   it("materializes a primary agent accepted by the real agent-service typecheck", async () => {
     const workspaceRoot = fileURLToPath(new URL("../../", import.meta.url));
-    const root = await mkdtemp(join(workspaceRoot, ".openbot-agent-typecheck-"));
+    const root = await mkdtemp(join(workspaceRoot, ".dispatch-agent-typecheck-"));
     temporaryDirectories.push(root);
     await Promise.all(
       ["tsconfig.base.json", "tsconfig.node.json"].map((name) =>
@@ -398,7 +398,7 @@ describe("agent scaffolding", () => {
 });
 
 async function temporaryRepository(): Promise<string> {
-  const path = await mkdtemp(join(tmpdir(), "openbot-agent-scaffold-"));
+  const path = await mkdtemp(join(tmpdir(), "dispatch-agent-scaffold-"));
   temporaryDirectories.push(path);
   return path;
 }

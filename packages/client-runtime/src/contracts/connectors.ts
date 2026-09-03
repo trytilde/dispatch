@@ -171,7 +171,7 @@ function asRecordValue(value: unknown): Record<string, unknown> {
 
 /**
  * The universal OAuth return target served by the control service. Passing the
- * client kind lets the landing page bounce desktop flows to the openbot://
+ * client kind lets the landing page bounce desktop flows to the dispatch://
  * deep link while browser flows simply close the tab.
  */
 export function connectorAuthorizedReturnUrl(origin: string, client: "web" | "electron"): string {

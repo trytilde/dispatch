@@ -1,11 +1,11 @@
 ---
-"@tryopenbot/control-service-provider": minor
-"@tryopenbot/agent-service-provider": minor
-"@tryopenbot/runtime-provider": minor
-"openbot": patch
-"@tryopenbot/configuration": patch
-"@tryopenbot/agent-provider": patch
-"@tryopenbot/computer-service-provider": patch
+"@trytilde/dispatch-control-service-provider": minor
+"@trytilde/dispatch-agent-service-provider": minor
+"@trytilde/dispatch-runtime-provider": minor
+"@trytilde/cli": patch
+"@trytilde/dispatch-configuration": patch
+"@trytilde/dispatch-agent-provider": patch
+"@trytilde/dispatch-computer-service-provider": patch
 ---
 
 Add one-command provider lifecycle deployment with separate control and agent

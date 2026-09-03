@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { parseTildeArgs, tildeHelpText } from "./tilde.js";
 
-describe("OpenBot Tilde commands", () => {
+describe("Tilde commands", () => {
   it("parses authentication and state migration commands", () => {
     expect(parseTildeArgs(["auth", "whoami", "--base-url", "https://api.test"])).toMatchObject({
       authAction: "whoami",
@@ -19,8 +19,7 @@ describe("OpenBot Tilde commands", () => {
     });
   });
 
-  it("uses only the OpenBot command surface", () => {
-    expect(tildeHelpText()).toContain("Usage: openbot");
-    expect(tildeHelpText()).not.toContain("Usage: tilde");
+  it("uses the Tilde command surface", () => {
+    expect(tildeHelpText()).toContain("Usage: tilde");
   });
 });

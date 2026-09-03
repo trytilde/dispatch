@@ -9,7 +9,7 @@ import { recordOpenCodeHook } from "@trytilde/sdk-opencode";
 await recordOpenCodeHook({ client, agentId, input: pluginPayload });
 ```
 
-Use `openbot plugin --cli opencode` to install the fail-open OpenCode plugin, Tilde MCP
+Use `tilde plugin --cli opencode` to install the fail-open OpenCode plugin, Tilde MCP
 servers, and skills.
 
 ## Public API

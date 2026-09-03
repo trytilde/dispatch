@@ -1,5 +1,5 @@
 {
-  "name": "@tryopenbot/git-provider",
+  "name": "@trytilde/dispatch-git-provider",
   "version": "0.1.0",
   "files": [
     "dist",
@@ -32,9 +32,9 @@
   },
   "dependencies": {
     "@pierre/storage": "1.16.2",
-    "@tryopenbot/platform-integrations": "workspace:*",
-    "@tryopenbot/runtime-provider": "workspace:*",
     "@trytilde/api-client": "workspace:*",
+    "@trytilde/dispatch-platform-integrations": "workspace:*",
+    "@trytilde/dispatch-runtime-provider": "workspace:*",
     "@trytilde/sdk": "workspace:*"
   },
   "devDependencies": {

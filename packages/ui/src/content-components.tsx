@@ -223,15 +223,15 @@ export function DiagramCard({
   const [copied, setCopied] = useState(false);
   return (
     <>
-      <section className="diagram-card ob-code-block" data-state={state}>
-        <div className="diagram-card-actions ob-code-block-copy-overlay">
+      <section className="diagram-card dispatch-code-block" data-state={state}>
+        <div className="diagram-card-actions dispatch-code-block-copy-overlay">
           <button aria-label="Expand diagram" onClick={() => setExpanded(true)} type="button">
             ↗
           </button>
           {onCopy ? (
             <button
               aria-label={copied ? "Copied" : "Copy code"}
-              className="ob-code-block-copy"
+              className="dispatch-code-block-copy"
               onClick={() => {
                 onCopy(source);
                 setCopied(true);
@@ -260,11 +260,14 @@ export function DiagramCard({
 
 function DiagramContent({ state, source, error, children }: DiagramCardProps) {
   if (state === "loading")
-    return <div className="diagram-loading ob-mermaid-diagram">Rendering diagram...</div>;
+    return <div className="diagram-loading dispatch-mermaid-diagram">Rendering diagram...</div>;
   if (state === "error") {
     return (
-      <div className="diagram-error ob-mermaid-diagram ob-mermaid-diagram__error" role="alert">
-        <strong className="ob-mermaid-diagram__error-header">
+      <div
+        className="diagram-error dispatch-mermaid-diagram dispatch-mermaid-diagram__error"
+        role="alert"
+      >
+        <strong className="dispatch-mermaid-diagram__error-header">
           <span aria-hidden="true">⚠</span> Diagram Syntax Error
         </strong>
         <details>
@@ -276,7 +279,9 @@ function DiagramContent({ state, source, error, children }: DiagramCardProps) {
     );
   }
   return (
-    <div className="diagram-content ob-mermaid-diagram ob-mermaid-diagram__content">{children}</div>
+    <div className="diagram-content dispatch-mermaid-diagram dispatch-mermaid-diagram__content">
+      {children}
+    </div>
   );
 }
 
@@ -297,7 +302,7 @@ function DiagramModal({ children, onClose }: { children: ReactNode; onClose: () 
 
   return (
     <div aria-label="Diagram" aria-modal="true" className="diagram-modal" role="dialog">
-      <div className="diagram-modal-controls ob-expandable-node__modal-controls">
+      <div className="diagram-modal-controls dispatch-expandable-node__modal-controls">
         <button
           aria-label="Zoom in"
           onClick={() =>
@@ -322,7 +327,7 @@ function DiagramModal({ children, onClose }: { children: ReactNode; onClose: () 
         </button>
       </div>
       <div
-        className="diagram-modal-viewport ob-expandable-node__modal-viewport"
+        className="diagram-modal-viewport dispatch-expandable-node__modal-viewport"
         onPointerDown={startDrag}
         onPointerMove={(event) => {
           const drag = dragRef.current;
@@ -344,7 +349,7 @@ function DiagramModal({ children, onClose }: { children: ReactNode; onClose: () 
         }}
       >
         <div
-          className="diagram-modal-content ob-expandable-node__transform-content"
+          className="diagram-modal-content dispatch-expandable-node__transform-content"
           style={{
             transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
           }}

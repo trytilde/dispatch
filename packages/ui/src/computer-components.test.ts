@@ -19,7 +19,7 @@ describe("getComputerRebuildProgress", () => {
       "pending",
       "pending",
     ]);
-    expect(progress.steps[2]?.label).toBe("Recreating OpenBot's computer");
+    expect(progress.steps[2]?.label).toBe("Recreating Dispatch's computer");
   });
 
   it("keeps a reset cleanup after the migrated data steps", () => {
@@ -45,8 +45,8 @@ describe("getComputerRebuildProgress", () => {
     expect(progress.progress).toBe(3 / 4);
     expect(progress.steps.map((step) => step.label)).toEqual([
       "Getting ready",
-      "Recreating OpenBot's computer",
-      "Starting OpenBot's computer",
+      "Recreating Dispatch's computer",
+      "Starting Dispatch's computer",
       "Reconnecting",
     ]);
   });

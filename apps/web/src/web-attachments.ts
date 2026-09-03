@@ -2,8 +2,8 @@ import type {
   Attachment,
   AttachmentCompletion,
   ChatPart,
-  OpenBotClient,
-} from "@tryopenbot/client-runtime";
+  DispatchClient,
+} from "@trytilde/dispatch-client-runtime";
 
 export interface PendingFile {
   id: string;
@@ -22,7 +22,7 @@ export interface UploadedAttachment {
 }
 
 export async function uploadAttachments(
-  client: OpenBotClient,
+  client: DispatchClient,
   sessionId: string,
   files: File[],
   onProgress: (index: number, progress: number) => void,

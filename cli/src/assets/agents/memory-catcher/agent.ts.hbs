@@ -52,14 +52,14 @@ export default chatKitEndpoint({
           agentId: {{{AGENT_ID_JSON}}},
           webhookId: context.webhookId,
           messages: context.messages,
-          billingEnabled: process.env.OPENBOT_HOSTED_INFERENCE_BILLING === "1",
+          billingEnabled: process.env.DISPATCH_HOSTED_INFERENCE_BILLING === "1",
           validateBatch: (input) =>
             client.memory.synthesisSession(context.sessionId).validateBatch(input),
           estimatedCostMicrousd: positiveIntegerEnv(
-            "OPENBOT_HOSTED_INFERENCE_RESERVE_MICROUSD",
+            "DISPATCH_HOSTED_INFERENCE_RESERVE_MICROUSD",
             250_000,
           ),
-          tags: ["hosted-openbot", "agent:memory-catcher", "purpose:memory-synthesis"],
+          tags: ["hosted-dispatch", "agent:memory-catcher", "purpose:memory-synthesis"],
         });
       } catch (error) {
         await mcp.closeMcp();

@@ -10,19 +10,19 @@
 
 ## Context
 
-Tilde owns agents, ChatKit sessions, messages, and agent execution, while OpenBot owns the
+Tilde owns agents, ChatKit sessions, messages, and agent execution, while Dispatch owns the
 owner-facing workspace. The original reset shell had no chat transport, so a running or deployed
 installation could provision an agent without letting its owner converse with it.
 
 ## Decision
 
-OpenBot clients call `/api/chat/*` using Tilde's resource shapes directly. Web and packaged desktop use the same-origin route; mobile uses the installation's absolute HTTPS origin. Hono maps only the ChatKit team subtree, the configured organization/team root attachment subtree, and validated signed attachment uploads. It forwards raw request bodies and response streams, removes browser-supplied credentials and hop-by-hop headers, injects the configured Tilde credentials, disables caching, and preserves upstream status codes and content types.
+Dispatch clients call `/api/chat/*` using Tilde's resource shapes directly. Web and packaged desktop use the same-origin route; mobile uses the installation's absolute HTTPS origin. Hono maps only the ChatKit team subtree, the configured organization/team root attachment subtree, and validated signed attachment uploads. It forwards raw request bodies and response streams, removes browser-supplied credentials and hop-by-hop headers, injects the configured Tilde credentials, disables caching, and preserves upstream status codes and content types.
 
-The bridge does not accept tenant overrides and cannot proxy arbitrary Tilde control-plane APIs. Tilde remains authoritative for agents, sessions, messages, attachments, queues, events, and interruption. OpenBot keeps no duplicate conversation contract or state. Local Vite, packaged desktop, local production, and the Vercel control Function all route the same `/api/*` surface to Hono.
+The bridge does not accept tenant overrides and cannot proxy arbitrary Tilde control-plane APIs. Tilde remains authoritative for agents, sessions, messages, attachments, queues, events, and interruption. Dispatch keeps no duplicate conversation contract or state. Local Vite, packaged desktop, local production, and the Vercel control Function all route the same `/api/*` surface to Hono.
 
 Agent responses still execute through the Agent Provider-managed endpoint, whether that endpoint is a development tunnel or the deployed agent service.
 
-OpenBot also needs owner-visible activity for agents whose conversations are not currently open. The
+Dispatch also needs owner-visible activity for agents whose conversations are not currently open. The
 client runtime obtains a short-lived, single-use ChatKit workspace ticket from the authenticated control
 service, then connects directly to Tilde's documented WebSocket. The exchange forwards the current
 owner bearer token server-to-server; browser JavaScript never receives it. Web and Electron request a
@@ -40,14 +40,14 @@ separates client ping, server control frames, and typed domain events into disti
 retaining the single physical channel. The direct socket forwards the client's last applied durable
 revision as `after_revision`, so a reconnect replays events produced while the client was offline.
 The framework-neutral client runtime owns heartbeat, revision cursors, capped exponential reconnect
-backoff with jitter, strict discriminated-union parsing, and direct event reduction. Tilde sends a ready barrier with the current revision; OpenBot
+backoff with jitter, strict discriminated-union parsing, and direct event reduction. Tilde sends a ready barrier with the current revision; Dispatch
 refreshes authoritative sidebar and selected-session state before advancing that cursor, closing the
 initial REST-to-WebSocket race. Event cursors advance only after client reconciliation succeeds.
 Selecting a conversation updates Tilde's per-user session read state; the resulting targeted event
 synchronizes that owner's other clients without placing unread state on the shared session.
 
-The replacement is an intentional hard cutover. OpenBot retains no old route, ticket, protocol,
-frame, payload, or parser alias. API and OpenBot deployments move and roll back together.
+The replacement is an intentional hard cutover. Dispatch retains no old route, ticket, protocol,
+frame, payload, or parser alias. API and Dispatch deployments move and roll back together.
 
 ```mermaid
 flowchart LR
@@ -66,7 +66,7 @@ flowchart LR
 
 - Conversation state remains authoritative in the Tilde Team.
 - Control deployments route `/api/*` to the Hono Function and keep credentials server-side.
-- Tilde status codes, JSON bodies, attachment bytes, and SSE frames cross without an OpenBot projection layer.
+- Tilde status codes, JSON bodies, attachment bytes, and SSE frames cross without a Dispatch projection layer.
 - The bridge is intentionally Tilde-specific; a second chat backend requires a new product decision rather than a generic provider contract in advance.
 - The control service no longer holds one upstream WebSocket per browser; its retained role is the
   owner-authorized ticket exchange and the existing REST/SSE compatibility bridge.

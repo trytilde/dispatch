@@ -45,7 +45,7 @@ export async function createCliRunLog({
   randomId?: string;
   redact?: (value: string) => string;
 } = {}): Promise<CliRunLog> {
-  const directory = join(homeDirectory, ".openbot", "logs");
+  const directory = join(homeDirectory, ".dispatch", "logs");
   await mkdir(directory, { recursive: true, mode: 0o700 });
   await chmod(directory, 0o700);
   await removeExpiredLogs(directory, now);
@@ -97,7 +97,7 @@ export async function createCliRunLog({
     },
   };
 
-  log.write("system", "OpenBot CLI run started", {
+  log.write("system", "Tilde CLI run started", {
     command: process.argv[2] ?? "interactive",
     cwd: process.cwd(),
     node: process.version,

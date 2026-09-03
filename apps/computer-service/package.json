@@ -1,8 +1,8 @@
 {
-  "name": "@tryopenbot/computer-service",
+  "name": "@trytilde/dispatch-computer-service",
   "version": "0.1.0",
   "bin": {
-    "openbot-computer-service": "./dist/index.js"
+    "dispatch-computer-service": "./dist/index.js"
   },
   "files": [
     "dist",
@@ -28,8 +28,8 @@
     "@connectrpc/connect": "2.1.2",
     "@connectrpc/connect-node": "2.1.2",
     "@trycua/cua-driver": "0.21.0",
-    "@tryopenbot/computer-service-proto": "workspace:*",
-    "@tryopenbot/utilities": "workspace:*"
+    "@trytilde/dispatch-computer-service-proto": "workspace:*",
+    "@trytilde/dispatch-utilities": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

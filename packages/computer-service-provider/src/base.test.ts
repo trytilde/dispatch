@@ -12,7 +12,7 @@ import type {
   ComputerSpec,
   ComputerProvider,
 } from "./core/index.js";
-import { DeploymentOutputs } from "@tryopenbot/runtime-provider";
+import { DeploymentOutputs } from "@trytilde/dispatch-runtime-provider";
 import { computerImageAssets } from "./base/assets.js";
 import { developmentSandboxSourceFiles } from "./base/development.js";
 import {
@@ -47,7 +47,7 @@ class TestVercelSandboxComputerProvider extends VercelSandboxComputerProvider {
       spec: Parameters<BaseComputerProvider["publishImage"]>[1],
     ) => ({
       ...image,
-      reference: `${spec.repository}:openbot-computer-${image.sourceDigest.slice(7, 19)}`,
+      reference: `${spec.repository}:dispatch-computer-${image.sourceDigest.slice(7, 19)}`,
       publishedAt: new Date(0),
     }),
   );
@@ -85,7 +85,7 @@ class TestComputerProvider extends BaseComputerProvider {
   }
   constructor(
     imageDeployment: ComputerImageDeploymentConfig = {
-      repository: "registry.test/openbot-computer",
+      repository: "registry.test/dispatch-computer",
     },
   ) {
     super(imageDeployment);
@@ -186,7 +186,7 @@ describe("computer preview diagnostics", () => {
     });
 
     expect(info).toHaveBeenCalledWith(
-      "[openbot-vnc] provider endpoint ready",
+      "[dispatch-vnc] provider endpoint ready",
       expect.objectContaining({
         agentId: "hello-world",
         computerId: "computer-one",
@@ -215,9 +215,9 @@ describe("Microsandbox port attachment", () => {
     expect(publishedHostPort(config, 9999)).toBe(0);
     expect(
       configuredImageReference({
-        image: { Oci: { reference: "openbot/computer:latest" } },
+        image: { Oci: { reference: "dispatch/computer:latest" } },
       }),
-    ).toBe("openbot/computer:latest");
+    ).toBe("dispatch/computer:latest");
   });
 });
 
@@ -252,7 +252,7 @@ describe("agent workspace deployment", () => {
 
     expect(provider.exec).toHaveBeenCalledWith(
       "computer",
-      { command: "test", args: ["-f", "/workspace/hello-world/.openbot-agent"] },
+      { command: "test", args: ["-f", "/workspace/hello-world/.dispatch-agent"] },
       expect.any(Object),
     );
     expect(provider.exec).toHaveBeenCalledWith(
@@ -275,7 +275,7 @@ describe("agent workspace deployment", () => {
 
 describe("development sandbox source", () => {
   it("skips tracked files that are absent from the working tree", async () => {
-    const repositoryRoot = await mkdtemp(join(tmpdir(), "openbot-computer-source-"));
+    const repositoryRoot = await mkdtemp(join(tmpdir(), "dispatch-computer-source-"));
     try {
       await execute("git", ["init"], { cwd: repositoryRoot });
       await writeFile(join(repositoryRoot, "present.txt"), "present");
@@ -285,7 +285,7 @@ describe("development sandbox source", () => {
 
       await expect(developmentSandboxSourceFiles(repositoryRoot)).resolves.toEqual([
         {
-          path: "openbot/present.txt",
+          path: "dispatch/present.txt",
           content: new TextEncoder().encode("present"),
         },
       ]);
@@ -295,7 +295,7 @@ describe("development sandbox source", () => {
   });
 
   it("preserves tracked symlinks so the sandbox keeps the repository layout", async () => {
-    const repositoryRoot = await mkdtemp(join(tmpdir(), "openbot-computer-link-"));
+    const repositoryRoot = await mkdtemp(join(tmpdir(), "dispatch-computer-link-"));
     try {
       await execute("git", ["init"], { cwd: repositoryRoot });
       await mkdir(join(repositoryRoot, ".agents/skills"), { recursive: true });
@@ -308,12 +308,12 @@ describe("development sandbox source", () => {
 
       await expect(developmentSandboxSourceFiles(repositoryRoot)).resolves.toEqual([
         {
-          path: "openbot/.agents/skills/tilde.md",
+          path: "dispatch/.agents/skills/tilde.md",
           content: new TextEncoder().encode("skill"),
         },
-        { path: "openbot/.claude/skills", target: "../.agents/skills" },
-        { path: "openbot/AGENTS.md", content: new TextEncoder().encode("guide") },
-        { path: "openbot/CLAUDE.md", target: "AGENTS.md" },
+        { path: "dispatch/.claude/skills", target: "../.agents/skills" },
+        { path: "dispatch/AGENTS.md", content: new TextEncoder().encode("guide") },
+        { path: "dispatch/CLAUDE.md", target: "AGENTS.md" },
       ]);
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });
@@ -321,8 +321,8 @@ describe("development sandbox source", () => {
   });
 
   it("skips tracked gitlinks instead of treating them as source files", async () => {
-    const repositoryRoot = await mkdtemp(join(tmpdir(), "openbot-computer-gitlink-"));
-    const dependencyRoot = await mkdtemp(join(tmpdir(), "openbot-computer-dependency-"));
+    const repositoryRoot = await mkdtemp(join(tmpdir(), "dispatch-computer-gitlink-"));
+    const dependencyRoot = await mkdtemp(join(tmpdir(), "dispatch-computer-dependency-"));
     try {
       await execute("git", ["init"], { cwd: repositoryRoot });
       await execute("git", ["init"], { cwd: dependencyRoot });
@@ -330,7 +330,15 @@ describe("development sandbox source", () => {
       await execute("git", ["add", "README.md"], { cwd: dependencyRoot });
       await execute(
         "git",
-        ["-c", "user.name=OpenBot", "-c", "user.email=openbot@example.com", "commit", "-m", "seed"],
+        [
+          "-c",
+          "user.name=Dispatch",
+          "-c",
+          "user.email=dispatch@example.com",
+          "commit",
+          "-m",
+          "seed",
+        ],
         { cwd: dependencyRoot },
       );
       await execute(
@@ -348,7 +356,7 @@ describe("development sandbox source", () => {
       await execute("git", ["add", "-A"], { cwd: repositoryRoot });
 
       const files = await developmentSandboxSourceFiles(repositoryRoot);
-      expect(files.map(({ path }) => path)).toEqual(["openbot/.gitmodules"]);
+      expect(files.map(({ path }) => path)).toEqual(["dispatch/.gitmodules"]);
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });
       await rm(dependencyRoot, { recursive: true, force: true });
@@ -356,7 +364,7 @@ describe("development sandbox source", () => {
   });
 
   it("refuses symlinks that would resolve outside the seeded repository", async () => {
-    const repositoryRoot = await mkdtemp(join(tmpdir(), "openbot-computer-escape-"));
+    const repositoryRoot = await mkdtemp(join(tmpdir(), "dispatch-computer-escape-"));
     try {
       await execute("git", ["init"], { cwd: repositoryRoot });
       await symlink("../outside", join(repositoryRoot, "escape"));
@@ -371,7 +379,7 @@ describe("development sandbox source", () => {
   });
 
   it("refuses absolute symlinks that would leak host paths into the sandbox", async () => {
-    const repositoryRoot = await mkdtemp(join(tmpdir(), "openbot-computer-absolute-"));
+    const repositoryRoot = await mkdtemp(join(tmpdir(), "dispatch-computer-absolute-"));
     try {
       await execute("git", ["init"], { cwd: repositoryRoot });
       await symlink("/etc/passwd", join(repositoryRoot, "absolute"));
@@ -472,7 +480,7 @@ describe("computer image lifecycle", () => {
         report: vi.fn(),
       }),
     ).resolves.toMatchObject({
-      summary: expect.stringContaining("OpenBot runtime project's Container Registry"),
+      summary: expect.stringContaining("Dispatch runtime project's Container Registry"),
     });
     expect(new MicrosandboxComputerProvider().initialization).toBeUndefined();
     const provider = new TestComputerProvider();
@@ -486,13 +494,13 @@ describe("computer image lifecycle", () => {
         report: vi.fn(),
       }),
     ).resolves.toMatchObject({
-      summary: expect.stringContaining("registry.test/openbot-computer"),
+      summary: expect.stringContaining("registry.test/dispatch-computer"),
     });
   });
 
   it("authenticates and creates the managed repository during image deployment", async () => {
     const request = vi.fn(
-      async () => new Response(JSON.stringify({ id: "team_123", slug: "tryopenbot" })),
+      async () => new Response(JSON.stringify({ id: "team_123", slug: "trydispatch" })),
     );
     const provider = new TestVercelSandboxComputerProvider({ request, projectRole: "runtime" });
     const inputs = new DeploymentOutputs();
@@ -501,14 +509,14 @@ describe("computer image lifecycle", () => {
         VERCEL_SANDBOX_IMAGE_CONTEXT: "/tmp/context",
         VERCEL_SANDBOX_IMAGE_DOCKERFILE: "/tmp/context/Containerfile",
         VERCEL_SANDBOX_IMAGE_LOCAL_REFERENCE:
-          "openbot/vercel-sandbox-computer:openbot-computer-aaaaaaaaaaaa",
+          "dispatch/vercel-sandbox-computer:dispatch-computer-aaaaaaaaaaaa",
         VERCEL_SANDBOX_IMAGE_SOURCE_DIGEST: `sha256:${"a".repeat(64)}`,
       },
     });
 
     const environment: NodeJS.ProcessEnv = {
       VERCEL_TEAM_ID: "team_123",
-      VERCEL_RUNTIME_PROJECT: "openbot-runtime",
+      VERCEL_RUNTIME_PROJECT: "dispatch-runtime",
       VERCEL_TOKEN: "vercel-secret",
     };
     const context = {
@@ -521,11 +529,11 @@ describe("computer image lifecycle", () => {
     await expect(provider.deployable.deploy(context)).resolves.toMatchObject({
       outputs: {
         VERCEL_SANDBOX_IMAGE_REFERENCE:
-          "vcr.vercel.com/tryopenbot/openbot-runtime/openbot-computer:openbot-computer-aaaaaaaaaaaa",
+          "vcr.vercel.com/trydispatch/dispatch-runtime/dispatch-computer:dispatch-computer-aaaaaaaaaaaa",
       },
     });
     expect(environment.VERCEL_COMPUTER_IMAGE).toBe(
-      "vcr.vercel.com/tryopenbot/openbot-runtime/openbot-computer:openbot-computer-aaaaaaaaaaaa",
+      "vcr.vercel.com/trydispatch/dispatch-runtime/dispatch-computer:dispatch-computer-aaaaaaaaaaaa",
     );
     expect(provider.login).toHaveBeenCalledWith(
       ["login", "vcr.vercel.com", "--username", "team_123", "--password-stdin"],
@@ -533,10 +541,10 @@ describe("computer image lifecycle", () => {
     );
     expect(provider.publishImage).toHaveBeenCalledWith(
       expect.objectContaining({
-        localReference: "openbot/vercel-sandbox-computer:openbot-computer-aaaaaaaaaaaa",
+        localReference: "dispatch/vercel-sandbox-computer:dispatch-computer-aaaaaaaaaaaa",
       }),
       expect.objectContaining({
-        repository: "vcr.vercel.com/tryopenbot/openbot-runtime/openbot-computer",
+        repository: "vcr.vercel.com/trydispatch/dispatch-runtime/dispatch-computer",
       }),
       expect.any(Object),
     );
@@ -558,15 +566,15 @@ describe("computer image lifecycle", () => {
 
   it("loads the locally built image into Microsandbox instead of pulling Docker Hub", async () => {
     const provider = new TestMicrosandboxComputerProvider({
-      repository: "trytilde/our-openbot-computer",
+      repository: "trytilde/our-dispatch-computer",
     });
     const inputs = new DeploymentOutputs();
     const sourceDigest = `sha256:${"a".repeat(64)}`;
-    const reference = "trytilde/our-openbot-computer:openbot-computer-aaaaaaaaaaaa";
+    const reference = "trytilde/our-dispatch-computer:dispatch-computer-aaaaaaaaaaaa";
     inputs.merge({
       outputs: {
-        MICROSANDBOX_IMAGE_CONTEXT: "/tmp/openbot-microsandbox-context",
-        MICROSANDBOX_IMAGE_DOCKERFILE: "/tmp/openbot-microsandbox-context/Containerfile",
+        MICROSANDBOX_IMAGE_CONTEXT: "/tmp/dispatch-microsandbox-context",
+        MICROSANDBOX_IMAGE_DOCKERFILE: "/tmp/dispatch-microsandbox-context/Containerfile",
         MICROSANDBOX_IMAGE_LOCAL_REFERENCE: reference,
         MICROSANDBOX_IMAGE_SOURCE_DIGEST: sourceDigest,
       },
@@ -588,11 +596,11 @@ describe("computer image lifecycle", () => {
     expect(provider.docker).toHaveBeenCalledWith([
       "save",
       "--output",
-      "/tmp/openbot-microsandbox-context/.openbot-microsandbox-aaaaaaaaaaaa.tar",
+      "/tmp/dispatch-microsandbox-context/.dispatch-microsandbox-aaaaaaaaaaaa.tar",
       reference,
     ]);
     expect(provider.load).toHaveBeenCalledWith(
-      "/tmp/openbot-microsandbox-context/.openbot-microsandbox-aaaaaaaaaaaa.tar",
+      "/tmp/dispatch-microsandbox-context/.dispatch-microsandbox-aaaaaaaaaaaa.tar",
       reference,
     );
     expect(environment.MICROSANDBOX_COMPUTER_IMAGE).toBe(reference);
@@ -605,7 +613,7 @@ describe("computer image lifecycle", () => {
       providerId: "test",
       state: "running",
       createdAt: new Date(0),
-      image: "registry.test/openbot-computer:old",
+      image: "registry.test/dispatch-computer:old",
     });
     await provider.deployAgentWorkspaces(
       { computerId: "computer", workspaces: [] },
@@ -614,7 +622,7 @@ describe("computer image lifecycle", () => {
         repositoryRoot: "/repository",
         environment: {
           COMPUTER_SERVICE_API_KEY: "x".repeat(32),
-          TEST_COMPUTER_IMAGE: "registry.test/openbot-computer:new",
+          TEST_COMPUTER_IMAGE: "registry.test/dispatch-computer:new",
         },
         inputs: new DeploymentOutputs(),
         report: vi.fn(),
@@ -622,14 +630,14 @@ describe("computer image lifecycle", () => {
     );
     expect(provider.delete).toHaveBeenCalledWith("computer", expect.any(Object));
     expect(provider.create).toHaveBeenCalledWith(
-      expect.objectContaining({ image: "registry.test/openbot-computer:new" }),
+      expect.objectContaining({ image: "registry.test/dispatch-computer:new" }),
       expect.any(Object),
     );
   });
 
   it("uses Docker Buildx for the Vercel Sandbox image", () => {
     const provider = new TestVercelSandboxComputerProvider({
-      repository: "vcr.vercel.com/example/openbot-computer",
+      repository: "vcr.vercel.com/example/dispatch-computer",
     });
     expect(
       provider.buildArguments(
@@ -637,9 +645,9 @@ describe("computer image lifecycle", () => {
           sourceDigest: `sha256:${"a".repeat(64)}`,
           contextDirectory: "/tmp/context",
           dockerfilePath: "/tmp/context/Containerfile",
-          repository: "vcr.vercel.com/example/openbot-computer",
+          repository: "vcr.vercel.com/example/dispatch-computer",
         },
-        "vcr.vercel.com/example/openbot-computer:openbot-computer-aaaaaaaaaaaa",
+        "vcr.vercel.com/example/dispatch-computer:dispatch-computer-aaaaaaaaaaaa",
       ),
     ).toEqual([
       "buildx",
@@ -650,9 +658,9 @@ describe("computer image lifecycle", () => {
       "--file",
       "/tmp/context/Containerfile",
       "--tag",
-      "vcr.vercel.com/example/openbot-computer:openbot-computer-aaaaaaaaaaaa",
+      "vcr.vercel.com/example/dispatch-computer:dispatch-computer-aaaaaaaaaaaa",
       "--label",
-      `org.openbot.computer.source-digest=sha256:${"a".repeat(64)}`,
+      `org.dispatch.computer.source-digest=sha256:${"a".repeat(64)}`,
       "/tmp/context",
     ]);
   });
@@ -660,17 +668,21 @@ describe("computer image lifecycle", () => {
   it("builds the computer service inside the shared multi-stage image", async () => {
     const containerfile = await readFile(computerImageAssets.containerfile, "utf8");
     expect(containerfile).toContain("AS computer-service-builder");
-    expect(containerfile).toContain("pnpm --filter @tryopenbot/computer-service exec tsdown");
+    expect(containerfile).toContain(
+      "pnpm --filter @trytilde/dispatch-computer-service exec tsdown",
+    );
     expect(containerfile).toContain("COPY --from=computer-service-builder");
     expect(containerfile).not.toContain("COPY package.json");
-    expect(containerfile).toContain("pnpm --filter @tryopenbot/utilities exec tsdown");
-    expect(containerfile).toContain("pnpm --filter @tryopenbot/computer-service-proto exec tsdown");
+    expect(containerfile).toContain("pnpm --filter @trytilde/dispatch-utilities exec tsdown");
+    expect(containerfile).toContain(
+      "pnpm --filter @trytilde/dispatch-computer-service-proto exec tsdown",
+    );
     expect(containerfile).not.toMatch(/^COPY apps\/computer-service\/dist/m);
-    expect(containerfile).not.toContain("openbot-agent-exec");
-    expect(containerfile).toContain("/usr/share/novnc/openbot.html");
-    const viewer = await readFile(computerImageAssets.openbotVnc, "utf8");
+    expect(containerfile).not.toContain("dispatch-agent-exec");
+    expect(containerfile).toContain("/usr/share/novnc/dispatch.html");
+    const viewer = await readFile(computerImageAssets.dispatchVnc, "utf8");
     expect(viewer).toContain('import RFB from "./core/rfb.js"');
-    expect(viewer).toContain('type: "openbot:vnc"');
+    expect(viewer).toContain('type: "dispatch:vnc"');
     expect(viewer).toContain("rfb.resizeSession = false");
     expect(viewer).not.toContain("noVNC_control_bar");
     const bootstrap = await readFile(computerImageAssets.bootstrap, "utf8");
@@ -693,10 +705,10 @@ describe("computer image lifecycle", () => {
     const taskbar = await readFile(computerImageAssets.xfcePanel, "utf8");
     expect(taskbar).toContain('name="position" type="string" value="p=10;x=0;y=0"');
     expect(taskbar).toContain('name="autohide-behavior" type="uint" value="0"');
-    expect(taskbar).toContain('value="openbot-files.desktop"');
-    expect(taskbar).toContain('value="openbot-browser.desktop"');
+    expect(taskbar).toContain('value="dispatch-files.desktop"');
+    expect(taskbar).toContain('value="dispatch-browser.desktop"');
     expect(desktopSession).toContain(
-      "xdg-mime default openbot-browser.desktop x-scheme-handler/https",
+      "xdg-mime default dispatch-browser.desktop x-scheme-handler/https",
     );
     expect(desktopSession).toContain('touch "$desktop_ready_file"');
     expect(desktopSession).toContain("xprop -root _XROOTPMAP_ID");
@@ -705,8 +717,8 @@ describe("computer image lifecycle", () => {
 
 describe("trusted development sandbox", () => {
   it("loads dotenv and decrypted SOPS values through the Bash profile", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-development-profile-"));
-    const sourceRoot = join(root, "openbot");
+    const root = await mkdtemp(join(tmpdir(), "dispatch-development-profile-"));
+    const sourceRoot = join(root, "dispatch");
     const configurationRoot = join(sourceRoot, "configuration");
     const binaryRoot = join(root, "bin");
     const ageKeyFile = join(root, "age-key.txt");
@@ -734,8 +746,8 @@ describe("trusted development sandbox", () => {
           env: {
             ...process.env,
             PATH: `${binaryRoot}:${process.env.PATH ?? ""}`,
-            OPENBOT_SOURCE_ROOT: sourceRoot,
-            OPENBOT_AGE_KEY_FILE: ageKeyFile,
+            DISPATCH_SOURCE_ROOT: sourceRoot,
+            DISPATCH_AGE_KEY_FILE: ageKeyFile,
           },
         },
       );
@@ -746,7 +758,7 @@ describe("trusted development sandbox", () => {
   });
 
   it("installs repository configuration and a user-readable-only SOPS identity", async () => {
-    const repositoryRoot = await mkdtemp(join(tmpdir(), "openbot-development-sandbox-"));
+    const repositoryRoot = await mkdtemp(join(tmpdir(), "dispatch-development-sandbox-"));
     await mkdir(join(repositoryRoot, "configuration"));
     await Promise.all([
       writeFile(join(repositoryRoot, "configuration/.env"), 'MODEL="gpt-test"\n'),
@@ -782,19 +794,19 @@ describe("trusted development sandbox", () => {
     expect(provider.create).not.toHaveBeenCalled();
     expect(provider.writeFile).toHaveBeenCalledWith(
       "computer",
-      "/workspace/openbot/configuration/.env",
+      "/workspace/dispatch/configuration/.env",
       expect.any(Uint8Array),
       expect.anything(),
     );
     expect(provider.writeFile).toHaveBeenCalledWith(
       "computer",
-      "/workspace/openbot/configuration/secrets.enc.yaml",
+      "/workspace/dispatch/configuration/secrets.enc.yaml",
       expect.any(Uint8Array),
       expect.anything(),
     );
     expect(provider.writeFile).toHaveBeenCalledWith(
       "computer",
-      "/workspace/.openbot/development/sops-age-key.txt",
+      "/workspace/.dispatch/development/sops-age-key.txt",
       expect.any(Uint8Array),
       expect.anything(),
     );
@@ -802,7 +814,7 @@ describe("trusted development sandbox", () => {
       "computer",
       {
         command: "chmod",
-        args: ["0600", "/workspace/.openbot/development/sops-age-key.txt"],
+        args: ["0600", "/workspace/.dispatch/development/sops-age-key.txt"],
       },
       expect.anything(),
     );
@@ -810,25 +822,25 @@ describe("trusted development sandbox", () => {
       "computer",
       {
         command: "chmod",
-        args: ["0400", "/workspace/.openbot/development/sops-age-key.txt"],
+        args: ["0400", "/workspace/.dispatch/development/sops-age-key.txt"],
       },
       expect.anything(),
     );
     expect(provider.exec).toHaveBeenCalledWith(
       "computer",
       expect.objectContaining({
-        command: "/usr/local/bin/setup-openbot-development",
-        args: ["/workspace/openbot", "/workspace/.openbot/development/sops-age-key.txt"],
+        command: "/usr/local/bin/setup-dispatch-development",
+        args: ["/workspace/dispatch", "/workspace/.dispatch/development/sops-age-key.txt"],
       }),
       expect.anything(),
     );
     const profile = await readFile(computerImageAssets.developmentProfile, "utf8");
-    expect(profile).toContain('source "$openbot_source_root/configuration/.env"');
+    expect(profile).toContain('source "$dispatch_source_root/configuration/.env"');
     expect(profile).toContain("SOPS_AGE_KEY_FILE");
     expect(profile).toContain("sops decrypt --output-type json");
     const desktopSession = await readFile(computerImageAssets.desktopSession, "utf8");
     expect(desktopSession).toContain("$XDG_RUNTIME_DIR/xfce4-panel.log");
-    expect(desktopSession).not.toContain("/var/log/openbot-xfce4-panel.log");
+    expect(desktopSession).not.toContain("/var/log/dispatch-xfce4-panel.log");
     const developmentSetup = await readFile(computerImageAssets.developmentSetup, "utf8");
     expect(developmentSetup).toContain('if [ -L "$source_directory" ]');
     expect(developmentSetup).toContain('pkill -f "$state_directory/orchestrator-supervisor.sh"');

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
+import { DeploymentOutputs, type DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import {
   ensureVercelProject,
   installVercelEnvironment,
@@ -50,13 +50,13 @@ describe("Vercel deployment helpers", () => {
       repositoryRoot: "/repo",
       environment: {
         HOME: "/root",
-        PUBLIC_ORIGIN: "https://openbot.test",
+        PUBLIC_ORIGIN: "https://dispatch.test",
         API_KEY: "private",
         VERCEL_TOKEN: "deployment-only",
         SOPS_AGE_KEY: "sandbox-only",
       },
       configuration: {
-        PUBLIC_ORIGIN: "https://openbot.test",
+        PUBLIC_ORIGIN: "https://dispatch.test",
         API_KEY: "private",
         VERCEL_TOKEN: "deployment-only",
         SOPS_AGE_KEY: "sandbox-only",
@@ -66,7 +66,7 @@ describe("Vercel deployment helpers", () => {
     };
     const request = vi.fn<typeof fetch>(async () => new Response(null, { status: 200 }));
 
-    await installVercelEnvironment(context, "openbot", request);
+    await installVercelEnvironment(context, "dispatch", request);
 
     expect(request).toHaveBeenCalledTimes(2);
     expect(
@@ -79,13 +79,13 @@ describe("Vercel deployment helpers", () => {
       {
         type: "sensitive",
         key: "PUBLIC_ORIGIN",
-        value: "https://openbot.test",
+        value: "https://dispatch.test",
         target: ["production"],
       },
       { type: "sensitive", key: "API_KEY", value: "private", target: ["production"] },
     ]);
     expect(request.mock.calls[0]?.[0]).toEqual(
-      new URL("https://api.vercel.com/v10/projects/openbot/env?upsert=true"),
+      new URL("https://api.vercel.com/v10/projects/dispatch/env?upsert=true"),
     );
   });
 });

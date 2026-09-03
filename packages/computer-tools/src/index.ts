@@ -2,7 +2,7 @@ import type { MediaDownloader, MediaUploader } from "./attachments.js";
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-node";
 import type { Tool } from "@ai-sdk/provider-utils";
-import { ComputerService } from "@tryopenbot/computer-service-proto";
+import { ComputerService } from "@trytilde/dispatch-computer-service-proto";
 import { jsonSchema, tool, type ToolSet } from "ai";
 import { z } from "zod";
 

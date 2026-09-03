@@ -10,10 +10,10 @@ import {
 
 describe("development package command", () => {
   it("keeps child output while suppressing pnpm lifecycle errors on shutdown", () => {
-    expect(developmentPackageCommand("@tryopenbot/web", "dev", ["--port", "4173"])).toEqual([
+    expect(developmentPackageCommand("@trytilde/dispatch-web", "dev", ["--port", "4173"])).toEqual([
       "--reporter=silent",
       "--filter",
-      "@tryopenbot/web",
+      "@trytilde/dispatch-web",
       "dev",
       "--port",
       "4173",

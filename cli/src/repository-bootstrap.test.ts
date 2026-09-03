@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { InitializationCommandRunner, InitializationPrompts } from "./initialization.js";
-import { bootstrapOpenBotRepository } from "./repository-bootstrap.js";
+import { bootstrapDispatchRepository } from "./repository-bootstrap.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -13,14 +13,14 @@ afterEach(async () => {
   );
 });
 
-describe("OpenBot repository bootstrap", () => {
+describe("Dispatch repository bootstrap", () => {
   it("rejects an incompatible canonical revision before prompts or repository creation", async () => {
     const destination = await temporaryDirectory();
     const { prompts, input, select } = testPrompts();
-    const { runner, run } = testRunner(destination, { canonicalPackageName: "openbot" });
+    const { runner, run } = testRunner(destination, { canonicalPackageName: "dispatch" });
 
-    await expect(bootstrapOpenBotRepository({ destination, prompts, runner })).rejects.toThrow(
-      "The canonical OpenBot repository is older than this CLI",
+    await expect(bootstrapDispatchRepository({ destination, prompts, runner })).rejects.toThrow(
+      "The canonical Dispatch repository is older than this CLI",
     );
 
     expect(input).not.toHaveBeenCalled();
@@ -39,8 +39,8 @@ describe("OpenBot repository bootstrap", () => {
     const { prompts, input, select } = testPrompts();
     const { runner, run } = testRunner(destination);
 
-    await expect(bootstrapOpenBotRepository({ destination, prompts, runner })).rejects.toThrow(
-      "openbot init requires a completely empty directory",
+    await expect(bootstrapDispatchRepository({ destination, prompts, runner })).rejects.toThrow(
+      "tilde init requires a completely empty directory",
     );
 
     expect(input).not.toHaveBeenCalled();
@@ -50,16 +50,17 @@ describe("OpenBot repository bootstrap", () => {
 
   it("creates and verifies a public fork before configuration", async () => {
     const destination = await temporaryDirectory();
-    const { prompts } = testPrompts("my-openbot", "public");
+    const { prompts } = testPrompts("my-dispatch", "public");
     const { runner, run } = testRunner(destination);
 
-    await bootstrapOpenBotRepository({ destination, prompts, runner });
+    await bootstrapDispatchRepository({ destination, prompts, runner });
 
     const calls = run.mock.calls;
     expect(calls.some(([command, args]) => command === "gh" && args.includes("fork"))).toBe(true);
     expect(
       calls.some(
-        ([command, args]) => command === "gh" && args.join(" ") === "repo clone owner/my-openbot .",
+        ([command, args]) =>
+          command === "gh" && args.join(" ") === "repo clone owner/my-dispatch .",
       ),
     ).toBe(true);
     expect(
@@ -76,7 +77,7 @@ describe("OpenBot repository bootstrap", () => {
     const { prompts, input } = testPrompts(" trytilde/our-dispatch ", "public");
     const { runner, run } = testRunner(destination);
 
-    await bootstrapOpenBotRepository({ destination, prompts, runner });
+    await bootstrapDispatchRepository({ destination, prompts, runner });
 
     expect(input).toHaveBeenCalledWith("GitHub repository (owner/name)", {
       id: "repository-name",
@@ -102,16 +103,16 @@ describe("OpenBot repository bootstrap", () => {
 
   it("creates a private repository through a temporary bare mirror", async () => {
     const destination = await temporaryDirectory();
-    const { prompts } = testPrompts("private-openbot", "private");
+    const { prompts } = testPrompts("private-dispatch", "private");
     const { runner, run } = testRunner(destination);
 
-    await bootstrapOpenBotRepository({ destination, prompts, runner });
+    await bootstrapDispatchRepository({ destination, prompts, runner });
 
     const calls = run.mock.calls;
     expect(
       calls.some(
         ([command, args]) =>
-          command === "gh" && args.join(" ") === "repo create owner/private-openbot --private",
+          command === "gh" && args.join(" ") === "repo create owner/private-dispatch --private",
       ),
     ).toBe(true);
     expect(calls.some(([command, args]) => command === "git" && args.includes("--bare"))).toBe(
@@ -124,28 +125,28 @@ describe("OpenBot repository bootstrap", () => {
 
   it("creates a private mirror in the requested GitHub organization", async () => {
     const destination = await temporaryDirectory();
-    const { prompts } = testPrompts("trytilde/private-openbot", "private");
+    const { prompts } = testPrompts("trytilde/private-dispatch", "private");
     const { runner, run } = testRunner(destination);
 
-    await bootstrapOpenBotRepository({ destination, prompts, runner });
+    await bootstrapDispatchRepository({ destination, prompts, runner });
 
     expect(
       run.mock.calls.some(
         ([command, args]) =>
-          command === "gh" && args.join(" ") === "repo create trytilde/private-openbot --private",
+          command === "gh" && args.join(" ") === "repo create trytilde/private-dispatch --private",
       ),
     ).toBe(true);
     expect(
       run.mock.calls.some(
         ([command, args]) =>
-          command === "gh" && args.join(" ") === "repo clone trytilde/private-openbot .",
+          command === "gh" && args.join(" ") === "repo clone trytilde/private-dispatch .",
       ),
     ).toBe(true);
   });
 });
 
 async function temporaryDirectory(): Promise<string> {
-  const path = await mkdtemp(join(tmpdir(), "openbot-bootstrap-"));
+  const path = await mkdtemp(join(tmpdir(), "dispatch-bootstrap-"));
   temporaryDirectories.push(path);
   return path;
 }
@@ -169,7 +170,7 @@ function testRunner(destination: string, options: { canonicalPackageName?: strin
     if (command === "gh" && args[0] === "api" && args[1]?.includes("contents/package.json"))
       return {
         stdout: Buffer.from(
-          JSON.stringify({ name: options.canonicalPackageName ?? "@tryopenbot/workspace" }),
+          JSON.stringify({ name: options.canonicalPackageName ?? "@trytilde/dispatch-workspace" }),
         ).toString("base64"),
         stderr: "",
       };
@@ -177,7 +178,7 @@ function testRunner(destination: string, options: { canonicalPackageName?: strin
       ownedRepository = args[2] ?? "";
       await writeFile(
         join(destination, "package.json"),
-        JSON.stringify({ name: "@tryopenbot/workspace" }),
+        JSON.stringify({ name: "@trytilde/dispatch-workspace" }),
       );
     }
     if (command === "git" && args.join(" ") === "remote get-url origin")

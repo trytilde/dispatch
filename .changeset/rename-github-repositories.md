@@ -1,5 +1,5 @@
 ---
-"openbot": patch
+"@trytilde/cli": patch
 "@trytilde/api-client": patch
 "@trytilde/sdk": patch
 "@trytilde/sdk-react": patch

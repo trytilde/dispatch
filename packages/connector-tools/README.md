@@ -1,4 +1,4 @@
-# @tryopenbot/connector-tools
+# @trytilde/dispatch-connector-tools
 
 Vercel AI SDK tools for in-chat connector (Tilde tool-provider) configuration.
 Authored agents import these tools directly without depending on a deployment

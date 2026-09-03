@@ -26,7 +26,7 @@ import {
 } from "../src/index.js";
 
 const meta = {
-  title: "OpenBot/Workspace",
+  title: "Dispatch/Workspace",
   parameters: { layout: "centered" },
 } satisfies Meta;
 

@@ -85,7 +85,7 @@ describe("Tilde plugin client", () => {
     expect(requestJson).toHaveBeenCalledWith(
       "/api/tilde/mcp/available-tool-groups?deployment_alias=latest&include_global=true&page_size=100&next_page_token=providers-2",
     );
-    expect(requestJson).not.toHaveBeenCalledWith("/api/tilde/openbot/plugins/catalog");
+    expect(requestJson).not.toHaveBeenCalledWith("/api/tilde/dispatch/plugins/catalog");
   });
 
   it("uses provider setup directly for ordinary connectors", async () => {
@@ -143,7 +143,7 @@ describe("Tilde plugin client", () => {
         providerTypeId: "managed_mcp:notion",
         credentialSourceTypeId: "managed_mcp_oauth",
         displayName: "Work",
-        returnUrl: "https://openbot.test/connectors/authorized",
+        returnUrl: "https://dispatch.test/connectors/authorized",
       }),
     ).resolves.toEqual({
       status: "authorize",

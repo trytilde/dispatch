@@ -2,14 +2,14 @@ import type { Preview } from "@storybook/react-vite";
 // @ts-expect-error Storybook's Vite renderer loads package CSS as a side effect.
 import "../src/beautiful-ui/upstream/globals.css";
 // @ts-expect-error Storybook's Vite renderer loads package CSS as a side effect.
-import "../src/openbot-ui.css";
+import "../src/dispatch-ui.css";
 
 const preview: Preview = {
   parameters: {
     backgrounds: {
-      default: "OpenBot",
+      default: "Dispatch",
       values: [
-        { name: "OpenBot", value: "#f5f5f3" },
+        { name: "Dispatch", value: "#f5f5f3" },
         { name: "Surface", value: "#fbfbfa" },
         { name: "Dark", value: "#171717" },
       ],
@@ -19,7 +19,7 @@ const preview: Preview = {
   },
   decorators: [
     (Story) => (
-      <div className="openbot-storybook-root">
+      <div className="dispatch-storybook-root">
         <Story />
       </div>
     ),

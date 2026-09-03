@@ -12,7 +12,7 @@ export async function runEnvironment(argv: readonly string[]): Promise<Environme
   const parsed = arg({ "--description": String, "--json": Boolean }, { argv: [...argv] });
   const [operation, name, value, ...extra] = parsed._;
   if (!operation || !name || extra.length)
-    throw new Error("Usage: openbot env <set NAME VALUE --description TEXT|unset NAME> [--json]");
+    throw new Error("Usage: tilde env <set NAME VALUE --description TEXT|unset NAME> [--json]");
   if (operation === "set") {
     if (!value) throw new Error("env set requires a non-empty VALUE");
     const description = parsed["--description"]?.trim();

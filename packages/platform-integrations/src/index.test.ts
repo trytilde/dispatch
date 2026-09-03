@@ -11,7 +11,7 @@ describe("platform initialization", () => {
       "TILDE_API_KEY",
       "TILDE_ORG_ID",
       "TILDE_TEAM_ID",
-      "OPENBOT_DEPLOYMENT_NAME",
+      "DISPATCH_DEPLOYMENT_NAME",
       "TILDE_BASE_URL",
     ]);
   });

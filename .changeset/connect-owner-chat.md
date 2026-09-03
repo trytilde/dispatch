@@ -1,14 +1,14 @@
 ---
-"openbot": patch
-"@tryopenbot/control-service": minor
-"@tryopenbot/control-service-provider": minor
-"@tryopenbot/computer-service-provider": patch
-"@tryopenbot/agent-service-provider": patch
-"@tryopenbot/utilities": patch
-"@tryopenbot/web": minor
-"@tryopenbot/runtime-provider": patch
-"@tryopenbot/platform-integrations": patch
-"@tryopenbot/agent-provider": patch
+"@trytilde/cli": patch
+"@trytilde/dispatch-control-service": minor
+"@trytilde/dispatch-control-service-provider": minor
+"@trytilde/dispatch-computer-service-provider": patch
+"@trytilde/dispatch-agent-service-provider": patch
+"@trytilde/dispatch-utilities": patch
+"@trytilde/dispatch-web": minor
+"@trytilde/dispatch-runtime-provider": patch
+"@trytilde/dispatch-platform-integrations": patch
+"@trytilde/dispatch-agent-provider": patch
 ---
 
 Connect the owner workspace to configured Chat Provider agents in local and deployed modes.

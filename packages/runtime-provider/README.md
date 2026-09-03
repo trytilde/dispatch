@@ -1,4 +1,4 @@
-# @tryopenbot/runtime-provider
+# @trytilde/dispatch-runtime-provider
 
 Shared provider build, initialization, persistence, and phased deployment contracts. It coordinates artifacts first, deploys ordinary providers next, deploys the trusted development sandbox, and deploys the control runtime last.
 

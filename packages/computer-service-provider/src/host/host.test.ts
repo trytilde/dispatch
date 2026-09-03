@@ -14,7 +14,7 @@ afterEach(async () => {
 
 describe("HostComputerProvider", () => {
   it("installs one host service with its bearer key only in a private environment file", async () => {
-    const homeDirectory = await mkdtemp(join(tmpdir(), "openbot-host-computer-"));
+    const homeDirectory = await mkdtemp(join(tmpdir(), "dispatch-host-computer-"));
     temporaryDirectories.push(homeDirectory);
     const calls: string[][] = [];
     const runner: HostComputerCommandRunner = {
@@ -29,7 +29,7 @@ describe("HostComputerProvider", () => {
     const provider = new HostComputerProvider({ homeDirectory, runner });
 
     const handle = await provider.create(
-      { id: "openbot-computer" },
+      { id: "dispatch-computer" },
       {
         requestId: "create",
         environment: { COMPUTER_SERVICE_API_KEY: "a".repeat(32) },
@@ -38,11 +38,11 @@ describe("HostComputerProvider", () => {
 
     expect(handle.state).toBe("running");
     expect(calls.flat().join(" ")).not.toContain("a".repeat(32));
-    expect(await readFile(join(homeDirectory, ".openbot/computer/environment"), "utf8")).toContain(
+    expect(await readFile(join(homeDirectory, ".dispatch/computer/environment"), "utf8")).toContain(
       `COMPUTER_SERVICE_API_KEY="${"a".repeat(32)}"`,
     );
     expect(
-      await readFile(join(homeDirectory, ".config/systemd/user/openbot-computer.service"), "utf8"),
-    ).toContain("ExecStart=/usr/local/bin/start-openbot-computer");
+      await readFile(join(homeDirectory, ".config/systemd/user/dispatch-computer.service"), "utf8"),
+    ).toContain("ExecStart=/usr/local/bin/start-dispatch-computer");
   });
 });

@@ -1,6 +1,6 @@
-# @tryopenbot/computer-service-provider
+# @trytilde/dispatch-computer-service-provider
 
-Computer provisioning and lifecycle adapters for the local Linux host, Microsandbox, exe.dev, and Vercel Sandbox. The public `ComputerProvider` contract contains only deployment operations used by OpenBot:
+Computer provisioning and lifecycle adapters for the local Linux host, Microsandbox, exe.dev, and Vercel Sandbox. The public `ComputerProvider` contract contains only deployment operations used by Dispatch:
 
 - deploy seed-once agent workspaces to the shared Computer;
 - deploy the trusted development Computer;
@@ -10,17 +10,17 @@ Concrete adapters keep their low-level create, wake, exec, file, desktop, and im
 
 Programmatic screenshots and input are not provider operations. The Computer image installs the checksum-pinned Cua executable and SDK runtime; computer-service owns all model-facing GUI calls. Providers retain only owner preview routing through noVNC.
 
-Reusable Vercel AI SDK Computer tools live separately in `@tryopenbot/computer-tools`. This package does not depend on or re-export them. Authored agents call those typed tools, which route through the capability-protected Computer service; they never import this provider package or call Microsandbox or Vercel Sandbox directly.
+Reusable Vercel AI SDK Computer tools live separately in `@trytilde/dispatch-computer-tools`. This package does not depend on or re-export them. Authored agents call those typed tools, which route through the capability-protected Computer service; they never import this provider package or call Microsandbox or Vercel Sandbox directly.
 
 Builds create the Computer service image from provider-owned Handlebars assets. Vercel provisioning creates and publishes to the managed image repository; Microsandbox saves the local content-addressed Docker image into an archive, imports it into its own image cache, and disables registry pulls for Computers. A configured Vercel Sandbox provider delegates its complete development lifecycle to an internal Microsandbox provider, so development never creates Vercel Sandbox or registry resources.
 
-`openbot dev` watches the exact Computer image inputs. A change rebuilds the content-addressed local
+`tilde dev` watches the exact Computer image inputs. A change rebuilds the content-addressed local
 image and replaces the development Microsandbox when its image reference changes. Its stable ID and
 named `/workspace` volume remain intact. Production Computers retain their original image and disk.
 
 The trusted development Computer is intentionally secret-bearing. Every deployment refreshes the
-fork's `.env`, `.sops.yaml`, and encrypted secrets in `/workspace/openbot/configuration`, writes its
-age identity under `/workspace/.openbot/development` with mode `0400`, and installs a Bash-profile
+fork's `.env`, `.sops.yaml`, and encrypted secrets in `/workspace/dispatch/configuration`, writes its
+age identity under `/workspace/.dispatch/development` with mode `0400`, and installs a Bash-profile
 loader that exports dotenv and decrypted SOPS values for that Linux user. Ordinary agent Computers
 do not receive these files or the identity.
 

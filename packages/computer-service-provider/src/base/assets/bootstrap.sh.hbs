@@ -10,11 +10,11 @@ CHROME_SHA256_AMD64=e6dabf044cf9cd0279cfe86efa431682c18bfc06d06339ce055aaa87ae87
 CUA_DRIVER_VERSION=0.21.0
 CUA_DRIVER_SHA256_AMD64=cf29bfaad16737e31e72f38dad2a6424f24b21a4ac2edea885e83cb9d5034135
 CUA_DRIVER_SHA256_ARM64=6b3a308c6741dd8291aad22a308bd2ec8eb52eab64687be007ac86ceaf7e3307
-MARKER=/opt/openbot/.computer-image-version
+MARKER=/opt/dispatch/.computer-image-version
 
 # Keep package installation non-interactive during image builds and idempotent startup checks.
 export DEBIAN_FRONTEND=noninteractive
-mkdir -p /opt/openbot /workspace /root/.vnc
+mkdir -p /opt/dispatch /workspace /root/.vnc
 
 # Re-running bootstrap on a warm computer should be a cheap no-op.
 if [[ -f "$MARKER" ]] && [[ "$(cat "$MARKER")" == "$BOOTSTRAP_VERSION" ]]; then

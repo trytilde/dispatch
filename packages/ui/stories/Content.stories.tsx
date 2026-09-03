@@ -7,12 +7,12 @@ import {
   LinkPreviewCard,
 } from "../src/index.js";
 
-const meta = { title: "OpenBot/Rich Content" } satisfies Meta;
+const meta = { title: "Dispatch/Rich Content" } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 const noop = () => undefined;
 const image =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='420'%3E%3Crect width='100%25' height='100%25' fill='%23e7e9e7'/%3E%3Crect x='72' y='56' width='656' height='308' rx='16' fill='%23fbfbfa' stroke='%23d8dad8'/%3E%3Ccircle cx='400' cy='178' r='58' fill='%2371a77b'/%3E%3Ctext x='400' y='286' text-anchor='middle' font-family='sans-serif' font-size='26' fill='%23242624'%3EOpenBot Computer%3C/text%3E%3C/svg%3E";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='420'%3E%3Crect width='100%25' height='100%25' fill='%23e7e9e7'/%3E%3Crect x='72' y='56' width='656' height='308' rx='16' fill='%23fbfbfa' stroke='%23d8dad8'/%3E%3Ccircle cx='400' cy='178' r='58' fill='%2371a77b'/%3E%3Ctext x='400' y='286' text-anchor='middle' font-family='sans-serif' font-size='26' fill='%23242624'%3EDispatch Computer%3C/text%3E%3C/svg%3E";
 const audio = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
 export const InlineAudio: Story = {
@@ -35,15 +35,15 @@ const metadata = {
 };
 
 export const LinkCard: Story = {
-  render: () => <LinkPreviewCard metadata={metadata} url="https://docs.example.com/openbot" />,
+  render: () => <LinkPreviewCard metadata={metadata} url="https://docs.example.com/dispatch" />,
 };
 
 export const LinkHover: Story = {
   render: () => (
     <p style={{ margin: 80 }}>
       Read the{" "}
-      <LinkHoverPreview metadata={metadata} url="https://docs.example.com/openbot">
-        <a href="https://docs.example.com/openbot">workspace guide</a>
+      <LinkHoverPreview metadata={metadata} url="https://docs.example.com/dispatch">
+        <a href="https://docs.example.com/dispatch">workspace guide</a>
       </LinkHoverPreview>
       .
     </p>

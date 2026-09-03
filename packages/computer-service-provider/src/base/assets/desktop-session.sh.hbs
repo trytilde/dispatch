@@ -10,11 +10,11 @@ window_manager_log="$XDG_RUNTIME_DIR/xfwm4.log"
 panel_log="$XDG_RUNTIME_DIR/xfce4-panel.log"
 rm -f "$desktop_ready_file"
 mkdir -p "$(dirname "$panel_configuration")"
-install -m 0644 /opt/openbot/xfce4-panel.xml "$panel_configuration"
-xdg-mime default openbot-browser.desktop text/html
-xdg-mime default openbot-browser.desktop x-scheme-handler/http
-xdg-mime default openbot-browser.desktop x-scheme-handler/https
-for launcher in "1:openbot-files.desktop" "2:openbot-browser.desktop"; do
+install -m 0644 /opt/dispatch/xfce4-panel.xml "$panel_configuration"
+xdg-mime default dispatch-browser.desktop text/html
+xdg-mime default dispatch-browser.desktop x-scheme-handler/http
+xdg-mime default dispatch-browser.desktop x-scheme-handler/https
+for launcher in "1:dispatch-files.desktop" "2:dispatch-browser.desktop"; do
   launcher_id="${launcher%%:*}"
   launcher_file="${launcher#*:}"
   launcher_directory="$HOME/.config/xfce4/panel/launcher-$launcher_id"
@@ -39,7 +39,7 @@ trap cleanup EXIT INT TERM
 
 # Give XFWM a moment to claim the root window before applying the wallpaper and panel.
 sleep 0.35
-feh --no-fehbg --bg-fill /opt/openbot/desktop-wallpaper.png >/dev/null 2>&1 || true
+feh --no-fehbg --bg-fill /opt/dispatch/desktop-wallpaper.png >/dev/null 2>&1 || true
 xfce4-panel --disable-wm-check >"$panel_log" 2>&1 &
 panel_pid=$!
 

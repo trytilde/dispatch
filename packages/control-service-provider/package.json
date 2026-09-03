@@ -1,5 +1,5 @@
 {
-  "name": "@tryopenbot/control-service-provider",
+  "name": "@trytilde/dispatch-control-service-provider",
   "version": "0.1.0",
   "files": [
     "dist",
@@ -32,9 +32,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tryopenbot/platform-integrations": "workspace:*",
-    "@tryopenbot/runtime-provider": "workspace:*",
-    "@tryopenbot/utilities": "workspace:*",
+    "@trytilde/dispatch-platform-integrations": "workspace:*",
+    "@trytilde/dispatch-runtime-provider": "workspace:*",
+    "@trytilde/dispatch-utilities": "workspace:*",
     "tsdown": "0.22.14",
     "vercel": "58.9.4"
   },

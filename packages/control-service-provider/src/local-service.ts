@@ -1,8 +1,8 @@
 import { access, chmod, mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { renderFileTemplatePath } from "@tryopenbot/utilities";
-import type { DeploymentContext } from "@tryopenbot/runtime-provider";
+import { renderFileTemplatePath } from "@trytilde/dispatch-utilities";
+import type { DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import type { CommandRunner } from "./command.js";
 
 export interface LocalServiceOptions {
@@ -21,9 +21,11 @@ export type RetiredLocalServiceOptions = Pick<
 >;
 
 const systemdTemplate = fileURLToPath(
-  new URL("./local/assets/openbot.service.hbs", import.meta.url),
+  new URL("./local/assets/dispatch.service.hbs", import.meta.url),
 );
-const launchdTemplate = fileURLToPath(new URL("./local/assets/openbot.plist.hbs", import.meta.url));
+const launchdTemplate = fileURLToPath(
+  new URL("./local/assets/dispatch.plist.hbs", import.meta.url),
+);
 const environmentTemplate = fileURLToPath(
   new URL("./local/assets/environment.hbs", import.meta.url),
 );
@@ -61,7 +63,7 @@ export async function installLocalService(
   }
   if (options.platform === "darwin") {
     if (options.uid === undefined) throw new Error("Unable to determine current uid for launchd");
-    const label = `ai.openbot.${options.id}`;
+    const label = `ai.dispatch.${options.id}`;
     const plistPath = resolve(options.homeDirectory, `Library/LaunchAgents/${label}.plist`);
     const command = [
       options.command[0]!,
@@ -119,7 +121,7 @@ export async function retireLocalService(
   }
   if (options.platform === "darwin") {
     if (options.uid === undefined) throw new Error("Unable to determine current uid for launchd");
-    const label = `ai.openbot.${options.id}`;
+    const label = `ai.dispatch.${options.id}`;
     const plistPath = resolve(options.homeDirectory, `Library/LaunchAgents/${label}.plist`);
     if (!(await exists(plistPath))) return;
     try {

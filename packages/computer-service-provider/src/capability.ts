@@ -13,6 +13,6 @@ export function scopedCapability(
   secret = computerServiceApiKey(),
 ): string {
   return createHmac("sha256", secret)
-    .update(`openbot:${scope}:${computerId}:${agentId ?? "shared"}`)
+    .update(`dispatch:${scope}:${computerId}:${agentId ?? "shared"}`)
     .digest("base64url");
 }

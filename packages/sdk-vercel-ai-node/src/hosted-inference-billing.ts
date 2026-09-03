@@ -373,7 +373,7 @@ function receiptFromGeneration(
     provider: generation.providerName,
     inputTokens: generation.promptTokens,
     outputTokens: generation.completionTokens,
-    tags: tags ?? ["hosted-openbot"],
+    tags: tags ?? ["hosted-dispatch"],
   };
 }
 

@@ -55,7 +55,7 @@ jobs:
       # Publishing changes a public feed, so the repository gates run before anything is
       # packaged. Once here rather than in each matrix job: the tree is the same for both.
       - name: Check
-        run: vp run --filter openbot start -- check
+        run: vp run --filter @trytilde/cli start -- check
 
       - id: plan
         shell: bash
@@ -78,9 +78,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     env:
-      OPENBOT_DESKTOP_UPDATES_BUCKET: ${{ vars.DESKTOP_UPDATES_S3_BUCKET }}
-      OPENBOT_DESKTOP_UPDATES_PREFIX: ${{ vars.DESKTOP_UPDATES_S3_PREFIX }}
-      OPENBOT_DESKTOP_UPDATES_BASE_URL: ${{ vars.DESKTOP_UPDATES_BASE_URL }}
+      DISPATCH_DESKTOP_UPDATES_BUCKET: ${{ vars.DESKTOP_UPDATES_S3_BUCKET }}
+      DISPATCH_DESKTOP_UPDATES_PREFIX: ${{ vars.DESKTOP_UPDATES_S3_PREFIX }}
+      DISPATCH_DESKTOP_UPDATES_BASE_URL: ${{ vars.DESKTOP_UPDATES_BASE_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -135,9 +135,9 @@ jobs:
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
     env:
-      OPENBOT_DESKTOP_UPDATES_BUCKET: ${{ vars.DESKTOP_UPDATES_S3_BUCKET }}
-      OPENBOT_DESKTOP_UPDATES_PREFIX: ${{ vars.DESKTOP_UPDATES_S3_PREFIX }}
-      OPENBOT_DESKTOP_UPDATES_BASE_URL: ${{ vars.DESKTOP_UPDATES_BASE_URL }}
+      DISPATCH_DESKTOP_UPDATES_BUCKET: ${{ vars.DESKTOP_UPDATES_S3_BUCKET }}
+      DISPATCH_DESKTOP_UPDATES_PREFIX: ${{ vars.DESKTOP_UPDATES_S3_PREFIX }}
+      DISPATCH_DESKTOP_UPDATES_BASE_URL: ${{ vars.DESKTOP_UPDATES_BASE_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

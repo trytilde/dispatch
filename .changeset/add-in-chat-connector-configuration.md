@@ -1,10 +1,10 @@
 ---
-"@tryopenbot/connector-tools": minor
-"@tryopenbot/client-runtime": minor
-"@tryopenbot/control-service": minor
-"@tryopenbot/agent-provider": minor
-"@tryopenbot/ui": minor
-"openbot": minor
+"@trytilde/dispatch-connector-tools": minor
+"@trytilde/dispatch-client-runtime": minor
+"@trytilde/dispatch-control-service": minor
+"@trytilde/dispatch-agent-provider": minor
+"@trytilde/dispatch-ui": minor
+"@trytilde/cli": minor
 ---
 
 Bots configure their own connectors from chat. The new `configure_connector`

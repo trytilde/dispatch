@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 
-const loaderEnvironment = "OPENBOT_CLI_TYPESCRIPT_LOADER";
+const loaderEnvironment = "TILDE_CLI_TYPESCRIPT_LOADER";
 
 /** Re-exec the standalone CLI with tsx so generated .js specifiers resolve TypeScript files. */
 export async function runWithTypeScriptLoader(run: () => Promise<void>): Promise<void> {
@@ -9,7 +9,7 @@ export async function runWithTypeScriptLoader(run: () => Promise<void>): Promise
     return;
   }
   const entrypoint = process.argv[1];
-  if (!entrypoint) throw new Error("OpenBot CLI entrypoint is unavailable");
+  if (!entrypoint) throw new Error("Tilde CLI entrypoint is unavailable");
   const child = spawn(
     process.execPath,
     [

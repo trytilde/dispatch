@@ -65,7 +65,7 @@ export async function resolveVercelRegistryIdentity(options: {
       "Vercel did not return the account identity required for its Container Registry",
     );
   return {
-    repository: `vcr.vercel.com/${slug}/${project}/openbot-computer`,
+    repository: `vcr.vercel.com/${slug}/${project}/dispatch-computer`,
     username,
   };
 }

@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { materializeFileTemplate } from "@tryopenbot/utilities";
-import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
+import { materializeFileTemplate } from "@trytilde/dispatch-utilities";
+import type { DeploymentContext, DeploymentResult } from "@trytilde/dispatch-runtime-provider";
 import { bundleOptions } from "../build.js";
 import {
   authoredAgentPaths,
@@ -12,7 +12,7 @@ import {
   type AgentSource,
 } from "../discovery.js";
 
-export const agentLocalArtifact = ".openbot-deploy/agent-service/server.js";
+export const agentLocalArtifact = ".dispatch-deploy/agent-service/server.js";
 const serverTemplate = fileURLToPath(new URL("./assets/server.ts.hbs", import.meta.url));
 
 export async function buildLocalAgentService(
@@ -22,7 +22,7 @@ export async function buildLocalAgentService(
   const agents = await discoverAgents(context.repositoryRoot);
   const generated = resolve(
     context.repositoryRoot,
-    ".openbot-deploy/generated/local-agent-service.ts",
+    ".dispatch-deploy/generated/local-agent-service.ts",
   );
   const { imports, initializers, routes } = localAgentTemplateValues(
     context.repositoryRoot,

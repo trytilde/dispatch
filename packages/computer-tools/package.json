@@ -1,5 +1,5 @@
 {
-  "name": "@tryopenbot/computer-tools",
+  "name": "@trytilde/dispatch-computer-tools",
   "version": "0.1.0",
   "files": [
     "dist",
@@ -35,8 +35,8 @@
     "@bufbuild/protobuf": "2.7.0",
     "@connectrpc/connect": "2.1.2",
     "@connectrpc/connect-node": "2.1.2",
-    "@tryopenbot/computer-service-proto": "workspace:*",
-    "@tryopenbot/utilities": "workspace:*",
+    "@trytilde/dispatch-computer-service-proto": "workspace:*",
+    "@trytilde/dispatch-utilities": "workspace:*",
     "@trytilde/sdk": "workspace:*",
     "@trytilde/sdk-vercel-ai-node": "workspace:*",
     "ai": "7.0.64",

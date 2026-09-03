@@ -45,11 +45,14 @@ export async function developmentSandboxSourceFiles(
       if (!metadata) return undefined;
       if (metadata.isDirectory() && gitlinks.has(path)) return undefined;
       if (metadata.isSymbolicLink())
-        return { path: `openbot/${path}`, target: await containedLinkTarget(repositoryRoot, path) };
+        return {
+          path: `dispatch/${path}`,
+          target: await containedLinkTarget(repositoryRoot, path),
+        };
       if (!metadata.isFile())
         throw new Error(`Development sandbox source must be a regular file: ${path}`);
       return {
-        path: `openbot/${path}`,
+        path: `dispatch/${path}`,
         content: new Uint8Array(await readFile(source)),
         ...(metadata.mode & 0o111 ? { executable: true } : {}),
       };
@@ -81,7 +84,7 @@ export async function developmentSandboxConfigurationFiles(
       if (!metadata.isFile())
         throw new Error(`Development sandbox configuration must be a regular file: ${path}`);
       return {
-        path: `openbot/${path}`,
+        path: `dispatch/${path}`,
         content: new Uint8Array(await readFile(source)),
       };
     }),
@@ -101,7 +104,7 @@ function isSafeDevelopmentSourcePath(path: string): boolean {
   if (path === "configuration/secrets.yaml") return false;
   const parts = path.split("/");
   return (
-    !path.startsWith(".openbot-deploy/") &&
+    !path.startsWith(".dispatch-deploy/") &&
     !parts.includes("node_modules") &&
     !parts.includes("dist")
   );

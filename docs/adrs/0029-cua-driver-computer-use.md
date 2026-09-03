@@ -10,9 +10,9 @@
 
 ## Context
 
-OpenBot already routes each agent to a computer-service-owned virtual display and browser profile while keeping one shared Computer. Programmatic screenshots and input previously had separate command-backed implementations in computer-service and provider adapters. That duplicated ownership, limited agents to a small fixed action surface, and could bypass the same lifecycle used by richer GUI automation.
+Dispatch already routes each agent to a computer-service-owned virtual display and browser profile while keeping one shared Computer. Programmatic screenshots and input previously had separate command-backed implementations in computer-service and provider adapters. That duplicated ownership, limited agents to a small fixed action surface, and could bypass the same lifecycle used by richer GUI automation.
 
-Cua Driver publishes a runtime tool catalog and a result envelope containing text, images, structured and raw JSON, verification state, degradation, errors, and explicit completion uncertainty. OpenBot needs that fidelity without exposing a generic model-facing dispatcher or moving display ownership into a provider.
+Cua Driver publishes a runtime tool catalog and a result envelope containing text, images, structured and raw JSON, verification state, degradation, errors, and explicit completion uncertainty. Dispatch needs that fidelity without exposing a generic model-facing dispatcher or moving display ownership into a provider.
 
 ## Decision
 
@@ -22,9 +22,9 @@ Computer-service lazily creates one supervised private Cua worker for each valid
 
 `ListCuaTools` and `CallCuaTool` are the internal typed API. Results preserve the catalog schema and the SDK envelope, including ordered content, uploaded-image bytes, structured and raw JSON, verification, degradation, error codes, and `not started`, `completed`, or `unknown` action completion. Legacy screenshot and input RPCs translate to Cua calls. Computer providers retain desktop preview/provisioning but no direct screenshot or input implementation.
 
-`@tryopenbot/computer-tools` loads the complete catalog before an agent starts, converts each JSON Schema with the AI SDK JSON-Schema adapter, rejects name collisions, and exposes one local tool per identical Cua name. Returned images cross the existing session-scoped Tilde attachment boundary rather than becoming model-visible base64.
+`@trytilde/dispatch-computer-tools` loads the complete catalog before an agent starts, converts each JSON Schema with the AI SDK JSON-Schema adapter, rejects name collisions, and exposes one local tool per identical Cua name. Returned images cross the existing session-scoped Tilde attachment boundary rather than becoming model-visible base64.
 
-Agent Provider always reconciles an OpenBot-owned computer-use overlay. Tilde exposes the canonical `trycua/cua` `skills/gui-automation/SKILL.md` package as a managed skill, so OpenBot neither discovers nor attaches it to individual agent registries. Reconciliation removes a legacy explicit canonical Cua registry member when one is returned, while preserving the overlay and user-owned registry skills.
+Agent Provider always reconciles a Dispatch-owned computer-use overlay. Tilde exposes the canonical `trycua/cua` `skills/gui-automation/SKILL.md` package as a managed skill, so Dispatch neither discovers nor attaches it to individual agent registries. Reconciliation removes a legacy explicit canonical Cua registry member when one is returned, while preserving the overlay and user-owned registry skills.
 
 ```mermaid
 flowchart LR
@@ -41,7 +41,7 @@ flowchart LR
 
 ## Consequences
 
-- GUI tool availability follows the installed Cua runtime exactly instead of an OpenBot-maintained action list.
+- GUI tool availability follows the installed Cua runtime exactly instead of a Dispatch-maintained action list.
 - A worker or transport interruption can report unknown completion, so agent guidance requires observation before any retry.
 - Display routing still is not process, filesystem, network, or authorization isolation.
 - Unrestricted mode is a deliberate initial installation policy, not a permanent public default.
@@ -56,7 +56,7 @@ Work: expose explicit per-installation or per-agent Cua permission policy with a
 <FOLLOW UP>
 Owner: client-runtime, Computer Service, and agent skill lifecycle
 Trigger: Cua Driver computer use and managed Cua skills are deployed and stable
-Work: design an owner-guided demonstration flow using Cua recording, durable recoverable delivery, and automatic publication of learned skills to every OpenBot agent registry
+Work: design an owner-guided demonstration flow using Cua recording, durable recoverable delivery, and automatic publication of learned skills to every Dispatch agent registry
 </FOLLOW UP>
 
 <FOLLOW UP>

@@ -1,9 +1,9 @@
 # Provenance
 
-One index of everything in this repository that OpenBot did not write: where it
+One index of everything in this repository that Dispatch did not write: where it
 came from, who owns changes to it, and where its verification data lives.
 
-OpenBot's own source is MIT licensed. Nothing below changes that; the entries are
+Dispatch's own source is MIT licensed. Nothing below changes that; the entries are
 about material with a different origin living inside the tree.
 
 ## Companion files
@@ -13,20 +13,20 @@ duplicate each other:
 
 | File | Holds |
 | --- | --- |
-| [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) | License status, copyright, and the recorded OpenBot modifications per upstream project |
+| [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) | License status, copyright, and the recorded Dispatch modifications per upstream project |
 | [`packages/ui/src/beautiful-ui/PROVENANCE.md`](packages/ui/src/beautiful-ui/PROVENANCE.md) | Per-file SHA-256 at retrieval for the vendored web component tree |
 | [`skills-lock.json`](skills-lock.json) | Source repository, ref, path, and content hash per vendored coding-agent skill |
 
 The rules these files exist to enforce are recorded as decisions in
 [`docs/adrs/0022-vendored-web-component-sources.md`](docs/adrs/0022-vendored-web-component-sources.md)
 (vendor by copy, keep the upstream tree pristine, record every drift) and
-[`docs/adrs/0021-openbot-owned-ui-naming-and-copy.md`](docs/adrs/0021-openbot-owned-ui-naming-and-copy.md)
-(OpenBot-authored surfaces carry OpenBot's own identifiers and copy).
+[`docs/adrs/0021-dispatch-owned-ui-naming-and-copy.md`](docs/adrs/0021-dispatch-owned-ui-naming-and-copy.md)
+(Dispatch-authored surfaces carry Dispatch's own identifiers and copy).
 
 ## Vendored source
 
 Distributed as source rather than as a package, so it is copied into the tree and
-maintained here. Each row is upstream material, not OpenBot's own work.
+maintained here. Each row is upstream material, not Dispatch's own work.
 
 | Path | Upstream | License | Verification |
 | --- | --- | --- | --- |
@@ -39,24 +39,24 @@ maintained here. Each row is upstream material, not OpenBot's own work.
 `packages/ui` rather than as vendored source, so it needs no entry here beyond
 its notices record.
 
-## OpenBot-authored, sitting next to vendored source
+## Dispatch-authored, sitting next to vendored source
 
 These directories are easy to mistake for upstream material because of where they
-live. They are OpenBot's own work, and OpenBot owns their naming, copy, and
+live. They are Dispatch's own work, and Dispatch owns their naming, copy, and
 license status:
 
 - `packages/ui/src/beautiful-ui/atoms/` — reconstructions of primitives the
-  publisher never released as source. Written by OpenBot against the published
+  publisher never released as source. Written by Dispatch against the published
   visual result, not copied. They are not covered by the `upstream/` hashes and
   carry no borrowed provenance.
-- `packages/ui/src/beautiful-ui/blocks/` — OpenBot-authored composition built on
+- `packages/ui/src/beautiful-ui/blocks/` — Dispatch-authored composition built on
   the vendored primitives.
 - The 22 skills under `.agents/skills/` with no entry in `skills-lock.json`.
   Absence from the lockfile is the test: anything listed there is vendored with a
-  recorded hash, anything else is OpenBot's own.
+  recorded hash, anything else is Dispatch's own.
 
 The workspace UI was built with a third-party product as its visual target. The
-implementation is the vendored libraries above plus OpenBot's own code; no source
+implementation is the vendored libraries above plus Dispatch's own code; no source
 was taken from that product, and per ADR-0021 no identifier or user-visible
 string is carried from it either. Refer to it as the reference build.
 
@@ -67,23 +67,23 @@ and outside formatter and linter ownership:
 
 | Path | Generated from | Command |
 | --- | --- | --- |
-| `packages/api-client/src/generated/` | `packages/api-client/specs/openapi.cloud.json` | `pnpm openbot sdk refresh` |
-| `packages/sdk/src/generated/schema.d.ts` | `packages/api-client/specs/openapi.cloud.json` | `pnpm openbot sdk refresh` |
-| `packages/computer-service-proto/src/gen/` | `proto/openbot/computer/v1/computer.proto` | `pnpm contracts:generate` |
+| `packages/api-client/src/generated/` | `packages/api-client/specs/openapi.cloud.json` | `pnpm tilde sdk refresh` |
+| `packages/sdk/src/generated/schema.d.ts` | `packages/api-client/specs/openapi.cloud.json` | `pnpm tilde sdk refresh` |
+| `packages/computer-service-proto/src/gen/` | `proto/dispatch/computer/v1/computer.proto` | `pnpm contracts:generate` |
 | `apps/web/src/routeTree.gen.ts` | the TanStack route files | the Vite dev/build pipeline |
 
 ## First-party source consolidation
 
 The `packages/api-client` and `packages/sdk*` source, the Tilde command implementations under `cli/src/tilde/`, and
 the three SDK coding-agent skills were consolidated from the public `trytilde/harness-sdk`
-repository at `f0d77de4ebaff204c40149320296ceeb93cdfa20`. They are now first-party OpenBot monorepo source,
+repository at `f0d77de4ebaff204c40149320296ceeb93cdfa20`. They are now first-party Dispatch monorepo source,
 maintained and licensed under this repository's MIT license rather than a vendored upstream tree.
 
 ## Working with any of this
 
 **Never edit a vendored tree silently.** The hashes are the evidence that the
 license terms were honored, so an unrecorded edit destroys the audit trail. Put
-OpenBot composition outside the vendored directory instead. When a change to
+Dispatch composition outside the vendored directory instead. When a change to
 upstream source is genuinely necessary, record it in that tree's `PROVENANCE.md`
 and in the notices file in the same commit.
 

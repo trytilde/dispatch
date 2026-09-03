@@ -3,16 +3,19 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CodexInferenceProvider, VercelInferenceProvider } from "@tryopenbot/inference-provider";
+import {
+  CodexInferenceProvider,
+  VercelInferenceProvider,
+} from "@trytilde/dispatch-inference-provider";
 import {
   ExeDevRuntimeServiceProvider,
   VercelRuntimeServiceProvider,
-} from "@tryopenbot/agent-service-provider";
+} from "@trytilde/dispatch-agent-service-provider";
 import {
   ExeDevComputerProvider,
   VercelSandboxComputerProvider,
-} from "@tryopenbot/computer-service-provider";
-import { renderFileTemplatePath } from "@tryopenbot/utilities";
+} from "@trytilde/dispatch-computer-service-provider";
+import { renderFileTemplatePath } from "@trytilde/dispatch-utilities";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
@@ -21,9 +24,9 @@ import {
   builtInRuntimeInitializationProviders,
   configuredRuntimeChoice,
   inferenceChoicesForRuntime,
-  initializeOpenBot,
-  isInitializedOpenBotRepository,
-  isOpenBotRepository,
+  initializeDispatch,
+  isInitializedDispatchRepository,
+  isDispatchRepository,
   loadDeploymentConfiguration,
   processCommandRunner,
   prepareInferenceTemplateMigration,
@@ -46,7 +49,7 @@ afterEach(async () => {
   );
 });
 
-describe("OpenBot initialization", () => {
+describe("Dispatch initialization", () => {
   it("recognizes consolidation only when both service roles share one provider instance", () => {
     const shared = new VercelRuntimeServiceProvider();
     const providers = {
@@ -120,7 +123,7 @@ describe("OpenBot initialization", () => {
 
     try {
       await expect(
-        initializeOpenBot({
+        initializeDispatch({
           repositoryRoot,
           runner,
           request,
@@ -136,7 +139,7 @@ describe("OpenBot initialization", () => {
             input: vi.fn(async (_prompt, options) => {
               events.push(`input:${options?.id ?? "unknown"}`);
               if (options?.id === "onepassword-vault") return "Engineering";
-              if (options?.id === "onepassword-item-title") return "OpenBot owner identity";
+              if (options?.id === "onepassword-item-title") return "Dispatch owner identity";
               return "";
             }),
           },
@@ -153,7 +156,7 @@ describe("OpenBot initialization", () => {
 
   it("preselects configured providers while offering every built-in alternative", async () => {
     const workspaceRoot = fileURLToPath(new URL("../../", import.meta.url));
-    const repositoryRoot = await mkdtemp(join(workspaceRoot, ".openbot-provider-selection-"));
+    const repositoryRoot = await mkdtemp(join(workspaceRoot, ".dispatch-provider-selection-"));
     temporaryDirectories.push(repositoryRoot);
     const configurationTemplate = fileURLToPath(
       new URL("./assets/configuration/vercel.ts.hbs", import.meta.url),
@@ -204,7 +207,7 @@ describe("OpenBot initialization", () => {
 
   it("refuses to rewrite an owner-edited built-in composition", async () => {
     const workspaceRoot = fileURLToPath(new URL("../../", import.meta.url));
-    const repositoryRoot = await mkdtemp(join(workspaceRoot, ".openbot-provider-selection-"));
+    const repositoryRoot = await mkdtemp(join(workspaceRoot, ".dispatch-provider-selection-"));
     temporaryDirectories.push(repositoryRoot);
     const configurationTemplate = fileURLToPath(
       new URL("./assets/configuration/vercel.ts.hbs", import.meta.url),
@@ -298,12 +301,12 @@ describe("OpenBot initialization", () => {
     ).toContain("createCodexAppServer");
   });
 
-  it("rejects initialization outside an OpenBot repository before writing configuration", async () => {
-    const repositoryRoot = await mkdtemp(join(tmpdir(), "not-openbot-init-"));
+  it("rejects initialization outside a Dispatch repository before writing configuration", async () => {
+    const repositoryRoot = await mkdtemp(join(tmpdir(), "not-dispatch-init-"));
     temporaryDirectories.push(repositoryRoot);
 
     await expect(
-      initializeOpenBot({
+      initializeDispatch({
         repositoryRoot,
         userConfigurationPath: testUserConfigurationPath(repositoryRoot),
         prompts: {
@@ -311,7 +314,7 @@ describe("OpenBot initialization", () => {
           input: vi.fn(async () => ""),
         },
       }),
-    ).rejects.toThrow("openbot init must run from the root of a cloned OpenBot repository");
+    ).rejects.toThrow("tilde init must run from the root of a cloned Dispatch repository");
 
     await expect(access(join(repositoryRoot, "configuration"))).rejects.toMatchObject({
       code: "ENOENT",
@@ -321,8 +324,8 @@ describe("OpenBot initialization", () => {
   it("recognizes a cloned checkout separately from a completed initialization", async () => {
     const repositoryRoot = await temporaryRepository();
 
-    await expect(isOpenBotRepository(repositoryRoot)).resolves.toBe(true);
-    await expect(isInitializedOpenBotRepository(repositoryRoot)).resolves.toBe(false);
+    await expect(isDispatchRepository(repositoryRoot)).resolves.toBe(true);
+    await expect(isInitializedDispatchRepository(repositoryRoot)).resolves.toBe(false);
   });
 
   it("generates valid-looking age identities", () => {
@@ -379,8 +382,8 @@ describe("OpenBot initialization", () => {
         runWithInputFile: processCommandRunner.runWithInputFile,
       };
       const selections = ["onepassword", "local", "vercel"];
-      const inputs = ["Engineering", "OpenBot owner identity"];
-      await initializeOpenBot({
+      const inputs = ["Engineering", "Dispatch owner identity"];
+      await initializeDispatch({
         repositoryRoot,
         userConfigurationPath: testUserConfigurationPath(repositoryRoot),
         runner,
@@ -393,7 +396,7 @@ describe("OpenBot initialization", () => {
               "tilde-team-id": "tilde-team",
               "vercel-token": "vercel-private",
               "vercel-team-id": "",
-              "vercel-ai-gateway-api-key-name": "OpenBot agents",
+              "vercel-ai-gateway-api-key-name": "Dispatch agents",
             };
             return options?.id ? (providerAnswers[options.id] ?? "") : (inputs.shift() ?? "");
           },
@@ -432,7 +435,7 @@ describe("OpenBot initialization", () => {
       expect(primaryAgent).toContain('responseMode: "agentLoop"');
       expect(primaryAgent).not.toContain("createChatKitAttachmentFilePartHandler");
       expect(primaryAgent).not.toContain("base64");
-      expect(primaryAgent).not.toContain("@tryopenbot/agent-provider");
+      expect(primaryAgent).not.toContain("@trytilde/dispatch-agent-provider");
       expect(
         await readFile(join(repositoryRoot, "configuration/agent/instructions.ts"), "utf8"),
       ).toContain("export default");
@@ -459,16 +462,16 @@ describe("OpenBot initialization", () => {
       ).toContain("createGrepTool");
       expect(
         await readFile(
-          join(repositoryRoot, "configuration/agent/skills/develop-openbot/SKILL.md"),
+          join(repositoryRoot, "configuration/agent/skills/develop-dispatch/SKILL.md"),
           "utf8",
         ),
-      ).toContain("name: develop-openbot");
+      ).toContain("name: develop-dispatch");
       expect(
         await readFile(
           join(repositoryRoot, "configuration/agent/skills/create-agent/SKILL.md"),
           "utf8",
         ),
-      ).toContain("pnpm openbot new-agent");
+      ).toContain("pnpm tilde new-agent");
       expect(
         await readFile(
           join(repositoryRoot, "configuration/agent/sandbox/workspace/.profile"),
@@ -502,7 +505,7 @@ describe("OpenBot initialization", () => {
     await writeFixture(repositoryRoot, "configuration/.gitignore", "private-cache/\n");
 
     await expect(
-      initializeOpenBot({
+      initializeDispatch({
         repositoryRoot,
         userConfigurationPath: testUserConfigurationPath(repositoryRoot),
         prompts: {
@@ -564,7 +567,7 @@ describe("OpenBot initialization", () => {
     };
 
     await expect(
-      initializeOpenBot({
+      initializeDispatch({
         repositoryRoot,
         prompts: { select, input },
         runner,
@@ -584,15 +587,15 @@ describe("OpenBot initialization", () => {
     const answers = ["onepassword", "vercel", "vercel"];
     const inputs: Record<string, string> = {
       "onepassword-vault": "Engineering",
-      "onepassword-item-title": "OpenBot owner identity",
+      "onepassword-item-title": "Dispatch owner identity",
       "vercel-token": "vercel-secret",
       "vercel-team-id": "",
-      "vercel-runtime-project": "openbot-runtime",
-      "vercel-ai-gateway-api-key-name": "OpenBot agents",
+      "vercel-runtime-project": "dispatch-runtime",
+      "vercel-ai-gateway-api-key-name": "Dispatch agents",
       "tilde-api-key": "tilde-secret",
       "tilde-org-id": "tilde-org",
       "tilde-team-id": "tilde-team",
-      "openbot-deployment-name": "OpenBot",
+      "dispatch-deployment-name": "Dispatch",
       "tilde-base-url": "",
     };
     const promptInput = vi.fn(async (_prompt, options) => inputs[options?.id ?? ""] ?? "");
@@ -614,18 +617,18 @@ describe("OpenBot initialization", () => {
       }),
     };
 
-    await initializeOpenBot({
+    await initializeDispatch({
       repositoryRoot,
       prompts,
       request: async (input) =>
         (input instanceof Request ? input.url : input instanceof URL ? input.href : input).includes(
-          "/identity/openbot/deployments",
+          "/identity/dispatch/deployments",
         )
           ? Response.json({
-              client_id: "openbot-client",
-              audience: "urn:tilde:openbot:openbot-client",
+              client_id: "dispatch-client",
+              audience: "urn:tilde:dispatch:dispatch-client",
               issuer: "https://tilde-org.api.trytilde.ai/api/v1/team/tilde-team/identity/oauth",
-              scope: "openid profile email offline_access openbot:control",
+              scope: "openid profile email offline_access dispatch:control",
               authorization_endpoint: "https://api.trytilde.ai/api/v1/identity/oauth/authorize",
               token_endpoint: "https://api.trytilde.ai/api/v1/identity/oauth/token",
               jwks_uri: "https://api.trytilde.ai/api/v1/identity/.well-known/jwks.json",
@@ -640,12 +643,12 @@ describe("OpenBot initialization", () => {
     expect(promptInput).toHaveBeenCalledTimes(13);
     const environment = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
     expect(environment).not.toContain("RUNTIME_PROVIDER");
-    expect(environment).toContain('VERCEL_RUNTIME_PROJECT="openbot-runtime"');
+    expect(environment).toContain('VERCEL_RUNTIME_PROJECT="dispatch-runtime"');
     expect(environment).toContain(
       "# Name of the single Vercel project that will host the web app, control API, and isolated agent functions.",
     );
     expect(environment).not.toContain("VERCEL_AGENT_PROJECT");
-    expect(environment).toContain('VERCEL_AI_GATEWAY_API_KEY_NAME="OpenBot agents"');
+    expect(environment).toContain('VERCEL_AI_GATEWAY_API_KEY_NAME="Dispatch agents"');
     expect(environment).not.toContain("OPENAI_BASE_URL");
     expect(environment).toContain('TILDE_ORG_ID="tilde-org"');
     expect(environment).toContain('TILDE_TEAM_ID="tilde-team"');
@@ -671,7 +674,7 @@ describe("OpenBot initialization", () => {
     expect(encrypted).not.toContain("vercel-secret");
     const metadata = await readFile(testUserConfigurationPath(repositoryRoot), "utf8");
     expect(metadata).toContain('"sops"');
-    expect(metadata).toContain("op://Engineering/OpenBot owner identity/password");
+    expect(metadata).toContain("op://Engineering/Dispatch owner identity/password");
     await expect(
       access(join(repositoryRoot, "configuration/sops.identity.json")),
     ).rejects.toMatchObject({ code: "ENOENT" });
@@ -792,8 +795,8 @@ export default {
       }),
     };
 
-    expect(await isInitializedOpenBotRepository(repositoryRoot)).toBe(true);
-    await initializeOpenBot({
+    expect(await isInitializedDispatchRepository(repositoryRoot)).toBe(true);
+    await initializeDispatch({
       repositoryRoot,
       prompts,
       runner,
@@ -810,7 +813,7 @@ export default {
         ["tilde-api-key", undefined],
         ["tilde-org-id", "stored-org"],
         ["tilde-team-id", undefined],
-        ["openbot-deployment-name", "OpenBot"],
+        ["dispatch-deployment-name", "Dispatch"],
         ["tilde-base-url", "https://api.trytilde.ai"],
       ]),
     );
@@ -822,7 +825,7 @@ export default {
     const reencrypted = parseYaml(encryptionInput ?? "") as typeof storedSecrets;
     expect(reencrypted).toMatchObject({
       TILDE_API_KEY: {
-        description: "API key used by OpenBot services to access the selected Tilde team.",
+        description: "API key used by Dispatch services to access the selected Tilde team.",
         value: "entered-tilde",
       },
     });
@@ -964,7 +967,7 @@ export default {
     const select = vi.fn(async () => "onepassword");
     const prompts: InitializationPrompts = {
       select,
-      input: vi.fn(async () => "op://Engineering/OpenBot owner identity/password"),
+      input: vi.fn(async () => "op://Engineering/Dispatch owner identity/password"),
     };
 
     await loadDeploymentConfiguration(repositoryRoot, {
@@ -980,7 +983,7 @@ export default {
       sops: {
         ownerIdentity: {
           kind: "onepassword",
-          reference: "op://Engineering/OpenBot owner identity/password",
+          reference: "op://Engineering/Dispatch owner identity/password",
         },
       },
     });
@@ -1078,11 +1081,11 @@ export default {
 });
 
 async function temporaryRepository(): Promise<string> {
-  const path = await mkdtemp(join(tmpdir(), "openbot-init-"));
+  const path = await mkdtemp(join(tmpdir(), "dispatch-init-"));
   temporaryDirectories.push(path);
-  await writeFixture(path, "package.json", '{"name":"@tryopenbot/workspace"}\n');
+  await writeFixture(path, "package.json", '{"name":"@trytilde/dispatch-workspace"}\n');
   await writeFixture(path, "pnpm-workspace.yaml", "packages:\n  - cli\n");
-  await writeFixture(path, "cli/package.json", '{"name":"openbot"}\n');
+  await writeFixture(path, "cli/package.json", '{"name":"@trytilde/cli"}\n');
   await writeFixture(path, "configuration/.gitignore", "*\n!.gitignore\n");
   return path;
 }

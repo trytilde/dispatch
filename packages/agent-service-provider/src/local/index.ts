@@ -7,14 +7,14 @@ import type {
   DeploymentResult,
   InitializableProvider,
   ProviderInitialization,
-} from "@tryopenbot/runtime-provider";
-import { isDevelopmentLifecycle, persistEnvironment } from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
+import { isDevelopmentLifecycle, persistEnvironment } from "@trytilde/dispatch-runtime-provider";
 import {
   installLocalService,
   processRunner,
   waitForHealth,
   type CommandRunner,
-} from "@tryopenbot/control-service-provider";
+} from "@trytilde/dispatch-control-service-provider";
 import { checkAgentService } from "../check.js";
 import { agentLocalArtifact, buildLocalAgentService } from "./build.js";
 
@@ -60,7 +60,7 @@ export class LocalAgentServiceProvider implements Buildable, Deployable, Initial
         steps: ["Skip local service installation"],
       };
     return {
-      summary: "Install the local OpenBot agent service",
+      summary: "Install the local Dispatch agent service",
       steps: ["Install a separate user service", "Smoke-test /healthz"],
     };
   }
@@ -85,10 +85,10 @@ export class LocalAgentServiceProvider implements Buildable, Deployable, Initial
     if (isDevelopmentLifecycle(context)) return {};
     const artifact = context.inputs.require("agent-service.artifact");
     await installLocalService(context, this.#options.runner, {
-      id: "openbot-agents",
-      description: "OpenBot agent service",
+      id: "dispatch-agents",
+      description: "Dispatch agent service",
       command: this.#options.command ?? [process.execPath, artifact],
-      environmentFile: ".openbot-deploy/agent-service.env",
+      environmentFile: ".dispatch-deploy/agent-service.env",
       platform: this.#options.platform,
       homeDirectory: this.#options.homeDirectory,
       uid: this.#options.uid ?? process.getuid?.(),

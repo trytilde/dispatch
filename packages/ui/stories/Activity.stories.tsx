@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ActivityEmpty, ActivityQueue, ActivityTimeline, AgentActivity } from "../src/index.js";
 
-const meta = { title: "OpenBot/Activity" } satisfies Meta;
+const meta = { title: "Dispatch/Activity" } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 const noop = () => undefined;

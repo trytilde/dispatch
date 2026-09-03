@@ -375,7 +375,7 @@ function highlightDirectMatch(value: string, query: string): ReactNode {
   return (
     <>
       {value.slice(0, start)}
-      <mark className="rounded-[3px] bg-[var(--ob-accent-soft)] px-0.5 text-inherit">
+      <mark className="rounded-[3px] bg-[var(--dispatch-accent-soft)] px-0.5 text-inherit">
         {value.slice(start, end)}
       </mark>
       {value.slice(end)}

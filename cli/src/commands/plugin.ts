@@ -220,8 +220,8 @@ function runChildCommand(command: string, args: string[]): Promise<number> {
 
 export function tildePluginHelpText(): string {
   return `Usage:
-  openbot plugin --cli <claude|codex|cursor|opencode|gemini> [options]
-  openbot plugin audit --cli <claude|codex|cursor|opencode|gemini>
+  tilde plugin --cli <claude|codex|cursor|opencode|gemini> [options]
+  tilde plugin audit --cli <claude|codex|cursor|opencode|gemini>
 
 Options:
   --base-url <url>       Tilde API base URL. Default: TILDE_API_BASE_URL or ${DEFAULT_TILDE_API_BASE_URL}

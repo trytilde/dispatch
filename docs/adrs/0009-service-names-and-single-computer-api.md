@@ -4,7 +4,7 @@
 
 - Name application packages after the service they own.
 - `apps/control-service` owns the owner-facing Hono HTTP service.
-- `apps/computer-service` is the only API running inside an OpenBot Computer.
+- `apps/computer-service` is the only API running inside a Dispatch Computer.
 - Keep ConnectRPC for the generated, API-key-protected Computer contract.
 - Remove the legacy `box-host` package and `BoxService` protocol.
 - Keep Vercel-specific control adapters in `control-service-provider`, not the portable application or repository root.
@@ -22,8 +22,8 @@ transport rather than its domain, and contained a Vercel-only fetch wrapper.
 
 ## Decision
 
-Rename `apps/server` and `@tryopenbot/server` to `apps/control-service` and
-`@tryopenbot/control-service`. Keep its Hono app and local Node entrypoint portable.
+Rename `apps/server` and `@trytilde/dispatch-server` to `apps/control-service` and
+`@trytilde/dispatch-control-service`. Keep its Hono app and local Node entrypoint portable.
 The Vercel control provider owns the Web fetch adapter as a typed asset and
 bundles it as part of its prebuilt artifact lifecycle.
 
@@ -60,6 +60,6 @@ flowchart LR
 
 - 2026-08-13T11:12:53+02:00: Required the shared computer image to compile the sole computer service in a multi-stage container build instead of copying a host-built bundle.
 - 2026-08-13T12:09:51+02:00: Removed the obsolete legacy contracts package after `computer-service-proto` became the only computer RPC contract.
-- 2026-08-13T17:33:29+02:00: Renamed the private workspace package scope from `@openbot` to `@tryopenbot` while retaining the `openbot` CLI command.
+- 2026-08-13T17:33:29+02:00: Renamed the private workspace package scope from `@dispatch` to `@trytilde/dispatch-*` while retaining the Tilde CLI command.
 - 2026-08-15T13:25:19+02:00: Made computer-service the owner of per-agent display reconciliation and capability-routed VNC streams inside the one shared Computer.
 - 2026-08-16T15:08:39+02:00: Retained ConnectRPC exclusively for the internal Computer API while removing owner-facing ConnectRPC from control-service. Frontend code never calls Computer service directly.

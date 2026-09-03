@@ -8,7 +8,7 @@ Accepted
 
 Tilde owns provider-neutral, durable child-job state, parent/child correlation,
 idempotent dispatch and effect receipts, leases, terminal wakes, transcript and
-artifact references, and owner authorization. OpenBot owns authored delegation
+artifact references, and owner authorization. Dispatch owns authored delegation
 tools, inference policy, optional caller-selected child models, parallel fan-out,
 and parent-side aggregation.
 
@@ -31,12 +31,12 @@ attachment IDs, while `collectResult` resolves fresh authorized download URLs.
 
 ## Consequences
 
-- OpenBot can launch independent children concurrently and continue its parent
+- Dispatch can launch independent children concurrently and continue its parent
   inference without blocking on each child.
 - Horizontally scaled workers use database leases and one-winner claims.
 - Recovery retries are safe only through recorded idempotency/effect receipts;
   providers must not be called outside that boundary.
-- OpenBot may apply provider-specific time, token, and cost enforcement while
+- Dispatch may apply provider-specific time, token, and cost enforcement while
   Tilde persists and exposes the caller-selected hard budgets.
 - The owner-facing Work surface lists active and recent children, opens durable
   results/artifacts, and supports steer, stop, and resume on web, Electron, and

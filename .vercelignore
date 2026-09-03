@@ -4,7 +4,7 @@ node_modules
 .turbo
 .cache
 .data
-.openbot-deploy
+.dispatch-deploy
 plan
 coverage
 playwright-report

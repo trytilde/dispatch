@@ -1,18 +1,18 @@
 import { resolve } from "node:path";
-import { materializeFileTemplate } from "@tryopenbot/utilities";
+import { materializeFileTemplate } from "@trytilde/dispatch-utilities";
 import {
   TildePlatform,
   VercelPlatform,
-  deployHostedOpenBotRelease,
+  deployHostedDispatchRelease,
   vercelPlatform,
-} from "@tryopenbot/platform-integrations";
+} from "@trytilde/dispatch-platform-integrations";
 import {
   ensureVercelProject,
   installVercelEnvironment,
   requiredVercelProject,
   vercelDeploymentUrl,
   vercelScopeArguments,
-} from "@tryopenbot/platform-integrations/vercel/deployment";
+} from "@trytilde/dispatch-platform-integrations/vercel/deployment";
 import type {
   Buildable,
   Deployable,
@@ -21,9 +21,9 @@ import type {
   DeploymentResult,
   InitializableProvider,
   ProviderInitialization,
-} from "@tryopenbot/runtime-provider";
-import { isDevelopmentLifecycle, persistEnvironment } from "@tryopenbot/runtime-provider";
-import { processRunner, type CommandRunner } from "@tryopenbot/control-service-provider";
+} from "@trytilde/dispatch-runtime-provider";
+import { isDevelopmentLifecycle, persistEnvironment } from "@trytilde/dispatch-runtime-provider";
+import { processRunner, type CommandRunner } from "@trytilde/dispatch-control-service-provider";
 import { checkAgentService } from "../check.js";
 import { agentVercelArtifact, buildVercelAgentService, vercelProjectTemplate } from "./build.js";
 
@@ -45,7 +45,7 @@ export class VercelAgentServiceProvider implements Buildable, Deployable, Initia
         id: "vercel-agent-project",
         prompt: "Vercel project for agent functions",
         description:
-          "Name of the Vercel project that will host OpenBot agent functions and own their Container Registry namespace.",
+          "Name of the Vercel project that will host Dispatch agent functions and own their Container Registry namespace.",
         input: "text",
         required: true,
         destination: { kind: "environment", key: "VERCEL_AGENT_PROJECT" },
@@ -108,7 +108,7 @@ export class VercelAgentServiceProvider implements Buildable, Deployable, Initia
     if (this.platform.managed) {
       if (!this.#hostedPlatform)
         throw new Error("Tilde Cloud agent deployment requires a hosted platform");
-      return deployHostedOpenBotRelease(this.#hostedPlatform, context, "agents", root);
+      return deployHostedDispatchRelease(this.#hostedPlatform, context, "agents", root);
     }
     await materializeFileTemplate(vercelProjectTemplate, resolve(root, "vercel.json"));
     await installVercelEnvironment(context, project, this.#request);

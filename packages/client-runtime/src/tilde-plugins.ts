@@ -842,8 +842,8 @@ function proxiedProviderName(
   const inferred = items
     .map((item) => {
       const displayName = text(record(item.server)?.display_name);
-      const owner = agentIds.find((agentId) => displayName.startsWith(`OpenBot ${agentId} `));
-      return owner ? displayName.slice(`OpenBot ${owner} `.length).trim() : "";
+      const owner = agentIds.find((agentId) => displayName.startsWith(`Dispatch ${agentId} `));
+      return owner ? displayName.slice(`Dispatch ${owner} `.length).trim() : "";
     })
     .filter(Boolean);
   if (inferred[0] && inferred.every((value) => value === inferred[0])) return inferred[0];
@@ -889,7 +889,7 @@ function displayCategory(value: string): string {
     .trim()
     .replaceAll(/[_-]+/g, " ")
     .replace(/\b\w/g, (character) => character.toUpperCase());
-  return display.toLowerCase() === "openbot" ? "OpenBot" : display;
+  return display.toLowerCase() === "dispatch" ? "Dispatch" : display;
 }
 
 function record(value: unknown): Record<string, unknown> | undefined {

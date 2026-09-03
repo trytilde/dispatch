@@ -3,7 +3,7 @@ import { render } from "ink-testing-library";
 import { parseInvocation } from "./commands/index.js";
 import { CommandMenu, Help } from "./ui.js";
 
-describe("OpenBot CLI", () => {
+describe("Tilde CLI", () => {
   it("parses commands after pnpm's separator", () =>
     expect(parseInvocation(["--", "deploy", "--dry-run"])).toEqual({
       command: "deploy",
@@ -14,10 +14,10 @@ describe("OpenBot CLI", () => {
     expect(parseInvocation(["-h"])).toEqual({ command: "help", rest: [] }));
   it("renders discoverable command help", () => {
     const { lastFrame } = render(<Help />);
-    expect(lastFrame()).toContain("Fork it. Configure it. Run it.");
+    expect(lastFrame()).toContain("Dispatch. Fork it. Configure it. Run it.");
     expect(lastFrame()).toContain("init");
     expect(lastFrame()).toContain("deploy --yes");
-    expect(lastFrame()).not.toContain("Run the built OpenBot app");
+    expect(lastFrame()).not.toContain("Run the built Dispatch app");
   });
   it("supports keyboard navigation in the launcher", () => {
     let selected = "";

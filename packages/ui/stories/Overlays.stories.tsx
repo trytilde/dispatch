@@ -7,7 +7,7 @@ import {
   ThreadOverlay,
 } from "../src/index.js";
 
-const meta = { title: "OpenBot/Overlays" } satisfies Meta;
+const meta = { title: "Dispatch/Overlays" } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 const noop = () => undefined;

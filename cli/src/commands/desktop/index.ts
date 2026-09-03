@@ -19,7 +19,7 @@ export async function runDesktop(rest: readonly string[]): Promise<number> {
       return runRelease(args);
     default:
       console.error(
-        `Usage: openbot desktop <${desktopSubcommands.map(([name]) => name.split(" ")[0]).join("|")}>`,
+        `Usage: tilde desktop <${desktopSubcommands.map(([name]) => name.split(" ")[0]).join("|")}>`,
       );
       return 1;
   }

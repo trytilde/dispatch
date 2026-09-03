@@ -1,6 +1,6 @@
 export type ThemePreference = "light" | "dark" | "system";
 
-const STORAGE_KEY = "openbot.theme";
+const STORAGE_KEY = "dispatch.theme";
 const media = () => window.matchMedia("(prefers-color-scheme: dark)");
 
 export function getThemePreference(): ThemePreference {

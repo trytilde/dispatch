@@ -1,18 +1,18 @@
 ---
 name: vercel
-description: Deploy, configure, inspect, or troubleshoot OpenBot on Vercel, including Vercel Functions, provider-owned Vercel assets, and project environment variables. Use for preview or production deployments, Vercel configuration changes, deployment failures, environment setup, or changes involving cli/src/commands/deploy.ts or the Vercel service providers.
+description: Deploy, configure, inspect, or troubleshoot Dispatch on Vercel, including Vercel Functions, provider-owned Vercel assets, and project environment variables. Use for preview or production deployments, Vercel configuration changes, deployment failures, environment setup, or changes involving cli/src/commands/deploy.ts or the Vercel service providers.
 ---
 
-# Operate OpenBot on Vercel
+# Operate Dispatch on Vercel
 
-Use OpenBot's coordinated deployment workflow. It owns the coupled Vercel, Tilde, environment, and Sandbox setup that a generic `vercel deploy` cannot reproduce.
+Use Dispatch's coordinated deployment workflow. It owns the coupled Vercel, Tilde, environment, and Sandbox setup that a generic `vercel deploy` cannot reproduce.
 
 ## Inspect before acting
 
 1. Read `README.md` under **Deploy**, `package.json`, `cli/src/commands/deploy.ts`, the relevant `packages/*-service-provider/src/vercel/` implementation, and its `assets/` directory.
 2. Check `git status --short --branch` and whether `.vercel/project.json` exists. Read linked-project metadata only when needed; do not edit `.vercel/` by hand.
 3. Read the installed CLI and SDK versions from `package.json`. Consult the current official Vercel docs before changing an API or configuration shape; do not rely on remembered signatures.
-4. Never print, grep into chat, or pass secrets on the command line. Treat `.env.local`, `.openbot-deploy/secrets.enc.env`, Vercel tokens, Tilde credentials, and setup codes as secret material.
+4. Never print, grep into chat, or pass secrets on the command line. Treat `.env.local`, `.dispatch-deploy/secrets.enc.env`, Vercel tokens, Tilde credentials, and setup codes as secret material.
 
 ## Deploy
 
@@ -41,9 +41,9 @@ The deployment coordinator prepares the Vercel project and stable origin, allows
 
 Use the deployment coordinator and Vercel service provider with a preview target so the provider builds the prebuilt artifact and materializes its project configuration. Do not add a repository-root `vercel.json` or bypass the service provider with a raw source deployment. Use the linked project and explicit team scope already established for the checkout. Do not reconcile production Tilde resources or overwrite production environment variables for a preview. Inspect the resulting deployment and verify the changed user flow when credentials and authorization permit.
 
-## Preserve OpenBot's Vercel contract
+## Preserve Dispatch's Vercel contract
 
-- Keep Vercel entrypoints and configuration as `*.hbs` files in their owning provider's `vercel/assets/` directory. Render them through `@tryopenbot/utilities`; the deploy lifecycle materializes `vercel.json` in the ignored artifact root.
+- Keep Vercel entrypoints and configuration as `*.hbs` files in their owning provider's `vercel/assets/` directory. Render them through `@trytilde/dispatch-utilities`; the deploy lifecycle materializes `vercel.json` in the ignored artifact root.
 - Keep `.vercel/output/config.json` aligned with the generated functions and static assets; it owns routing for prebuilt deployments.
 - Keep `/rpc/*`, `/healthz`, and SPA behavior aligned with `apps/control-service` and `apps/web`.
 - Keep provider secrets in the control-plane environment provider; never copy them into a Sandbox.

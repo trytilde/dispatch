@@ -1,4 +1,4 @@
-import { createConfigureConnectorTool } from "@tryopenbot/connector-tools";
+import { createConfigureConnectorTool } from "@trytilde/dispatch-connector-tools";
 
 export default createConfigureConnectorTool({
   apiKey: () => process.env.AGENT_{{AGENT_ENV_PREFIX}}_API_KEY!,

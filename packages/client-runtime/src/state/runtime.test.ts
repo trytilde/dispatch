@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { createClientAuthAdapter } from "../auth.js";
-import { createOpenBotClient, type OpenBotClient } from "../chat/client.js";
+import { createDispatchClient, type DispatchClient } from "../chat/client.js";
 import type { Routine } from "../contracts/routines.js";
-import { createOpenBotRuntime, type OpenBotRuntimeOptions } from "./runtime.js";
+import { createDispatchRuntime, type DispatchRuntimeOptions } from "./runtime.js";
 
-describe("OpenBot runtime", () => {
+describe("Dispatch runtime", () => {
   it("ignores stale search responses and opens a result through its associated bot", async () => {
-    const baseClient = createOpenBotClient({
+    const baseClient = createDispatchClient({
       fetch: async () => {
         throw new Error("Unexpected HTTP request");
       },
@@ -15,7 +15,7 @@ describe("OpenBot runtime", () => {
     const first = new Promise<{ items: [] }>((resolve) => {
       resolveFirst = resolve;
     });
-    const client: OpenBotClient = {
+    const client: DispatchClient = {
       ...baseClient,
       searchChatKit: async (query) =>
         query === "first"
@@ -40,7 +40,7 @@ describe("OpenBot runtime", () => {
         snapshot_revision: 1,
       }),
     };
-    const runtime = createOpenBotRuntime({
+    const runtime = createDispatchRuntime({
       client,
       auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
     });
@@ -61,12 +61,12 @@ describe("OpenBot runtime", () => {
     const jobId = "55555555-5555-4555-8555-555555555555";
     let ready = false;
     const persisted: unknown[] = [];
-    const baseClient = createOpenBotClient({
+    const baseClient = createDispatchClient({
       fetch: async () => {
         throw new Error("Unexpected HTTP request");
       },
     });
-    const client: OpenBotClient = {
+    const client: DispatchClient = {
       ...baseClient,
       startAgentSetup: async () => ({
         status: "setting_up",
@@ -99,7 +99,7 @@ describe("OpenBot runtime", () => {
         },
       }),
     };
-    const runtime = createOpenBotRuntime({
+    const runtime = createDispatchRuntime({
       client,
       auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
       schedule: (callback) => setTimeout(callback, 0),
@@ -126,7 +126,7 @@ describe("OpenBot runtime", () => {
   });
 
   it("hydrates authentication and sidebar state outside React", async () => {
-    const client = createOpenBotClient({
+    const client = createDispatchClient({
       fetch: async (input) => {
         const url =
           typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
@@ -152,7 +152,7 @@ describe("OpenBot runtime", () => {
         throw new Error(`Unexpected request: ${url}`);
       },
     });
-    const runtime = createOpenBotRuntime({
+    const runtime = createDispatchRuntime({
       client,
       auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
     });
@@ -183,12 +183,12 @@ describe("OpenBot runtime", () => {
       ],
       next_page_token: null,
     }));
-    const baseClient = createOpenBotClient({
+    const baseClient = createDispatchClient({
       fetch: async () => {
         throw new Error("Unexpected HTTP request");
       },
     });
-    const client: OpenBotClient = {
+    const client: DispatchClient = {
       ...baseClient,
       getSession: async () => ({
         authenticated: true,
@@ -213,7 +213,7 @@ describe("OpenBot runtime", () => {
                   },
                   {
                     id: "owner-default",
-                    lookup_key: "openbot:user:owner-one:agent:agent-one",
+                    lookup_key: "dispatch:user:owner-one:agent:agent-one",
                     created_at: "2026-08-24T10:00:00.000Z",
                     updated_at: "2026-08-24T10:00:00.000Z",
                   },
@@ -232,7 +232,7 @@ describe("OpenBot runtime", () => {
         );
       },
     };
-    const runtime = createOpenBotRuntime({
+    const runtime = createDispatchRuntime({
       client,
       auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
     });
@@ -248,18 +248,18 @@ describe("OpenBot runtime", () => {
 
   it("creates the authenticated user's default session with a stable lookup key", async () => {
     const createdAt = "2026-08-25T10:00:00.000Z";
-    const baseClient = createOpenBotClient({
+    const baseClient = createDispatchClient({
       fetch: async () => {
         throw new Error("Unexpected HTTP request");
       },
     });
     const createSession = vi.fn(async () => ({
       id: "owner-default",
-      lookup_key: "openbot:user:owner-one:agent:agent-one",
+      lookup_key: "dispatch:user:owner-one:agent:agent-one",
       created_at: createdAt,
       updated_at: createdAt,
     }));
-    const client: OpenBotClient = {
+    const client: DispatchClient = {
       ...baseClient,
       getSession: async () => ({
         authenticated: true,
@@ -287,7 +287,7 @@ describe("OpenBot runtime", () => {
         );
       },
     };
-    const runtime = createOpenBotRuntime({
+    const runtime = createDispatchRuntime({
       client,
       auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
     });
@@ -297,21 +297,21 @@ describe("OpenBot runtime", () => {
 
     expect(createSession).toHaveBeenCalledWith("agent-one", {
       title: "Agent One",
-      lookupKey: "openbot:user:owner-one:agent:agent-one",
+      lookupKey: "dispatch:user:owner-one:agent:agent-one",
     });
     runtime.dispose();
   });
 
   it("loads agent navigation without hydrating chat messages or observers", async () => {
     const now = "2026-08-24T10:00:00.000Z";
-    const baseClient = createOpenBotClient({
+    const baseClient = createDispatchClient({
       fetch: async () => {
         throw new Error("Unexpected HTTP request");
       },
     });
     const getMessages = vi.fn(async () => ({ items: [], next_page_token: null }));
     const observeChatKitRealtime = vi.fn(async () => undefined);
-    const client: OpenBotClient = {
+    const client: DispatchClient = {
       ...baseClient,
       getSession: async () => ({
         authenticated: true,
@@ -335,7 +335,7 @@ describe("OpenBot runtime", () => {
       getMessages,
       observeChatKitRealtime,
     };
-    const runtime = createOpenBotRuntime({
+    const runtime = createDispatchRuntime({
       client,
       auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
     });
@@ -351,7 +351,7 @@ describe("OpenBot runtime", () => {
 
   it("captures initial sidebar failures without leaking an unhandled rejection", async () => {
     let sidebarRequests = 0;
-    const client = createOpenBotClient({
+    const client = createDispatchClient({
       fetch: async (input) => {
         const url =
           typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
@@ -364,7 +364,7 @@ describe("OpenBot runtime", () => {
         return Response.json({ error: "Chat unavailable" }, { status: 503 });
       },
     });
-    const runtime = createOpenBotRuntime({
+    const runtime = createDispatchRuntime({
       client,
       auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
     });
@@ -378,12 +378,12 @@ describe("OpenBot runtime", () => {
 
   it("hydrates the aggregate snapshot before accepting ChatKit workspace events", async () => {
     let bootstrapRequests = 0;
-    const baseClient = createOpenBotClient({
+    const baseClient = createDispatchClient({
       fetch: async () => {
         throw new Error("Unexpected HTTP request");
       },
     });
-    const client: OpenBotClient = {
+    const client: DispatchClient = {
       ...baseClient,
       getSession: async () => ({
         authenticated: true,
@@ -400,7 +400,7 @@ describe("OpenBot runtime", () => {
         );
       },
     };
-    const runtime = createOpenBotRuntime({
+    const runtime = createDispatchRuntime({
       client,
       auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
       schedule: (callback) => setTimeout(callback, 0),
@@ -412,14 +412,14 @@ describe("OpenBot runtime", () => {
   });
 
   it("keeps inactive agents busy and reconciles their messages from the team stream", async () => {
-    let emitEvent: Parameters<OpenBotClient["observeChatKitRealtime"]>[1] = () => undefined;
+    let emitEvent: Parameters<DispatchClient["observeChatKitRealtime"]>[1] = () => undefined;
     const now = "2026-08-21T08:21:00.000Z";
-    const baseClient = createOpenBotClient({
+    const baseClient = createDispatchClient({
       fetch: async () => {
         throw new Error("Unexpected HTTP request");
       },
     });
-    const client: OpenBotClient = {
+    const client: DispatchClient = {
       ...baseClient,
       getSession: async () => ({
         authenticated: true,
@@ -490,7 +490,7 @@ describe("OpenBot runtime", () => {
         );
       },
     };
-    const runtime = createOpenBotRuntime({
+    const runtime = createDispatchRuntime({
       client,
       auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
     });
@@ -569,15 +569,15 @@ describe("OpenBot runtime", () => {
   });
 
   it("replays an event whose first state application fails", async () => {
-    let emitEvent: Parameters<OpenBotClient["observeChatKitRealtime"]>[1] = () => undefined;
+    let emitEvent: Parameters<DispatchClient["observeChatKitRealtime"]>[1] = () => undefined;
     let failClock = false;
     const now = new Date("2026-08-21T08:21:00.000Z");
-    const baseClient = createOpenBotClient({
+    const baseClient = createDispatchClient({
       fetch: async () => {
         throw new Error("Unexpected HTTP request");
       },
     });
-    const client: OpenBotClient = {
+    const client: DispatchClient = {
       ...baseClient,
       getSession: async () => ({
         authenticated: true,
@@ -613,7 +613,7 @@ describe("OpenBot runtime", () => {
         );
       },
     };
-    const runtime = createOpenBotRuntime({
+    const runtime = createDispatchRuntime({
       client,
       auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
       now: () => {
@@ -648,8 +648,8 @@ describe("OpenBot runtime", () => {
   });
 
   it("shows an active-turn send in the queue and coalesces queue refreshes", async () => {
-    let emitEvent: Parameters<OpenBotClient["observeChatKitRealtime"]>[1] = () => undefined;
-    let resolveSend!: (value: Awaited<ReturnType<OpenBotClient["submitTurn"]>>) => void;
+    let emitEvent: Parameters<DispatchClient["observeChatKitRealtime"]>[1] = () => undefined;
+    let resolveSend!: (value: Awaited<ReturnType<DispatchClient["submitTurn"]>>) => void;
     let releaseQueueRefresh!: () => void;
     let holdQueueRefresh = false;
     const currentTime = new Date("2026-08-20T12:00:00Z");
@@ -660,17 +660,17 @@ describe("OpenBot runtime", () => {
       if (holdQueueRefresh) await queueRefreshBarrier;
       return { items: [], next_page_token: null };
     });
-    const sendResponse = new Promise<Awaited<ReturnType<OpenBotClient["submitTurn"]>>>(
+    const sendResponse = new Promise<Awaited<ReturnType<DispatchClient["submitTurn"]>>>(
       (resolve) => {
         resolveSend = resolve;
       },
     );
-    const baseClient = createOpenBotClient({
+    const baseClient = createDispatchClient({
       fetch: async () => {
         throw new Error("Unexpected HTTP request");
       },
     });
-    const client: OpenBotClient = {
+    const client: DispatchClient = {
       ...baseClient,
       getSession: async () => ({
         authenticated: true,
@@ -719,7 +719,7 @@ describe("OpenBot runtime", () => {
       },
       submitTurn: vi.fn(() => sendResponse),
     };
-    const runtime = createOpenBotRuntime({
+    const runtime = createDispatchRuntime({
       client,
       auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
       now: () => currentTime,
@@ -837,18 +837,18 @@ describe("OpenBot runtime", () => {
     const reorderBarrier = new Promise<void>((resolve) => {
       releaseReorder = resolve;
     });
-    const baseClient = createOpenBotClient({
+    const baseClient = createDispatchClient({
       fetch: async () => {
         throw new Error("Unexpected HTTP request");
       },
     });
     const reorderQueuedTurn = vi.fn(async () => reorderBarrier);
-    const client: OpenBotClient = {
+    const client: DispatchClient = {
       ...baseClient,
       reorderQueuedTurn,
       getQueuedTurns: async () => ({ items: [], next_page_token: null }),
     };
-    const runtime = createOpenBotRuntime({
+    const runtime = createDispatchRuntime({
       client,
       auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
     });
@@ -915,23 +915,23 @@ function testRoutine(id: string, name: string): Routine {
 }
 
 function createRoutineRuntime(
-  overrides: Partial<OpenBotClient>,
-  runtimeOptions: Partial<OpenBotRuntimeOptions> = {},
+  overrides: Partial<DispatchClient>,
+  runtimeOptions: Partial<DispatchRuntimeOptions> = {},
 ) {
-  const baseClient = createOpenBotClient({
+  const baseClient = createDispatchClient({
     fetch: async () => {
       throw new Error("Unexpected HTTP request");
     },
   });
-  const client: OpenBotClient = { ...baseClient, ...overrides };
-  return createOpenBotRuntime({
+  const client: DispatchClient = { ...baseClient, ...overrides };
+  return createDispatchRuntime({
     client,
     auth: createClientAuthAdapter(client, { signIn: async () => undefined }),
     ...runtimeOptions,
   });
 }
 
-describe("OpenBot runtime routines slice", () => {
+describe("Dispatch runtime routines slice", () => {
   it("refreshes routines into the per-agent map", async () => {
     const runtime = createRoutineRuntime({
       listRoutines: async () => [testRoutine("r-1", "Deploy watchdog")],
@@ -1066,7 +1066,7 @@ describe("OpenBot runtime routines slice", () => {
   });
 });
 
-describe("OpenBot runtime work slice", () => {
+describe("Dispatch runtime work slice", () => {
   const snapshot = {
     goals: [
       {
@@ -1145,7 +1145,7 @@ describe("OpenBot runtime work slice", () => {
   });
 });
 
-describe("OpenBot runtime signals slice", () => {
+describe("Dispatch runtime signals slice", () => {
   it("refreshes providers, instances, and per-instance deliveries", async () => {
     const runtime = createRoutineRuntime({
       listSignalProviders: async () => [

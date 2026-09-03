@@ -27,7 +27,7 @@ interface BackgroundJobMetadata {
  */
 export class BackgroundExecRegistry {
   constructor(
-    readonly stateRoot = process.env.BACKGROUND_JOBS_DIRECTORY ?? "/workspace/.openbot/jobs",
+    readonly stateRoot = process.env.BACKGROUND_JOBS_DIRECTORY ?? "/workspace/.dispatch/jobs",
   ) {}
 
   async start(

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Update Dispatch"
+  short_description: "Bring upstream Dispatch changes into a fork"
+  default_prompt: "Update this Dispatch fork from upstream while preserving repository configuration."

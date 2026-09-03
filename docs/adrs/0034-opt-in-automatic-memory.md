@@ -2,10 +2,10 @@
 
 ## In brief
 
-- The reusable Tilde SDK and OpenBot both default automatic memory to `none`.
+- The reusable Tilde SDK and Dispatch both default automatic memory to `none`.
   Owners opt in during initialization or with fork-owned environment settings.
 - Tilde derives memory authority from the durable triggering ChatKit message;
-  OpenBot never supplies a user identity or bank ID during recall.
+  Dispatch never supplies a user identity or bank ID during recall.
 - The agent inserts a deterministic bounded projection after stable instructions
   and any compaction checkpoint so provider prompt-prefix caching remains useful.
 - Memory Catcher is a least-privilege user-deployed background agent with one
@@ -14,10 +14,10 @@
 
 ## Decision
 
-OpenBot uses the high-level Tilde automatic-memory controller around inference.
+Dispatch uses the high-level Tilde automatic-memory controller around inference.
 An owner can select `none`, `personal`, `personal_plus_agent`, or `team`, and can
-inspect, edit, or delete visible facts. OpenBot's deployment default is `none`.
-`OPENBOT_AUTOMATIC_MEMORY_MODE` selects the installation default and
+inspect, edit, or delete visible facts. Dispatch's deployment default is `none`.
+`DISPATCH_AUTOMATIC_MEMORY_MODE` selects the installation default and
 `AGENT_<ID>_AUTOMATIC_MEMORY_MODE` overrides one bot. Only
 `personal_plus_agent` provisions a bot-owned bank; moving away sends an
 explicit disabled bank spec so repeated deployment removes that owned bank.
@@ -25,7 +25,7 @@ explicit disabled bank spec so repeated deployment removes that owned bank.
 Recall is tied to the newest durable triggering message ID. Tilde authenticates
 the recipient bot, resolves the effective actor and current bank visibility, and
 returns bounded provenance for the bank, memory, evidence, source, and learning
-bot. OpenBot inserts that projection as a dynamic system suffix:
+bot. Dispatch inserts that projection as a dynamic system suffix:
 
 ```mermaid
 flowchart LR
@@ -38,7 +38,7 @@ flowchart LR
   Q --> S[Memory Catcher session bound to one bank]
 ```
 
-ChatKit, not the OpenBot model loop, performs idempotent post-turn evidence
+ChatKit, not the Dispatch model loop, performs idempotent post-turn evidence
 enqueueing. Explicit owner facts remain owner-editable and protected from
 automatic overwrite.
 

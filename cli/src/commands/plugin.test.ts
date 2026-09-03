@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { defaultCommandForCli, parseTildePluginArgs, tildePluginHelpText } from "./plugin.js";
 
-describe("OpenBot Tilde plugin command", () => {
+describe("Dispatch Tilde plugin command", () => {
   it("parses configure-only invocations", () => {
     expect(
       parseTildePluginArgs([
@@ -32,6 +32,6 @@ describe("OpenBot Tilde plugin command", () => {
       passthrough: ["--dangerously-skip-permissions"],
     });
     expect(defaultCommandForCli("claude")).toBe("claude");
-    expect(tildePluginHelpText()).toContain("openbot plugin --cli");
+    expect(tildePluginHelpText()).toContain("tilde plugin --cli");
   });
 });

@@ -1,5 +1,5 @@
 import { createStore, type StoreApi } from "zustand/vanilla";
-import type { OpenBotClient } from "../chat/client.js";
+import type { DispatchClient } from "../chat/client.js";
 import type { CreatedAgent } from "../contracts/agents.js";
 import {
   eventBusyState,
@@ -115,7 +115,7 @@ export interface SearchState {
   error: string;
 }
 
-export interface OpenBotState {
+export interface DispatchState {
   auth: AuthState;
   sidebar: SidebarState;
   conversation: ConversationState;
@@ -134,7 +134,7 @@ export interface SendMessageInput {
   title?: string;
 }
 
-export interface OpenBotActions {
+export interface DispatchActions {
   initialize(options?: { workspace?: boolean }): Promise<void>;
   checkAuthentication(): Promise<void>;
   signIn(options?: { workspace?: boolean }): Promise<void>;
@@ -194,15 +194,15 @@ export interface OpenBotActions {
   setError(message: string): void;
 }
 
-export interface OpenBotRuntime {
-  client: OpenBotClient;
-  store: StoreApi<OpenBotState>;
-  actions: OpenBotActions;
+export interface DispatchRuntime {
+  client: DispatchClient;
+  store: StoreApi<DispatchState>;
+  actions: DispatchActions;
   dispose(): void;
 }
 
-export interface OpenBotRuntimeOptions {
-  client: OpenBotClient;
+export interface DispatchRuntimeOptions {
+  client: DispatchClient;
   auth: ClientAuthAdapter;
   agentSort?: AgentSortOrder;
   sessionSort?: SessionSortOrder;
@@ -227,7 +227,7 @@ const idleAgentSetup: AgentSetupState = {
   error: "",
 };
 
-const initialState: OpenBotState = {
+const initialState: DispatchState = {
   auth: { status: "checking", session: null, error: "" },
   sidebar: {
     agents: [],
@@ -263,9 +263,9 @@ const initialState: OpenBotState = {
   search: { query: "", items: [], status: "idle", error: "" },
 };
 
-export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRuntime {
+export function createDispatchRuntime(options: DispatchRuntimeOptions): DispatchRuntime {
   const restoredAgentSetup = options.agentSetupPersistence?.load();
-  const store = createStore<OpenBotState>(() => ({
+  const store = createStore<DispatchState>(() => ({
     ...initialState,
     agentSetup: restoredAgentSetup?.status === "setting_up" ? restoredAgentSetup : idleAgentSetup,
   }));
@@ -1244,7 +1244,7 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     }
   }
 
-  const actions: OpenBotActions = {
+  const actions: DispatchActions = {
     initialize,
     checkAuthentication,
     async signIn({ workspace = true }: { workspace?: boolean } = {}) {
@@ -1400,7 +1400,7 @@ function uniqueParticipantEvents(events: readonly ParticipantEvent[]): Participa
   );
 }
 
-function applyAgentEvent(store: StoreApi<OpenBotState>, event: ChatEvent): void {
+function applyAgentEvent(store: StoreApi<DispatchState>, event: ChatEvent): void {
   if (event.type === "agent.deleted") {
     store.setState((state) => ({
       sidebar: {
@@ -1439,7 +1439,7 @@ function applyAgentEvent(store: StoreApi<OpenBotState>, event: ChatEvent): void 
   });
 }
 
-function applySessionEvent(store: StoreApi<OpenBotState>, event: ChatEvent): void {
+function applySessionEvent(store: StoreApi<DispatchState>, event: ChatEvent): void {
   if (event.type === "session.deleted") {
     store.setState((state) => ({
       sidebar: {
@@ -1504,7 +1504,7 @@ function applySessionEvent(store: StoreApi<OpenBotState>, event: ChatEvent): voi
 }
 
 function updateSidebarForSessionEvent(
-  store: StoreApi<OpenBotState>,
+  store: StoreApi<DispatchState>,
   sessionId: string,
   messages: ChatMessage[],
   unread: boolean,

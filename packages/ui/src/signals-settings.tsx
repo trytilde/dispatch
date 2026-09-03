@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { MoreHorizontalIcon, PlusIcon, SearchIcon } from "lucide-react";
-import type { SignalInstance, SignalProvider } from "@tryopenbot/client-runtime";
+import type { SignalInstance, SignalProvider } from "@trytilde/dispatch-client-runtime";
 import {
   DropdownMenu,
   DropdownMenuContent,

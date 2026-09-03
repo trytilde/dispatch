@@ -2,7 +2,7 @@ import { defineConfig, lazyPlugins } from "vite-plus";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-const controlOrigin = `http://127.0.0.1:${process.env.OPENBOT_CONTROL_PORT || process.env.PORT || "4100"}`;
+const controlOrigin = `http://127.0.0.1:${process.env.DISPATCH_CONTROL_PORT || process.env.PORT || "4100"}`;
 const controlProxy = () => ({ target: controlOrigin, xfwd: true });
 const computerVncTarget = process.env.EXE_DEV_COMPUTER_VNC_TARGET?.trim();
 const exeDevPublicOrigin = process.env.EXE_DEV_PUBLIC_ORIGIN?.trim();

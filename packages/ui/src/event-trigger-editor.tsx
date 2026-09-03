@@ -3,7 +3,7 @@ import type {
   RoutineTriggerFilter,
   SignalInstance,
   SignalProvider,
-} from "@tryopenbot/client-runtime";
+} from "@trytilde/dispatch-client-runtime";
 import { SelectField, type SelectOption } from "./primitive-components.js";
 
 /**
@@ -312,8 +312,8 @@ export function EventTriggerEditor({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-2">
-        <label className="ob-select-label">
-          <span className="ob-select-trigger">
+        <label className="dispatch-select-label">
+          <span className="dispatch-select-trigger">
             <select
               aria-label={config.eventLabel}
               onChange={(event) => emit(event.target.value, value.instanceId, fieldValues)}
@@ -337,7 +337,7 @@ export function EventTriggerEditor({
                 ),
               )}
             </select>
-            <span aria-hidden="true" className="ob-select-icon">
+            <span aria-hidden="true" className="dispatch-select-icon">
               ⌄
             </span>
           </span>

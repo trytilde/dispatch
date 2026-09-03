@@ -20,7 +20,7 @@ afterEach(async () => {
 
 describe("agent desktops", () => {
   it("allocates stable, separate displays when agents start concurrently", async () => {
-    const temporaryDirectory = await mkdtemp(join(tmpdir(), "openbot-desktop-test-"));
+    const temporaryDirectory = await mkdtemp(join(tmpdir(), "dispatch-desktop-test-"));
     temporaryDirectories.push(temporaryDirectory);
     const binaryDirectory = join(temporaryDirectory, "bin");
     const desktopRoot = join(temporaryDirectory, "desktops");
@@ -61,7 +61,7 @@ describe("agent desktops", () => {
       ].sort(),
     );
     expect(info).toHaveBeenCalledWith(
-      "[openbot-vnc] started desktop",
+      "[dispatch-vnc] started desktop",
       expect.objectContaining({
         agentId: "first-agent",
         display: first.display,

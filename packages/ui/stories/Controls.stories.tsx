@@ -11,7 +11,7 @@ import {
   VoiceWaveform,
 } from "../src/index.js";
 
-const meta = { title: "OpenBot/Controls" } satisfies Meta;
+const meta = { title: "Dispatch/Controls" } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 

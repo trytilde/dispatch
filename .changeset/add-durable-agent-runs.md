@@ -1,5 +1,5 @@
 ---
-"openbot": minor
+"@trytilde/cli": minor
 "@trytilde/sdk": minor
 "@trytilde/sdk-vercel-ai-node": minor
 ---

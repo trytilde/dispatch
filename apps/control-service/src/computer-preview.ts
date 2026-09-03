@@ -3,7 +3,7 @@ import type { Hono } from "hono";
 import {
   ComputerProviderError,
   type ComputerProvider,
-} from "@tryopenbot/computer-service-provider";
+} from "@trytilde/dispatch-computer-service-provider";
 
 export interface ComputerPreviewOptions {
   devMode?: boolean;
@@ -26,7 +26,7 @@ export function registerComputerPreview(
         ? requestedTraceId
         : randomUUID();
     const startedAt = Date.now();
-    console.info("[openbot-vnc] preview requested", { agentId, requestId });
+    console.info("[dispatch-vnc] preview requested", { agentId, requestId });
     try {
       const endpoint = await provider.previewAgentDesktop(agentId, {
         requestId,
@@ -34,7 +34,7 @@ export function registerComputerPreview(
         ...(options.environment ? { environment: options.environment } : {}),
         signal: context.req.raw.signal,
       });
-      console.info("[openbot-vnc] preview redirect ready", {
+      console.info("[dispatch-vnc] preview redirect ready", {
         agentId,
         elapsedMs: Date.now() - startedAt,
         endpointOrigin: endpoint.url.origin,
@@ -45,11 +45,11 @@ export function registerComputerPreview(
       const response = context.redirect(endpoint.url.toString(), 307);
       response.headers.set("cache-control", "no-store");
       response.headers.set("referrer-policy", "no-referrer");
-      response.headers.set("x-openbot-vnc-trace-id", requestId);
+      response.headers.set("x-dispatch-vnc-trace-id", requestId);
       return response;
     } catch (error) {
       if (context.req.raw.signal.aborted) {
-        console.info("[openbot-vnc] preview request aborted", {
+        console.info("[dispatch-vnc] preview request aborted", {
           agentId,
           elapsedMs: Date.now() - startedAt,
           requestId,
@@ -57,7 +57,7 @@ export function registerComputerPreview(
         return new Response(null, { status: 499 });
       }
       console.error(
-        "[openbot-vnc] preview request failed",
+        "[dispatch-vnc] preview request failed",
         { agentId, elapsedMs: Date.now() - startedAt, requestId },
         error instanceof Error ? error : new Error(String(error)),
       );

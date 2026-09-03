@@ -1,4 +1,4 @@
-# @tryopenbot/control-service
+# @trytilde/dispatch-control-service
 
 The portable Hono control application. It serves health, exposes raw allowlisted same-origin Tilde bridges under `/api/chat/*` and `/api/tilde/*`, exchanges an HttpOnly browser session for a single-use registered-Origin ticket or an authenticated native bearer for an Origin-free native ticket, and serves the built web UI with SPA fallback both locally and in a Vercel Function. Client Runtime uses that ticket to connect directly to Tilde's team WebSocket and projects Tilde-owned settings resources without domain facades in this service.
 
@@ -16,11 +16,11 @@ The portable Hono control application. It serves health, exposes raw allowlisted
   decision using only the owner bearer already verified by `requireOwner`; it never substitutes
   the installation API key and returns only the tokenless approval projection consumed by clients.
 - `registerComputerPreview(app, provider, options)` exposes the narrow owner preview redirect without making Computer service browser-accessible.
-- `registerConnectorAuthorizedRoute(app)` serves only the public OAuth completion page that bounces desktop flows to the `openbot://` deep link. Connector resources and setup use native Tilde APIs through `registerTildeProxy`.
+- `registerConnectorAuthorizedRoute(app)` serves only the public OAuth completion page that bounces desktop flows to the `dispatch://` deep link. Connector resources and setup use native Tilde APIs through `registerTildeProxy`.
 
 The package default application also exposes `GET /healthz`. There is no owner-facing ConnectRPC surface or pairing-code setup route.
 
-Owner-authenticated `POST /api/agents` starts `openbot new-agent` inside the trusted development
+Owner-authenticated `POST /api/agents` starts `tilde new-agent` inside the trusted development
 Computer as a background job. `GET /api/agents/setup/:jobId` reports that job without exposing the
 Computer API key or shell output to the browser. The command owns source creation and idempotent
 Tilde reconciliation; the status route does not provision a second time or require a separate

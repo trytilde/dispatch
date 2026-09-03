@@ -1,5 +1,5 @@
 {
-  "name": "@tryopenbot/ui",
+  "name": "@trytilde/dispatch-ui",
   "version": "0.1.0",
   "files": [
     "dist",
@@ -21,9 +21,9 @@
       "development": "./src/beautiful-ui/upstream/globals.css",
       "default": "./dist/beautiful-ui/upstream/globals.css"
     },
-    "./openbot-ui.css": {
-      "development": "./src/openbot-ui.css",
-      "default": "./dist/openbot-ui.css"
+    "./dispatch-ui.css": {
+      "development": "./src/dispatch-ui.css",
+      "default": "./dist/dispatch-ui.css"
     },
     "./beautiful-ui/*": {
       "types": "./src/beautiful-ui/upstream/*.tsx",
@@ -43,7 +43,7 @@
       },
       "./agent-avatar.css": "./dist/agent-avatar.css",
       "./beautiful-ui.css": "./dist/beautiful-ui/upstream/globals.css",
-      "./openbot-ui.css": "./dist/openbot-ui.css",
+      "./dispatch-ui.css": "./dist/dispatch-ui.css",
       "./beautiful-ui/*": {
         "types": "./dist/beautiful-ui/upstream/*.d.ts",
         "import": "./dist/beautiful-ui/upstream/*.js"
@@ -88,7 +88,7 @@
   "devDependencies": {
     "@storybook/react-vite": "10.5.0",
     "@tailwindcss/vite": "4.3.3",
-    "@tryopenbot/client-runtime": "workspace:*",
+    "@trytilde/dispatch-client-runtime": "workspace:*",
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",
     "react-dom": "19.1.2",
@@ -99,12 +99,12 @@
     "vite-plus": "catalog:"
   },
   "peerDependencies": {
-    "@tryopenbot/client-runtime": "0.1.0",
+    "@trytilde/dispatch-client-runtime": "0.1.0",
     "react": ">=19",
     "react-dom": ">=19"
   },
   "peerDependenciesMeta": {
-    "@tryopenbot/client-runtime": {
+    "@trytilde/dispatch-client-runtime": {
       "optional": true
     }
   }

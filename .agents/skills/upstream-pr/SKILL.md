@@ -1,6 +1,6 @@
 ---
 name: upstream-pr
-description: Prepare a focused change from an OpenBot fork for contribution to upstream. Use when separating reusable core or provider improvements from fork-specific configuration.
+description: Prepare a focused change from a Dispatch fork for contribution to upstream. Use when separating reusable core or provider improvements from fork-specific configuration.
 ---
 
 # Contribute Upstream

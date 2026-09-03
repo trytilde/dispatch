@@ -1,4 +1,4 @@
-import type { Platform, ProviderInitialization } from "@tryopenbot/runtime-provider";
+import type { Platform, ProviderInitialization } from "@trytilde/dispatch-runtime-provider";
 import { createVercelAiGatewayApiKey, type VercelAiGatewayApiKey } from "./ai-gateway.js";
 
 export interface VercelPlatformConfig {
@@ -10,7 +10,7 @@ export interface VercelPlatformConfig {
 const userManagedInitialization: ProviderInitialization = {
   id: "vercel",
   label: "Vercel",
-  description: "Connect OpenBot's selected services and computer runtime to one Vercel account.",
+  description: "Connect Dispatch's selected services and computer runtime to one Vercel account.",
   questions: [
     {
       id: "vercel-token",
@@ -24,7 +24,7 @@ const userManagedInitialization: ProviderInitialization = {
     {
       id: "vercel-team-id",
       prompt: "Vercel team ID (leave blank for your personal account)",
-      description: "Optional Vercel team scope shared by all OpenBot Vercel resources.",
+      description: "Optional Vercel team scope shared by all Dispatch Vercel resources.",
       input: "text",
       destination: { kind: "environment", key: "VERCEL_TEAM_ID" },
     },

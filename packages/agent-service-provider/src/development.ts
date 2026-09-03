@@ -16,7 +16,7 @@ export async function createAgentServiceApp(
   const app = new Hono();
   const lateEndpoints = new Map<string, Promise<NonNullable<AgentModule["default"]>>>();
   if (options.health !== false)
-    app.get("/healthz", (context) => context.json({ ok: true, service: "openbot-agents" }));
+    app.get("/healthz", (context) => context.json({ ok: true, service: "dispatch-agents" }));
   for (const agent of await discoverAgents(repositoryRoot)) {
     const endpoint = await loadAgentEndpoint(repositoryRoot, agent);
     app.post(`/api/agents/${agent.slug}`, async (context) =>
@@ -54,7 +54,7 @@ async function loadAgentEndpoint(
   await runInstrumentation(globalInstrumentationPath(repositoryRoot), agent);
   if (agent.instrumentationPath) await runInstrumentation(agent.instrumentationPath, agent);
   const module = (await import(
-    `${pathToFileURL(agent.path).href}?openbot=${Date.now()}`
+    `${pathToFileURL(agent.path).href}?dispatch=${Date.now()}`
   )) as AgentModule;
   if (typeof module.default !== "function")
     throw new Error(`${agent.path} must default export chatKitEndpoint(...)`);
@@ -68,7 +68,7 @@ async function observeAgentResponse(
   endpoint: NonNullable<AgentModule["default"]>,
 ): Promise<Response> {
   const startedAt = Date.now();
-  console.info("[openbot-agent] request received", {
+  console.info("[dispatch-agent] request received", {
     agentId,
     method: request.method,
     path: new URL(request.url).pathname,
@@ -112,7 +112,7 @@ async function observeAgentResponse(
       },
       async cancel(reason) {
         settled = true;
-        console.info("[openbot-agent] response cancelled", {
+        console.info("[dispatch-agent] response cancelled", {
           agentId,
           elapsedMs: Date.now() - startedAt,
           method: request.method,
@@ -138,7 +138,7 @@ function logAgentCompletion(
   startedAt: number,
   status: number,
 ): void {
-  console.info("[openbot-agent] request completed", {
+  console.info("[dispatch-agent] request completed", {
     agentId,
     elapsedMs: Date.now() - startedAt,
     method: request.method,
@@ -157,7 +157,7 @@ function logAgentFailure(
 ): void {
   const failure = error instanceof Error ? error : new Error(String(error));
   console.error(
-    "[openbot-agent] request failed",
+    "[dispatch-agent] request failed",
     {
       agentId,
       elapsedMs: Date.now() - startedAt,
@@ -173,7 +173,7 @@ function logAgentFailure(
 async function runInstrumentation(path: string, agent: AgentSource): Promise<void> {
   try {
     const module = (await import(
-      `${pathToFileURL(path).href}?openbot=${Date.now()}`
+      `${pathToFileURL(path).href}?dispatch=${Date.now()}`
     )) as InstrumentationModule;
     if (module.default?.setup) await module.default.setup({ agentName: agent.slug });
   } catch (error) {

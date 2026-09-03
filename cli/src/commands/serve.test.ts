@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { parsePort } from "./serve.js";
 
-describe("OpenBot development server", () => {
+describe("Dispatch development server", () => {
   it("uses the default control port", () => expect(parsePort(undefined)).toBe(4100));
   it("accepts a valid configured port", () => expect(parsePort("5123")).toBe(5123));
   it("rejects invalid ports", () => {

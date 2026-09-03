@@ -1,11 +1,11 @@
-import { TildeAgentProvider } from "@tryopenbot/agent-provider";
-import { LocalRuntimeServiceProvider } from "@tryopenbot/agent-service-provider";
-import { TildeAuthProvider } from "@tryopenbot/auth-provider";
-import { Configuration } from "@tryopenbot/configuration";
-import { MicrosandboxComputerProvider } from "@tryopenbot/computer-service-provider";
-import { GitHubGitProvider } from "@tryopenbot/git-provider";
-import { {{#if CODEX_INFERENCE}}CodexInferenceProvider{{else}}VercelInferenceProvider{{/if}} } from "@tryopenbot/inference-provider";
-import { TildePlatform{{#unless CODEX_INFERENCE}}, VercelPlatform{{/unless}} } from "@tryopenbot/platform-integrations";
+import { TildeAgentProvider } from "@trytilde/dispatch-agent-provider";
+import { LocalRuntimeServiceProvider } from "@trytilde/dispatch-agent-service-provider";
+import { TildeAuthProvider } from "@trytilde/dispatch-auth-provider";
+import { Configuration } from "@trytilde/dispatch-configuration";
+import { MicrosandboxComputerProvider } from "@trytilde/dispatch-computer-service-provider";
+import { GitHubGitProvider } from "@trytilde/dispatch-git-provider";
+import { {{#if CODEX_INFERENCE}}CodexInferenceProvider{{else}}VercelInferenceProvider{{/if}} } from "@trytilde/dispatch-inference-provider";
+import { TildePlatform{{#unless CODEX_INFERENCE}}, VercelPlatform{{/unless}} } from "@trytilde/dispatch-platform-integrations";
 
 const tilde = new TildePlatform({
   apiKey: process.env.TILDE_API_KEY!,

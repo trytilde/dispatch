@@ -14,14 +14,14 @@ export function registerConnectorAuthorizedRoute(app: Hono): void {
 function connectorAuthorizedPage(client: "electron" | "mobile" | "web"): string {
   const deepLinked = client === "electron" || client === "mobile";
   const hint = deepLinked
-    ? "Returning you to OpenBot… If nothing happens, switch back to the OpenBot app."
-    : "You can close this tab and return to OpenBot.";
+    ? "Returning you to Dispatch… If nothing happens, switch back to the Dispatch app."
+    : "You can close this tab and return to Dispatch.";
   const redirect = deepLinked
-    ? '<script>setTimeout(function () { location.replace("openbot://connectors/authorized"); }, 150);</script>'
+    ? '<script>setTimeout(function () { location.replace("dispatch://connectors/authorized"); }, 150);</script>'
     : "";
   return [
     "<!doctype html>",
-    '<html lang="en"><head><meta charset="utf-8" /><title>OpenBot</title>',
+    '<html lang="en"><head><meta charset="utf-8" /><title>Dispatch</title>',
     "<style>body{font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:90vh;color:#171718;background:#fafafb}main{text-align:center;max-width:26rem}h1{font-size:1.1rem}p{color:#666;font-size:.9rem}</style>",
     "</head><body><main>",
     "<h1>Authorization complete</h1>",

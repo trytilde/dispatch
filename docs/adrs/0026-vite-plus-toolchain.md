@@ -11,13 +11,13 @@
 
 ## Context
 
-OpenBot previously split development tasks across pnpm scripts, Turbo, Vite, Vitest, TypeScript, and package-specific lint aliases. That made `lint` mean type-checking in most packages, provided no repository formatter, and required multiple orchestration paths in local development, CI, deployment, and packaging.
+Dispatch previously split development tasks across pnpm scripts, Turbo, Vite, Vitest, TypeScript, and package-specific lint aliases. That made `lint` mean type-checking in most packages, provided no repository formatter, and required multiple orchestration paths in local development, CI, deployment, and packaging.
 
 The repository needs one documented command surface that can run consistently across its workspace while retaining package-specific artifact tools such as tsdown/Rolldown, native Go TypeScript (`tsgo`), and protobuf generation.
 
 ## Decision
 
-Vite+ is OpenBot's repository-wide toolchain entry point. `vp check` owns Oxfmt formatting, Oxlint linting, and type-aware TypeScript checks. `vp test`, `vp build`, and `vp run` own test, Vite application build, and workspace task execution. Vite+ delegates dependency management to the pinned pnpm version.
+Vite+ is Dispatch's repository-wide toolchain entry point. `vp check` owns Oxfmt formatting, Oxlint linting, and type-aware TypeScript checks. `vp test`, `vp build`, and `vp run` own test, Vite application build, and workspace task execution. Vite+ delegates dependency management to the pinned pnpm version.
 
 Package scripts have stable meanings: `lint` runs `vp lint`, `typecheck` runs `tsc --noEmit`, and `check` runs `vp check`. The native `tsgo` compiler remains an explicitly named artifact check where ADR-0008 requires it; it is not a lint alias.
 
@@ -44,7 +44,7 @@ flowchart LR
 - Runtime boundaries are compiler-visible: accidental browser API use in Node packages and accidental Node-global use in browser packages fail type-checking.
 - External source maps improve production stack traces without copying authored source into map files.
 - New lint and formatter policy belongs in the root Vite+ configuration.
-- Vite+ upgrades must preserve the pinned Vite/Vitest workspace overrides and pass the complete OpenBot validation pipeline.
+- Vite+ upgrades must preserve the pinned Vite/Vitest workspace overrides and pass the complete Dispatch validation pipeline.
 
 ## Updates
 

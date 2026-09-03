@@ -7,7 +7,7 @@ import {
 
 describe("Vercel registry helpers", () => {
   it("resolves a team registry namespace", async () => {
-    const request = vi.fn(async () => Response.json({ id: "team-id", slug: "tryopenbot" }));
+    const request = vi.fn(async () => Response.json({ id: "team-id", slug: "trydispatch" }));
 
     await expect(
       resolveVercelRegistryIdentity({
@@ -17,7 +17,7 @@ describe("Vercel registry helpers", () => {
         request,
       }),
     ).resolves.toEqual({
-      repository: "vcr.vercel.com/tryopenbot/agents/openbot-computer",
+      repository: "vcr.vercel.com/trydispatch/agents/dispatch-computer",
       username: "team-id",
     });
     expect(request).toHaveBeenCalledWith("https://api.vercel.com/v2/teams/team-id", {

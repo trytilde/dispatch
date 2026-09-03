@@ -12,16 +12,16 @@ import {
 } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { agentIdFromName, materializeFileTemplate } from "@tryopenbot/utilities";
+import { agentIdFromName, materializeFileTemplate } from "@trytilde/dispatch-utilities";
 import {
   type InferenceAgentTemplateFile,
   VercelInferenceProvider,
-} from "@tryopenbot/inference-provider";
+} from "@trytilde/dispatch-inference-provider";
 import {
   primaryAgentDirectory,
   primaryAgentId,
   subagentDirectory,
-} from "@tryopenbot/agent-service-provider";
+} from "@trytilde/dispatch-agent-service-provider";
 
 const defaultAgentTemplates = [
   ["agent.ts", "./assets/agents/factory/agent.ts.hbs"],
@@ -99,8 +99,8 @@ const memoryCatcherTemplates = [
 const factoryAgentTemplates = [
   ["skills/create-agent/SKILL.md", "./assets/agents/factory/skills/create-agent/SKILL.md.hbs"],
   [
-    "skills/develop-openbot/SKILL.md",
-    "./assets/agents/factory/skills/develop-openbot/SKILL.md.hbs",
+    "skills/develop-dispatch/SKILL.md",
+    "./assets/agents/factory/skills/develop-dispatch/SKILL.md.hbs",
   ],
 ] as const;
 
@@ -192,7 +192,7 @@ async function seedTemplateDirectory(
   return directory;
 }
 
-export { agentIdFromName } from "@tryopenbot/utilities";
+export { agentIdFromName } from "@trytilde/dispatch-utilities";
 
 /** Materialize one complete authored agent without overwriting an existing directory. */
 export async function scaffoldAgent(
@@ -336,7 +336,7 @@ async function materializeAgent(
 async function assertSingularAgentLayout(repositoryRoot: string): Promise<void> {
   const primary = resolve(repositoryRoot, primaryAgentDirectory);
   if (!(await exists(primary)))
-    throw new Error("configuration/agent is missing; run openbot init first");
+    throw new Error("configuration/agent is missing; run tilde init first");
   await assertOrdinaryDirectory(primary, "Primary agent");
   const nested = resolve(repositoryRoot, subagentDirectory);
   if (await exists(nested)) await assertOrdinaryDirectory(nested, "Subagent collection");
@@ -370,7 +370,7 @@ async function walkAgentTemplates(directory: string): Promise<string[]> {
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT")
       throw new Error(
-        `${agentTemplateDirectory} is missing; run openbot init to scaffold the agent template`,
+        `${agentTemplateDirectory} is missing; run tilde init to scaffold the agent template`,
       );
     throw error;
   }

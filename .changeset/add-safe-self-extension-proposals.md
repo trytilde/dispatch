@@ -1,6 +1,6 @@
 ---
 "@trytilde/sdk": minor
-"openbot": minor
+"@trytilde/cli": minor
 ---
 
 Add durable human-reviewed self-extension proposals and a propose-only default agent tool.

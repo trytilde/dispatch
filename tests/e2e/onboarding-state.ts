@@ -3,8 +3,8 @@ import type { Page } from "@playwright/test";
 // Onboarding is persisted client-runtime state (ADR-0017), so a test that wants the
 // workspace seeds it rather than clicking through first-run. The key and shape are the
 // runtime's; keeping them in one helper means a contract change breaks one file.
-const storageKey = "openbot.onboarding";
-const workspaceStorageKey = "openbot.workspaces.v1";
+const storageKey = "dispatch.onboarding";
+const workspaceStorageKey = "dispatch.workspaces.v1";
 
 const completed = {
   completed: true,

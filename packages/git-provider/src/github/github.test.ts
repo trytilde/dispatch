@@ -1,5 +1,5 @@
-import { TildePlatform } from "@tryopenbot/platform-integrations";
-import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
+import { TildePlatform } from "@trytilde/dispatch-platform-integrations";
+import { DeploymentOutputs, type DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { GitHubGitProvider, parseGitHubRepository } from "./index.js";
 
@@ -19,7 +19,7 @@ function deploymentContext(): DeploymentContext & { events: string[] } {
   return {
     devMode: false,
     repositoryRoot: "/repo",
-    environment: { OPENBOT_DEPLOYMENT_NAME: "OpenBot" },
+    environment: { DISPATCH_DEPLOYMENT_NAME: "Dispatch" },
     inputs: new DeploymentOutputs(),
     platformIds: ["tilde"],
     report: ({ event }) => void events.push(event),
@@ -30,7 +30,7 @@ function deploymentContext(): DeploymentContext & { events: string[] } {
 function githubGroup(credentialId?: string): Record<string, unknown> {
   return {
     id: "github-group",
-    display_name: "OpenBot GitHub",
+    display_name: "Dispatch GitHub",
     tool_group_source_type_id: "github",
     credential_source_type_id: "server_token_exchange",
     status: credentialId ? "active" : "pending",
@@ -40,13 +40,15 @@ function githubGroup(credentialId?: string): Record<string, unknown> {
 
 describe("parseGitHubRepository", () => {
   it("extracts owner/name from GitHub remote URL forms", () => {
-    expect(parseGitHubRepository("https://github.com/acme/our-openbot.git")).toBe(
-      "acme/our-openbot",
+    expect(parseGitHubRepository("https://github.com/acme/our-dispatch.git")).toBe(
+      "acme/our-dispatch",
     );
-    expect(parseGitHubRepository("https://github.com/acme/our-openbot")).toBe("acme/our-openbot");
-    expect(parseGitHubRepository("git@github.com:acme/our-openbot.git")).toBe("acme/our-openbot");
-    expect(parseGitHubRepository("ssh://git@github.com/acme/our-openbot")).toBe("acme/our-openbot");
-    expect(parseGitHubRepository("https://gitlab.com/acme/our-openbot.git")).toBeUndefined();
+    expect(parseGitHubRepository("https://github.com/acme/our-dispatch")).toBe("acme/our-dispatch");
+    expect(parseGitHubRepository("git@github.com:acme/our-dispatch.git")).toBe("acme/our-dispatch");
+    expect(parseGitHubRepository("ssh://git@github.com/acme/our-dispatch")).toBe(
+      "acme/our-dispatch",
+    );
+    expect(parseGitHubRepository("https://gitlab.com/acme/our-dispatch.git")).toBeUndefined();
     expect(parseGitHubRepository("https://github.com/acme")).toBeUndefined();
   });
 });
@@ -66,7 +68,7 @@ describe("GitHubGitProvider", () => {
       async setSecret() {},
     };
     await provider.initialize(context);
-    // This test runs inside the OpenBot checkout, whose origin is a GitHub remote.
+    // This test runs inside the Dispatch checkout, whose origin is a GitHub remote.
     const derived = persisted.GIT_GITHUB_REPOSITORY;
     if (derived) expect(derived).toMatch(/^[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9._-]+$/);
     environment.GIT_GITHUB_REPOSITORY = "acme/pinned";
@@ -96,7 +98,7 @@ describe("GitHubGitProvider", () => {
       throw new Error(`Unexpected request: ${request.method} ${path}`);
     };
     const environment: NodeJS.ProcessEnv = {
-      GIT_GITHUB_REPOSITORY: "acme/our-openbot",
+      GIT_GITHUB_REPOSITORY: "acme/our-dispatch",
       TILDE_API_KEY: "secret",
       TILDE_ORG_ID: "org-one",
       TILDE_TEAM_ID: "team-one",
@@ -185,15 +187,15 @@ describe("GitHubGitProvider", () => {
           next_action: {
             type: "render_form_post",
             action_url: "https://github.com/settings/apps/new?state=state-one",
-            fields: { manifest: { name: "Acme OpenBot", url: "https://tilde.test" } },
+            fields: { manifest: { name: "Acme Dispatch", url: "https://tilde.test" } },
           },
           state_id: "state-one",
         });
       throw new Error(`Unexpected request: ${request.method} ${path}`);
     }) as typeof fetch;
     const environment: NodeJS.ProcessEnv = {
-      GIT_GITHUB_REPOSITORY: "acme/our-openbot",
-      GIT_GITHUB_APP_NAME: "Acme OpenBot",
+      GIT_GITHUB_REPOSITORY: "acme/our-dispatch",
+      GIT_GITHUB_APP_NAME: "Acme Dispatch",
       GIT_GITHUB_APP_ORGANIZATION: "acme-org",
       TILDE_API_KEY: "secret",
       TILDE_ORG_ID: "org-one",
@@ -229,7 +231,7 @@ describe("GitHubGitProvider", () => {
     expect(page).toContain(
       'action="https://github.com/organizations/acme-org/settings/apps/new?state=state-one"',
     );
-    expect(page).toContain("&quot;Acme OpenBot&quot;");
+    expect(page).toContain("&quot;Acme Dispatch&quot;");
     expect(page).toContain("document.forms[0].submit()");
     pageFetched = true;
     await initialized;
@@ -270,12 +272,12 @@ describe("GitHubGitProvider", () => {
     const provider = new GitHubGitProvider(platform());
     await provider.deployable.deploy(context);
     await provider.deployable.deploy(context);
-    expect(mutations).toEqual(["create:openbot-github-rest", "create:openbot-github-git"]);
+    expect(mutations).toEqual(["create:dispatch-github-rest", "create:dispatch-github-git"]);
     expect(context.environment).toMatchObject({
       GIT_GITHUB_TOOL_GROUP_ID: "github-group",
       GIT_GITHUB_CREDENTIAL_ID: "credential-github",
-      GIT_GITHUB_REST_PROXY_PROFILE_ID: "openbot-github-rest",
-      GIT_GITHUB_GIT_PROXY_PROFILE_ID: "openbot-github-git",
+      GIT_GITHUB_REST_PROXY_PROFILE_ID: "dispatch-github-rest",
+      GIT_GITHUB_GIT_PROXY_PROFILE_ID: "dispatch-github-git",
     });
   });
 
@@ -292,23 +294,23 @@ describe("GitHubGitProvider", () => {
           return Response.json({
             items: [
               {
-                id: "openbot-github-rest",
+                id: "dispatch-github-rest",
                 provider_id: "github",
                 resource_server_credential_id: "credential-stale",
                 enabled: false,
               },
               {
-                id: "openbot-github-git",
+                id: "dispatch-github-git",
                 provider_id: "github_git_https",
                 resource_server_credential_id: "credential-rotated",
                 enabled: true,
               },
             ],
           });
-        if (path.endsWith("/reverse-proxy/profile/openbot-github-rest")) {
-          updates.push("update:openbot-github-rest");
+        if (path.endsWith("/reverse-proxy/profile/dispatch-github-rest")) {
+          updates.push("update:dispatch-github-rest");
           return Response.json({
-            id: "openbot-github-rest",
+            id: "dispatch-github-rest",
             provider_id: "github",
             resource_server_credential_id: "credential-rotated",
             enabled: true,
@@ -320,7 +322,7 @@ describe("GitHubGitProvider", () => {
     const context = deploymentContext();
     const provider = new GitHubGitProvider(platform());
     await provider.deployable.deploy(context);
-    expect(updates).toEqual(["update:openbot-github-rest"]);
+    expect(updates).toEqual(["update:dispatch-github-rest"]);
     expect(context.environment.GIT_GITHUB_CREDENTIAL_ID).toBe("credential-rotated");
   });
 });

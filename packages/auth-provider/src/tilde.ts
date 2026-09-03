@@ -5,9 +5,9 @@ import type {
   InitializableProvider,
   ProviderInitialization,
   ProviderInitializationContext,
-} from "@tryopenbot/runtime-provider";
-import { persistEnvironment } from "@tryopenbot/runtime-provider";
-import { TildePlatform } from "@tryopenbot/platform-integrations";
+} from "@trytilde/dispatch-runtime-provider";
+import { persistEnvironment } from "@trytilde/dispatch-runtime-provider";
+import { TildePlatform } from "@trytilde/dispatch-platform-integrations";
 import {
   AuthProviderError,
   type AuthProvider,
@@ -17,10 +17,10 @@ import {
   type OwnerPrincipal,
 } from "./core.js";
 
-const requiredScope = "openbot:control";
-const defaultScope = "openid profile email offline_access openbot:control";
+const requiredScope = "dispatch:control";
+const defaultScope = "openid profile email offline_access dispatch:control";
 
-interface OpenBotRegistration {
+interface DispatchRegistration {
   client_id: string;
   audience: string;
   issuer: string;
@@ -47,9 +47,9 @@ interface TildeWhoami {
 export class TildeAuthProvider implements AuthProvider, InitializableProvider {
   readonly platforms: readonly TildePlatform[];
   readonly initialization: ProviderInitialization = {
-    id: "tilde-openbot-auth",
-    label: "Tilde OpenBot authentication",
-    description: "Register this OpenBot installation as a team-owned OIDC client.",
+    id: "tilde-dispatch-auth",
+    label: "Tilde Dispatch authentication",
+    description: "Register this Dispatch installation as a team-owned OIDC client.",
     questions: [],
   };
   readonly deployable = this;
@@ -80,7 +80,7 @@ export class TildeAuthProvider implements AuthProvider, InitializableProvider {
 
   async plan(): Promise<DeploymentPlan> {
     return {
-      summary: "Reconcile the team-owned OpenBot OIDC registration",
+      summary: "Reconcile the team-owned Dispatch OIDC registration",
       steps: ["Register exact browser and desktop callbacks", "Persist public OIDC metadata"],
     };
   }
@@ -98,19 +98,19 @@ export class TildeAuthProvider implements AuthProvider, InitializableProvider {
 
   nativeClientConfiguration(): NativeAuthConfiguration {
     return {
-      authorizationEndpoint: required(this.#environment, "OPENBOT_OIDC_AUTHORIZATION_ENDPOINT"),
-      tokenEndpoint: required(this.#environment, "OPENBOT_OIDC_TOKEN_ENDPOINT"),
-      clientId: required(this.#environment, "OPENBOT_OIDC_CLIENT_ID"),
-      scope: this.#environment.OPENBOT_OIDC_SCOPE || defaultScope,
+      authorizationEndpoint: required(this.#environment, "DISPATCH_OIDC_AUTHORIZATION_ENDPOINT"),
+      tokenEndpoint: required(this.#environment, "DISPATCH_OIDC_TOKEN_ENDPOINT"),
+      clientId: required(this.#environment, "DISPATCH_OIDC_CLIENT_ID"),
+      scope: this.#environment.DISPATCH_OIDC_SCOPE || defaultScope,
     };
   }
 
   authorizationUrl(input: { redirectUri: string; state: string; codeChallenge: string }): URL {
-    const url = new URL(required(this.#environment, "OPENBOT_OIDC_AUTHORIZATION_ENDPOINT"));
-    url.searchParams.set("client_id", required(this.#environment, "OPENBOT_OIDC_CLIENT_ID"));
+    const url = new URL(required(this.#environment, "DISPATCH_OIDC_AUTHORIZATION_ENDPOINT"));
+    url.searchParams.set("client_id", required(this.#environment, "DISPATCH_OIDC_CLIENT_ID"));
     url.searchParams.set("redirect_uri", input.redirectUri);
     url.searchParams.set("response_type", "code");
-    url.searchParams.set("scope", this.#environment.OPENBOT_OIDC_SCOPE || defaultScope);
+    url.searchParams.set("scope", this.#environment.DISPATCH_OIDC_SCOPE || defaultScope);
     url.searchParams.set("state", input.state);
     url.searchParams.set("code_challenge", input.codeChallenge);
     url.searchParams.set("code_challenge_method", "S256");
@@ -126,7 +126,7 @@ export class TildeAuthProvider implements AuthProvider, InitializableProvider {
       grant_type: "authorization_code",
       code: input.code,
       code_verifier: input.codeVerifier,
-      client_id: required(this.#environment, "OPENBOT_OIDC_CLIENT_ID"),
+      client_id: required(this.#environment, "DISPATCH_OIDC_CLIENT_ID"),
       redirect_uri: input.redirectUri,
     });
   }
@@ -135,7 +135,7 @@ export class TildeAuthProvider implements AuthProvider, InitializableProvider {
     const tokens = await this.#token({
       grant_type: "refresh_token",
       refresh_token: refreshToken,
-      client_id: required(this.#environment, "OPENBOT_OIDC_CLIENT_ID"),
+      client_id: required(this.#environment, "DISPATCH_OIDC_CLIENT_ID"),
     });
     return { ...tokens, refreshToken: tokens.refreshToken ?? refreshToken };
   }
@@ -169,9 +169,9 @@ export class TildeAuthProvider implements AuthProvider, InitializableProvider {
       Buffer.from(encodedSignature, "base64url"),
     );
     const now = Math.floor(Date.now() / 1000);
-    const clientId = required(this.#environment, "OPENBOT_OIDC_CLIENT_ID");
-    const audience = required(this.#environment, "OPENBOT_OIDC_AUDIENCE");
-    const issuer = required(this.#environment, "OPENBOT_OIDC_ISSUER");
+    const clientId = required(this.#environment, "DISPATCH_OIDC_CLIENT_ID");
+    const audience = required(this.#environment, "DISPATCH_OIDC_AUDIENCE");
+    const issuer = required(this.#environment, "DISPATCH_OIDC_ISSUER");
     const scope = claims.scope?.split(/\s+/).filter(Boolean) ?? [];
     if (
       !valid ||
@@ -179,7 +179,7 @@ export class TildeAuthProvider implements AuthProvider, InitializableProvider {
       claims.iss !== issuer ||
       claims.aud !== audience ||
       claims.azp !== clientId ||
-      claims.typ !== "tilde:openbot" ||
+      claims.typ !== "tilde:dispatch" ||
       !claims.exp ||
       claims.exp <= now ||
       (claims.nbf ?? 0) > now ||
@@ -187,7 +187,7 @@ export class TildeAuthProvider implements AuthProvider, InitializableProvider {
     )
       throw new AuthProviderError(
         "invalid_token",
-        "Access token is not valid for this OpenBot installation",
+        "Access token is not valid for this Dispatch installation",
       );
     return { subject: claims.sub, email: claims.email, groups: claims.groups ?? [], scope };
   }
@@ -238,7 +238,7 @@ export class TildeAuthProvider implements AuthProvider, InitializableProvider {
     environment: NodeJS.ProcessEnv,
     request: typeof fetch,
     development = false,
-  ): Promise<OpenBotRegistration> {
+  ): Promise<DispatchRegistration> {
     const connection = platformConnection(this.#platform, environment);
     const port = environment.PORT?.trim() || "4100";
     const webPort = environment.WEB_PORT?.trim() || "4173";
@@ -252,17 +252,17 @@ export class TildeAuthProvider implements AuthProvider, InitializableProvider {
             `http://[::1]:${webPort}/auth/callback`,
           ]
         : []),
-      "openbot://auth/callback",
+      "dispatch://auth/callback",
       ...(publicOrigin ? [`${publicOrigin}/auth/callback`] : []),
     ];
     const response = await request(
-      `${connection.baseUrl.replace(/\/$/, "")}/api/v1/team/${encodeURIComponent(connection.teamId)}/identity/openbot/deployments`,
+      `${connection.baseUrl.replace(/\/$/, "")}/api/v1/team/${encodeURIComponent(connection.teamId)}/identity/dispatch/deployments`,
       {
         method: "POST",
         headers: { "content-type": "application/json", "x-api-key": connection.apiKey },
         body: JSON.stringify({
-          client_id: environment.OPENBOT_OIDC_CLIENT_ID?.trim() || undefined,
-          name: environment.OPENBOT_DEPLOYMENT_NAME?.trim() || "OpenBot",
+          client_id: environment.DISPATCH_OIDC_CLIENT_ID?.trim() || undefined,
+          name: environment.DISPATCH_DEPLOYMENT_NAME?.trim() || "Dispatch",
           redirect_uris: [...new Set(redirectUris)],
           deployment_url: publicOrigin,
           software_version: "0.1.0",
@@ -272,14 +272,14 @@ export class TildeAuthProvider implements AuthProvider, InitializableProvider {
     if (!response.ok)
       throw new AuthProviderError(
         "exchange_failed",
-        `Tilde OpenBot registration failed (${response.status})`,
+        `Tilde Dispatch registration failed (${response.status})`,
       );
-    return (await response.json()) as OpenBotRegistration;
+    return (await response.json()) as DispatchRegistration;
   }
 
   async #token(fields: Record<string, string>): Promise<OAuthTokens> {
     const response = await this.#request(
-      required(this.#environment, "OPENBOT_OIDC_TOKEN_ENDPOINT"),
+      required(this.#environment, "DISPATCH_OIDC_TOKEN_ENDPOINT"),
       {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -312,7 +312,7 @@ export class TildeAuthProvider implements AuthProvider, InitializableProvider {
       ((!force && this.#jwks.expiresAt > now) || (force && this.#jwks.fetchedAt + 30_000 > now))
     )
       return this.#jwks.value;
-    const response = await this.#request(required(this.#environment, "OPENBOT_OIDC_JWKS_URI"));
+    const response = await this.#request(required(this.#environment, "DISPATCH_OIDC_JWKS_URI"));
     if (!response.ok)
       throw new AuthProviderError("invalid_token", "OIDC signing keys are unavailable");
     const value = (await response.json()) as JsonWebKeySet;
@@ -349,37 +349,37 @@ function decodeJson<T>(value: string): T {
 }
 
 function registrationEnvironment(
-  registration: OpenBotRegistration,
+  registration: DispatchRegistration,
 ): Array<[string, string, string]> {
   return [
     [
-      "OPENBOT_OIDC_CLIENT_ID",
+      "DISPATCH_OIDC_CLIENT_ID",
       registration.client_id,
-      "Tilde OIDC public client ID for this OpenBot installation.",
+      "Tilde OIDC public client ID for this Dispatch installation.",
     ],
     [
-      "OPENBOT_OIDC_AUDIENCE",
+      "DISPATCH_OIDC_AUDIENCE",
       registration.audience,
-      "Audience accepted by this OpenBot installation.",
+      "Audience accepted by this Dispatch installation.",
     ],
     [
-      "OPENBOT_OIDC_ISSUER",
+      "DISPATCH_OIDC_ISSUER",
       registration.issuer,
-      "Tilde token issuer for this OpenBot installation.",
+      "Tilde token issuer for this Dispatch installation.",
     ],
-    ["OPENBOT_OIDC_SCOPE", registration.scope, "OIDC scopes requested by OpenBot."],
+    ["DISPATCH_OIDC_SCOPE", registration.scope, "OIDC scopes requested by Dispatch."],
     [
-      "OPENBOT_OIDC_AUTHORIZATION_ENDPOINT",
+      "DISPATCH_OIDC_AUTHORIZATION_ENDPOINT",
       registration.authorization_endpoint,
       "Tilde OIDC authorization endpoint.",
     ],
-    ["OPENBOT_OIDC_TOKEN_ENDPOINT", registration.token_endpoint, "Tilde OIDC token endpoint."],
-    ["OPENBOT_OIDC_JWKS_URI", registration.jwks_uri, "Tilde OIDC signing key endpoint."],
+    ["DISPATCH_OIDC_TOKEN_ENDPOINT", registration.token_endpoint, "Tilde OIDC token endpoint."],
+    ["DISPATCH_OIDC_JWKS_URI", registration.jwks_uri, "Tilde OIDC signing key endpoint."],
   ];
 }
 
 async function persistRegistration(
-  registration: OpenBotRegistration,
+  registration: DispatchRegistration,
   setEnvironment: ProviderInitializationContext["setEnvironment"],
 ): Promise<void> {
   for (const [name, value, description] of registrationEnvironment(registration))

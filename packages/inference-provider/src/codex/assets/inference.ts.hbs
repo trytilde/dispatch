@@ -35,12 +35,12 @@ const codex = createCodexAppServer({
 
 export async function prepareInference(tools: ToolSet, abortSignal?: AbortSignal, modelId?: string) {
   const mcp = createSdkMcpServer({
-    name: "openbot-tools",
+    name: "dispatch-tools",
     tools: await codexTools(tools, abortSignal),
   });
   return {
     model: codex(modelId ?? process.env.AI_MODEL ?? defaultModel, {
-      mcpServers: { openbot: mcp },
+      mcpServers: { dispatch: mcp },
     }),
     reasoning: "medium" as const,
   };
@@ -50,7 +50,7 @@ async function codexTools(tools: ToolSet, abortSignal?: AbortSignal): Promise<Lo
   return Promise.all(
     Object.entries(tools).map(async ([name, definition]) => {
       if (!definition.execute)
-        throw new TypeError(`OpenBot tool ${name} must define execute for Codex inference`);
+        throw new TypeError(`Dispatch tool ${name} must define execute for Codex inference`);
       const schema = asSchema(definition.inputSchema);
       const description =
         typeof definition.description === "function"
@@ -81,11 +81,11 @@ async function codexTools(tools: ToolSet, abortSignal?: AbortSignal): Promise<Lo
 
 function createCodexHome(): string {
   const serialized = process.env.CODEX_AUTH_JSON?.trim();
-  if (!serialized) throw new Error("CODEX_AUTH_JSON is missing; run openbot init to authenticate");
+  if (!serialized) throw new Error("CODEX_AUTH_JSON is missing; run tilde init to authenticate");
   const parsed: unknown = JSON.parse(serialized);
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
     throw new Error("CODEX_AUTH_JSON must contain a Codex auth document");
-  const directory = mkdtempSync(join(tmpdir(), "openbot-codex-"));
+  const directory = mkdtempSync(join(tmpdir(), "dispatch-codex-"));
   mkdirSync(directory, { recursive: true, mode: 0o700 });
   writeFileSync(join(directory, "auth.json"), `${serialized}\n`, { mode: 0o600 });
   // Local development imports every authored agent into one process. Keep the

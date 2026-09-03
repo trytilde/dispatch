@@ -89,7 +89,7 @@ import { consumeSse } from "./sse.js";
 
 export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
-export interface OpenBotClientOptions {
+export interface DispatchClientOptions {
   baseUrl?: string;
   fetch?: FetchLike;
   getAccessToken?: () => Promise<string | undefined>;
@@ -100,7 +100,7 @@ export interface OpenBotClientOptions {
   tildeApiBaseUrl?: string;
 }
 
-export interface OpenBotClient {
+export interface DispatchClient {
   getSession(): Promise<AuthenticatedSession | null>;
   logout(): Promise<void>;
   startAgentSetup(name: string): Promise<AgentSetupStarted>;
@@ -224,7 +224,7 @@ const ErrorBodySchema = z.object({
   message: z.string().optional(),
 });
 
-export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBotClient {
+export function createDispatchClient(options: DispatchClientOptions = {}): DispatchClient {
   const fetchImplementation = options.fetch ?? globalThis.fetch.bind(globalThis);
   const baseUrl = options.baseUrl?.replace(/\/$/, "") ?? "";
   let tildeApiBaseUrl = options.tildeApiBaseUrl;
@@ -270,7 +270,7 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
 
   function rewriteTildeUrl(value: string): string {
     try {
-      const url = new URL(value, baseUrl || "http://openbot.local");
+      const url = new URL(value, baseUrl || "http://dispatch.local");
       if (!url.pathname.startsWith("/api/v1/")) return value;
       const rootMarker = "/api/v1/chatkit/";
       const rootIndex = url.pathname.indexOf(rootMarker);
@@ -693,7 +693,7 @@ async function responseError(response: Response): Promise<ClientRequestError> {
   const parsed = ErrorBodySchema.safeParse(await response.json().catch(() => undefined));
   const body = parsed.success ? parsed.data : undefined;
   return new ClientRequestError(
-    body?.detail ?? body?.message ?? body?.error ?? `OpenBot request failed (${response.status})`,
+    body?.detail ?? body?.message ?? body?.error ?? `Dispatch request failed (${response.status})`,
     response.status,
   );
 }

@@ -40,7 +40,7 @@ export function AgentWorkspacePanel({
 
   useEffect(() => {
     if (!open && !fullscreen) return;
-    console.info("[openbot-vnc] iframe preview started", {
+    console.info("[dispatch-vnc] iframe preview started", {
       agentId: previewAgentId,
       path: previewPath(previewUrl),
       requestId: previewTraceId,
@@ -64,8 +64,8 @@ export function AgentWorkspacePanel({
     const receivePreviewState = (event: MessageEvent) => {
       if (event.source !== previewFrameRef.current?.contentWindow) return;
       const payload = event.data as { type?: unknown; phase?: unknown; detail?: unknown };
-      if (payload?.type !== "openbot:vnc" || typeof payload.phase !== "string") return;
-      console.info("[openbot-vnc] viewer state changed", {
+      if (payload?.type !== "dispatch:vnc" || typeof payload.phase !== "string") return;
+      console.info("[dispatch-vnc] viewer state changed", {
         agentId: previewAgentId,
         phase: payload.phase,
         requestId: previewTraceId,
@@ -141,7 +141,7 @@ export function AgentWorkspacePanel({
             allow="clipboard-read; clipboard-write"
             referrerPolicy="no-referrer"
             onError={() => {
-              console.error("[openbot-vnc] iframe preview failed", {
+              console.error("[dispatch-vnc] iframe preview failed", {
                 agentId: previewAgentId,
                 path: previewPath(previewUrl),
                 requestId: previewTraceId,
@@ -159,7 +159,7 @@ export function AgentWorkspacePanel({
                 failed =
                   !document?.body ||
                   document.contentType !== "text/html" ||
-                  Boolean(document.querySelector("[data-openbot-preview-error]")) ||
+                  Boolean(document.querySelector("[data-dispatch-preview-error]")) ||
                   /^\{\s*"error"\s*:/.test(responseText) ||
                   location.startsWith("chrome-error:");
               } catch {
@@ -169,7 +169,7 @@ export function AgentWorkspacePanel({
                 failed = false;
                 documentAccess = "cross-origin";
               }
-              console.info("[openbot-vnc] iframe preview loaded", {
+              console.info("[dispatch-vnc] iframe preview loaded", {
                 agentId: previewAgentId,
                 documentAccess,
                 failed,

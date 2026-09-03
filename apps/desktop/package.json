@@ -1,10 +1,10 @@
 {
-  "name": "@tryopenbot/desktop",
+  "name": "@trytilde/dispatch-desktop",
   "version": "0.1.0",
-  "description": "OpenBot desktop client",
+  "description": "Dispatch desktop client",
   "license": "MIT",
   "author": {
-    "name": "OpenBot contributors",
+    "name": "Dispatch contributors",
     "email": "opensource@trytilde.ai"
   },
   "repository": "https://github.com/trytilde/dispatch",
@@ -23,17 +23,17 @@
     "check": "vp check",
     "dev": "vp run build && electron .",
     "lint": "vp lint",
-    "package": "vp run --filter \"@tryopenbot/web...\" build && vp run build && node scripts/package-current.mjs",
-    "package:linux": "vp run --filter \"@tryopenbot/web...\" build && vp run build && electron-builder --linux",
-    "package:mac": "vp run --filter \"@tryopenbot/web...\" build && vp run build && electron-builder --mac",
+    "package": "vp run --filter \"@trytilde/dispatch-web...\" build && vp run build && node scripts/package-current.mjs",
+    "package:linux": "vp run --filter \"@trytilde/dispatch-web...\" build && vp run build && electron-builder --linux",
+    "package:mac": "vp run --filter \"@trytilde/dispatch-web...\" build && vp run build && electron-builder --mac",
     "prepack": "pnpm build",
-    "release:linux": "vp run --filter \"@tryopenbot/web...\" build && vp run build && electron-builder --linux --x64 --publish never",
-    "release:mac": "vp run --filter \"@tryopenbot/web...\" build && vp run build && electron-builder --mac --arm64 --publish never",
+    "release:linux": "vp run --filter \"@trytilde/dispatch-web...\" build && vp run build && electron-builder --linux --x64 --publish never",
+    "release:mac": "vp run --filter \"@trytilde/dispatch-web...\" build && vp run build && electron-builder --mac --arm64 --publish never",
     "test": "vp test run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tryopenbot/client-runtime": "workspace:*"
+    "@trytilde/dispatch-client-runtime": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.3.0",
@@ -46,17 +46,17 @@
     "vite-plus": "catalog:"
   },
   "build": {
-    "appId": "ai.trytilde.openbot",
-    "productName": "OpenBot",
+    "appId": "ai.trytilde.dispatch",
+    "productName": "Dispatch",
     "protocols": [
       {
-        "name": "OpenBot",
+        "name": "Dispatch",
         "schemes": [
-          "openbot"
+          "dispatch"
         ]
       }
     ],
-    "executableName": "openbot",
+    "executableName": "dispatch",
     "icon": "build/icon.png",
     "directories": {
       "output": "out"
@@ -94,10 +94,10 @@
     "publish": [
       {
         "provider": "generic",
-        "url": "${env.OPENBOT_DESKTOP_UPDATES_URL}",
+        "url": "${env.DISPATCH_DESKTOP_UPDATES_URL}",
         "channel": "latest"
       }
     ]
   },
-  "desktopName": "OpenBot.desktop"
+  "desktopName": "Dispatch.desktop"
 }

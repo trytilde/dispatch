@@ -38,7 +38,7 @@ re-extracted the same way if needed.
 | `thinking-state.tsx` | `8806141f0d94f461ba2086b4e0780dafa08577fb5b055a6b25560fabe52f8449` |
 | `tool-chips.tsx` | `d29bded620d8a895dd00a23af461f7b99a0951ae201202c7ab0e7428bcf02415` |
 
-## OpenBot modifications to upstream files
+## Dispatch modifications to upstream files
 
 Recorded so drift from the pristine hashes above stays explainable:
 
@@ -56,12 +56,12 @@ Recorded so drift from the pristine hashes above stays explainable:
   `@theme inline` structure the previous vendoring used.
 
 The site does not ship source for its atom primitives (`Button`, `Shimmer`,
-`StreamText`, `GlideMenu`). The files in `../atoms/` are OpenBot-authored
+`StreamText`, `GlideMenu`). The files in `../atoms/` are Dispatch-authored
 reconstructions written against the API surface the upstream components use;
 they are not upstream source and carry no upstream hashes.
 
 `prompt-bar.tsx` depends on the MIT-licensed `glimm` npm package, declared in
 `packages/ui/package.json`.
 
-OpenBot-specific composition and state wiring belong outside `upstream/` so
+Dispatch-specific composition and state wiring belong outside `upstream/` so
 source changes stay obvious.

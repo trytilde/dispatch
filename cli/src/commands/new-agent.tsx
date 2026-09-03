@@ -18,7 +18,7 @@ export async function runNewAgent(args: readonly string[] = []): Promise<NewAgen
   const suppliedName = parsed._.join(" ").trim();
   if (!suppliedName && (!process.stdin.isTTY || !process.stdout.isTTY)) {
     throw new Error(
-      'openbot new-agent requires a name in non-interactive use, for example: openbot new-agent "Research Agent"',
+      'tilde new-agent requires a name in non-interactive use, for example: tilde new-agent "Research Agent"',
     );
   }
   const name = suppliedName || (await inkPrompts.input("Agent name", { required: true }));

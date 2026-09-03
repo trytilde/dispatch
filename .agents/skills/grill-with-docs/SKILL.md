@@ -1,6 +1,6 @@
 ---
 name: grill-with-docs
-description: Stress-test an OpenBot plan against its documented architecture, provider ownership, contracts, deployment model, and domain language. Ask one decision at a time and update durable documentation only as decisions become clear.
+description: Stress-test a Dispatch plan against its documented architecture, provider ownership, contracts, deployment model, and domain language. Ask one decision at a time and update durable documentation only as decisions become clear.
 ---
 
 <what-to-do>
@@ -19,8 +19,8 @@ Read the smallest relevant set:
 
 - `README.md`: product, setup, runtime, deployment, and ownership boundaries.
 - `AGENTS.md`: coding and validation rules.
-- `packages/control-service-proto/proto/openbot/control/v1/control.proto`: owner-facing control contract.
-- `packages/computer-service-proto/proto/openbot/computer/v1/computer.proto`: internal computer contract.
+- `packages/control-service-proto/proto/dispatch/control/v1/control.proto`: owner-facing control contract.
+- `packages/computer-service-proto/proto/dispatch/computer/v1/computer.proto`: internal computer contract.
 - `packages/<domain>-provider/src/core.ts` or `packages/<domain>-provider/src/core/index.ts`: domain provider seams; the package root only re-exports them.
 - Tilde-backed provider lifecycles: API-reconciled remote resources and persisted IDs.
 - `PROVENANCE.md`: copied-source and clean-room constraints.
@@ -33,7 +33,7 @@ Read `CONTEXT.md` and relevant records under `docs/adrs/` when they exist. Creat
 
 Keep these distinctions explicit:
 
-- OpenBot control state vs Tilde-owned agents, chats, tools, skills, and memory.
+- Dispatch control state vs Tilde-owned agents, chats, tools, skills, and memory.
 - Local/Vercel environment secrets vs future persisted control state vs sandbox files.
 - Provider interface vs concrete adapter vs UI/client.
 - Web app vs Electron shell vs computer-service sandbox API.
@@ -43,7 +43,7 @@ Call out any plan that crosses one of these boundaries without a reason.
 
 ### Sharpen fuzzy language
 
-Replace overloaded terms with the repository's concrete concepts. For example, distinguish OpenBot installation, Tilde organization/team, Tilde agent, ChatKit session, sandbox instance, provider adapter, and environment provider.
+Replace overloaded terms with the repository's concrete concepts. For example, distinguish Dispatch installation, Tilde organization/team, Tilde agent, ChatKit session, sandbox instance, provider adapter, and environment provider.
 
 ### Discuss concrete scenarios
 

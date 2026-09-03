@@ -6,8 +6,8 @@ import {
   deployProviders,
   DeploymentOutputs,
   type DeploymentContext,
-} from "@tryopenbot/runtime-provider";
-import type { CommandRunner } from "@tryopenbot/control-service-provider";
+} from "@trytilde/dispatch-runtime-provider";
+import type { CommandRunner } from "@trytilde/dispatch-control-service-provider";
 import { buildLocalRuntimeService } from "./local-build.js";
 import { LocalRuntimeServiceProvider } from "./local.js";
 import { buildVercelRuntimeService } from "./vercel-build.js";
@@ -23,7 +23,7 @@ describe("combined runtime artifacts", () => {
     const root = await fixture();
     const result = await buildVercelRuntimeService(context(root), runner());
     const artifact = result.outputs?.["runtime.artifact"];
-    expect(artifact).toBe(join(root, ".openbot-deploy/vercel/control"));
+    expect(artifact).toBe(join(root, ".dispatch-deploy/vercel/control"));
     expect(result.outputs?.["control-service.artifact"]).toBe(artifact);
     expect(result.outputs?.["agent-service.artifact"]).toBe(artifact);
     const agentFunction = join(artifact!, ".vercel/output/functions/api/agents/factory.func");
@@ -39,12 +39,12 @@ describe("combined runtime artifacts", () => {
       await readFile(join(artifact!, ".vercel/output/functions/control.func/index.mjs"), "utf8"),
     ).toContain("control-response");
     expect(await readFile(join(artifact!, ".vercel/output/static/index.html"), "utf8")).toContain(
-      "OpenBot",
+      "Dispatch",
     );
   });
 
   it("deploys the combined artifact through the explicit runtime project", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-runtime-deploy-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-runtime-deploy-"));
     roots.push(root);
     const artifact = join(root, "artifact");
     await mkdir(artifact);
@@ -54,7 +54,7 @@ describe("combined runtime artifacts", () => {
         : { stdout: "", stderr: "" },
     );
     const environment: NodeJS.ProcessEnv = {
-      VERCEL_RUNTIME_PROJECT: "openbot-runtime",
+      VERCEL_RUNTIME_PROJECT: "dispatch-runtime",
       VERCEL_TOKEN: "deployment-token",
     };
     const provider = new VercelRuntimeServiceProvider({
@@ -77,18 +77,18 @@ describe("combined runtime artifacts", () => {
     ]);
     expect(run).toHaveBeenCalledWith(
       "pnpm",
-      expect.arrayContaining(["deploy", "--project", "openbot-runtime"]),
+      expect.arrayContaining(["deploy", "--project", "dispatch-runtime"]),
       expect.anything(),
     );
-    expect(environment.PUBLIC_ORIGIN).toBe("https://openbot-runtime.vercel.app");
-    expect(environment.AGENT_SERVICE_ORIGIN).toBe("https://openbot-runtime.vercel.app");
+    expect(environment.PUBLIC_ORIGIN).toBe("https://dispatch-runtime.vercel.app");
+    expect(environment.AGENT_SERVICE_ORIGIN).toBe("https://dispatch-runtime.vercel.app");
     expect(environment.VERCEL_CONTROL_PROJECT).toBeUndefined();
     expect(result.get("control-service.deployment-url")).toBe("https://runtime-preview.vercel.app");
     expect(result.get("agent-service.deployment-url")).toBe("https://runtime-preview.vercel.app");
   });
 
   it("keeps the prior agent origin when the consolidated runtime health check fails", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-runtime-failed-deploy-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-runtime-failed-deploy-"));
     roots.push(root);
     const artifact = join(root, "artifact");
     await mkdir(artifact);
@@ -98,8 +98,8 @@ describe("combined runtime artifacts", () => {
         : { stdout: "", stderr: "" },
     );
     const environment: NodeJS.ProcessEnv = {
-      AGENT_SERVICE_ORIGIN: "https://openbot-agents.vercel.app",
-      VERCEL_RUNTIME_PROJECT: "openbot-runtime",
+      AGENT_SERVICE_ORIGIN: "https://dispatch-agents.vercel.app",
+      VERCEL_RUNTIME_PROJECT: "dispatch-runtime",
       VERCEL_TOKEN: "deployment-token",
     };
     const provider = new VercelRuntimeServiceProvider({
@@ -121,7 +121,7 @@ describe("combined runtime artifacts", () => {
         initialInputs: { outputs: { "control-service.artifact": artifact } },
       }),
     ).rejects.toThrow("health smoke failed");
-    expect(environment.AGENT_SERVICE_ORIGIN).toBe("https://openbot-agents.vercel.app");
+    expect(environment.AGENT_SERVICE_ORIGIN).toBe("https://dispatch-agents.vercel.app");
   });
 
   it("builds one local process with agent routes before the control fallback", async () => {
@@ -144,11 +144,11 @@ describe("combined runtime artifacts", () => {
   });
 
   it("retires the legacy systemd agent service only after endpoint cutover", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-runtime-retirement-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-runtime-retirement-"));
     roots.push(root);
     const repository = join(root, "repository");
     const homeDirectory = join(root, "home");
-    const legacyUnit = join(homeDirectory, ".config/systemd/user/openbot-agents.service");
+    const legacyUnit = join(homeDirectory, ".config/systemd/user/dispatch-agents.service");
     await mkdir(repository);
     await mkdir(join(legacyUnit, ".."), { recursive: true });
     await writeFile(legacyUnit, "legacy-agent-service\n");
@@ -185,7 +185,7 @@ describe("combined runtime artifacts", () => {
       });
 
     await deploy();
-    expect(events.some((event) => event.includes("disable --now openbot-agents.service"))).toBe(
+    expect(events.some((event) => event.includes("disable --now dispatch-agents.service"))).toBe(
       false,
     );
     await finalize();
@@ -193,23 +193,26 @@ describe("combined runtime artifacts", () => {
     await finalize();
 
     await expect(readFile(`${legacyUnit}.retired`, "utf8")).resolves.toBe("legacy-agent-service\n");
-    expect(events.indexOf("systemctl --user restart openbot-control.service")).toBeLessThan(
+    expect(events.indexOf("systemctl --user restart dispatch-control.service")).toBeLessThan(
       events.indexOf("health"),
     );
     expect(events.indexOf("health")).toBeLessThan(
-      events.indexOf("systemctl --user disable --now openbot-agents.service"),
+      events.indexOf("systemctl --user disable --now dispatch-agents.service"),
     );
     expect(
-      events.filter((event) => event.includes("disable --now openbot-agents.service")),
+      events.filter((event) => event.includes("disable --now dispatch-agents.service")),
     ).toHaveLength(1);
   });
 
   it("unloads and preserves a legacy launchd agent definition", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-runtime-retirement-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-runtime-retirement-"));
     roots.push(root);
     const repository = join(root, "repository");
     const homeDirectory = join(root, "home");
-    const legacyPlist = join(homeDirectory, "Library/LaunchAgents/ai.openbot.openbot-agents.plist");
+    const legacyPlist = join(
+      homeDirectory,
+      "Library/LaunchAgents/ai.dispatch.dispatch-agents.plist",
+    );
     await mkdir(repository);
     await mkdir(join(legacyPlist, ".."), { recursive: true });
     await writeFile(legacyPlist, "legacy-agent-service\n");
@@ -266,7 +269,7 @@ function context(repositoryRoot: string): DeploymentContext {
 }
 
 async function fixture(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "openbot-runtime-provider-"));
+  const root = await mkdtemp(join(tmpdir(), "dispatch-runtime-provider-"));
   roots.push(root);
   await Promise.all([
     mkdir(join(root, "apps/web/dist"), { recursive: true }),
@@ -274,7 +277,7 @@ async function fixture(): Promise<string> {
     mkdir(join(root, "configuration/agent/tools"), { recursive: true }),
   ]);
   await Promise.all([
-    writeFile(join(root, "apps/web/dist/index.html"), "<!doctype html><title>OpenBot</title>"),
+    writeFile(join(root, "apps/web/dist/index.html"), "<!doctype html><title>Dispatch</title>"),
     writeFile(
       join(root, "apps/control-service/src/app.ts"),
       "export function createApp() { return { fetch: () => new Response('control-response') }; }\n",

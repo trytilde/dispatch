@@ -3,19 +3,19 @@
 ## In brief
 
 - Build and deploy one runtime artifact containing control, web, and agent entrypoints.
-- One Vercel project owns the whole OpenBot runtime.
+- One Vercel project owns the whole Dispatch runtime.
 - Every agent source becomes its own Vercel Function entrypoint.
 - Agent functions remain isolated at execution, but deploy and roll back atomically with control and web.
 - Local production and development each use one Hono process.
 - Software-producing providers implement `Buildable.check()` and `Buildable.build()` as well as `Deployable`.
-- `openbot deploy` always checks and builds selected services first. `--skip-deploy` stops after artifacts exist.
+- `tilde deploy` always checks and builds selected services first. `--skip-deploy` stops after artifacts exist.
 - Use native Go TypeScript (`tsgo`) for artifact checks and tsdown/Rolldown for bundles. Vite+ owns repository orchestration and validation.
 
 ## Context
 
-Agent implementations change more frequently than the owner-facing control API and web application. The original decision optimized that difference with separate control and agent projects, but it also duplicated project identity, environment reconciliation, deployment coordination, and local service supervision. Tilde now exposes enough unified control-plane operations that OpenBot no longer benefits from retaining a second service boundary merely to coordinate those resources.
+Agent implementations change more frequently than the owner-facing control API and web application. The original decision optimized that difference with separate control and agent projects, but it also duplicated project identity, environment reconciliation, deployment coordination, and local service supervision. Tilde now exposes enough unified control-plane operations that Dispatch no longer benefits from retaining a second service boundary merely to coordinate those resources.
 
-OpenBot also needs equivalent local production behavior without making development operate multiple unnecessary processes. Build tooling is part of this boundary: the old tsup pipeline is deprecated, and JavaScript TypeScript checking is too slow for a directory of independently bundled agents.
+Dispatch also needs equivalent local production behavior without making development operate multiple unnecessary processes. Build tooling is part of this boundary: the old tsup pipeline is deprecated, and JavaScript TypeScript checking is too slow for a directory of independently bundled agents.
 
 ## Decision
 
@@ -23,7 +23,7 @@ OpenBot also needs equivalent local production behavior without making developme
 
 Vercel receives one prebuilt Build Output API artifact. Its project contains static web assets, the control Hono Function, and one `.func` per authored agent. Changed agent builds execute concurrently through tsdown's Rolldown/Oxc pipeline; content digests reuse unchanged function directories and conservatively invalidate on shared package or lockfile changes. One deployment publishes the complete runtime, while the agent endpoints retain independent function execution, scaling, bundles, and logs.
 
-Local builds emit one Node artifact that mounts agent routes before the control/web fallback. Deployment installs `openbot-control` as the sole user service on port 4100. After that service passes its health check and Tilde endpoint cutover succeeds, deployment disables and preserves a legacy `openbot-agents` service definition as a recoverable `.retired` file. Repeated deployments converge without repeating retirement.
+Local builds emit one Node artifact that mounts agent routes before the control/web fallback. Deployment installs `dispatch-control` as the sole user service on port 4100. After that service passes its health check and Tilde endpoint cutover succeeds, deployment disables and preserves a legacy `dispatch-agents` service definition as a recoverable `.retired` file. Repeated deployments converge without repeating retirement.
 
 During development both local and Vercel service deployables stop after their
 checks and leave startup to that watched process. The Computer image has a

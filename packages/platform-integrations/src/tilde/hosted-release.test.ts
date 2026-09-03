@@ -3,22 +3,22 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { DeploymentOutputs, type DeploymentContext } from "@tryopenbot/runtime-provider";
+import { DeploymentOutputs, type DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import { describe, expect, it, vi } from "vite-plus/test";
-import { deployHostedOpenBotRelease } from "./hosted-release.js";
+import { deployHostedDispatchRelease } from "./hosted-release.js";
 import { TildePlatform } from "./index.js";
 
 const execute = promisify(execFile);
 
-describe("deployHostedOpenBotRelease", () => {
+describe("deployHostedDispatchRelease", () => {
   it("uploads content-addressed prebuilt files and finalizes the bound release", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-hosted-release-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-hosted-release-"));
     const output = join(root, "artifact/.vercel/output");
     await mkdir(output, { recursive: true });
     await writeFile(join(output, "config.json"), '{"version":3}');
     await execute("git", ["init", "-b", "main"], { cwd: root });
-    await execute("git", ["config", "user.name", "OpenBot Test"], { cwd: root });
-    await execute("git", ["config", "user.email", "openbot@example.test"], { cwd: root });
+    await execute("git", ["config", "user.name", "Dispatch Test"], { cwd: root });
+    await execute("git", ["config", "user.email", "dispatch@example.test"], { cwd: root });
     await writeFile(join(root, "README.md"), "test\n");
     await execute("git", ["add", "README.md"], { cwd: root });
     await execute("git", ["commit", "-m", "initial"], { cwd: root });
@@ -52,16 +52,16 @@ describe("deployHostedOpenBotRelease", () => {
     const context: DeploymentContext = {
       devMode: false,
       repositoryRoot: root,
-      environment: { OPENBOT_HOSTED_INSTANCE_ID: "instance-one" },
+      environment: { DISPATCH_HOSTED_INSTANCE_ID: "instance-one" },
       configuration: {
         TILDE_API_KEY: "instance-key",
-        OPENBOT_HOSTED_INFERENCE_BILLING: "1",
+        DISPATCH_HOSTED_INFERENCE_BILLING: "1",
         VERCEL_TOKEN: "must-not-forward",
       },
       inputs: new DeploymentOutputs(),
       report: () => undefined,
     };
-    const result = await deployHostedOpenBotRelease(
+    const result = await deployHostedDispatchRelease(
       platform,
       context,
       "control",
@@ -72,7 +72,7 @@ describe("deployHostedOpenBotRelease", () => {
       environment: Record<string, string>;
     };
     expect(configured.environment.TILDE_API_KEY).toBe("instance-key");
-    expect(configured.environment.OPENBOT_HOSTED_INFERENCE_BILLING).toBe("1");
+    expect(configured.environment.DISPATCH_HOSTED_INFERENCE_BILLING).toBe("1");
     expect(configured.environment.VERCEL_TOKEN).toBeUndefined();
     const created = (await requests[1]!.clone().json()) as { files: Array<{ sha1: string }> };
     expect(created.files[0]?.sha1).toMatch(/^[a-f0-9]{40}$/);

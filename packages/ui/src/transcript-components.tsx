@@ -144,14 +144,14 @@ export function ConversationSkeleton() {
 export function TranscriptError({ onRetry }: { onRetry: () => void }) {
   return (
     <div
-      aria-describedby="openbot-transcript-error-detail"
-      aria-labelledby="openbot-transcript-error-title"
+      aria-describedby="dispatch-transcript-error-detail"
+      aria-labelledby="dispatch-transcript-error-title"
       className="chat-transcript-loading"
       role="alert"
     >
       <div className="chat-transcript-error">
-        <h2 id="openbot-transcript-error-title">Couldn&apos;t load conversation</h2>
-        <p id="openbot-transcript-error-detail">
+        <h2 id="dispatch-transcript-error-title">Couldn&apos;t load conversation</h2>
+        <p id="dispatch-transcript-error-detail">
           Couldn&apos;t load this conversation. Check your connection and try again.
         </p>
         <button onClick={onRetry} type="button">
@@ -349,7 +349,7 @@ export function UnknownMessageCard({
   messageType,
   content,
   variant = "unknown",
-  productName = "OpenBot",
+  productName = "Dispatch",
 }: UnknownMessageCardProps) {
   const fullMessage =
     variant === "retired"

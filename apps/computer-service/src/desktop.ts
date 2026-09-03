@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { Code, ConnectError } from "@connectrpc/connect";
 
-const desktopRoot = process.env.COMPUTER_DESKTOP_ROOT ?? "/workspace/.openbot/desktops";
-const tokenFile = process.env.COMPUTER_VNC_TOKEN_FILE ?? "/opt/openbot/novnc.tokens";
+const desktopRoot = process.env.COMPUTER_DESKTOP_ROOT ?? "/workspace/.dispatch/desktops";
+const tokenFile = process.env.COMPUTER_VNC_TOKEN_FILE ?? "/opt/dispatch/novnc.tokens";
 const pending = new Map<string, Promise<AgentDesktop>>();
 let capabilityWrite = Promise.resolve();
 let desktopAllocation = Promise.resolve();
@@ -95,7 +95,7 @@ async function ensureAgentDesktopNow(
 
 function logDesktop(message: string, fields: Record<string, unknown>): void {
   if (!fields.requestId) return;
-  console.info(`[openbot-vnc] ${message}`, fields);
+  console.info(`[dispatch-vnc] ${message}`, fields);
 }
 
 async function startAndPersistDesktop(
@@ -178,7 +178,7 @@ async function startDesktop(
   };
   await ensureSessionBus(environment.DBUS_SESSION_BUS_ADDRESS, environment, signal);
   const session = spawn(
-    process.env.COMPUTER_DESKTOP_SESSION ?? "/opt/openbot/desktop-session.sh",
+    process.env.COMPUTER_DESKTOP_SESSION ?? "/opt/dispatch/desktop-session.sh",
     [],
     {
       detached: true,

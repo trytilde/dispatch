@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { Code, ConnectError } from "@connectrpc/connect";
-import type { AuthProvider } from "@tryopenbot/auth-provider";
-import type { ComputerProvider } from "@tryopenbot/computer-service-provider";
+import type { AuthProvider } from "@trytilde/dispatch-auth-provider";
+import type { ComputerProvider } from "@trytilde/dispatch-computer-service-provider";
 import { app, createApp } from "./app.js";
 
 const temporaryRoots: string[] = [];
@@ -24,7 +24,7 @@ function testAuthProvider(): AuthProvider {
       authorizationEndpoint: "https://identity.test/authorize",
       tokenEndpoint: "https://identity.test/token",
       clientId: "client-one",
-      scope: "openid offline_access openbot:control",
+      scope: "openid offline_access dispatch:control",
     }),
     authorizationUrl: () => new URL("https://identity.test/authorize"),
     exchangeCode: async () => ({ accessToken: "browser-token", expiresIn: 3600 }),
@@ -32,20 +32,20 @@ function testAuthProvider(): AuthProvider {
     verify: async () => ({
       subject: "owner-one",
       groups: [],
-      scope: ["openbot:control"],
+      scope: ["dispatch:control"],
     }),
   } as unknown as AuthProvider;
 }
 
-describe("bare OpenBot server", () => {
+describe("bare Dispatch server", () => {
   it("reports healthy without setup", async () => {
-    const response = await app.request("https://openbot.test/healthz");
+    const response = await app.request("https://dispatch.test/healthz");
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true, service: "openbot" });
+    await expect(response.json()).resolves.toEqual({ ok: true, service: "dispatch" });
   });
 
   it("reports native authentication as unavailable when it is not configured", async () => {
-    const response = await app.request("https://openbot.test/auth/native-config");
+    const response = await app.request("https://dispatch.test/auth/native-config");
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({
       error: "Owner authentication is not configured",
@@ -53,17 +53,19 @@ describe("bare OpenBot server", () => {
   });
 
   it("does not expose an API namespace", async () => {
-    const response = await app.request("https://openbot.test/api/setup/unlock", { method: "POST" });
+    const response = await app.request("https://dispatch.test/api/setup/unlock", {
+      method: "POST",
+    });
     expect(response.status).toBe(404);
   });
 
   it("serves the public connector OAuth completion handoff", async () => {
     const response = await createApp({ webRoot: "/missing" }).request(
-      "https://openbot.test/connectors/authorized?client=electron",
+      "https://dispatch.test/connectors/authorized?client=electron",
     );
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    await expect(response.text()).resolves.toContain("openbot://connectors/authorized");
+    await expect(response.text()).resolves.toContain("dispatch://connectors/authorized");
   });
 
   it("passes allowlisted owner settings operations through to Tilde unchanged", async () => {
@@ -92,7 +94,7 @@ describe("bare OpenBot server", () => {
     });
 
     const response = await tildeApp.request(
-      "https://openbot.test/api/tilde/automations/routine-one?view=owner",
+      "https://dispatch.test/api/tilde/automations/routine-one?view=owner",
       {
         method: "PUT",
         headers: {
@@ -122,7 +124,7 @@ describe("bare OpenBot server", () => {
 
     const unsupported = [
       ["/api/tilde/identity/api-key", "POST"],
-      ["/api/tilde/openbot/plugins/catalog", "GET"],
+      ["/api/tilde/dispatch/plugins/catalog", "GET"],
       ["/api/tilde/provider-setup/catalog", "GET"],
       ["/api/tilde/provider-setup/setup-one/resume", "POST"],
       ["/api/tilde/signals/deliveries/delivery-one/retry", "POST"],
@@ -130,7 +132,7 @@ describe("bare OpenBot server", () => {
       ["/api/tilde/credential/source/oauth/resource-server", "POST"],
     ] as const;
     for (const [path, method] of unsupported) {
-      const response = await tildeApp.request(`https://openbot.test${path}`, { method });
+      const response = await tildeApp.request(`https://dispatch.test${path}`, { method });
       expect(response.status, `${method} ${path}`).toBe(404);
     }
     expect(tildeFetch).not.toHaveBeenCalled();
@@ -156,7 +158,7 @@ describe("bare OpenBot server", () => {
     });
 
     const response = await tildeApp.request(
-      "https://openbot.test/api/tilde/mcp/tool-group/github%2Fwork",
+      "https://dispatch.test/api/tilde/mcp/tool-group/github%2Fwork",
       { method: "DELETE" },
     );
 
@@ -188,7 +190,7 @@ describe("bare OpenBot server", () => {
       agentCreation: { execute, awaitExecution },
     });
 
-    const response = await agentApp.request("https://openbot.test/api/agents", {
+    const response = await agentApp.request("https://dispatch.test/api/agents", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ name: "Test" }),
@@ -205,12 +207,12 @@ describe("bare OpenBot server", () => {
         agentId: "factory",
         command: "bash",
         background: true,
-        arguments: ["-lc", expect.stringContaining("openbot new-agent 'Test' --json")],
+        arguments: ["-lc", expect.stringContaining("tilde new-agent 'Test' --json")],
       }),
       expect.objectContaining({ authorization: "Bearer computer-key" }),
     );
 
-    const status = await agentApp.request(`https://openbot.test/api/agents/setup/${jobId}`, {
+    const status = await agentApp.request(`https://dispatch.test/api/agents/setup/${jobId}`, {
       headers: { authorization: "Bearer owner-token" },
     });
     expect(status.status).toBe(200);
@@ -238,7 +240,7 @@ describe("bare OpenBot server", () => {
       agentCreation: { repositoryRoot: "/repository", execute },
     });
 
-    const response = await agentApp.request("https://openbot.test/api/agents", {
+    const response = await agentApp.request("https://dispatch.test/api/agents", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ name: "Tasa" }),
@@ -249,7 +251,7 @@ describe("bare OpenBot server", () => {
       {
         agentId: "factory",
         command: "pnpm",
-        arguments: ["openbot", "new-agent", "Tasa", "--json"],
+        arguments: ["tilde", "new-agent", "Tasa", "--json"],
         cwd: "/repository",
         timeoutMilliseconds: 600_000,
         background: true,
@@ -259,7 +261,7 @@ describe("bare OpenBot server", () => {
   });
 
   it("completes a development setup job through the local background runner", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openbot-agent-create-"));
+    const root = await mkdtemp(join(tmpdir(), "dispatch-agent-create-"));
     temporaryRoots.push(root);
     const pnpm = join(root, "pnpm");
     await writeFile(
@@ -272,7 +274,7 @@ describe("bare OpenBot server", () => {
       agentCreation: { repositoryRoot: root },
     });
 
-    const started = await agentApp.request("https://openbot.test/api/agents", {
+    const started = await agentApp.request("https://dispatch.test/api/agents", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ name: "Tasa" }),
@@ -284,7 +286,7 @@ describe("bare OpenBot server", () => {
     for (let attempt = 0; attempt < 50 && status.status === "setting_up"; attempt += 1) {
       await new Promise((resolvePromise) => setTimeout(resolvePromise, 10));
       status = (await (
-        await agentApp.request(`https://openbot.test/api/agents/setup/${jobId}`)
+        await agentApp.request(`https://dispatch.test/api/agents/setup/${jobId}`)
       ).json()) as typeof status;
     }
 
@@ -317,9 +319,9 @@ describe("bare OpenBot server", () => {
       agentCreation: { awaitExecution },
     });
 
-    const running = await agentApp.request(`https://openbot.test/api/agents/setup/${jobId}`);
+    const running = await agentApp.request(`https://dispatch.test/api/agents/setup/${jobId}`);
     await expect(running.json()).resolves.toEqual({ status: "setting_up" });
-    const failed = await agentApp.request(`https://openbot.test/api/agents/setup/${jobId}`);
+    const failed = await agentApp.request(`https://dispatch.test/api/agents/setup/${jobId}`);
     await expect(failed.json()).resolves.toEqual({ status: "failed", error: "Tilde setup failed" });
   });
 
@@ -339,7 +341,7 @@ describe("bare OpenBot server", () => {
       },
     });
 
-    const response = await agentApp.request("https://openbot.test/api/agents", {
+    const response = await agentApp.request("https://dispatch.test/api/agents", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ name: "Test" }),
@@ -362,13 +364,13 @@ describe("bare OpenBot server", () => {
       environment: { COMPUTER_ID: "computer-one" },
     });
     const response = await computerApp.request(
-      `https://openbot.test/api/computer/hello-world/preview?trace_id=${traceId}`,
+      `https://dispatch.test/api/computer/hello-world/preview?trace_id=${traceId}`,
     );
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("https://computer.test/vnc.html?token=opaque");
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("referrer-policy")).toBe("no-referrer");
-    expect(response.headers.get("x-openbot-vnc-trace-id")).toBe(traceId);
+    expect(response.headers.get("x-dispatch-vnc-trace-id")).toBe(traceId);
     expect(previewAgentDesktop).toHaveBeenCalledWith(
       "hello-world",
       expect.objectContaining({
@@ -378,7 +380,7 @@ describe("bare OpenBot server", () => {
       }),
     );
     expect(info).toHaveBeenCalledWith(
-      "[openbot-vnc] preview redirect ready",
+      "[dispatch-vnc] preview redirect ready",
       expect.objectContaining({
         agentId: "hello-world",
         endpointOrigin: "https://computer.test",
@@ -388,7 +390,7 @@ describe("bare OpenBot server", () => {
     );
     expect(JSON.stringify(info.mock.calls)).not.toContain("opaque");
 
-    const invalid = await computerApp.request("https://openbot.test/api/computer/../preview");
+    const invalid = await computerApp.request("https://dispatch.test/api/computer/../preview");
     expect(invalid.status).not.toBe(307);
   });
 
@@ -405,7 +407,7 @@ describe("bare OpenBot server", () => {
     controller.abort();
 
     const response = await computerApp.request(
-      "https://openbot.test/api/computer/hello-world/preview",
+      "https://dispatch.test/api/computer/hello-world/preview",
       { signal: controller.signal },
     );
 
@@ -418,8 +420,8 @@ describe("bare OpenBot server", () => {
     const chatApp = createApp({
       tildeChatProxy: {
         apiKey: "secret-api-key",
-        orgId: "openbot-org",
-        teamId: "openbot-team",
+        orgId: "dispatch-org",
+        teamId: "dispatch-team",
         baseUrl: "https://tilde.test",
         fetch: async (input, request) => {
           const url =
@@ -438,7 +440,7 @@ describe("bare OpenBot server", () => {
     });
 
     const response = await chatApp.request(
-      "https://openbot.test/api/chat/session/session-one/observe?attach_to_child_sessions=true",
+      "https://dispatch.test/api/chat/session/session-one/observe?attach_to_child_sessions=true",
       { headers: { authorization: "Bearer browser-token", "last-event-id": "event-one" } },
     );
 
@@ -450,11 +452,11 @@ describe("bare OpenBot server", () => {
     await expect(response.text()).resolves.toContain("message_streaming");
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url).toBe(
-      "https://tilde.test/api/v1/team/openbot-team/chatkit/session/session-one/observe?attach_to_child_sessions=true",
+      "https://tilde.test/api/v1/team/dispatch-team/chatkit/session/session-one/observe?attach_to_child_sessions=true",
     );
     const headers = new Headers(calls[0]?.request.headers);
     expect(headers.get("x-api-key")).toBe("secret-api-key");
-    expect(headers.get("x-tilde-org-id")).toBe("openbot-org");
+    expect(headers.get("x-tilde-org-id")).toBe("dispatch-org");
     expect(headers.get("authorization")).toBeNull();
     expect(headers.get("accept-encoding")).toBe("identity");
     expect(headers.get("last-event-id")).toBe("event-one");
@@ -468,9 +470,9 @@ describe("bare OpenBot server", () => {
       authProvider: testAuthProvider(),
       tildeChatProxy: {
         apiKey: "secret-api-key",
-        orgId: "openbot-org",
-        teamId: "openbot-team",
-        baseUrl: "https://openbot-org.api.trytilde.ai",
+        orgId: "dispatch-org",
+        teamId: "dispatch-team",
+        baseUrl: "https://dispatch-org.api.trytilde.ai",
         fetch: async (input, request) => {
           upstreamUrl =
             input instanceof Request ? input.url : input instanceof URL ? input.href : input;
@@ -485,10 +487,13 @@ describe("bare OpenBot server", () => {
       },
     });
 
-    const response = await chatApp.request("https://openbot.test/api/chat/realtime/socket-ticket", {
-      method: "POST",
-      headers: { cookie: "openbot_access=browser-token", origin: "https://openbot.test" },
-    });
+    const response = await chatApp.request(
+      "https://dispatch.test/api/chat/realtime/socket-ticket",
+      {
+        method: "POST",
+        headers: { cookie: "dispatch_access=browser-token", origin: "https://dispatch.test" },
+      },
+    );
 
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
@@ -497,17 +502,17 @@ describe("bare OpenBot server", () => {
       protocol: "tilde.chatkit-realtime.ticket",
       expires_at: "2026-08-26T12:00:00Z",
       websocket_url:
-        "wss://openbot-org.api.trytilde.ai/api/v1/team/openbot-team/chatkit/realtime?org_id=openbot-org",
+        "wss://dispatch-org.api.trytilde.ai/api/v1/team/dispatch-team/chatkit/realtime?org_id=dispatch-org",
     });
     expect(upstreamUrl).toBe(
-      "https://openbot-org.api.trytilde.ai/api/v1/team/openbot-team/identity/openbot/chatkit-realtime-ticket",
+      "https://dispatch-org.api.trytilde.ai/api/v1/team/dispatch-team/identity/dispatch/chatkit-realtime-ticket",
     );
     expect(upstreamHeaders.get("authorization")).toBe("Bearer browser-token");
-    expect(upstreamHeaders.get("x-tilde-org-id")).toBe("openbot-org");
+    expect(upstreamHeaders.get("x-tilde-org-id")).toBe("dispatch-org");
     expect(upstreamHeaders.get("content-type")).toBe("application/json");
     expect(JSON.parse(upstreamBody)).toEqual({
       transport: "browser",
-      origin: "https://openbot.test",
+      origin: "https://dispatch.test",
     });
   });
 
@@ -517,9 +522,9 @@ describe("bare OpenBot server", () => {
       authProvider: testAuthProvider(),
       tildeChatProxy: {
         apiKey: "secret-api-key",
-        orgId: "openbot-org",
-        teamId: "openbot-team",
-        baseUrl: "https://openbot-org.api.trytilde.ai",
+        orgId: "dispatch-org",
+        teamId: "dispatch-team",
+        baseUrl: "https://dispatch-org.api.trytilde.ai",
         fetch: async (_input, request) => {
           upstreamBody = typeof request?.body === "string" ? request.body : "";
           return Response.json({
@@ -531,14 +536,17 @@ describe("bare OpenBot server", () => {
       },
     });
 
-    const response = await chatApp.request("https://openbot.test/api/chat/realtime/socket-ticket", {
-      method: "POST",
-      headers: {
-        authorization: "Bearer native-token",
-        "content-type": "application/json",
+    const response = await chatApp.request(
+      "https://dispatch.test/api/chat/realtime/socket-ticket",
+      {
+        method: "POST",
+        headers: {
+          authorization: "Bearer native-token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ transport: "native" }),
       },
-      body: JSON.stringify({ transport: "native" }),
-    });
+    );
 
     expect(response.status).toBe(200);
     expect(JSON.parse(upstreamBody)).toEqual({ transport: "native" });
@@ -550,9 +558,9 @@ describe("bare OpenBot server", () => {
       authProvider: testAuthProvider(),
       tildeChatProxy: {
         apiKey: "secret-api-key",
-        orgId: "openbot-org",
-        teamId: "openbot-team",
-        baseUrl: "https://openbot-org.api.trytilde.ai",
+        orgId: "dispatch-org",
+        teamId: "dispatch-team",
+        baseUrl: "https://dispatch-org.api.trytilde.ai",
         fetch: async (_input, request) => {
           upstreamBody = typeof request?.body === "string" ? request.body : "";
           return Response.json({
@@ -564,20 +572,23 @@ describe("bare OpenBot server", () => {
       },
     });
 
-    const response = await chatApp.request("https://openbot.test/api/chat/realtime/socket-ticket", {
-      method: "POST",
-      headers: {
-        authorization: "Bearer injected-token",
-        origin: "https://openbot.test",
-        "content-type": "application/json",
+    const response = await chatApp.request(
+      "https://dispatch.test/api/chat/realtime/socket-ticket",
+      {
+        method: "POST",
+        headers: {
+          authorization: "Bearer injected-token",
+          origin: "https://dispatch.test",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ transport: "browser" }),
       },
-      body: JSON.stringify({ transport: "browser" }),
-    });
+    );
 
     expect(response.status).toBe(200);
     expect(JSON.parse(upstreamBody)).toEqual({
       transport: "browser",
-      origin: "https://openbot.test",
+      origin: "https://dispatch.test",
     });
   });
 
@@ -586,23 +597,26 @@ describe("bare OpenBot server", () => {
       authProvider: testAuthProvider(),
       tildeChatProxy: {
         apiKey: "secret-api-key",
-        orgId: "openbot-org",
-        teamId: "openbot-team",
+        orgId: "dispatch-org",
+        teamId: "dispatch-team",
         fetch: async () => {
           throw new Error("native cookie request must not reach Tilde");
         },
       },
     });
 
-    const response = await chatApp.request("https://openbot.test/api/chat/realtime/socket-ticket", {
-      method: "POST",
-      headers: {
-        cookie: "openbot_access=browser-token",
-        origin: "https://openbot.test",
-        "content-type": "application/json",
+    const response = await chatApp.request(
+      "https://dispatch.test/api/chat/realtime/socket-ticket",
+      {
+        method: "POST",
+        headers: {
+          cookie: "dispatch_access=browser-token",
+          origin: "https://dispatch.test",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ transport: "native" }),
       },
-      body: JSON.stringify({ transport: "native" }),
-    });
+    );
 
     expect(response.status).toBe(403);
   });
@@ -612,8 +626,8 @@ describe("bare OpenBot server", () => {
     const chatApp = createApp({
       tildeChatProxy: {
         apiKey: "secret-api-key",
-        orgId: "openbot-org",
-        teamId: "openbot-team",
+        orgId: "dispatch-org",
+        teamId: "dispatch-team",
         fetch: async (_input, request) => {
           body = new Uint8Array(await new Response(request?.body).arrayBuffer());
           return Response.json({ status: "uploaded" });
@@ -621,13 +635,13 @@ describe("bare OpenBot server", () => {
       },
     });
     const response = await chatApp.request(
-      "https://openbot.test/api/chat/session/session-one/attachment/attachment-one/content",
+      "https://dispatch.test/api/chat/session/session-one/attachment/attachment-one/content",
       { method: "PUT", body: new Uint8Array([0, 1, 2, 255]) },
     );
     expect(response.status).toBe(200);
     expect([...body]).toEqual([0, 1, 2, 255]);
 
-    const invalid = await chatApp.request("https://openbot.test/api/chat/session%5Ctool");
+    const invalid = await chatApp.request("https://dispatch.test/api/chat/session%5Ctool");
     expect(invalid.status).toBe(400);
   });
 
@@ -636,8 +650,8 @@ describe("bare OpenBot server", () => {
     const chatApp = createApp({
       tildeChatProxy: {
         apiKey: "secret-api-key",
-        orgId: "openbot-org",
-        teamId: "openbot-team",
+        orgId: "dispatch-org",
+        teamId: "dispatch-team",
         fetch: async () => {
           upstreamCalls += 1;
           return new Response(null, { status: 204 });
@@ -645,7 +659,7 @@ describe("bare OpenBot server", () => {
       },
     });
 
-    const response = await chatApp.request("https://openbot.test/api/chat/agents/agent-one", {
+    const response = await chatApp.request("https://dispatch.test/api/chat/agents/agent-one", {
       method: "DELETE",
     });
 
@@ -661,8 +675,8 @@ describe("bare OpenBot server", () => {
     const chatApp = createApp({
       tildeChatProxy: {
         apiKey: "secret-api-key",
-        orgId: "openbot-org",
-        teamId: "openbot-team",
+        orgId: "dispatch-org",
+        teamId: "dispatch-team",
         baseUrl: "https://tilde.test",
         fetch: async (input, request) => {
           const url =
@@ -680,11 +694,11 @@ describe("bare OpenBot server", () => {
       ["DELETE", "sessions/session-one/participants/human-instance"],
     ];
     for (const [method, path] of routes) {
-      const response = await chatApp.request(`https://openbot.test/api/chat/${path}`, { method });
+      const response = await chatApp.request(`https://dispatch.test/api/chat/${path}`, { method });
       expect(response.status).toBe(200);
     }
     expect(calls).toEqual(
-      routes.map(([method, path]) => [method, `/api/v1/team/openbot-team/chatkit/${path}`]),
+      routes.map(([method, path]) => [method, `/api/v1/team/dispatch-team/chatkit/${path}`]),
     );
   });
 
@@ -693,8 +707,8 @@ describe("bare OpenBot server", () => {
     const chatApp = createApp({
       tildeChatProxy: {
         apiKey: "secret-api-key",
-        orgId: "openbot-org",
-        teamId: "openbot-team",
+        orgId: "dispatch-org",
+        teamId: "dispatch-team",
         baseUrl: "https://tilde.test",
         fetch: async (input) => {
           calls.push(
@@ -706,16 +720,16 @@ describe("bare OpenBot server", () => {
     });
 
     const accepted = await chatApp.request(
-      "https://openbot.test/api/chat/_root/org/openbot-org/team/openbot-team/session/session-one/attachment/attachment-one/file.txt",
+      "https://dispatch.test/api/chat/_root/org/dispatch-org/team/dispatch-team/session/session-one/attachment/attachment-one/file.txt",
       { method: "PUT", body: "proof" },
     );
     expect(accepted.status).toBe(204);
     expect(calls).toEqual([
-      "https://tilde.test/api/v1/chatkit/org/openbot-org/team/openbot-team/session/session-one/attachment/attachment-one/file.txt",
+      "https://tilde.test/api/v1/chatkit/org/dispatch-org/team/dispatch-team/session/session-one/attachment/attachment-one/file.txt",
     ]);
 
     const rejected = await chatApp.request(
-      "https://openbot.test/api/chat/_root/org/another-org/team/openbot-team/session/session-one/attachment/attachment-one/file.txt",
+      "https://dispatch.test/api/chat/_root/org/another-org/team/dispatch-team/session/session-one/attachment/attachment-one/file.txt",
       { method: "PUT", body: "proof" },
     );
     expect(rejected.status).toBe(400);
@@ -728,8 +742,8 @@ describe("bare OpenBot server", () => {
     const chatApp = createApp({
       tildeChatProxy: {
         apiKey: "secret-api-key",
-        orgId: "openbot-org",
-        teamId: "openbot-team",
+        orgId: "dispatch-org",
+        teamId: "dispatch-team",
         fetch: async (_input, request) => {
           uploaded = new Uint8Array(await new Response(request?.body).arrayBuffer());
           uploadContentType = new Headers(request?.headers).get("content-type");
@@ -738,9 +752,9 @@ describe("bare OpenBot server", () => {
       },
     });
     const signedUrl =
-      "https://bucket.r2.cloudflarestorage.com/data/chatkit/org/openbot-org/team/openbot-team/session/session-one/file.txt?signature=private";
+      "https://bucket.r2.cloudflarestorage.com/data/chatkit/org/dispatch-org/team/dispatch-team/session/session-one/file.txt?signature=private";
     const accepted = await chatApp.request(
-      `https://openbot.test/api/chat/_upload?url=${encodeURIComponent(signedUrl)}`,
+      `https://dispatch.test/api/chat/_upload?url=${encodeURIComponent(signedUrl)}`,
       { method: "PUT", headers: { "content-type": "text/plain" }, body: "proof" },
     );
     expect(accepted.status).toBe(200);
@@ -748,27 +762,27 @@ describe("bare OpenBot server", () => {
     expect(uploadContentType).toBe("text/plain");
 
     const rejected = await chatApp.request(
-      `https://openbot.test/api/chat/_upload?url=${encodeURIComponent("https://evil.test/file")}`,
+      `https://dispatch.test/api/chat/_upload?url=${encodeURIComponent("https://evil.test/file")}`,
       { method: "PUT", body: "proof" },
     );
     expect(rejected.status).toBe(400);
   });
 
   it("serves built web assets and SPA routes when a web root is available", async () => {
-    const webRoot = await mkdtemp(join(tmpdir(), "openbot-hono-web-"));
+    const webRoot = await mkdtemp(join(tmpdir(), "dispatch-hono-web-"));
     temporaryRoots.push(webRoot);
     await mkdir(join(webRoot, "assets"));
-    await writeFile(join(webRoot, "index.html"), "<main>OpenBot web</main>");
+    await writeFile(join(webRoot, "index.html"), "<main>Dispatch web</main>");
     await writeFile(join(webRoot, "assets", "app.js"), "export const ready = true;");
     const webApp = createApp({ webRoot });
 
-    const asset = await webApp.request("https://openbot.test/assets/app.js");
+    const asset = await webApp.request("https://dispatch.test/assets/app.js");
     expect(asset.status).toBe(200);
     expect(asset.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
 
-    const frontendRoute = await webApp.request("https://openbot.test/api/setup/unlock");
+    const frontendRoute = await webApp.request("https://dispatch.test/api/setup/unlock");
     expect(frontendRoute.status).toBe(200);
     expect(frontendRoute.headers.get("cache-control")).toBe("no-cache");
-    await expect(frontendRoute.text()).resolves.toBe("<main>OpenBot web</main>");
+    await expect(frontendRoute.text()).resolves.toBe("<main>Dispatch web</main>");
   });
 });

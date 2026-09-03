@@ -6,23 +6,23 @@ import type {
   DeploymentResult,
   InitializableProvider,
   ProviderInitialization,
-} from "@tryopenbot/runtime-provider";
-import { isDevelopmentLifecycle, persistEnvironment } from "@tryopenbot/runtime-provider";
+} from "@trytilde/dispatch-runtime-provider";
+import { isDevelopmentLifecycle, persistEnvironment } from "@trytilde/dispatch-runtime-provider";
 import {
   TildePlatform,
   VercelPlatform,
-  deployHostedOpenBotRelease,
+  deployHostedDispatchRelease,
   vercelPlatform,
-} from "@tryopenbot/platform-integrations";
+} from "@trytilde/dispatch-platform-integrations";
 import {
   ensureVercelProject,
   installVercelEnvironment,
   requiredVercelProject,
   vercelDeploymentUrl,
   vercelScopeArguments,
-} from "@tryopenbot/platform-integrations/vercel/deployment";
+} from "@trytilde/dispatch-platform-integrations/vercel/deployment";
 import { resolve } from "node:path";
-import { materializeFileTemplate } from "@tryopenbot/utilities";
+import { materializeFileTemplate } from "@trytilde/dispatch-utilities";
 import { checkControlService } from "../check.js";
 import { processRunner, type CommandRunner } from "../command.js";
 import {
@@ -49,7 +49,7 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
         id: "vercel-control-project",
         prompt: "Vercel project for the control service",
         description:
-          "Name of the Vercel project that will host the OpenBot control service and web application.",
+          "Name of the Vercel project that will host the Dispatch control service and web application.",
         input: "text",
         required: true,
         destination: { kind: "environment", key: "VERCEL_CONTROL_PROJECT" },
@@ -106,7 +106,7 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
     const project = requiredVercelProject(context.environment, "VERCEL_CONTROL_PROJECT");
     if (!this.platform.managed) await ensureVercelProject(this.#runner, context, project);
     const origin = this.baseUrl(context).toString().replace(/\/$/, "");
-    await persistEnvironment(context, "PUBLIC_ORIGIN", origin, "OpenBot public origin.");
+    await persistEnvironment(context, "PUBLIC_ORIGIN", origin, "Dispatch public origin.");
     return { outputs: { "control-service.origin": origin, "runtime.origin": origin } };
   }
   async deploy(context: DeploymentContext): Promise<DeploymentResult> {
@@ -116,7 +116,7 @@ export class VercelControlServiceProvider implements Buildable, Deployable, Init
     if (this.platform.managed) {
       if (!this.#hostedPlatform)
         throw new Error("Tilde Cloud control deployment requires a hosted platform");
-      return deployHostedOpenBotRelease(this.#hostedPlatform, context, "control", root);
+      return deployHostedDispatchRelease(this.#hostedPlatform, context, "control", root);
     }
     await materializeFileTemplate(vercelProjectTemplate, resolve(root, "vercel.json"));
     await installVercelEnvironment(context, project, this.#request);
@@ -161,4 +161,4 @@ function healthyResponse(body: string): boolean {
 export {
   ensureVercelProject,
   vercelDeploymentUrl as deploymentUrl,
-} from "@tryopenbot/platform-integrations/vercel/deployment";
+} from "@trytilde/dispatch-platform-integrations/vercel/deployment";

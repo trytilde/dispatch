@@ -2,9 +2,9 @@
 
 ## In brief
 
-- `@tryopenbot/ui` owns presentation: markup, class names, motion, component state. No fetching in the package.
+- `@trytilde/dispatch-ui` owns presentation: markup, class names, motion, component state. No fetching in the package.
 - Applications own data, routing, composition. `apps/web` passes props. No app-local workspace stylesheet.
-- One stylesheet: `@tryopenbot/ui/openbot-ui.css`, exported from the package. `apps/web/src/styles.css` deleted, not overridden.
+- One stylesheet: `@trytilde/dispatch-ui/dispatch-ui.css`, exported from the package. `apps/web/src/styles.css` deleted, not overridden.
 - Storybook is package-owned and imports the real exports. No demo app, no duplicated production components.
 - One continuous bot conversation per agent, plus selectable named threads. No duplicate bot session row.
 - Narrow web viewports use full-screen workspace navigation and search, bottom-drawer settings and
@@ -18,19 +18,19 @@ rendering path owned by one application. The desktop shell renders the same surf
 consumer cannot reuse components that live in an application's source tree.
 
 The reasoning is not visible from the code. A reader seeing `apps/web/src/main.tsx` import
-`@tryopenbot/ui/openbot-ui.css` cannot tell whether an app-local override is still permitted, and
+`@trytilde/dispatch-ui/dispatch-ui.css` cannot tell whether an app-local override is still permitted, and
 later work has already assumed the boundary exists — ADR-0021 governs class naming inside the
 package, ADR-0022 governs vendored component sources inside it — without any record establishing
 that the package owns presentation in the first place.
 
 ## Decision
 
-`@tryopenbot/ui` owns presentation. Markup, class names, motion, and component state live in the
+`@trytilde/dispatch-ui` owns presentation. Markup, class names, motion, and component state live in the
 package, and nothing in the package fetches. Applications own the data path, routing, and
 composition, and drive components through props.
 
-The workspace stylesheet moves with that ownership. `packages/ui/src/openbot-ui.css` is the single
-workspace stylesheet, exported through the package's `./openbot-ui.css` entry. The app-local
+The workspace stylesheet moves with that ownership. `packages/ui/src/dispatch-ui.css` is the single
+workspace stylesheet, exported through the package's `./dispatch-ui.css` entry. The app-local
 `apps/web/src/styles.css` is deleted rather than kept as an override layer: a fork or application
 that needs its own styling adds a fork-owned stylesheet imported after the package one.
 
@@ -55,7 +55,7 @@ flowchart LR
   M["apps/mobile native renderer"] -->|"shared session model"| D["client-runtime data path"]
   A -->|"shared session model"| D
   D --> T["continuous bot session + named threads"]
-  U --> C["openbot-ui.css: single workspace stylesheet"]
+  U --> C["dispatch-ui.css: single workspace stylesheet"]
   U --> S["Storybook catalog: real exports"]
   U --> R["narrow viewport: full-screen nav/search + drawer dialogs"]
 ```

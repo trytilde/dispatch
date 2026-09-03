@@ -1,18 +1,18 @@
 import { createHash } from "node:crypto";
-import type { AgentProvider } from "@tryopenbot/agent-provider";
-import type { AuthProvider } from "@tryopenbot/auth-provider";
-import type { AgentServiceProvider } from "@tryopenbot/agent-service-provider";
-import type { ComputerProvider } from "@tryopenbot/computer-service-provider";
-import type { ControlServiceProvider } from "@tryopenbot/control-service-provider";
-import type { GitProvider } from "@tryopenbot/git-provider";
-import type { InferenceProvider } from "@tryopenbot/inference-provider";
+import type { AgentProvider } from "@trytilde/dispatch-agent-provider";
+import type { AuthProvider } from "@trytilde/dispatch-auth-provider";
+import type { AgentServiceProvider } from "@trytilde/dispatch-agent-service-provider";
+import type { ComputerProvider } from "@trytilde/dispatch-computer-service-provider";
+import type { ControlServiceProvider } from "@trytilde/dispatch-control-service-provider";
+import type { GitProvider } from "@trytilde/dispatch-git-provider";
+import type { InferenceProvider } from "@trytilde/dispatch-inference-provider";
 
 export interface ProviderPluginManifest {
   readonly id: string;
   readonly registrations: readonly unknown[];
 }
 
-export interface OpenBotProviders {
+export interface DispatchProviders {
   auth: AuthProvider;
   controlService: ControlServiceProvider;
   agentService: AgentServiceProvider;
@@ -22,8 +22,8 @@ export interface OpenBotProviders {
   git?: GitProvider;
 }
 
-export interface OpenBotConfiguration {
-  providers: OpenBotProviders;
+export interface DispatchConfiguration {
+  providers: DispatchProviders;
 }
 
 export type SopsOwnerIdentityConfiguration =
@@ -35,7 +35,7 @@ export type SopsOwnerIdentityConfiguration =
   | { kind: "vault-transit" }
   | { kind: "managed-file"; path: string };
 
-/** User-local OpenBot settings. Stored in the gitignored root local-user-config.json. */
+/** User-local Dispatch settings. Stored in the gitignored root local-user-config.json. */
 export interface UserConfiguration {
   version: 1;
   sops?: {
@@ -44,13 +44,13 @@ export interface UserConfiguration {
 }
 
 export interface RepositoryManifest {
-  configuration: OpenBotConfiguration;
+  configuration: DispatchConfiguration;
   providerPlugins: readonly ProviderPluginManifest[];
   files: Readonly<Record<string, string>>;
   digest: string;
 }
 
-export function Configuration(configuration: OpenBotConfiguration): OpenBotConfiguration {
+export function Configuration(configuration: DispatchConfiguration): DispatchConfiguration {
   return configuration;
 }
 

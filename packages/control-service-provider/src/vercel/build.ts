@@ -1,11 +1,11 @@
 import { cp, mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import { materializeFileTemplate, workspaceSourceInputOptions } from "@tryopenbot/utilities";
-import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
+import { materializeFileTemplate, workspaceSourceInputOptions } from "@trytilde/dispatch-utilities";
+import type { DeploymentContext, DeploymentResult } from "@trytilde/dispatch-runtime-provider";
 import type { CommandRunner } from "../command.js";
 
-export const controlVercelArtifact = ".openbot-deploy/vercel/control";
+export const controlVercelArtifact = ".dispatch-deploy/vercel/control";
 const entryTemplate = fileURLToPath(new URL("./assets/entry.ts.hbs", import.meta.url));
 const functionConfigTemplate = fileURLToPath(
   new URL("./assets/function-config.json.hbs", import.meta.url),
@@ -22,7 +22,7 @@ export async function buildVercelControlService(
   runner: CommandRunner,
 ): Promise<DeploymentResult> {
   const { build } = await import("tsdown");
-  await runner.run("pnpm", ["--filter", "@tryopenbot/web", "build"], {
+  await runner.run("pnpm", ["--filter", "@trytilde/dispatch-web", "build"], {
     cwd: context.repositoryRoot,
     environment: context.environment,
   });
@@ -31,7 +31,7 @@ export async function buildVercelControlService(
   const functionDirectory = resolve(output, "functions/control.func");
   const generatedEntry = resolve(
     context.repositoryRoot,
-    ".openbot-deploy/generated/control-service-vercel.ts",
+    ".dispatch-deploy/generated/control-service-vercel.ts",
   );
   await rm(root, { recursive: true, force: true });
   await mkdir(functionDirectory, { recursive: true });

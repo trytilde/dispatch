@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
 test("keeps macOS window controls clear of the settings back button", async ({ page }) => {
   await page.addInitScript(() => {
     Object.assign(window, {
-      openbotDesktop: {
+      dispatchDesktop: {
         platform: "mac",
         controlOrigin: window.location.origin,
         openExternal: async () => undefined,

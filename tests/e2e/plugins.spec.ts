@@ -278,14 +278,14 @@ test.beforeEach(async ({ page }) => {
             accounts: [
               {
                 id: "vercel-hello-world",
-                display_name: "OpenBot hello-world Vercel",
+                display_name: "Dispatch hello-world Vercel",
                 status: "active",
                 provider_type_id: "proxied-mcp:https://mcp.vercel.com",
                 assigned_agent_ids: ["hello-world"],
               },
               {
                 id: "vercel-researcher",
-                display_name: "OpenBot researcher Vercel",
+                display_name: "Dispatch researcher Vercel",
                 status: "active",
                 provider_type_id: "proxied-mcp:https://mcp.vercel.com",
                 assigned_agent_ids: ["researcher"],
@@ -556,7 +556,7 @@ test.beforeEach(async ({ page }) => {
             : []),
         ].filter((item) => !deletedToolAccountIds.has(item.id)),
         mcp_servers: agentIds.map((agentId) => ({
-          id: `openbot-${agentId}`,
+          id: `dispatch-${agentId}`,
           agent_id: agentId,
           tools: Object.entries(toolAssignments).flatMap(([id, assigned]) =>
             assigned.includes(agentId) && !deletedToolAccountIds.has(id)
@@ -567,7 +567,7 @@ test.beforeEach(async ({ page }) => {
         proxied_mcp_servers: agentIds.map((agentId) => ({
           server: {
             id: `vercel-${agentId}`,
-            display_name: `OpenBot ${agentId} Vercel`,
+            display_name: `Dispatch ${agentId} Vercel`,
             endpoint_configuration: { url: "https://mcp.vercel.com" },
             status: "active",
             tool_group_instance_id: `vercel-${agentId}`,
@@ -575,7 +575,7 @@ test.beforeEach(async ({ page }) => {
           },
           tool_group_instance: account(
             `vercel-${agentId}`,
-            `OpenBot ${agentId} Vercel`,
+            `Dispatch ${agentId} Vercel`,
             "proxied-vercel",
           ),
           tool_count: 1,
@@ -625,7 +625,7 @@ test.beforeEach(async ({ page }) => {
         skill_registries: agentIds.map((agentId) => ({
           id: `registry-${agentId}`,
           agent_id: agentId,
-          name: `OpenBot ${agentId}`,
+          name: `Dispatch ${agentId}`,
           skills: registrySkills(agentId),
         })),
       };
@@ -671,13 +671,13 @@ test.beforeEach(async ({ page }) => {
       const accountId = decodeURIComponent(enable[1] ?? "");
       const body = request.postDataJSON() as { mcp_server_instance_ids: string[] };
       for (const serverId of body.mcp_server_instance_ids) {
-        const agentId = serverId.replace(/^openbot-/, "");
+        const agentId = serverId.replace(/^dispatch-/, "");
         toolAssignments[accountId] = [...new Set([...(toolAssignments[accountId] ?? []), agentId])];
       }
       await route.fulfill({ json: { complete: true } });
       return;
     }
-    const unbind = /\/api\/tilde\/mcp\/mcp-server\/openbot-([^/]+)\/tool-group\/([^/]+)$/.exec(
+    const unbind = /\/api\/tilde\/mcp\/mcp-server\/dispatch-([^/]+)\/tool-group\/([^/]+)$/.exec(
       path,
     );
     if (unbind && method === "DELETE") {
@@ -954,8 +954,10 @@ test("manages tools and skills by bot", async ({ page }) => {
 
   await catalog.getByRole("button", { name: /^Vercel/ }).click();
   detailDialog = page.getByRole("dialog");
-  await expect(detailDialog.getByText("OpenBot hello-world Vercel", { exact: true })).toBeVisible();
-  await expect(detailDialog.getByText("OpenBot researcher Vercel", { exact: true })).toBeVisible();
+  await expect(
+    detailDialog.getByText("Dispatch hello-world Vercel", { exact: true }),
+  ).toBeVisible();
+  await expect(detailDialog.getByText("Dispatch researcher Vercel", { exact: true })).toBeVisible();
   await expect(detailDialog.getByRole("button", { name: "Add new account" })).toHaveCount(0);
   await detailDialog.getByRole("button", { name: "Close" }).click();
 

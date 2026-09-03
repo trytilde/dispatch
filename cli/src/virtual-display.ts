@@ -1,6 +1,6 @@
 // Runs a graphical program on a host with no display: Xvfb owns a virtual screen and
 // x11vnc exposes it on loopback only, so a remote developer reaches it through
-// `openbot connect` rather than an open port.
+// `tilde connect` rather than an open port.
 //
 // Used by the Electron desktop shell on a display-less Linux host.
 import { spawn, spawnSync } from "node:child_process";
@@ -46,7 +46,7 @@ export async function ensureVncServer(display: VirtualDisplay): Promise<void> {
   detach("x11vnc", [
     "-display",
     `:${display.displayNumber}`,
-    // Loopback only. Reach it through `openbot connect`, never a public bind.
+    // Loopback only. Reach it through `tilde connect`, never a public bind.
     "-localhost",
     "-rfbport",
     display.vncPort,

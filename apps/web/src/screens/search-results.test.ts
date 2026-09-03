@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { ChatKitSearchHit } from "@tryopenbot/client-runtime";
+import type { ChatKitSearchHit } from "@trytilde/dispatch-client-runtime";
 import { rankWorkspaceSearchHits, searchHitId } from "./search-results.js";
 
 const now = "2026-08-30T00:00:00.000Z";

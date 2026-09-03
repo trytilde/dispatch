@@ -1,6 +1,6 @@
 ---
 name: pre-commit-checks
-description: Run OpenBot's TypeScript, protobuf, Vitest, build, browser, provider, and desktop checks before committing, pushing, opening a PR, or handing off work. Use risk-based focused checks first, then repository gates.
+description: Run Dispatch's TypeScript, protobuf, Vitest, build, browser, provider, and desktop checks before committing, pushing, opening a PR, or handing off work. Use risk-based focused checks first, then repository gates.
 ---
 
 # Pre-Commit Checks
@@ -14,7 +14,7 @@ Inspect the worktree and secret-bearing paths before broad checks:
 ```bash
 git status --short --branch
 git diff -- .env .env.* '*.env' '*.local'
-git check-ignore -v .env.local .data .vercel .openbot-deploy
+git check-ignore -v .env.local .data .vercel .dispatch-deploy
 ```
 
 Never stage credentials, setup codes, browser profiles, local databases, Vercel metadata, decrypted deployment files, or test artifacts.
@@ -34,7 +34,7 @@ and opaque client extensions that core code never reads. Fail the handoff when
 agent templates, SDKs, control routes, client runtime, UI, or provider
 composition use metadata for internal authorization, identity, routing,
 lifecycle, retries, relationships, models, budgets, runs, jobs, compaction, or
-memory semantics. Require a typed Tilde/OpenBot contract instead.
+memory semantics. Require a typed Tilde/Dispatch contract instead.
 
 ## Required Gates
 
@@ -48,14 +48,14 @@ pnpm build
 `pnpm check` regenerates protobuf contracts, type-checks scripts and packages, and runs package lint/test tasks plus deployment-script tests. Run focused tests first while iterating:
 
 ```bash
-pnpm --filter @tryopenbot/control-service test
-pnpm --filter @tryopenbot/agent-service-provider test
-pnpm --filter @tryopenbot/computer-service-provider test
-pnpm --filter @tryopenbot/client-runtime test
-pnpm --filter @tryopenbot/desktop test
+pnpm --filter @trytilde/dispatch-control-service test
+pnpm --filter @trytilde/dispatch-agent-service-provider test
+pnpm --filter @trytilde/dispatch-computer-service-provider test
+pnpm --filter @trytilde/dispatch-client-runtime test
+pnpm --filter @trytilde/dispatch-desktop test
 ```
 
-Run `pnpm test:e2e` when browser behavior changed or the user requested end-to-end proof. Run `pnpm --filter @tryopenbot/desktop package` when packaging, preload, Electron startup, or bundled-resource behavior changed.
+Run `pnpm test:e2e` when browser behavior changed or the user requested end-to-end proof. Run `pnpm --filter @trytilde/dispatch-desktop package` when packaging, preload, Electron startup, or bundled-resource behavior changed.
 
 ## TypeScript Fix Policy
 
@@ -85,7 +85,7 @@ Edit the `.proto` source, never generated TypeScript. Do not commit `apps/web/sr
 
 ## Release Notes
 
-OpenBot uses Changesets with one fixed group for every workspace package. Follow `add-changeset` for owner-visible behavior or package API changes. Do not edit versions or changelogs directly. Documentation-only, test-only, CI-only, and internal refactors need no placeholder changeset.
+Dispatch uses Changesets with one fixed group for every workspace package. Follow `add-changeset` for owner-visible behavior or package API changes. Do not edit versions or changelogs directly. Documentation-only, test-only, CI-only, and internal refactors need no placeholder changeset.
 
 ## Fix Before Commit
 
@@ -95,7 +95,7 @@ OpenBot uses Changesets with one fixed group for every workspace package. Follow
 - Generated contracts match protobuf sources.
 - Diff contains no secrets, local state, generated noise, or unrelated edits.
 - Changed metadata is provider-specific or client-opaque and has no internal
-  OpenBot/Tilde semantics.
+  Dispatch/Tilde semantics.
 - A valid changeset is present when release impact requires one, or the handoff explains why none is needed.
 - Changed provider contract interfaces are defined in `src/core.ts` or `src/core/index.ts`, re-exported by the package root, and reflected in the package README's `Public API` section.
 - New or changed major UX surfaces and state interactions consume `packages/client-runtime` contracts. `apps/web` and `apps/desktop` added no local wire types, fetch/SSE parsing, or duplicate snapshots; only presentation-only state is component-local.

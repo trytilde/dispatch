@@ -10,8 +10,8 @@ import {
 } from "@trycua/cua-driver";
 import { spawn } from "node:child_process";
 import { Code, ConnectError } from "@connectrpc/connect";
-import { CuaActionCompletion } from "@tryopenbot/computer-service-proto";
-import { isRecord } from "@tryopenbot/utilities/json";
+import { CuaActionCompletion } from "@trytilde/dispatch-computer-service-proto";
+import { isRecord } from "@trytilde/dispatch-utilities/json";
 import { agentDesktopEnvironment, ensureAgentDesktop } from "./desktop.js";
 
 export interface CuaToolCatalogEntry {
@@ -54,7 +54,7 @@ async function defaultDriverFactory(agentId: string, signal?: AbortSignal): Prom
   };
   const worker = CuaDriver.createPrivateWorker({
     binaryPath,
-    hostBundleId: "ai.tryopenbot.computer-service",
+    hostBundleId: "ai.trydispatch.computer-service",
     startupTimeoutMs: 30_000n,
     shutdownTimeoutMs: 10_000n,
     configuredDriver: {

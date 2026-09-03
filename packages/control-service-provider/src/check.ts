@@ -1,4 +1,4 @@
-import type { DeploymentContext } from "@tryopenbot/runtime-provider";
+import type { DeploymentContext } from "@trytilde/dispatch-runtime-provider";
 import { runNativeCheck, type CommandRunner } from "./command.js";
 
 export async function checkControlService(

@@ -1,5 +1,5 @@
 {
-  "name": "@tryopenbot/computer-service-proto",
+  "name": "@trytilde/dispatch-computer-service-proto",
   "version": "0.1.0",
   "files": [
     "dist",

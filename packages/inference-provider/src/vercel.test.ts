@@ -1,4 +1,4 @@
-import { VercelPlatform } from "@tryopenbot/platform-integrations";
+import { VercelPlatform } from "@trytilde/dispatch-platform-integrations";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { HOSTED_INFERENCE_BILLING, VercelInferenceProvider } from "./vercel.js";
 
@@ -14,7 +14,7 @@ describe("VercelInferenceProvider", () => {
       environment: {
         VERCEL_TOKEN: "vercel-private",
         VERCEL_TEAM_ID: "team_123",
-        VERCEL_AI_GATEWAY_API_KEY_NAME: "OpenBot agents",
+        VERCEL_AI_GATEWAY_API_KEY_NAME: "Dispatch agents",
       },
       setEnvironment: vi.fn(async () => undefined),
       setSecret,

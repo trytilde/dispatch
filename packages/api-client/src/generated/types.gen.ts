@@ -1466,7 +1466,7 @@ export type ConfigurationSchema = {
     user_credential: JsonSchema;
 };
 
-export type ConfigureHostedOpenBotInstanceRequest = {
+export type ConfigureHostedDispatchInstanceRequest = {
     /**
      * User-owned runtime values installed into the canonical runtime project. Legacy split
      * instances continue to receive the values in both existing projects. Tilde derives tenant,
@@ -1667,27 +1667,27 @@ export type CreateGoalRequestInner = {
     objective: string;
 };
 
-export type CreateHostedOpenBotDeploymentRequest = {
+export type CreateHostedDispatchDeploymentRequest = {
     /**
      * Globally unique label used for deterministic Tilde and Vercel resources.
      */
     slug: string;
     /**
-     * User-facing title for the isolated OpenBot instance and its Tilde team.
+     * User-facing title for the isolated Dispatch instance and its Tilde team.
      */
     title: string;
 };
 
-export type CreateHostedOpenBotReleaseFile = {
+export type CreateHostedDispatchReleaseFile = {
     mode: number;
     path: string;
     sha1: string;
     size: number;
 };
 
-export type CreateHostedOpenBotReleaseRequest = {
-    files: Array<CreateHostedOpenBotReleaseFile>;
-    service: HostedOpenBotReleaseService;
+export type CreateHostedDispatchReleaseRequest = {
+    files: Array<CreateHostedDispatchReleaseFile>;
+    service: HostedDispatchReleaseService;
     source_revision: string;
 };
 
@@ -2681,12 +2681,12 @@ export type HealthCheckResponse = {
     status: string;
 };
 
-export type HostedOpenBotDeployment = {
+export type HostedDispatchDeployment = {
     bootstrap_command_id: string;
     deployment_url: string;
     hostname: string;
     instance_id: string;
-    oauth: OpenBotDeployment;
+    oauth: DispatchDeployment;
     org_id: string;
     slug: string;
     status: string;
@@ -2712,7 +2712,7 @@ export type HostedOpenBotDeployment = {
     vercel_sandbox: string;
 };
 
-export type HostedOpenBotInstance = {
+export type HostedDispatchInstance = {
     bootstrap_command_id?: string | null;
     computer_image?: string | null;
     computer_service_url: string;
@@ -2721,7 +2721,7 @@ export type HostedOpenBotInstance = {
     id: string;
     org_id: string;
     slug: string;
-    status: HostedOpenBotInstanceStatus;
+    status: HostedDispatchInstanceStatus;
     team_id: string;
     title: string;
     updated_at: WrappedChronoDateTime;
@@ -2762,30 +2762,30 @@ export type HostedOpenBotInstance = {
     vercel_sandbox_name: string;
 };
 
-export enum HostedOpenBotInstanceStatus {
+export enum HostedDispatchInstanceStatus {
     PROVISIONING = 'provisioning',
     ACTIVE = 'active',
     ERROR = 'error',
     DELETING = 'deleting'
 }
 
-export type HostedOpenBotRelease = {
+export type HostedDispatchRelease = {
     created_at: WrappedChronoDateTime;
     deployment_url?: string | null;
     error_message?: string | null;
-    files: Array<HostedOpenBotReleaseFile>;
+    files: Array<HostedDispatchReleaseFile>;
     id: string;
     instance_id: string;
     org_id: string;
-    service: HostedOpenBotReleaseService;
+    service: HostedDispatchReleaseService;
     source_revision: string;
-    status: HostedOpenBotReleaseStatus;
+    status: HostedDispatchReleaseStatus;
     team_id: string;
     updated_at: WrappedChronoDateTime;
     vercel_deployment_id?: string | null;
 };
 
-export type HostedOpenBotReleaseFile = {
+export type HostedDispatchReleaseFile = {
     mode: number;
     path: string;
     sha1: string;
@@ -2793,13 +2793,13 @@ export type HostedOpenBotReleaseFile = {
     uploaded: boolean;
 };
 
-export enum HostedOpenBotReleaseService {
+export enum HostedDispatchReleaseService {
     RUNTIME = 'runtime',
     CONTROL = 'control',
     AGENTS = 'agents'
 }
 
-export enum HostedOpenBotReleaseStatus {
+export enum HostedDispatchReleaseStatus {
     UPLOADING = 'uploading',
     FINALIZING = 'finalizing',
     DEPLOYING = 'deploying',
@@ -3098,7 +3098,7 @@ export type InvokeToolInstanceParamsInner = {
 export type IssueChatKitRealtimeSocketTicketRequest = {
     /**
      * Required for browser tickets and forbidden for native tickets. Browser
-     * origins must match this OpenBot registration.
+     * origins must match this Dispatch registration.
      */
     origin?: string | null;
     transport: ChatKitRealtimeTicketTransport;
@@ -3141,8 +3141,8 @@ export type ListMcpProviderCatalogResponse = {
     oauth_callback_url?: string | null;
 };
 
-export type ListOpenBotDeploymentsResponse = {
-    items: Array<OpenBotDeployment>;
+export type ListDispatchDeploymentsResponse = {
+    items: Array<DispatchDeployment>;
 };
 
 export type ListProviderSetupCatalogResponse = {
@@ -3623,14 +3623,14 @@ export type OntologyRelationshipTypeDefinition = {
     target_page_type_keys: Array<string>;
 };
 
-export type OpenBotAgentSkillInput = {
+export type DispatchAgentSkillInput = {
     content: string;
     description: string;
     name: string;
     source_path: string;
 };
 
-export type OpenBotDeployment = {
+export type DispatchDeployment = {
     audience: string;
     authorization_endpoint: string;
     client_id: string;
@@ -3646,9 +3646,9 @@ export type OpenBotDeployment = {
 };
 
 /**
- * Inputs needed to render and mutate the OpenBot plugins screen.
+ * Inputs needed to render and mutate the Dispatch plugins screen.
  */
-export type OpenBotPluginsCatalogResponse = {
+export type DispatchPluginsCatalogResponse = {
     mcp_servers: Array<WrappedJsonValue>;
     proxied_mcp_servers: Array<WrappedJsonValue>;
     skill_providers: Array<WrappedJsonValue>;
@@ -4340,7 +4340,7 @@ export type RecallMemoryBody = {
     query: string;
 };
 
-export type ReconcileOpenBotAgentBundleBody = {
+export type ReconcileDispatchAgentBundleBody = {
     channel_display_name: string;
     channel_id: string;
     display_name: string;
@@ -4355,11 +4355,11 @@ export type ReconcileOpenBotAgentBundleBody = {
     mcp_server_name: string;
     skill_registry_description: string;
     skill_registry_name: string;
-    skills?: Array<OpenBotAgentSkillInput>;
+    skills?: Array<DispatchAgentSkillInput>;
     tool_group_instance_ids?: Array<string>;
 };
 
-export type ReconcileOpenBotAgentBundleResponse = {
+export type ReconcileDispatchAgentBundleResponse = {
     agent: Inbox;
     api_key?: string | null;
     channel: Inbox;
@@ -4528,7 +4528,7 @@ export type RegisterOAuthClientResponse = {
     tos_uri?: string | null;
 };
 
-export type RegisterOpenBotDeploymentRequest = {
+export type RegisterDispatchDeploymentRequest = {
     /**
      * Existing client ID to reconcile when init is run again.
      */
@@ -5277,7 +5277,7 @@ export type SetChatKitResourceStatusRequest = {
     status: InboxStatus;
 };
 
-export type SetOpenBotAvatarRequest = {
+export type SetDispatchAvatarRequest = {
     avatar_id: string;
 };
 
@@ -6410,7 +6410,7 @@ export type UpdateGoalRequestInner = {
     status_reason?: string | null;
 };
 
-export type UpdateHostedOpenBotComputerImageRequest = {
+export type UpdateHostedDispatchComputerImageRequest = {
     /**
      * Immutable VCR digest scoped to this instance's runtime project, or its legacy control
      * project for a pre-consolidation instance.
@@ -8168,8 +8168,8 @@ export type CreateOrganizationResponses = {
 
 export type CreateOrganizationResponse = CreateOrganizationResponses[keyof CreateOrganizationResponses];
 
-export type CreateHostedOpenbotDeploymentData = {
-    body: CreateHostedOpenBotDeploymentRequest;
+export type CreateHostedDispatchDeploymentData = {
+    body: CreateHostedDispatchDeploymentRequest;
     path: {
         /**
          * Owning Tilde organization ID
@@ -8177,10 +8177,10 @@ export type CreateHostedOpenbotDeploymentData = {
         org_id: string;
     };
     query?: never;
-    url: '/api/v1/identity/organizations/{org_id}/openbot/deployments';
+    url: '/api/v1/identity/organizations/{org_id}/dispatch/deployments';
 };
 
-export type CreateHostedOpenbotDeploymentErrors = {
+export type CreateHostedDispatchDeploymentErrors = {
     /**
      * Invalid title or slug
      */
@@ -8194,21 +8194,21 @@ export type CreateHostedOpenbotDeploymentErrors = {
      */
     403: Error;
     /**
-     * Hosted OpenBot provisioning is unavailable
+     * Hosted Dispatch provisioning is unavailable
      */
     503: Error;
 };
 
-export type CreateHostedOpenbotDeploymentError = CreateHostedOpenbotDeploymentErrors[keyof CreateHostedOpenbotDeploymentErrors];
+export type CreateHostedDispatchDeploymentError = CreateHostedDispatchDeploymentErrors[keyof CreateHostedDispatchDeploymentErrors];
 
-export type CreateHostedOpenbotDeploymentResponses = {
+export type CreateHostedDispatchDeploymentResponses = {
     /**
-     * Hosted OpenBot provisioning started
+     * Hosted Dispatch provisioning started
      */
-    200: HostedOpenBotDeployment;
+    200: HostedDispatchDeployment;
 };
 
-export type CreateHostedOpenbotDeploymentResponse = CreateHostedOpenbotDeploymentResponses[keyof CreateHostedOpenbotDeploymentResponses];
+export type CreateHostedDispatchDeploymentResponse = CreateHostedDispatchDeploymentResponses[keyof CreateHostedDispatchDeploymentResponses];
 
 export type DeleteOrganizationData = {
     body?: never;
@@ -8879,24 +8879,24 @@ export type UploadSelfAvatarResponses = {
 
 export type UploadSelfAvatarResponse = UploadSelfAvatarResponses[keyof UploadSelfAvatarResponses];
 
-export type SetSelfOpenbotAvatarData = {
-    body: SetOpenBotAvatarRequest;
+export type SetSelfDispatchAvatarData = {
+    body: SetDispatchAvatarRequest;
     path?: never;
     query?: never;
-    url: '/api/v1/identity/profile/avatar/openbot';
+    url: '/api/v1/identity/profile/avatar/dispatch';
 };
 
-export type SetSelfOpenbotAvatarErrors = {
+export type SetSelfDispatchAvatarErrors = {
     400: Error;
 };
 
-export type SetSelfOpenbotAvatarError = SetSelfOpenbotAvatarErrors[keyof SetSelfOpenbotAvatarErrors];
+export type SetSelfDispatchAvatarError = SetSelfDispatchAvatarErrors[keyof SetSelfDispatchAvatarErrors];
 
-export type SetSelfOpenbotAvatarResponses = {
+export type SetSelfDispatchAvatarResponses = {
     200: SelfProfileAvatarResponse;
 };
 
-export type SetSelfOpenbotAvatarResponse = SetSelfOpenbotAvatarResponses[keyof SetSelfOpenbotAvatarResponses];
+export type SetSelfDispatchAvatarResponse = SetSelfDispatchAvatarResponses[keyof SetSelfDispatchAvatarResponses];
 
 export type ListOrganizationTeamGroupsData = {
     body?: never;
@@ -15097,7 +15097,7 @@ export type RegisterTeamOauthClientResponses = {
 
 export type RegisterTeamOauthClientResponse = RegisterTeamOauthClientResponses[keyof RegisterTeamOauthClientResponses];
 
-export type IssueOpenbotChatkitRealtimeTicketData = {
+export type IssueDispatchChatkitRealtimeTicketData = {
     body: IssueChatKitRealtimeSocketTicketRequest;
     path: {
         /**
@@ -15106,12 +15106,12 @@ export type IssueOpenbotChatkitRealtimeTicketData = {
         team_id: string;
     };
     query?: never;
-    url: '/api/v1/team/{team_id}/identity/openbot/chatkit-realtime-ticket';
+    url: '/api/v1/team/{team_id}/identity/dispatch/chatkit-realtime-ticket';
 };
 
-export type IssueOpenbotChatkitRealtimeTicketErrors = {
+export type IssueDispatchChatkitRealtimeTicketErrors = {
     /**
-     * Invalid OpenBot access token
+     * Invalid Dispatch access token
      */
     401: Error;
     /**
@@ -15120,18 +15120,18 @@ export type IssueOpenbotChatkitRealtimeTicketErrors = {
     403: Error;
 };
 
-export type IssueOpenbotChatkitRealtimeTicketError = IssueOpenbotChatkitRealtimeTicketErrors[keyof IssueOpenbotChatkitRealtimeTicketErrors];
+export type IssueDispatchChatkitRealtimeTicketError = IssueDispatchChatkitRealtimeTicketErrors[keyof IssueDispatchChatkitRealtimeTicketErrors];
 
-export type IssueOpenbotChatkitRealtimeTicketResponses = {
+export type IssueDispatchChatkitRealtimeTicketResponses = {
     /**
      * Short-lived ChatKit realtime socket ticket
      */
     200: ChatKitRealtimeSocketTicket;
 };
 
-export type IssueOpenbotChatkitRealtimeTicketResponse = IssueOpenbotChatkitRealtimeTicketResponses[keyof IssueOpenbotChatkitRealtimeTicketResponses];
+export type IssueDispatchChatkitRealtimeTicketResponse = IssueDispatchChatkitRealtimeTicketResponses[keyof IssueDispatchChatkitRealtimeTicketResponses];
 
-export type ListOpenbotDeploymentsData = {
+export type ListDispatchDeploymentsData = {
     body?: never;
     path: {
         /**
@@ -15140,10 +15140,10 @@ export type ListOpenbotDeploymentsData = {
         team_id: string;
     };
     query?: never;
-    url: '/api/v1/team/{team_id}/identity/openbot/deployments';
+    url: '/api/v1/team/{team_id}/identity/dispatch/deployments';
 };
 
-export type ListOpenbotDeploymentsErrors = {
+export type ListDispatchDeploymentsErrors = {
     /**
      * Unauthorized
      */
@@ -15154,19 +15154,19 @@ export type ListOpenbotDeploymentsErrors = {
     403: Error;
 };
 
-export type ListOpenbotDeploymentsError = ListOpenbotDeploymentsErrors[keyof ListOpenbotDeploymentsErrors];
+export type ListDispatchDeploymentsError = ListDispatchDeploymentsErrors[keyof ListDispatchDeploymentsErrors];
 
-export type ListOpenbotDeploymentsResponses = {
+export type ListDispatchDeploymentsResponses = {
     /**
-     * OpenBot deployments
+     * Dispatch deployments
      */
-    200: ListOpenBotDeploymentsResponse;
+    200: ListDispatchDeploymentsResponse;
 };
 
-export type ListOpenbotDeploymentsResponse = ListOpenbotDeploymentsResponses[keyof ListOpenbotDeploymentsResponses];
+export type ListDispatchDeploymentsResponse2 = ListDispatchDeploymentsResponses[keyof ListDispatchDeploymentsResponses];
 
-export type RegisterOpenbotDeploymentData = {
-    body: RegisterOpenBotDeploymentRequest;
+export type RegisterDispatchDeploymentData = {
+    body: RegisterDispatchDeploymentRequest;
     path: {
         /**
          * Team ID
@@ -15174,10 +15174,10 @@ export type RegisterOpenbotDeploymentData = {
         team_id: string;
     };
     query?: never;
-    url: '/api/v1/team/{team_id}/identity/openbot/deployments';
+    url: '/api/v1/team/{team_id}/identity/dispatch/deployments';
 };
 
-export type RegisterOpenbotDeploymentErrors = {
+export type RegisterDispatchDeploymentErrors = {
     /**
      * Unauthorized
      */
@@ -15188,18 +15188,18 @@ export type RegisterOpenbotDeploymentErrors = {
     403: Error;
 };
 
-export type RegisterOpenbotDeploymentError = RegisterOpenbotDeploymentErrors[keyof RegisterOpenbotDeploymentErrors];
+export type RegisterDispatchDeploymentError = RegisterDispatchDeploymentErrors[keyof RegisterDispatchDeploymentErrors];
 
-export type RegisterOpenbotDeploymentResponses = {
+export type RegisterDispatchDeploymentResponses = {
     /**
-     * OpenBot deployment registered
+     * Dispatch deployment registered
      */
-    200: OpenBotDeployment;
+    200: DispatchDeployment;
 };
 
-export type RegisterOpenbotDeploymentResponse = RegisterOpenbotDeploymentResponses[keyof RegisterOpenbotDeploymentResponses];
+export type RegisterDispatchDeploymentResponse = RegisterDispatchDeploymentResponses[keyof RegisterDispatchDeploymentResponses];
 
-export type GetHostedOpenbotInstanceData = {
+export type GetHostedDispatchInstanceData = {
     body?: never;
     path: {
         /**
@@ -15209,23 +15209,23 @@ export type GetHostedOpenbotInstanceData = {
         instance_id: string;
     };
     query?: never;
-    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}';
+    url: '/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}';
 };
 
-export type GetHostedOpenbotInstanceErrors = {
+export type GetHostedDispatchInstanceErrors = {
     404: Error;
 };
 
-export type GetHostedOpenbotInstanceError = GetHostedOpenbotInstanceErrors[keyof GetHostedOpenbotInstanceErrors];
+export type GetHostedDispatchInstanceError = GetHostedDispatchInstanceErrors[keyof GetHostedDispatchInstanceErrors];
 
-export type GetHostedOpenbotInstanceResponses = {
-    200: HostedOpenBotInstance;
+export type GetHostedDispatchInstanceResponses = {
+    200: HostedDispatchInstance;
 };
 
-export type GetHostedOpenbotInstanceResponse = GetHostedOpenbotInstanceResponses[keyof GetHostedOpenbotInstanceResponses];
+export type GetHostedDispatchInstanceResponse = GetHostedDispatchInstanceResponses[keyof GetHostedDispatchInstanceResponses];
 
-export type UpdateHostedOpenbotComputerImageData = {
-    body: UpdateHostedOpenBotComputerImageRequest;
+export type UpdateHostedDispatchComputerImageData = {
+    body: UpdateHostedDispatchComputerImageRequest;
     path: {
         /**
          * Team ID
@@ -15234,23 +15234,23 @@ export type UpdateHostedOpenbotComputerImageData = {
         instance_id: string;
     };
     query?: never;
-    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/computer-image';
+    url: '/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}/computer-image';
 };
 
-export type UpdateHostedOpenbotComputerImageErrors = {
+export type UpdateHostedDispatchComputerImageErrors = {
     400: Error;
 };
 
-export type UpdateHostedOpenbotComputerImageError = UpdateHostedOpenbotComputerImageErrors[keyof UpdateHostedOpenbotComputerImageErrors];
+export type UpdateHostedDispatchComputerImageError = UpdateHostedDispatchComputerImageErrors[keyof UpdateHostedDispatchComputerImageErrors];
 
-export type UpdateHostedOpenbotComputerImageResponses = {
-    200: HostedOpenBotInstance;
+export type UpdateHostedDispatchComputerImageResponses = {
+    200: HostedDispatchInstance;
 };
 
-export type UpdateHostedOpenbotComputerImageResponse = UpdateHostedOpenbotComputerImageResponses[keyof UpdateHostedOpenbotComputerImageResponses];
+export type UpdateHostedDispatchComputerImageResponse = UpdateHostedDispatchComputerImageResponses[keyof UpdateHostedDispatchComputerImageResponses];
 
-export type ConfigureHostedOpenbotInstanceData = {
-    body: ConfigureHostedOpenBotInstanceRequest;
+export type ConfigureHostedDispatchInstanceData = {
+    body: ConfigureHostedDispatchInstanceRequest;
     path: {
         /**
          * Team ID
@@ -15259,23 +15259,23 @@ export type ConfigureHostedOpenbotInstanceData = {
         instance_id: string;
     };
     query?: never;
-    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/configuration';
+    url: '/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}/configuration';
 };
 
-export type ConfigureHostedOpenbotInstanceErrors = {
+export type ConfigureHostedDispatchInstanceErrors = {
     400: Error;
 };
 
-export type ConfigureHostedOpenbotInstanceError = ConfigureHostedOpenbotInstanceErrors[keyof ConfigureHostedOpenbotInstanceErrors];
+export type ConfigureHostedDispatchInstanceError = ConfigureHostedDispatchInstanceErrors[keyof ConfigureHostedDispatchInstanceErrors];
 
-export type ConfigureHostedOpenbotInstanceResponses = {
-    200: HostedOpenBotInstance;
+export type ConfigureHostedDispatchInstanceResponses = {
+    200: HostedDispatchInstance;
 };
 
-export type ConfigureHostedOpenbotInstanceResponse = ConfigureHostedOpenbotInstanceResponses[keyof ConfigureHostedOpenbotInstanceResponses];
+export type ConfigureHostedDispatchInstanceResponse = ConfigureHostedDispatchInstanceResponses[keyof ConfigureHostedDispatchInstanceResponses];
 
-export type CreateHostedOpenbotReleaseData = {
-    body: CreateHostedOpenBotReleaseRequest;
+export type CreateHostedDispatchReleaseData = {
+    body: CreateHostedDispatchReleaseRequest;
     path: {
         /**
          * Team ID
@@ -15284,22 +15284,22 @@ export type CreateHostedOpenbotReleaseData = {
         instance_id: string;
     };
     query?: never;
-    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases';
+    url: '/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}/releases';
 };
 
-export type CreateHostedOpenbotReleaseErrors = {
+export type CreateHostedDispatchReleaseErrors = {
     400: Error;
 };
 
-export type CreateHostedOpenbotReleaseError = CreateHostedOpenbotReleaseErrors[keyof CreateHostedOpenbotReleaseErrors];
+export type CreateHostedDispatchReleaseError = CreateHostedDispatchReleaseErrors[keyof CreateHostedDispatchReleaseErrors];
 
-export type CreateHostedOpenbotReleaseResponses = {
-    200: HostedOpenBotRelease;
+export type CreateHostedDispatchReleaseResponses = {
+    200: HostedDispatchRelease;
 };
 
-export type CreateHostedOpenbotReleaseResponse = CreateHostedOpenbotReleaseResponses[keyof CreateHostedOpenbotReleaseResponses];
+export type CreateHostedDispatchReleaseResponse = CreateHostedDispatchReleaseResponses[keyof CreateHostedDispatchReleaseResponses];
 
-export type GetHostedOpenbotReleaseData = {
+export type GetHostedDispatchReleaseData = {
     body?: never;
     path: {
         /**
@@ -15310,22 +15310,22 @@ export type GetHostedOpenbotReleaseData = {
         release_id: string;
     };
     query?: never;
-    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases/{release_id}';
+    url: '/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}/releases/{release_id}';
 };
 
-export type GetHostedOpenbotReleaseErrors = {
+export type GetHostedDispatchReleaseErrors = {
     404: Error;
 };
 
-export type GetHostedOpenbotReleaseError = GetHostedOpenbotReleaseErrors[keyof GetHostedOpenbotReleaseErrors];
+export type GetHostedDispatchReleaseError = GetHostedDispatchReleaseErrors[keyof GetHostedDispatchReleaseErrors];
 
-export type GetHostedOpenbotReleaseResponses = {
-    200: HostedOpenBotRelease;
+export type GetHostedDispatchReleaseResponses = {
+    200: HostedDispatchRelease;
 };
 
-export type GetHostedOpenbotReleaseResponse = GetHostedOpenbotReleaseResponses[keyof GetHostedOpenbotReleaseResponses];
+export type GetHostedDispatchReleaseResponse = GetHostedDispatchReleaseResponses[keyof GetHostedDispatchReleaseResponses];
 
-export type UploadHostedOpenbotReleaseFileData = {
+export type UploadHostedDispatchReleaseFileData = {
     body: Array<number>;
     path: {
         /**
@@ -15337,22 +15337,22 @@ export type UploadHostedOpenbotReleaseFileData = {
         sha1: string;
     };
     query?: never;
-    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases/{release_id}/files/{sha1}';
+    url: '/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}/releases/{release_id}/files/{sha1}';
 };
 
-export type UploadHostedOpenbotReleaseFileErrors = {
+export type UploadHostedDispatchReleaseFileErrors = {
     400: Error;
 };
 
-export type UploadHostedOpenbotReleaseFileError = UploadHostedOpenbotReleaseFileErrors[keyof UploadHostedOpenbotReleaseFileErrors];
+export type UploadHostedDispatchReleaseFileError = UploadHostedDispatchReleaseFileErrors[keyof UploadHostedDispatchReleaseFileErrors];
 
-export type UploadHostedOpenbotReleaseFileResponses = {
-    200: HostedOpenBotRelease;
+export type UploadHostedDispatchReleaseFileResponses = {
+    200: HostedDispatchRelease;
 };
 
-export type UploadHostedOpenbotReleaseFileResponse = UploadHostedOpenbotReleaseFileResponses[keyof UploadHostedOpenbotReleaseFileResponses];
+export type UploadHostedDispatchReleaseFileResponse = UploadHostedDispatchReleaseFileResponses[keyof UploadHostedDispatchReleaseFileResponses];
 
-export type FinalizeHostedOpenbotReleaseData = {
+export type FinalizeHostedDispatchReleaseData = {
     body?: never;
     path: {
         /**
@@ -15363,20 +15363,20 @@ export type FinalizeHostedOpenbotReleaseData = {
         release_id: string;
     };
     query?: never;
-    url: '/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases/{release_id}/finalize';
+    url: '/api/v1/team/{team_id}/identity/dispatch/instances/{instance_id}/releases/{release_id}/finalize';
 };
 
-export type FinalizeHostedOpenbotReleaseErrors = {
+export type FinalizeHostedDispatchReleaseErrors = {
     400: Error;
 };
 
-export type FinalizeHostedOpenbotReleaseError = FinalizeHostedOpenbotReleaseErrors[keyof FinalizeHostedOpenbotReleaseErrors];
+export type FinalizeHostedDispatchReleaseError = FinalizeHostedDispatchReleaseErrors[keyof FinalizeHostedDispatchReleaseErrors];
 
-export type FinalizeHostedOpenbotReleaseResponses = {
-    200: HostedOpenBotRelease;
+export type FinalizeHostedDispatchReleaseResponses = {
+    200: HostedDispatchRelease;
 };
 
-export type FinalizeHostedOpenbotReleaseResponse = FinalizeHostedOpenbotReleaseResponses[keyof FinalizeHostedOpenbotReleaseResponses];
+export type FinalizeHostedDispatchReleaseResponse = FinalizeHostedDispatchReleaseResponses[keyof FinalizeHostedDispatchReleaseResponses];
 
 export type ListManagedUserCredentialsData = {
     body?: never;
@@ -18359,8 +18359,8 @@ export type ValidateSynthesisSessionBatchResponses = {
 
 export type ValidateSynthesisSessionBatchResponse = ValidateSynthesisSessionBatchResponses[keyof ValidateSynthesisSessionBatchResponses];
 
-export type ReconcileOpenbotAgentBundleData = {
-    body: ReconcileOpenBotAgentBundleBody;
+export type ReconcileDispatchAgentBundleData = {
+    body: ReconcileDispatchAgentBundleBody;
     path: {
         /**
          * Team ID
@@ -18369,16 +18369,16 @@ export type ReconcileOpenbotAgentBundleData = {
         agent_id: string;
     };
     query?: never;
-    url: '/api/v1/team/{team_id}/openbot/agents/{agent_id}/bundle';
+    url: '/api/v1/team/{team_id}/dispatch/agents/{agent_id}/bundle';
 };
 
-export type ReconcileOpenbotAgentBundleResponses = {
-    200: ReconcileOpenBotAgentBundleResponse;
+export type ReconcileDispatchAgentBundleResponses = {
+    200: ReconcileDispatchAgentBundleResponse;
 };
 
-export type ReconcileOpenbotAgentBundleResponse = ReconcileOpenbotAgentBundleResponses[keyof ReconcileOpenbotAgentBundleResponses];
+export type ReconcileDispatchAgentBundleResponse2 = ReconcileDispatchAgentBundleResponses[keyof ReconcileDispatchAgentBundleResponses];
 
-export type GetOpenbotPluginsCatalogData = {
+export type GetDispatchPluginsCatalogData = {
     body?: never;
     path: {
         /**
@@ -18387,14 +18387,14 @@ export type GetOpenbotPluginsCatalogData = {
         team_id: string;
     };
     query?: never;
-    url: '/api/v1/team/{team_id}/openbot/plugins/catalog';
+    url: '/api/v1/team/{team_id}/dispatch/plugins/catalog';
 };
 
-export type GetOpenbotPluginsCatalogResponses = {
-    200: OpenBotPluginsCatalogResponse;
+export type GetDispatchPluginsCatalogResponses = {
+    200: DispatchPluginsCatalogResponse;
 };
 
-export type GetOpenbotPluginsCatalogResponse = GetOpenbotPluginsCatalogResponses[keyof GetOpenbotPluginsCatalogResponses];
+export type GetDispatchPluginsCatalogResponse = GetDispatchPluginsCatalogResponses[keyof GetDispatchPluginsCatalogResponses];
 
 export type ProviderSetupCatalogData = {
     body?: never;

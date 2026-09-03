@@ -3,7 +3,7 @@
 ## In brief
 
 - One persistent exe.dev VM. Runtime plus Computer. 24/7.
-- Run `openbot dev`, supervised by systemd user linger.
+- Run `tilde dev`, supervised by systemd user linger.
 - Host is Computer. No process namespace. Whole 2-vCPU/8-GB VM may be used.
 - Configuration secrets are available. This VM is trusted.
 - Public Vite origin proxies capability-scoped noVNC and WebSocket traffic.
@@ -34,7 +34,7 @@ remote checkout rather than overwriting live edits.
 `ExeDevComputerProvider` shares the same `ExeDevPlatform` identity. The outer production lifecycle
 is runtime-owned; inside the VM, `HostComputerProvider` installs computer-service, Chromium,
 Xvnc/noVNC, Cua, and desktop assets directly on Linux and supervises them with a systemd user
-service. `/workspace/openbot` points at the same live checkout used by `pnpm dev`. The provider
+service. `/workspace/dispatch` points at the same live checkout used by `pnpm dev`. The provider
 shares one `COMPUTER_ID` with the trusted development sandbox. There is no inner process,
 filesystem, user, network, CPU, or memory boundary.
 

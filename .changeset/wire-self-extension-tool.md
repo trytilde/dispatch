@@ -1,5 +1,5 @@
 ---
-"openbot": patch
+"@trytilde/cli": patch
 ---
 
 Wire the scaffolded propose-only self-extension tool into default agent runtime tools.

@@ -1,15 +1,15 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { DesktopClientBridge } from "@tryopenbot/client-runtime/contracts/platform";
+import type { DesktopClientBridge } from "@trytilde/dispatch-client-runtime/contracts/platform";
 
 const bridge = {
   platform: process.platform === "darwin" ? "mac" : "linux",
   controlOrigin: process.env.CONTROL_ORIGIN ?? "",
   async openExternal(value: string): Promise<void> {
-    await ipcRenderer.invoke("openbot:open-external", value);
+    await ipcRenderer.invoke("dispatch:open-external", value);
   },
-  authStatus: () => ipcRenderer.invoke("openbot:auth-status"),
-  signIn: () => ipcRenderer.invoke("openbot:sign-in"),
-  signOut: () => ipcRenderer.invoke("openbot:sign-out"),
+  authStatus: () => ipcRenderer.invoke("dispatch:auth-status"),
+  signIn: () => ipcRenderer.invoke("dispatch:sign-in"),
+  signOut: () => ipcRenderer.invoke("dispatch:sign-out"),
 } as const satisfies DesktopClientBridge;
 
-contextBridge.exposeInMainWorld("openbotDesktop", bridge);
+contextBridge.exposeInMainWorld("dispatchDesktop", bridge);

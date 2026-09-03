@@ -10,7 +10,7 @@ export function repositoryRoot(start: string = process.cwd()): string {
     const parent = dirname(current);
     if (parent === current)
       throw new Error(
-        "Not inside an OpenBot repository: no pnpm-workspace.yaml or .git found upward",
+        "Not inside a Dispatch repository: no pnpm-workspace.yaml or .git found upward",
       );
     current = parent;
   }

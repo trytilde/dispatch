@@ -14,8 +14,8 @@ configuration/.env
 configuration/secrets.enc.yaml
 /local-user-config.json
 .vercel/
-.openbot-deploy/
-.openbot/
+.dispatch-deploy/
+.dispatch/
 *.log
 apps/web/src/routeTree.gen.ts
 apps/desktop/out/

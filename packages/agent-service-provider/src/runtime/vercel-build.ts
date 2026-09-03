@@ -1,10 +1,10 @@
 import { cp, rm } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { DeploymentContext, DeploymentResult } from "@tryopenbot/runtime-provider";
+import type { DeploymentContext, DeploymentResult } from "@trytilde/dispatch-runtime-provider";
 import {
   buildVercelControlService,
   type CommandRunner,
-} from "@tryopenbot/control-service-provider";
+} from "@trytilde/dispatch-control-service-provider";
 import { buildVercelAgentService } from "../vercel/build.js";
 
 export async function buildVercelRuntimeService(

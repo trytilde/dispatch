@@ -1,15 +1,15 @@
 ---
 name: add-db-changes
-description: Add or alter OpenBot's Drizzle schema, SQLite-compatible migration statements, libSQL/Turso persistence code, and migration tests without moving Tilde-owned data or secrets into the control database.
+description: Add or alter Dispatch's Drizzle schema, SQLite-compatible migration statements, libSQL/Turso persistence code, and migration tests without moving Tilde-owned data or secrets into the control database.
 metadata:
-  author: openbot
+  author: dispatch
   version: "1.0.0"
   argument-hint: <change-summary>
 ---
 
 # Database Schema And Query Changes
 
-OpenBot uses Drizzle over local SQLite or remote libSQL/Turso. The database stores installation, onboarding, sandbox lease, and deployment checkpoint state only. Tilde owns agents, chats, tools, skills, and memory. `EnvProvider` owns secrets.
+Dispatch uses Drizzle over local SQLite or remote libSQL/Turso. The database stores installation, onboarding, sandbox lease, and deployment checkpoint state only. Tilde owns agents, chats, tools, skills, and memory. `EnvProvider` owns secrets.
 
 The source of truth is:
 
@@ -42,8 +42,8 @@ packages/db/src/migrations.test.ts
 ## Tests
 
 ```bash
-pnpm --filter @tryopenbot/db test
-pnpm --filter @tryopenbot/control-service test
+pnpm --filter @trytilde/dispatch-db test
+pnpm --filter @trytilde/dispatch-control-service test
 pnpm check
 ```
 

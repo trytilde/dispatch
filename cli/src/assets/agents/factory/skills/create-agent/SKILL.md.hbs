@@ -1,14 +1,14 @@
 ---
 name: create-agent
-description: Use when the owner asks to create, scaffold, or add another OpenBot agent in the current source checkout.
+description: Use when the owner asks to create, scaffold, or add another Dispatch agent in the current source checkout.
 ---
 
 # Create an agent
 
-From the writable OpenBot repository root at `/workspace/openbot`, run:
+From the writable Dispatch repository root at `/workspace/dispatch`, run:
 
 ```bash
-pnpm openbot new-agent "<display name>"
+pnpm tilde new-agent "<display name>"
 ```
 
 Let the CLI derive the agent ID and create the complete
@@ -30,5 +30,5 @@ agent. If the integration should become a default, update
 
 The command also registers the agent with Tilde, so the owner can chat with
 it immediately; the background orchestrator publishes and redeploys the
-project on its own. If this computer does not contain a writable OpenBot
+project on its own. If this computer does not contain a writable Dispatch
 source checkout, report that instead of writing elsewhere.

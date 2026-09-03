@@ -6,7 +6,7 @@ import {
   type RoutineTriggerSpec,
   type SignalInstance,
   type SignalProvider,
-} from "@tryopenbot/client-runtime";
+} from "@trytilde/dispatch-client-runtime";
 import {
   DropdownMenu,
   DropdownMenuContent,

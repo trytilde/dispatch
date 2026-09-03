@@ -53,7 +53,7 @@ describe("AiCreditsClient", () => {
       provider: "provider",
       inputTokens: 10,
       outputTokens: 2,
-      tags: ["hosted-openbot"],
+      tags: ["hosted-dispatch"],
     });
     await credits.release("reservation");
 

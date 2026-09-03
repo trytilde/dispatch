@@ -6,7 +6,7 @@ import type {
   SignalDelivery,
   SignalInstance,
   SignalProvider,
-} from "@tryopenbot/client-runtime";
+} from "@trytilde/dispatch-client-runtime";
 import { Spinner } from "./components/ui/spinner.js";
 import { Switch } from "./components/ui/switch.js";
 import { DialogSurface } from "./overlay-components.js";

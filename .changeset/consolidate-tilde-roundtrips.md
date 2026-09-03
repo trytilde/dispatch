@@ -1,9 +1,9 @@
 ---
-"@tryopenbot/agent-provider": minor
-"@tryopenbot/client-runtime": minor
-"@tryopenbot/control-service": minor
-"@tryopenbot/web": minor
-"@tryopenbot/connector-tools": patch
+"@trytilde/dispatch-agent-provider": minor
+"@trytilde/dispatch-client-runtime": minor
+"@trytilde/dispatch-control-service": minor
+"@trytilde/dispatch-web": minor
+"@trytilde/dispatch-connector-tools": patch
 "@trytilde/api-client": minor
 "@trytilde/sdk": minor
 ---

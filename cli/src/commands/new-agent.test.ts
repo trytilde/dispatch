@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
   input: vi.fn(),
   loadDevelopmentConfiguration: vi.fn(async () => ({ providers: {} })),
   loadLocalEnvironment: vi.fn(async () => ({
-    AGENT_SERVICE_ORIGIN: "https://our-ob-agents.vercel.app",
+    AGENT_SERVICE_ORIGIN: "https://our-dispatch-agents.vercel.app",
   })),
   readLiveAgentServiceOrigin: vi.fn(async () => "https://local.trytilde-sb.com"),
   reconcileAgentResources: vi.fn(async () => undefined),

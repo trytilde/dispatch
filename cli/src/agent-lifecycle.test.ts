@@ -1,6 +1,9 @@
-import type { AgentProvider } from "@tryopenbot/agent-provider";
-import { discoverAgents, type AgentServiceProvider } from "@tryopenbot/agent-service-provider";
-import type { DeployableProvider } from "@tryopenbot/runtime-provider";
+import type { AgentProvider } from "@trytilde/dispatch-agent-provider";
+import {
+  discoverAgents,
+  type AgentServiceProvider,
+} from "@trytilde/dispatch-agent-service-provider";
+import type { DeployableProvider } from "@trytilde/dispatch-runtime-provider";
 import { describe, expect, it, vi } from "vite-plus/test";
 import {
   formatAgentLifecycleProgress,
@@ -8,7 +11,7 @@ import {
   serialDeploymentPersistence,
 } from "./agent-lifecycle.js";
 
-vi.mock("@tryopenbot/agent-service-provider", async (importOriginal) => ({
+vi.mock("@trytilde/dispatch-agent-service-provider", async (importOriginal) => ({
   ...(await importOriginal()),
   discoverAgents: vi.fn(async () => [
     {
@@ -127,7 +130,7 @@ describe("agent resource lifecycle", () => {
     await reconcileAgentResources({
       repositoryRoot: "/repository",
       agentIds: ["research-assistant"],
-      environment: { OPENBOT_AUTOMATIC_MEMORY_MODE: "personal_plus_agent" },
+      environment: { DISPATCH_AUTOMATIC_MEMORY_MODE: "personal_plus_agent" },
       devMode: true,
       providers: {
         agent: {
@@ -293,7 +296,7 @@ describe("agent resource lifecycle", () => {
 
     await reconcileAgentResources({
       repositoryRoot: "/repository",
-      environment: { OPENBOT_AUTOMATIC_MEMORY_MODE: "personal_plus_agent" },
+      environment: { DISPATCH_AUTOMATIC_MEMORY_MODE: "personal_plus_agent" },
       devMode: true,
       providers: {
         agent: {

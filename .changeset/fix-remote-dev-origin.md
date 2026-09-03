@@ -1,23 +1,23 @@
 ---
-"@tryopenbot/agent-provider": patch
-"@tryopenbot/agent-service-provider": patch
-"@tryopenbot/auth-provider": patch
-"openbot": patch
-"@tryopenbot/computer-service-provider": patch
-"@tryopenbot/client-runtime": patch
-"@tryopenbot/computer-tools": patch
-"@tryopenbot/computer-service": patch
-"@tryopenbot/computer-service-proto": patch
-"@tryopenbot/configuration": patch
-"@tryopenbot/desktop": patch
-"@tryopenbot/utilities": patch
-"@tryopenbot/platform-integrations": patch
-"@tryopenbot/control-service-provider": patch
-"@tryopenbot/runtime-provider": patch
-"@tryopenbot/control-service": patch
-"@tryopenbot/ui": patch
-"@tryopenbot/web": patch
-"@tryopenbot/git-provider": patch
+"@trytilde/dispatch-agent-provider": patch
+"@trytilde/dispatch-agent-service-provider": patch
+"@trytilde/dispatch-auth-provider": patch
+"@trytilde/cli": patch
+"@trytilde/dispatch-computer-service-provider": patch
+"@trytilde/dispatch-client-runtime": patch
+"@trytilde/dispatch-computer-tools": patch
+"@trytilde/dispatch-computer-service": patch
+"@trytilde/dispatch-computer-service-proto": patch
+"@trytilde/dispatch-configuration": patch
+"@trytilde/dispatch-desktop": patch
+"@trytilde/dispatch-utilities": patch
+"@trytilde/dispatch-platform-integrations": patch
+"@trytilde/dispatch-control-service-provider": patch
+"@trytilde/dispatch-runtime-provider": patch
+"@trytilde/dispatch-control-service": patch
+"@trytilde/dispatch-ui": patch
+"@trytilde/dispatch-web": patch
+"@trytilde/dispatch-git-provider": patch
 ---
 
 Allow cookie-authenticated requests through a host-matched HTTPS development proxy without weakening origin checks.

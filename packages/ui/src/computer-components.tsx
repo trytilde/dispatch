@@ -23,7 +23,7 @@ export interface ComputerReconnectBannerProps {
 
 export function ComputerReconnectBanner({
   variant,
-  computerName = "OpenBot's Computer",
+  computerName = "Dispatch's Computer",
 }: ComputerReconnectBannerProps) {
   if (!variant) return null;
   const copy =
@@ -92,7 +92,7 @@ export interface ComputerUnreachableDialogProps {
 export function ComputerUnreachableDialog({
   open,
   canRecover,
-  computerName = "OpenBot's Computer",
+  computerName = "Dispatch's Computer",
   onRecover,
   onRetry,
 }: ComputerUnreachableDialogProps) {
@@ -127,7 +127,7 @@ export interface ComputerRecoveryConfirmDialogProps {
 export function ComputerRecoveryConfirmDialog({
   open,
   canRecover,
-  computerName = "OpenBot's Computer",
+  computerName = "Dispatch's Computer",
   onCancel,
   onConfirm,
 }: ComputerRecoveryConfirmDialogProps) {
@@ -278,7 +278,7 @@ export function getComputerRebuildProgress({
   migrationStatus = null,
   migrationPhases = [],
   pullPercent,
-  computerName = "OpenBot's Computer",
+  computerName = "Dispatch's Computer",
 }: {
   kind: ComputerOperationKind;
   stage: ComputerOperationStage;
@@ -353,7 +353,7 @@ export function ComputerFailureDialog({
   open,
   kind,
   canRetry,
-  computerName = "OpenBot's Computer",
+  computerName = "Dispatch's Computer",
   onDismiss,
   onRetry,
 }: ComputerFailureDialogProps) {
@@ -416,7 +416,7 @@ export function ComputerRebuildDialog({
   migrationPhases,
   pullPercent,
   operationId = "untracked",
-  computerName = "OpenBot's Computer",
+  computerName = "Dispatch's Computer",
   onContinueInBackground,
 }: ComputerRebuildDialogProps) {
   const result = getComputerRebuildProgress({
@@ -468,7 +468,7 @@ export function ComputerRebuildBanner({
   kind,
   activeStep,
   progress,
-  computerName = "OpenBot's Computer",
+  computerName = "Dispatch's Computer",
   onOpen,
 }: ComputerRebuildBannerProps) {
   const value = Math.min(1, Math.max(0, progress));

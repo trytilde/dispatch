@@ -1,12 +1,12 @@
 # Contributing
 
-Everything in this repository is driven by one CLI. `openbot` operates an installation —
+Everything in this repository is driven by one CLI. `tilde` operates an installation —
 `init`, `dev`, `deploy`, `secrets`, `env` — and carries the developer workflow: repository
 gates and remote desktop hosts. Prefer a CLI command over a
 hand-written script or a remembered command line; see [ADR-0018](docs/adrs/0018-developer-workflow-cli.md).
 
-Run it as `pnpm openbot <command>` inside the repository, or `openbot <command>` from a global
-`npm install --global openbot`.
+Run it as `pnpm tilde <command>` inside the repository, or `tilde <command>` from a global
+`npm install --global @trytilde/cli`.
 
 ## Prerequisites
 
@@ -17,14 +17,14 @@ Required on every platform:
 | Node.js | 24.x | pinned by `engines`; the CLI and every package target it |
 | pnpm | 10.33.1 | pinned by `packageManager`; `corepack enable pnpm` installs it |
 | Git | any recent | worktrees and fork workflow |
-| GitHub CLI (`gh`) | any recent | `openbot init` verifies authenticated access; PR workflow |
+| GitHub CLI (`gh`) | any recent | `tilde init` verifies authenticated access; PR workflow |
 
 Needed only for the surfaces you touch:
 
 | Surface | Dependency | Notes |
 | --- | --- | --- |
 | Browser end-to-end | Playwright browsers | `pnpm exec playwright install chromium` |
-| Desktop publication | the AWS CLI, a Developer ID Application certificate, an App Store Connect API key | upstream only, see ADR-0028. Only `openbot desktop release publish|manifest|status` needs them; building and packaging locally does not. Without the Apple credentials the build still succeeds and produces unsigned artifacts |
+| Desktop publication | the AWS CLI, a Developer ID Application certificate, an App Store Connect API key | upstream only, see ADR-0028. Only `tilde desktop release publish|manifest|status` needs them; building and packaging locally does not. Without the Apple credentials the build still succeeds and produces unsigned artifacts |
 | Local Computer, deployment | Microsandbox, SOPS, age | see [docs/sandbox.md](docs/sandbox.md) and [docs/configuration.md](docs/configuration.md) |
 
 ## Setup on Linux
@@ -37,11 +37,11 @@ corepack enable pnpm
 # repository
 gh repo clone trytilde/dispatch && cd dispatch
 pnpm install
-pnpm openbot check
+pnpm tilde check
 ```
 
 A Linux host without a display runs the Electron shell behind Xvfb with x11vnc bound to
-loopback on VNC 5901. `pnpm openbot connect -- <host>` forwards that desktop.
+loopback on VNC 5901. `pnpm tilde connect -- <host>` forwards that desktop.
 
 ## Setup on macOS
 
@@ -53,18 +53,18 @@ corepack enable pnpm
 # repository
 gh repo clone trytilde/dispatch && cd dispatch
 pnpm install
-pnpm openbot check
+pnpm tilde check
 ```
 
 ## Working on a change
 
 ```bash
-pnpm openbot check                     # contracts, types, lint, package tests
-pnpm openbot build                     # every package, plus artifact verification
-pnpm openbot test                      # repository tests
-pnpm openbot e2e                       # browser Playwright suite
-pnpm openbot desktop dev               # launch the Electron shell
-pnpm openbot desktop package           # Electron packaging
+pnpm tilde check                     # contracts, types, lint, package tests
+pnpm tilde build                     # every package, plus artifact verification
+pnpm tilde test                      # repository tests
+pnpm tilde e2e                       # browser Playwright suite
+pnpm tilde desktop dev               # launch the Electron shell
+pnpm tilde desktop package           # Electron packaging
 pnpm --filter <package> test           # narrowest useful check while iterating
 ```
 
@@ -92,7 +92,7 @@ which stays untracked upstream.
 ## Publishing the desktop app
 
 Desktop publication is upstream-only for the same reason (ADR-0028). Signed builds go to
-`s3://tilde-app-updates-prod/desktop/openbot/<channel>/`, and `openbot desktop release` refuses
+`s3://tilde-app-updates-prod/desktop/dispatch/<channel>/`, and `tilde desktop release` refuses
 the official bucket from any other remote:
 
 ```bash
@@ -110,7 +110,7 @@ the manually triggered **Release desktop** workflow, which needs these repositor
 | `AWS_OIDC_ROLE_ARN` | Role the workflow assumes through GitHub OIDC |
 | `AWS_REGION` | Region of the updates bucket |
 | `DESKTOP_UPDATES_S3_BUCKET` | Bucket name; omit upstream to take the default |
-| `DESKTOP_UPDATES_S3_PREFIX` | Prefix above the channel, default `desktop/openbot` |
+| `DESKTOP_UPDATES_S3_PREFIX` | Prefix above the channel, default `desktop/dispatch` |
 | `DESKTOP_UPDATES_BASE_URL` | Public https origin used for download URLs |
 
 and these repository secrets for a signed, notarized macOS build:
@@ -125,8 +125,8 @@ and these repository secrets for a signed, notarized macOS build:
 
 Without the certificate secrets the build still succeeds but produces **unsigned** artifacts
 that macOS Gatekeeper refuses, recorded as `signed: false` in `version.json`. A fork publishes
-to its own bucket with `OPENBOT_DESKTOP_UPDATES_BUCKET`, optionally
-`OPENBOT_DESKTOP_UPDATES_PREFIX` and `OPENBOT_DESKTOP_UPDATES_BASE_URL`. Never commit an Apple
+to its own bucket with `DISPATCH_DESKTOP_UPDATES_BUCKET`, optionally
+`DISPATCH_DESKTOP_UPDATES_PREFIX` and `DISPATCH_DESKTOP_UPDATES_BASE_URL`. Never commit an Apple
 certificate or an App Store Connect key.
 
 ## Changing an external dependency

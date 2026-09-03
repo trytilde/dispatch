@@ -1,6 +1,6 @@
 import { serve } from "@hono/node-server";
-import { createApp } from "@tryopenbot/control-service";
-import { createAgentServiceApp } from "@tryopenbot/agent-service-provider";
+import { createApp } from "@trytilde/dispatch-control-service";
+import { createAgentServiceApp } from "@trytilde/dispatch-agent-service-provider";
 import { Hono } from "hono";
 import { loadLocalEnvironment } from "../environment.js";
 import { loadDevelopmentConfiguration } from "./dev.js";
@@ -40,7 +40,7 @@ export async function runDevelopmentServer(): Promise<void> {
   );
   await new Promise<void>((resolvePromise, reject) => {
     const server = serve({ fetch: combined.fetch, port, hostname: "127.0.0.1" }, () => {
-      console.log(`OpenBot listening at http://127.0.0.1:${port}`);
+      console.log(`Dispatch listening at http://127.0.0.1:${port}`);
     });
     const shutdown = (): void => {
       server.close((error) => (error ? reject(error) : resolvePromise()));

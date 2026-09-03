@@ -1,4 +1,4 @@
-import { workspaceSourceInputOptions } from "@tryopenbot/utilities";
+import { workspaceSourceInputOptions } from "@trytilde/dispatch-utilities";
 
 export function bundleOptions(
   cwd: string,

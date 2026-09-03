@@ -77,3 +77,6 @@ flowchart LR
   organization key is setup-only and transient; OpenBot persists only a repository-scoped,
   read/write, no-force-push JWT. Repository creation may opt into GitHub App continuous sync or a
   one-time public import.
+- 2026-09-03T02:25:00+02:00: Kept Code Storage checkout remotes credential-free. Reconciliation now
+  exposes the persisted repository-scoped JWT only through a command-scoped Git credential helper
+  for the fetch or push that needs it, including the persistent exe.dev runtime.

@@ -9,10 +9,12 @@ import { BackgroundExecRegistry } from "./background-exec.js";
 import { validComputerServiceApiKey } from "./capability.js";
 import { applyLifecycleBundle, lifecycleDigest, runLifecycle } from "./lifecycle.js";
 import { ensureAgentDesktop } from "./desktop.js";
+import { createBrowserSessionManager } from "./browser-session.js";
 import { callCuaTool as invokeCuaTool, listCuaTools as readCuaTools } from "./cua.js";
 
 const execute = promisify(execFile);
 const backgroundExec = new BackgroundExecRegistry();
+const browserSessions = createBrowserSessionManager();
 
 function authorized(context: HandlerContext): void {
   const token = process.env.COMPUTER_SERVICE_API_KEY;
@@ -219,6 +221,18 @@ export function registerComputerService(router: ConnectRouter): void {
         );
         throw error;
       }
+    },
+    async ensureBrowserSession(request, context) {
+      authorized(context);
+      const startedAt = Date.now();
+      const session = await browserSessions.ensure(request.agentId, context.signal);
+      console.info("[openbot-browser] browser session ready", {
+        agentId: request.agentId,
+        elapsedMs: Date.now() - startedAt,
+        remoteDebuggingPort: session.remoteDebuggingPort,
+        runtimeConnected: session.runtimeConnected,
+      });
+      return session;
     },
     async listPorts(_request, context) {
       authorized(context);

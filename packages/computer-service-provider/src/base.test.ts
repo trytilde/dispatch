@@ -13,7 +13,7 @@ import type {
   ComputerProvider,
 } from "./core/index.js";
 import { DeploymentOutputs } from "@tryopenbot/runtime-provider";
-import { computerImageAssets } from "./base/assets.js";
+import { computerImageAssets, trustedRuntimeExtensionDirectory } from "./base/assets.js";
 import { developmentSandboxSourceFiles } from "./base/development.js";
 import {
   BaseComputerProvider,
@@ -700,6 +700,43 @@ describe("computer image lifecycle", () => {
     );
     expect(desktopSession).toContain('touch "$desktop_ready_file"');
     expect(desktopSession).toContain("xprop -root _XROOTPMAP_ID");
+  });
+
+  it("launches each agent's Chrome as a Tilde self-hosted browser runtime", async () => {
+    const launcher = await readFile(computerImageAssets.openbotBrowser, "utf8");
+    expect(launcher).toContain(
+      'extension_directory="${OPENBOT_TRUSTED_RUNTIME_EXTENSION:-/opt/openbot/trusted-runtime-extension}"',
+    );
+    expect(launcher).toContain('--load-extension="$extension_directory"');
+    expect(launcher).toContain('--disable-extensions-except="$extension_directory"');
+    // computer-service derives the same loopback port from the display (see remoteDebuggingPort).
+    expect(launcher).toContain("--remote-debugging-port=$((9200 + display_number))");
+    expect(launcher).toContain("--remote-allow-origins='http://127.0.0.1:*'");
+    expect(launcher).toContain("--password-store=basic");
+    expect(launcher).toContain('--user-data-dir="$profile_directory"');
+    const policy = JSON.parse(
+      await readFile(computerImageAssets.openbotChromePolicy, "utf8"),
+    ) as Record<string, unknown>;
+    expect(policy).toMatchObject({ PasswordManagerEnabled: false, SyncDisabled: true });
+    const containerfile = await readFile(computerImageAssets.containerfile, "utf8");
+    expect(containerfile).toContain("/etc/opt/chrome/policies/managed/openbot.json");
+    expect(containerfile).toContain(
+      "trusted-runtime-extension /opt/openbot/trusted-runtime-extension",
+    );
+    const manifest = JSON.parse(
+      await readFile(join(trustedRuntimeExtensionDirectory, "manifest.json"), "utf8"),
+    ) as { manifest_version: number; background: { service_worker: string } };
+    expect(manifest.manifest_version).toBe(3);
+    expect(manifest.background.service_worker).toBe("service_worker.js");
+    const worker = await readFile(
+      join(trustedRuntimeExtensionDirectory, "service_worker.js"),
+      "utf8",
+    );
+    expect(worker).toContain("self.__tildeTrustedRuntimeConnect = connect");
+    expect(worker).toContain("/plugin-events");
+    expect(
+      await readFile(join(trustedRuntimeExtensionDirectory, "PROVENANCE.md"), "utf8"),
+    ).toContain("e52c1bd7b");
   });
 });
 

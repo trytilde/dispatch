@@ -243,6 +243,33 @@ export function createScreenshotTool(options: UploadingComputerToolOptions): Too
 }
 
 /**
+ * Ensures the Tilde browser session for this agent's own Chrome. The Computer registers the
+ * session once, starts Chrome on the agent display when it is not running, and re-bootstraps the
+ * trusted-runtime extension so Tilde's `fill_browser_form` and human-handoff tools accept the ID.
+ */
+export function createBrowserSessionTool(options: ComputerToolOptions): Tool {
+  return tool({
+    description:
+      "Ensure this agent's browser on the shared computer is registered as a Tilde browser session with its trusted runtime connected. Returns the browser_session_id accepted by fill_browser_form and the human-handoff tools, the owner's live preview URL, and whether the runtime connected. Call it before browser logins and again after Chrome restarts.",
+    inputSchema: z.object({}),
+    execute: async (_input, execution) => {
+      const response = await (
+        await service(options)
+      ).ensureBrowserSession(
+        { agentId: options.agentId },
+        await callOptions(options, execution.abortSignal),
+      );
+      return {
+        browser_session_id: response.browserSessionId,
+        preview_url: response.previewUrl || undefined,
+        remote_debugging_port: response.remoteDebuggingPort,
+        runtime_connected: response.runtimeConnected,
+      };
+    },
+  });
+}
+
+/**
  * Loads the runtime Cua catalog and exposes every entry as an identically named local tool.
  * Catalog loading is deliberately eager so an agent never starts with a partial GUI surface.
  */

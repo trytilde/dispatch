@@ -38,6 +38,9 @@ COPY packages/computer-service-provider/src/base/assets/development-setup.sh /us
 COPY packages/computer-service-provider/src/base/assets/development-profile.sh /opt/openbot/development-profile.sh
 COPY packages/computer-service-provider/src/base/assets/openbot-browser.sh /usr/local/bin/openbot-browser
 COPY packages/computer-service-provider/src/base/assets/openbot-browser.desktop /usr/share/applications/openbot-browser.desktop
+COPY packages/computer-service-provider/src/base/assets/openbot-chrome-policy.json /etc/opt/chrome/policies/managed/openbot.json
+COPY packages/computer-service-provider/src/base/assets/openbot-chrome-policy.json /etc/chromium/policies/managed/openbot.json
+COPY packages/computer-service-provider/src/base/assets/trusted-runtime-extension /opt/openbot/trusted-runtime-extension
 COPY packages/computer-service-provider/src/base/assets/openbot-files.desktop /usr/share/applications/openbot-files.desktop
 COPY packages/computer-service-provider/src/base/assets/start.sh /usr/local/bin/start-openbot-computer
 COPY packages/computer-service-provider/src/base/assets/xfce4-panel.xml /opt/openbot/xfce4-panel.xml

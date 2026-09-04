@@ -31,6 +31,20 @@ export const vercelInferenceProviderInitialization: ProviderInitialization = {
   ],
 };
 
+export interface VercelInferenceProviderOptions {
+  /**
+   * Process environment inspected during initialization discovery. When it already carries
+   * `AI_GATEWAY_API_KEY` (a hosted bootstrap released the key), initialization asks no Vercel
+   * question and needs no Vercel token: the key is stored to SOPS as-is instead of being minted.
+   */
+  preseededEnvironment?: NodeJS.ProcessEnv;
+}
+
+/** Whether initialization can reuse a gateway key already present in the process environment. */
+export function hasPreseededAiGatewayKey(environment: NodeJS.ProcessEnv | undefined): boolean {
+  return Boolean(environment?.[AI_GATEWAY_API_KEY]?.trim());
+}
+
 export class VercelInferenceProvider implements InferenceProvider {
   readonly initialization: ProviderInitialization;
   readonly agentTemplate = {
@@ -41,17 +55,29 @@ export class VercelInferenceProvider implements InferenceProvider {
       },
     ],
   } as const;
-  readonly platforms;
+  readonly platforms: readonly VercelPlatform[];
 
-  constructor(private readonly platform = new VercelPlatform()) {
-    this.platforms = [platform];
+  constructor(
+    private readonly platform = new VercelPlatform(),
+    options: VercelInferenceProviderOptions = {},
+  ) {
+    const preseeded = !platform.managed && hasPreseededAiGatewayKey(options.preseededEnvironment);
+    // A preseeded key needs no Vercel account: drop the platform dependency so init never asks
+    // for a Vercel token it cannot have.
+    this.platforms = preseeded ? [] : [platform];
     this.initialization = platform.managed
       ? {
           ...vercelInferenceProviderInitialization,
           description: "Use project-scoped Vercel OIDC for AI Gateway inference.",
           questions: [],
         }
-      : vercelInferenceProviderInitialization;
+      : preseeded
+        ? {
+            ...vercelInferenceProviderInitialization,
+            description: "Store the AI Gateway key supplied through the process environment.",
+            questions: [],
+          }
+        : vercelInferenceProviderInitialization;
   }
 
   async initialize(context: ProviderInitializationContext): Promise<void> {

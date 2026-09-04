@@ -73,6 +73,41 @@ describe("VercelInferenceProvider", () => {
     );
   });
 
+  it("stores a preseeded gateway key without a Vercel token or key-name question", async () => {
+    // Hosted bootstrap: the org's gateway key arrives through the process environment, so init must
+    // not depend on the Vercel platform (no token) and must not try to mint another key.
+    const request = vi.fn();
+    const provider = new VercelInferenceProvider(new VercelPlatform({ request }), {
+      preseededEnvironment: { AI_GATEWAY_API_KEY: "org-gateway-key" },
+    });
+    expect(provider.platforms).toEqual([]);
+    expect(provider.initialization.questions).toEqual([]);
+
+    const setSecret = vi.fn(async () => undefined);
+    await provider.initialize({
+      repositoryRoot: "/repository",
+      environment: { AI_GATEWAY_API_KEY: "org-gateway-key" },
+      setEnvironment: vi.fn(async () => undefined),
+      setSecret,
+    });
+    expect(setSecret).toHaveBeenCalledWith(
+      "AI_GATEWAY_API_KEY",
+      "org-gateway-key",
+      "Vercel AI Gateway API key used by authored agents.",
+    );
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it("keeps the Vercel platform and key-name question without a preseeded key", () => {
+    const provider = new VercelInferenceProvider(new VercelPlatform({ request: vi.fn() }), {
+      preseededEnvironment: { AI_GATEWAY_API_KEY: "   " },
+    });
+    expect(provider.platforms.map(({ id }) => id)).toEqual(["vercel"]);
+    expect(provider.initialization.questions.map(({ id }) => id)).toEqual([
+      "vercel-ai-gateway-api-key-name",
+    ]);
+  });
+
   it("enables credit metering only for managed project OIDC", async () => {
     const managedSetEnvironment = vi.fn(async () => undefined);
     await new VercelInferenceProvider(new VercelPlatform({ managed: true })).initialize({

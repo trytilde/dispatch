@@ -37,6 +37,7 @@ import {
   unsetEnvironmentValue,
 } from "./initialization.js";
 import { scaffoldAgent, scaffoldAgentTemplates, scaffoldPrimaryAgent } from "./agent-scaffold.js";
+import { createNonInteractivePrompts, validateNonInteractiveCoreAnswers } from "./commands/init.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -699,6 +700,185 @@ describe("OpenBot initialization", () => {
       code: "ENOENT",
     });
   });
+
+  it.skipIf(spawnSync("sops", ["--version"]).error || spawnSync("mkfifo", ["--version"]).error)(
+    "initializes a hosted exe.dev instance from the Tilde bootstrap bundle",
+    async () => {
+      // Mirrors the bundle a hosting control plane renders for a hosted instance: the init answers
+      // arrive on stdin, the environment and secrets through the process environment, and neither
+      // a Vercel token nor the Code Storage organization key is ever available.
+      const repositoryRoot = await temporaryRepository();
+      const remoteDirectory = repositoryRoot;
+      const ownerIdentityPath = join(remoteDirectory, ".openbot/owner-age-key");
+      const bundle = {
+        initAnswers: {
+          "owner-identity": "managed-file",
+          "managed-owner-identity-path": ownerIdentityPath,
+          runtime: "exe-dev",
+          inference: "vercel",
+          "vercel-ai-gateway-api-key-name": "Hosted runtime",
+          "tilde-api-key": "sk--team-secret",
+          "tilde-org-id": "org-1",
+          "tilde-team-id": "team-7",
+          "tilde-base-url": "https://api.tilde.test",
+          "openbot-deployment-name": "Hosted OpenBot",
+          "openbot-hosted-instance-id": "hosted-openbot-user-1",
+          "exe-dev-vm": "openbot-user-1",
+          "exe-dev-cpu": "2",
+          "exe-dev-memory": "4GB",
+          "exe-dev-remote-directory": remoteDirectory,
+          "exe-dev-public-origin": "https://openbot-user-1.exe.xyz",
+          "code-storage-organization": "acme",
+          "code-storage-repository": "users/user-1",
+          "code-storage-github-sync-mode": "none",
+        },
+        environment: {
+          EXE_DEV_INSIDE_VM: "1",
+          EXE_DEV_VM: "openbot-user-1",
+          EXE_DEV_CPU: "2",
+          EXE_DEV_MEMORY: "4GB",
+          EXE_DEV_REMOTE_DIRECTORY: remoteDirectory,
+          EXE_DEV_PUBLIC_ORIGIN: "https://openbot-user-1.exe.xyz",
+          EXE_DEV_COMPUTER_VNC_TARGET: "http://127.0.0.1:6080",
+          PUBLIC_ORIGIN: "https://openbot-user-1.exe.xyz",
+          AGENT_SERVICE_ORIGIN: "https://openbot-user-1.exe.xyz",
+          WEB_HOST: "0.0.0.0",
+          NO_DESKTOP: "1",
+          COMPUTER_ID: "openbot-user-1",
+          OPENBOT_SOURCE_BRANCH: "main",
+          CODE_STORAGE_ORGANIZATION: "acme",
+          CODE_STORAGE_REPOSITORY: "users/user-1",
+          CODE_STORAGE_GITHUB_SYNC_MODE: "none",
+          SOPS_AGE_KEY_FILE: ownerIdentityPath,
+          TILDE_ORG_ID: "org-1",
+          TILDE_TEAM_ID: "team-7",
+          TILDE_BASE_URL: "https://api.tilde.test",
+          OPENBOT_DEPLOYMENT_NAME: "Hosted OpenBot",
+          OPENBOT_HOSTED_INSTANCE_ID: "hosted-openbot-user-1",
+          OPENBOT_OIDC_CLIENT_ID: "client-1",
+        },
+        secrets: {
+          TILDE_API_KEY: "sk--team-secret",
+          CODE_STORAGE_REPOSITORY_TOKEN: "eyJ.code.storage",
+          AI_GATEWAY_API_KEY: "vck_gateway_secret",
+        },
+      };
+      const environment: NodeJS.ProcessEnv = {
+        ...process.env,
+        ...bundle.environment,
+        ...bundle.secrets,
+      };
+      expect(
+        validateNonInteractiveCoreAnswers(bundle.initAnswers, {
+          existingRepository: true,
+          environment,
+        }),
+      ).toBe(bundle.initAnswers);
+
+      const calls: { command: string; args: readonly string[] }[] = [];
+      const runner: InitializationCommandRunner = {
+        async run(command, args, options) {
+          calls.push({ command, args });
+          if (command === "vp") return { stdout: "", stderr: "" };
+          return processCommandRunner.run(command, args, options);
+        },
+        runWithInputFile: processCommandRunner.runWithInputFile,
+      };
+      const requests: string[] = [];
+      await initializeOpenBot({
+        repositoryRoot,
+        prompts: createNonInteractivePrompts(bundle.initAnswers),
+        interactive: false,
+        environment,
+        runner,
+        request: async (input) => {
+          const url =
+            input instanceof Request ? input.url : input instanceof URL ? input.href : input;
+          requests.push(url);
+          if (url.includes("/identity/openbot/deployments"))
+            return Response.json({
+              client_id: "client-1",
+              audience: "urn:tilde:openbot:client-1",
+              issuer: "https://org-1.api.tilde.test/api/v1/team/team-7/identity/oauth",
+              scope: "openid profile email offline_access openbot:control",
+              authorization_endpoint: "https://api.tilde.test/api/v1/identity/oauth/authorize",
+              token_endpoint: "https://api.tilde.test/api/v1/identity/oauth/token",
+              jwks_uri: "https://api.tilde.test/api/v1/identity/.well-known/jwks.json",
+            });
+          throw new Error(`Unexpected request during hosted init: ${url}`);
+        },
+        userConfigurationPath: testUserConfigurationPath(repositoryRoot),
+      });
+
+      // No Vercel or Code Storage control-plane call: both credentials were preseeded.
+      expect(requests.every((url) => url.includes("api.tilde.test"))).toBe(true);
+      expect(calls.filter(({ command }) => command === "ssh")).toEqual([]);
+      expect(calls.at(-1)).toMatchObject({ command: "vp", args: ["install"] });
+
+      const ownerIdentity = await readFile(ownerIdentityPath, "utf8");
+      expect(ownerIdentity).toMatch(/^AGE-SECRET-KEY-1/);
+
+      const dotenv = await readFile(join(repositoryRoot, "configuration/.env"), "utf8");
+      for (const line of [
+        'AGENT_FACTORY_NAME="Factory"',
+        'EXE_DEV_VM="openbot-user-1"',
+        'EXE_DEV_CPU="2"',
+        'EXE_DEV_MEMORY="4GB"',
+        `EXE_DEV_REMOTE_DIRECTORY=${JSON.stringify(remoteDirectory)}`,
+        'EXE_DEV_PUBLIC_ORIGIN="https://openbot-user-1.exe.xyz"',
+        'CODE_STORAGE_ORGANIZATION="acme"',
+        'CODE_STORAGE_REPOSITORY="users/user-1"',
+        'CODE_STORAGE_GITHUB_SYNC_MODE="none"',
+        'TILDE_ORG_ID="org-1"',
+        'TILDE_TEAM_ID="team-7"',
+        'TILDE_BASE_URL="https://api.tilde.test"',
+        'OPENBOT_DEPLOYMENT_NAME="Hosted OpenBot"',
+        'INFERENCE_PROVIDER="vercel-ai-gateway"',
+      ])
+        expect(dotenv, line).toContain(line);
+      expect(dotenv).not.toContain("VERCEL_AI_GATEWAY_API_KEY_NAME");
+      expect(dotenv).not.toContain("VERCEL_TEAM_ID");
+      for (const secret of Object.values(bundle.secrets)) expect(dotenv).not.toContain(secret);
+
+      const composition = await readFile(join(repositoryRoot, "configuration/index.ts"), "utf8");
+      expect(composition).toContain("new ExeDevRuntimeServiceProvider({ platform: exe })");
+      expect(composition).toContain("computer: new ExeDevComputerProvider({ platform: exe })");
+      expect(composition).toContain("git: new CodeStorageGitProvider()");
+      expect(composition).toContain("inference: new VercelInferenceProvider(vercel)");
+      expect(composition).toContain("agent: new TildeAgentProvider(tilde)");
+
+      const loaded = await loadDeploymentConfiguration(repositoryRoot, {
+        runner,
+        environment: { ...process.env },
+        userConfigurationPath: testUserConfigurationPath(repositoryRoot),
+      });
+      expect(loaded.environment).toMatchObject({
+        AI_GATEWAY_API_KEY: "vck_gateway_secret",
+        CODE_STORAGE_REPOSITORY_TOKEN: "eyJ.code.storage",
+        TILDE_API_KEY: "sk--team-secret",
+      });
+      expect(loaded.environment.VERCEL_TOKEN).toBeUndefined();
+      expect(loaded.environment.CODE_STORAGE_SETUP_PRIVATE_KEY).toBeUndefined();
+
+      // The default scaffold: the Factory agent plus the memory-catcher subagent, each carrying
+      // the browser-session tool and the shared-connectors hook a fork composition root may use.
+      const agentRoot = join(repositoryRoot, "configuration/agent");
+      for (const relativePath of [
+        "agent.ts",
+        "instructions.ts",
+        "tools/browser_session.ts",
+        "skills/create-agent/SKILL.md",
+        "subagents/memory-catcher/agent.ts",
+      ])
+        await expect(access(join(agentRoot, relativePath)), relativePath).resolves.toBeUndefined();
+      expect(await readFile(join(agentRoot, "agent.ts"), "utf8")).toContain(
+        "OPENBOT_SHARED_CONNECTORS_MCP_SERVER_ID",
+      );
+      await expect(access(join(agentRoot, "subagents/researcher"))).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+    },
+  );
 
   it("revisits initialized platform config with existing values as defaults", async () => {
     const repositoryRoot = await temporaryRepository();

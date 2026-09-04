@@ -66,7 +66,12 @@ export async function runInitialization(
   const answers = nonInteractive ? await readJsonAnswersFromStdin() : undefined;
   const prompts = answers
     ? createNonInteractivePrompts(
-        initialized ? answers : validateNonInteractiveCoreAnswers(answers, { existingRepository }),
+        initialized
+          ? answers
+          : validateNonInteractiveCoreAnswers(answers, {
+              existingRepository,
+              environment: process.env,
+            }),
       )
     : inkPrompts;
   if (!initialized && !existingRepository)
@@ -159,7 +164,7 @@ export function initializationJsonSchema(): InitializationJsonSchema {
       runtimeChoices,
     ),
     inference: selectSchema(
-      "Inference provider used by authored agents. Non-interactive init supports Vercel; ChatGPT subscription setup requires interactive device-code authentication.",
+      "Inference provider used by authored agents. Non-interactive init supports Vercel; ChatGPT subscription setup requires interactive device-code authentication. When the init process environment already carries AI_GATEWAY_API_KEY, the key is stored as-is and neither vercel-token nor vercel-ai-gateway-api-key-name is required.",
       inferenceChoices.filter((choice) => choice.value === "vercel"),
     ),
     "aws-kms-key-arn": conditionedSchema(
@@ -229,7 +234,7 @@ export function initializationJsonSchema(): InitializationJsonSchema {
     requiredWhen("owner-identity", "onepassword", ["onepassword-vault", "onepassword-item-title"]),
   ];
 
-  for (const runtime of ["local", "vercel", "tilde-cloud"] as const) {
+  for (const runtime of ["local", "vercel", "tilde-cloud", "exe-dev"] as const) {
     const initializations = collectProviderInitializations(
       builtInRuntimeInitializationProviders(runtime, "vercel"),
     );
@@ -264,7 +269,7 @@ export function initializationJsonSchema(): InitializationJsonSchema {
     $id: "urn:tryopenbot:schema:init-input",
     title: "OpenBot non-interactive initialization input",
     description:
-      "JSON object accepted on standard input by `openbot init --non-interactive --json`. Secret fields must be supplied through stdin, never command arguments.",
+      "JSON object accepted on standard input by `openbot init --non-interactive --json`. Secret fields must be supplied through stdin, never command arguments. A hosted bootstrap may preseed AI_GATEWAY_API_KEY and CODE_STORAGE_REPOSITORY_TOKEN in the process environment instead of answering the questions that would mint them; init stores those values to SOPS unchanged.",
     type: "object",
     additionalProperties: false,
     properties,
@@ -340,7 +345,7 @@ function requiredWhen(field: string, value: string, required: readonly string[])
 
 export function validateNonInteractiveCoreAnswers(
   answers: Readonly<Record<string, string>>,
-  options: { existingRepository?: boolean } = {},
+  options: { existingRepository?: boolean; environment?: NodeJS.ProcessEnv } = {},
 ): Readonly<Record<string, string>> {
   const required = ["owner-identity", "runtime", "inference"];
   if (!options.existingRepository) required.push("repository-name", "repository-visibility");
@@ -358,7 +363,13 @@ export function validateNonInteractiveCoreAnswers(
   const inference = answers.inference;
   if (owner && !ownerRequired[owner])
     throw new Error(`Invalid non-interactive answer for owner-identity: ${owner}`);
-  if (runtime && runtime !== "local" && runtime !== "vercel" && runtime !== "tilde-cloud")
+  if (
+    runtime &&
+    runtime !== "exe-dev" &&
+    runtime !== "local" &&
+    runtime !== "vercel" &&
+    runtime !== "tilde-cloud"
+  )
     throw new Error(`Invalid non-interactive answer for runtime: ${runtime}`);
   if (inference && inference !== "vercel" && inference !== "codex")
     throw new Error(`Invalid non-interactive answer for inference: ${inference}`);
@@ -366,12 +377,15 @@ export function validateNonInteractiveCoreAnswers(
     throw new Error("Codex inference setup requires interactive device-code authentication");
   required.push(...(owner ? (ownerRequired[owner] ?? []) : []));
   if (
-    (runtime === "local" || runtime === "vercel" || runtime === "tilde-cloud") &&
+    (runtime === "exe-dev" ||
+      runtime === "local" ||
+      runtime === "vercel" ||
+      runtime === "tilde-cloud") &&
     inference === "vercel"
   )
     required.push(
       ...collectProviderInitializations(
-        builtInRuntimeInitializationProviders(runtime, inference),
+        builtInRuntimeInitializationProviders(runtime, inference, options.environment),
       ).flatMap((initialization) =>
         initialization.questions
           .filter((question) => question.required)

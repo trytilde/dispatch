@@ -11,6 +11,7 @@ import {
   MemorySynthesisRunCompletedError,
   MemorySynthesisRunTerminalError,
   restrictMemorySynthesisTools,
+  webhookSigningKeyFromEnv,
 } from "@trytilde/sdk-vercel-ai-node";
 import { consumeStream, convertToModelMessages, stepCountIs, streamText } from "ai";
 import type { ToolSet } from "@ai-sdk/provider-utils";
@@ -27,7 +28,8 @@ const client = createClient({
 export default chatKitEndpoint({
   client,
   responseMode: "agentLoop",
-  webhookSigningKey: process.env.AGENT_{{AGENT_ENV_PREFIX}}_WEBHOOK_SIGNING_KEY!,
+  // Set AGENT_{{AGENT_ENV_PREFIX}}_WEBHOOK_SIGNING_KEY=null to accept unsigned invocations.
+  webhookSigningKey: webhookSigningKeyFromEnv(process.env.AGENT_{{AGENT_ENV_PREFIX}}_WEBHOOK_SIGNING_KEY),
   requestTimeoutMs: 285_000,
   async handler(request, context) {
     const localTools = context.session.memorySynthesisTools();

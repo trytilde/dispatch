@@ -240,8 +240,10 @@ export {
   TILDE_WEBHOOK_ID_HEADER,
   TILDE_WEBHOOK_SIGNATURE_HEADER,
   TILDE_WEBHOOK_TIMESTAMP_HEADER,
+  UNSIGNED_WEBHOOK_ENV_VALUE,
   type VerifiedWebhookRequest,
   type VerifyWebhookOptions,
   verifyWebhookRequest,
+  webhookSigningKeyFromEnv,
   WebhookVerificationError,
 } from "./webhook";

@@ -11,8 +11,11 @@ import {
   TILDE_WEBHOOK_ID_HEADER,
   TILDE_WEBHOOK_SIGNATURE_HEADER,
   TILDE_WEBHOOK_TIMESTAMP_HEADER,
+  UNSIGNED_WEBHOOK_ENV_VALUE,
   verifyWebhookRequest,
+  webhookSigningKeyFromEnv,
 } from "../src";
+import { resetUnsignedWebhookWarningForTests } from "../src/webhook";
 
 const key = "whsec--test";
 
@@ -107,9 +110,120 @@ describe("verifyWebhookRequest", () => {
       "Invalid webhook signature",
     );
   });
+
+  it("requires a key when it is undefined or empty", async () => {
+    await expect(
+      verifyWebhookRequest(signedRequest({ ok: true }), {
+        webhookSigningKey: undefined as unknown as string,
+      }),
+    ).rejects.toThrow("webhookSigningKey is required");
+    await expect(
+      verifyWebhookRequest(signedRequest({ ok: true }), { webhookSigningKey: "" }),
+    ).rejects.toThrow("webhookSigningKey is required");
+  });
+
+  it("skips verification with an explicit null key and warns once", async () => {
+    resetUnsignedWebhookWarningForTests();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      const unsigned = new Request("https://example.test", {
+        method: "POST",
+        body: JSON.stringify({ ok: true }),
+      });
+      const verified = await verifyWebhookRequest(unsigned, { webhookSigningKey: null });
+      expect(verified.json).toEqual({ ok: true });
+      expect(verified.webhookId).toMatch(/^unsigned-[0-9a-f-]{36}$/);
+      expect(Math.abs(verified.timestamp - Math.floor(Date.now() / 1000))).toBeLessThan(5);
+
+      const tampered = signedRequest({ ok: false }, 1);
+      tampered.headers.set(TILDE_WEBHOOK_SIGNATURE_HEADER, "hmac-sha256=deadbeef");
+      const stale = await verifyWebhookRequest(tampered, { webhookSigningKey: null });
+      expect(stale.json).toEqual({ ok: false });
+      expect(stale.webhookId).toBe("webhook-123");
+      expect(stale.timestamp).toBe(1);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]?.[0]).toContain("accepts unsigned invocations");
+    } finally {
+      warn.mockRestore();
+    }
+  });
+});
+
+describe("webhookSigningKeyFromEnv", () => {
+  it("maps the literal null value to an explicit null", () => {
+    expect(UNSIGNED_WEBHOOK_ENV_VALUE).toBe("null");
+    expect(webhookSigningKeyFromEnv("null")).toBeNull();
+    expect(webhookSigningKeyFromEnv(" null\n")).toBeNull();
+  });
+
+  it("keeps real keys and leaves missing values required", () => {
+    expect(webhookSigningKeyFromEnv(key)).toBe(key);
+    expect(webhookSigningKeyFromEnv("NULL")).toBe("NULL");
+    expect(webhookSigningKeyFromEnv(undefined)).toBe("");
+    expect(webhookSigningKeyFromEnv("   ")).toBe("");
+  });
 });
 
 describe("chatKitEndpoint", () => {
+  it("accepts unsigned requests with an explicit null key and warns once at startup", async () => {
+    resetUnsignedWebhookWarningForTests();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      const handler = vi.fn(async (_request: Request, context) => {
+        expect(context.sessionId).toBe("session_1");
+        return new Response("ok");
+      });
+      const logger = vi.fn();
+      const endpoint = testChatKitEndpoint({
+        webhookSigningKey: null,
+        client: { apiKey: "test-key" },
+        logger,
+        handler,
+      });
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      const response = await endpoint(
+        new Request("https://example.test/webhook", {
+          method: "POST",
+          headers: {
+            "x-tilde-org-id": "org-123",
+            "x-tilde-team-id": "team_123",
+            "x-tilde-session-id": "session_1",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ messages: [] }),
+        }),
+      );
+
+      expect(response.status).toBe(200);
+      expect(handler).toHaveBeenCalledOnce();
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(logger).toHaveBeenCalledWith(
+        "info",
+        "webhook accepted unsigned",
+        expect.objectContaining({ signatureVerified: false }),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("rejects unsigned requests when the key is undefined", async () => {
+    const handler = vi.fn(async () => new Response("ok"));
+    const endpoint = testChatKitEndpoint({
+      webhookSigningKey: undefined as unknown as string,
+      client: { apiKey: "test-key" },
+      handler,
+    });
+
+    const response = await endpoint(signedRequest({ messages: [] }));
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "webhookSigningKey is required" });
+    expect(handler).not.toHaveBeenCalled();
+  });
+
   it("injects active-turn communication tools in tool response mode", async () => {
     const handler = vi.fn(async (request: Request, context) => {
       expect(context.responseMode).toBe("tool");

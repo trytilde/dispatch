@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
 import { z } from "zod";
 import {
   signBody,
@@ -7,6 +7,7 @@ import {
   TILDE_WEBHOOK_TIMESTAMP_HEADER,
   toolEndpoint,
 } from "../src";
+import { resetUnsignedWebhookWarningForTests } from "../src/webhook";
 
 const key = "whsec--tool-endpoint-test";
 
@@ -30,9 +31,10 @@ function createEndpoint(
   fn = vi.fn(async ({ name }: { name: string }, request: Request) => ({
     greeting: `${request.headers.get("x-request-source") ?? "Hello"}, ${name}!`,
   })),
+  webhookSigningKey: string | null = key,
 ) {
   return toolEndpoint({
-    webhookSigningKey: key,
+    webhookSigningKey,
     provider: {
       name: "Example tools",
       description: "Example remote tools",
@@ -52,6 +54,10 @@ function createEndpoint(
 }
 
 describe("toolEndpoint", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("infers the invocation URL and publishes Zod schemas", async () => {
     const endpoint = createEndpoint();
     const response = await endpoint.GET(
@@ -194,6 +200,50 @@ describe("toolEndpoint", () => {
       }),
     );
     expect(await invalidInput.json()).toMatchObject({ type: "error" });
+  });
+
+  it("skips verification with an explicit null key and warns once", async () => {
+    resetUnsignedWebhookWarningForTests();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const endpoint = createEndpoint(undefined, null);
+    expect(warn).toHaveBeenCalledTimes(1);
+
+    const discovery = await endpoint.GET(new Request("https://agents.example.test/api/tools"));
+    expect(discovery.status).toBe(200);
+
+    const invocation = await endpoint.POST(
+      new Request("https://agents.example.test/api/tools", {
+        method: "POST",
+        body: JSON.stringify({ tool_source_type_id: "greet", params: { name: "Ada" } }),
+      }),
+    );
+    expect(invocation.status).toBe(200);
+    expect(await invocation.json()).toEqual({ type: "success", greeting: "Hello, Ada!" });
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it("requires a key unless it is explicitly null", () => {
+    const options = {
+      provider: { name: "Example" },
+      tools: [
+        {
+          id: "ping",
+          name: "Ping",
+          description: "Return pong.",
+          inputSchema: z.object({}),
+          outputSchema: z.object({ pong: z.boolean() }),
+          async fn() {
+            return { pong: true };
+          },
+        },
+      ],
+    };
+    expect(() =>
+      toolEndpoint({ ...options, webhookSigningKey: undefined as unknown as string }),
+    ).toThrow("toolEndpoint requires webhookSigningKey");
+    expect(() => toolEndpoint({ ...options, webhookSigningKey: "" })).toThrow(
+      "toolEndpoint requires webhookSigningKey",
+    );
   });
 
   it("validates configuration eagerly", () => {

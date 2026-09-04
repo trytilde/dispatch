@@ -12,6 +12,7 @@ import {
   HostedInferenceBillingController,
   HostedInferenceCreditsExhaustedError,
   HostedInferenceReconciliationRequiredError,
+  webhookSigningKeyFromEnv,
 } from "@trytilde/sdk-vercel-ai-node";
 import {
   createTildeAttachmentMessageHandlers,
@@ -159,7 +160,8 @@ function queuedRequestCutoff(messages: readonly { createdAt?: string }[]): strin
 export default chatKitEndpoint({
   client,
   responseMode: "agentLoop",
-  webhookSigningKey: process.env.AGENT_{{AGENT_ENV_PREFIX}}_WEBHOOK_SIGNING_KEY!,
+  // Set AGENT_{{AGENT_ENV_PREFIX}}_WEBHOOK_SIGNING_KEY=null to accept unsigned invocations.
+  webhookSigningKey: webhookSigningKeyFromEnv(process.env.AGENT_{{AGENT_ENV_PREFIX}}_WEBHOOK_SIGNING_KEY),
   requestTimeoutMs: 285_000,
   async handler(request, context) {
     const jobExecution = context.execution?.kind === "agent_job" ? context.execution : undefined;

@@ -13,6 +13,10 @@ may import these tools without depending on a deployment provider package.
   session-scoped Tilde attachments; binary data is never exposed to the model as base64.
 - `createGlobTool()` and `createGrepTool()` for filesystem discovery and search.
 - `createScreenshotTool()` for PNG desktop capture through a session-scoped Tilde attachment.
+- `createBrowserSessionTool()` asks computer-service to ensure this agent's Chrome is a registered Tilde
+  browser session with the trusted-runtime extension connected (`EnsureBrowserSession`). It returns
+  `browser_session_id`, the owner `preview_url`, the loopback DevTools port, and `runtime_connected`;
+  Tilde's `fill_browser_form` and human-handoff tools accept that session ID (ADR-0040).
 - `createCuaTools()` asynchronously loads the runtime Cua catalog and returns one identically named AI SDK tool per entry. It rejects collisions, uses each runtime JSON Schema directly, preserves structured failure/completion metadata, and uploads image results as Tilde attachments.
 
 `createTildeMediaUploader()`, `createTildeMediaDownloader()`, and

@@ -2,7 +2,11 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { HostComputerProvider, type HostComputerCommandRunner } from "./index.js";
+import {
+  HostComputerProvider,
+  trustedHostBrowserRuntimeEnvironment,
+  type HostComputerCommandRunner,
+} from "./index.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -44,5 +48,23 @@ describe("HostComputerProvider", () => {
     expect(
       await readFile(join(homeDirectory, ".config/systemd/user/openbot-computer.service"), "utf8"),
     ).toContain("ExecStart=/usr/local/bin/start-openbot-computer");
+  });
+
+  it("hands the trusted host Computer its Tilde tenant for self-hosted browser sessions", () => {
+    expect(
+      trustedHostBrowserRuntimeEnvironment({
+        TILDE_API_KEY: "team-key",
+        TILDE_ORG_ID: "org-one",
+        TILDE_TEAM_ID: "team-one",
+        EXE_DEV_PUBLIC_ORIGIN: "https://openbot.exe.xyz",
+        VERCEL_TOKEN: "never-forwarded",
+      }),
+    ).toEqual({
+      TILDE_API_KEY: "team-key",
+      TILDE_ORG_ID: "org-one",
+      TILDE_TEAM_ID: "team-one",
+      COMPUTER_PREVIEW_ORIGIN: "https://openbot.exe.xyz",
+    });
+    expect(trustedHostBrowserRuntimeEnvironment(undefined)).toEqual({});
   });
 });

@@ -40,6 +40,24 @@ least-privilege background synthesizer under
 synthesis tools, uses the installation's selected inference provider, never
 sends human messages, and owns no memory bank itself. See ADR-0034.
 
+By default every agent owns its own memory bank, skill registry, and connectors MCP server, and
+the agent provider never touches agent permissions. A fork's `configuration/index.ts` may opt in
+to sharing through `new TildeAgentProvider(tilde, { sharedResources, permissions })` (ADR-0039):
+the primary agent then owns one shared memory bank (synthesized by Memory Catcher) and one shared
+skill registry holding every authored agent's skills; subagents disable their own bank and bind to
+the shared bank plus any `additionalBankIds`; one dynamic MCP server with personal tool federation
+`all` is attached to every agent both as its personal-tool server and through a second
+`context.mcp.connect` in the agent template (`OPENBOT_SHARED_CONNECTORS_MCP_SERVER_ID`). After
+activation the provider asks the `permissions` resolver what each agent may reach, passing the
+agent's kind, its authored subagent IDs, and the owner (the `owner_user_id` Tilde records on the
+provisioned bundle, or `OPENBOT_OWNER_USER_ID` when set). The primary reconciles before the other
+agents so the pinned IDs exist.
+
+Every agent also carries `tools/browser_session.ts`, a thin default export from
+`@tryopenbot/computer-tools` that asks computer-service to ensure the agent's own Chrome is a
+registered Tilde browser session with the trusted-runtime extension connected (ADR-0040). Tilde's
+`fill_browser_form` and human-handoff tools accept the returned `browser_session_id`.
+
 All agents share one OpenBot Computer, filesystem, and process identity. If an agent's authored `sandbox/workspace/**` contains files, deployment seeds them once into `/workspace/<id>`. The computer service uses the fixed agent ID to choose that default directory, but it is not a security boundary: agents can use absolute paths, see sibling directories, and administer the shared machine. Changes to authored seed files do not update an already deployed agent directory.
 
 Run `pnpm openbot new-agent` and enter the display name to scaffold a complete subagent safely; then edit its ordinary source files in the fork. The command loads every `configuration/templates/agent/**/*.hbs` file, preserves its relative path, removes the `.hbs` suffix, and renders strict agent values. Init seeds that fork-owned template when it is missing and uses it for the primary Factory agent; factory-only skills render from `configuration/templates/factory/**/*.hbs` into the primary agent alone. Later init runs preserve template changes, and template edits affect only future agents. This command only changes the authored filesystem before invoking normal idempotent development reconciliation.

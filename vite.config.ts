@@ -19,6 +19,7 @@ export default defineConfig({
       "packages/sdk/src/generated/**",
       "packages/sdk/examples/**",
       "packages/ui/src/beautiful-ui/upstream/**",
+      "packages/computer-service-provider/src/base/assets/trusted-runtime-extension/**",
     ],
   },
   lint: {
@@ -33,6 +34,7 @@ export default defineConfig({
       "packages/sdk/src/generated/**",
       "packages/sdk/examples/**",
       "packages/ui/src/beautiful-ui/upstream/**",
+      "packages/computer-service-provider/src/base/assets/trusted-runtime-extension/**",
     ],
     jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
     rules: { "vite-plus/prefer-vite-plus-imports": "error" },

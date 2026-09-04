@@ -1,3 +1,5 @@
+import { readdir } from "node:fs/promises";
+import { basename, dirname, resolve } from "node:path";
 import type { DeploymentContext, DeploymentPlan } from "@tryopenbot/runtime-provider";
 import { persistEnvironment, persistSecret, unsetEnvironment } from "@tryopenbot/runtime-provider";
 import {
@@ -15,19 +17,25 @@ import {
   chatkitGetAgentResourceBundleProvisioning,
   chatkitListChatProviders,
   chatkitProvisionAgentResourceBundle,
+  chatkitSetAgentPermissions,
+  chatkitUpdateAgent,
   chatkitUpdateChatProvider,
   chatkitUpdateAgentAvatar,
   chatkitRegisterVercelUiChatProvider,
+  createMcpServerInstance,
+  getMcpServerInstance,
+  updateMcpServerInstance,
   AgentCredentialStrategy,
   AgentProvisioningStatus,
   ChatKitAgentConcurrencyPolicy,
   ChatKitAutomaticMemoryMode,
   UserToolFederationMode,
   createTildeApiClient,
+  type EnabledSkillsSpec,
   type TildeApiClient,
 } from "@trytilde/sdk/api";
-import type { AgentProvider } from "../core.js";
-import { AgentProviderError } from "../core.js";
+import type { AgentProvider, AgentProviderOptions } from "../core.js";
+import { AgentProviderError, sharedAgentResourceEnvironment } from "../core.js";
 import { TildeSkillReconciler } from "./skills.js";
 import { TildeToolReconciler, tildeAgentProviderInitialization } from "./tools.js";
 import { fetchWithConcurrency } from "./concurrency.js";
@@ -40,6 +48,21 @@ export interface TildeAgentProviderConfig extends TildePlatformConfig {}
 type JsonRecord = Record<string, unknown>;
 const chatKitRealtimeChannelId = "openbot-chatkit-workspace";
 const maxConcurrentRequests = 10;
+const synthesizerAgentId = "memory-catcher";
+const sharedEnvironment = sharedAgentResourceEnvironment;
+
+/** What one agent shares with the rest of the installation, resolved before its bundle is sent. */
+interface SharedDeployment {
+  kind: "primary" | "subagent";
+  memoryMode: ChatKitAutomaticMemoryMode;
+  /** Union of every authored agent's curated skills, published to the one shared registry. */
+  skills?: EnabledSkillsSpec;
+  sharedMemoryBankId?: string;
+  sharedSkillRegistryId?: string;
+  sharedConnectorsMcpServerId?: string;
+  /** Delegation targets of the primary agent; the synthesizer is never a delegate. */
+  subagentIds: readonly string[];
+}
 
 /** Idempotently reconciles every authored agent with Tilde ChatKit. */
 export class TildeAgentProvider implements AgentProvider {
@@ -60,13 +83,18 @@ export class TildeAgentProvider implements AgentProvider {
   readonly #teamId: string;
   readonly #skills: TildeSkillReconciler;
   readonly #tools: TildeToolReconciler;
+  readonly #options: AgentProviderOptions;
 
-  constructor(platformOrConfig: TildePlatform | TildeAgentProviderConfig) {
+  constructor(
+    platformOrConfig: TildePlatform | TildeAgentProviderConfig,
+    options: AgentProviderOptions = {},
+  ) {
     this.platform =
       platformOrConfig instanceof TildePlatform
         ? platformOrConfig
         : new TildePlatform(platformOrConfig);
     this.platforms = [this.platform];
+    this.#options = options;
     const config = this.platform.connection();
     const limitedFetch = fetchWithConcurrency(
       (input, init) => fetch(input, init),
@@ -123,16 +151,21 @@ export class TildeAgentProvider implements AgentProvider {
     const localRunningEndpoint = context.devMode;
     const prefix = `AGENT_${slug.replaceAll("-", "_").toUpperCase()}`;
     const displayName = context.environment[`${prefix}_NAME`]?.trim() || slug;
-    const synthesisOnly = slug === "memory-catcher";
+    const synthesisOnly = slug === synthesizerAgentId;
+    const shared = this.#options.sharedResources;
+    const deployment =
+      shared || this.#options.permissions
+        ? await this.#sharedDeployment(context, slug, synthesisOnly)
+        : undefined;
     const memoryMode = synthesisOnly
       ? ChatKitAutomaticMemoryMode.NONE
-      : automaticMemoryMode(context.environment, prefix);
+      : (deployment?.memoryMode ?? automaticMemoryMode(context.environment, prefix));
     const apiKeyName = `${prefix}_API_KEY`;
     const webhookKeyName = `${prefix}_WEBHOOK_SIGNING_KEY`;
     const endpointUrl = new URL(`/api/agents/${slug}`, `${origin}/`);
     const hasCredentials =
       Boolean(context.environment[apiKeyName]) && Boolean(context.environment[webhookKeyName]);
-    const enabledSkills = await this.#skills.bundleSkills(context);
+    const enabledSkills = deployment?.skills ?? (await this.#skills.bundleSkills(context));
     let operation = await this.#generated(`provision Agent Resource Bundle "${slug}"`, (signal) =>
       chatkitProvisionAgentResourceBundle({
         client: this.#api,
@@ -162,26 +195,55 @@ export class TildeAgentProvider implements AgentProvider {
             user_tool_federation_mode: personalToolFederationMode(context.environment),
             user_tool_federation_selections: [],
           },
-          skill_registry: {
-            enabled: true,
-            id: context.environment[`${prefix}_SKILL_REGISTRY_ID`]?.trim(),
-            name: `OpenBot ${slug}`,
-            description: `Skills available to the ${slug} OpenBot agent.`,
-            enabled_skills: enabledSkills,
-          },
+          skill_registry:
+            shared?.skillRegistry && deployment
+              ? {
+                  enabled: true,
+                  // The primary creates the shared registry once (falling back to its legacy
+                  // per-agent registry); every other agent pins the same ID.
+                  id:
+                    deployment.sharedSkillRegistryId ??
+                    (deployment.kind === "primary"
+                      ? context.environment[`${prefix}_SKILL_REGISTRY_ID`]?.trim()
+                      : undefined),
+                  name: shared.skillRegistry.name,
+                  description:
+                    shared.skillRegistry.description ??
+                    "Curated skills shared by every OpenBot agent.",
+                  enabled_skills: enabledSkills,
+                }
+              : {
+                  enabled: true,
+                  id: context.environment[`${prefix}_SKILL_REGISTRY_ID`]?.trim(),
+                  name: `OpenBot ${slug}`,
+                  description: `Skills available to the ${slug} OpenBot agent.`,
+                  enabled_skills: enabledSkills,
+                },
           ...(synthesisOnly
             ? {}
             : {
                 memory: {
                   bank:
-                    memoryMode === ChatKitAutomaticMemoryMode.PERSONAL_PLUS_AGENT
-                      ? {
-                          enabled: true,
-                          name: `OpenBot ${slug} memory`,
-                          description: `Memory owned by the ${slug} OpenBot agent.`,
-                          synthesizer_agent_id: "memory-catcher",
-                        }
-                      : { enabled: false },
+                    shared?.memoryBank && deployment
+                      ? deployment.kind === "primary"
+                        ? {
+                            enabled: true,
+                            id: deployment.sharedMemoryBankId,
+                            name: shared.memoryBank.name,
+                            description:
+                              shared.memoryBank.description ??
+                              "Durable memory shared by every OpenBot agent.",
+                            synthesizer_agent_id: synthesizerAgentId,
+                          }
+                        : { enabled: false }
+                      : memoryMode === ChatKitAutomaticMemoryMode.PERSONAL_PLUS_AGENT
+                        ? {
+                            enabled: true,
+                            name: `OpenBot ${slug} memory`,
+                            description: `Memory owned by the ${slug} OpenBot agent.`,
+                            synthesizer_agent_id: synthesizerAgentId,
+                          }
+                        : { enabled: false },
                 },
               }),
         },
@@ -273,6 +335,8 @@ export class TildeAgentProvider implements AgentProvider {
       mcpServerId,
       `Tilde MCP server ID for ${slug}.`,
     );
+    if (deployment)
+      await this.#finishSharedDeployment(context, slug, synthesisOnly, deployment, operation);
     await Promise.all([
       this.#ensureChatKitWorkspaceChannel(slug, slug, context.agentKind ?? "subagent"),
       this.#tools.deployExternalResources(context),
@@ -281,6 +345,251 @@ export class TildeAgentProvider implements AgentProvider {
       unsetEnvironment(context, `${prefix}_SKILL_REGISTRY_ID`),
       unsetEnvironment(context, `${prefix}_TILDE_CONTROL_PLANE_TOOL_GROUP_ID`),
     ]);
+  }
+
+  /**
+   * Resolves what the composition root shares across agents before the bundle is submitted. The
+   * primary agent reconciles the shared connectors server and publishes the union of every
+   * authored agent's skills; subagents require the IDs the primary persisted.
+   */
+  async #sharedDeployment(
+    context: DeploymentContext,
+    slug: string,
+    synthesisOnly: boolean,
+  ): Promise<SharedDeployment> {
+    const environment = context.environment;
+    const shared = this.#options.sharedResources;
+    const kind: "primary" | "subagent" =
+      context.agentKind ?? (slug === "factory" ? "primary" : "subagent");
+    const memoryMode = automaticMemoryMode(
+      environment,
+      `AGENT_${slug.replaceAll("-", "_").toUpperCase()}`,
+    );
+    // The provider never picks a memory mode: a shared bank only works when the composition root
+    // also turned agent memory on, so an inconsistent configuration fails before any side effect.
+    if (
+      shared?.memoryBank &&
+      !synthesisOnly &&
+      memoryMode !== ChatKitAutomaticMemoryMode.PERSONAL_PLUS_AGENT
+    )
+      throw new AgentProviderError(
+        "invalid_configuration",
+        `sharedResources.memoryBank requires OPENBOT_AUTOMATIC_MEMORY_MODE (or the AGENT_<ID>_AUTOMATIC_MEMORY_MODE override) to be personal_plus_agent for ${slug}`,
+      );
+    const layout = agentLayout(context, kind);
+    const authoredIds = await authoredSubagentIds(layout.primaryDirectory);
+    const subagentIds = authoredIds.filter((id) => id !== synthesizerAgentId);
+    const sharedMemoryBankId = environment[sharedEnvironment.sharedMemoryBankId]?.trim();
+    const sharedSkillRegistryId = environment[sharedEnvironment.sharedSkillRegistryId]?.trim();
+    let sharedConnectorsMcpServerId =
+      environment[sharedEnvironment.sharedConnectorsMcpServerId]?.trim();
+    if (kind === "primary" && shared?.connectorsMcpServer) {
+      sharedConnectorsMcpServerId = await this.#ensureSharedConnectorsServer(
+        sharedConnectorsMcpServerId ?? shared.connectorsMcpServer.id,
+        shared.connectorsMcpServer.name,
+      );
+      await persistEnvironment(
+        context,
+        sharedEnvironment.sharedConnectorsMcpServerId,
+        sharedConnectorsMcpServerId,
+        "Shared connectors MCP server attached to every agent.",
+      );
+    }
+    if (kind === "subagent") {
+      const missing: string[] = [];
+      if (shared?.memoryBank && !sharedMemoryBankId)
+        missing.push(sharedEnvironment.sharedMemoryBankId);
+      if (shared?.skillRegistry && !sharedSkillRegistryId)
+        missing.push(sharedEnvironment.sharedSkillRegistryId);
+      if (shared?.connectorsMcpServer && !sharedConnectorsMcpServerId)
+        missing.push(sharedEnvironment.sharedConnectorsMcpServerId);
+      if (missing.length > 0)
+        throw new AgentProviderError(
+          "invalid_configuration",
+          `The primary agent must reconcile before ${slug}: ${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} required`,
+        );
+    }
+    return {
+      kind,
+      memoryMode,
+      skills: shared?.skillRegistry
+        ? await this.#unionSkills(context, layout.primaryDirectory, ["factory", ...authoredIds])
+        : undefined,
+      sharedMemoryBankId,
+      sharedSkillRegistryId,
+      sharedConnectorsMcpServerId,
+      subagentIds,
+    };
+  }
+
+  /** Union of every authored agent's curated skills for the one shared registry. */
+  async #unionSkills(
+    context: DeploymentContext,
+    primaryDirectory: string,
+    agentIds: readonly string[],
+  ): Promise<EnabledSkillsSpec> {
+    const custom = new Map<string, NonNullable<EnabledSkillsSpec["custom"]>[number]>();
+    const managed = new Map<string, Set<string>>();
+    for (const agentId of agentIds) {
+      const agentPath =
+        agentId === "factory" ? primaryDirectory : resolve(primaryDirectory, "subagents", agentId);
+      const bundle = await this.#skills.bundleSkills({ ...context, agentId, agentPath });
+      for (const skill of bundle.custom ?? []) custom.set(skill.key, skill);
+      for (const entry of bundle.managed ?? []) {
+        const ids = managed.get(entry.provider_id) ?? new Set<string>();
+        for (const id of entry.skill_ids) ids.add(id);
+        managed.set(entry.provider_id, ids);
+      }
+    }
+    return {
+      custom: [...custom.values()],
+      managed: [...managed].map(([provider_id, ids]) => ({ provider_id, skill_ids: [...ids] })),
+    };
+  }
+
+  /** One dynamic MCP server carries connector mappings and personal tool federation for all agents. */
+  async #ensureSharedConnectorsServer(id: string, name: string): Promise<string> {
+    const existing = await this.#generatedOptional(
+      `read the shared connectors MCP server "${id}"`,
+      (signal) =>
+        getMcpServerInstance({
+          client: this.#api,
+          path: { team_id: this.#teamId, mcp_server_instance_id: id },
+          signal,
+        }),
+    );
+    if (!existing) {
+      const created = await this.#generated(
+        `create the shared connectors MCP server "${id}"`,
+        (signal) =>
+          createMcpServerInstance({
+            client: this.#api,
+            path: { team_id: this.#teamId },
+            body: {
+              id,
+              name,
+              is_dynamic_tool_discovery: true,
+              user_tool_federation_mode: UserToolFederationMode.ALL,
+              user_tool_federation_selections: [],
+            },
+            signal,
+          }),
+      );
+      return created.id;
+    }
+    if (
+      existing.user_tool_federation_mode !== UserToolFederationMode.ALL ||
+      !existing.is_dynamic_tool_discovery
+    )
+      await this.#generated(`update the shared connectors MCP server "${id}"`, (signal) =>
+        updateMcpServerInstance({
+          client: this.#api,
+          path: { team_id: this.#teamId, mcp_server_instance_id: existing.id },
+          body: {
+            name: existing.name || name,
+            is_dynamic_tool_discovery: true,
+            user_tool_federation_mode: UserToolFederationMode.ALL,
+            user_tool_federation_selections: existing.user_tool_federation_selections ?? [],
+          },
+          signal,
+        }),
+      );
+    return existing.id;
+  }
+
+  /**
+   * After the bundle is active: record the shared bank and registry the primary created, bind
+   * subagents to the shared banks and every agent to the shared connectors server, and apply the
+   * composition root's permissions.
+   */
+  async #finishSharedDeployment(
+    context: DeploymentContext,
+    slug: string,
+    synthesisOnly: boolean,
+    deployment: SharedDeployment,
+    operation: { owner_user_id: string; resources: readonly { kind: string; id: string }[] },
+  ): Promise<void> {
+    const { resources } = operation;
+    const shared = this.#options.sharedResources;
+    if (deployment.kind === "primary" && shared) {
+      const bankId = resources.find(({ kind }) => kind === "memory_bank")?.id;
+      const registryId = resources.find(({ kind }) => kind === "skill_registry")?.id;
+      if (shared.memoryBank) {
+        if (!bankId)
+          throw new AgentProviderError(
+            "provider_unavailable",
+            `Tilde returned no shared memory bank for ${slug}`,
+            true,
+          );
+        await persistEnvironment(
+          context,
+          sharedEnvironment.sharedMemoryBankId,
+          bankId,
+          "Shared memory bank bound to every agent.",
+        );
+        deployment.sharedMemoryBankId = bankId;
+      }
+      if (shared.skillRegistry) {
+        if (!registryId)
+          throw new AgentProviderError(
+            "provider_unavailable",
+            `Tilde returned no shared skill registry for ${slug}`,
+            true,
+          );
+        await persistEnvironment(
+          context,
+          sharedEnvironment.sharedSkillRegistryId,
+          registryId,
+          "Shared skill registry carrying every agent's curated skills.",
+        );
+        deployment.sharedSkillRegistryId = registryId;
+      }
+    }
+    const bindings = {
+      ...(shared?.connectorsMcpServer && deployment.sharedConnectorsMcpServerId
+        ? { personal_tool_mcp_server_instance_id: deployment.sharedConnectorsMcpServerId }
+        : {}),
+      ...(shared?.memoryBank && deployment.kind === "subagent" && deployment.sharedMemoryBankId
+        ? {
+            memory_bank_ids: [
+              deployment.sharedMemoryBankId,
+              ...(shared.memoryBank.additionalBankIds ?? []),
+            ],
+          }
+        : {}),
+    };
+    if (!synthesisOnly && Object.keys(bindings).length > 0)
+      await this.#generated(`bind shared resources to "${slug}"`, (signal) =>
+        chatkitUpdateAgent({
+          client: this.#api,
+          path: { team_id: this.#teamId, agent_id: slug },
+          body: bindings,
+          signal,
+        }),
+      );
+    const resolvePermissions = this.#options.permissions;
+    if (!resolvePermissions) return;
+    // Tilde records which user owns every provisioned bundle, so a hosted bootstrap that never
+    // learned the owner's user ID can still narrow reach to the owner.
+    const ownerUserId =
+      context.environment[sharedEnvironment.ownerUserId]?.trim() ||
+      operation.owner_user_id.trim() ||
+      undefined;
+    const permissions = resolvePermissions({
+      id: slug,
+      kind: deployment.kind,
+      subagentIds: deployment.subagentIds,
+      ownerUserId,
+    });
+    if (!permissions) return;
+    await this.#generated(`set permissions for "${slug}"`, (signal) =>
+      chatkitSetAgentPermissions({
+        client: this.#api,
+        path: { team_id: this.#teamId, agent_id: slug },
+        body: permissions,
+        signal,
+      }),
+    );
   }
 
   async #persistAgentSecrets(
@@ -401,6 +710,44 @@ export class TildeAgentProvider implements AgentProvider {
       );
     }
   }
+
+  /** Like `#generated`, but a 404 yields `undefined` so reconciliation can create the resource. */
+  async #generatedOptional<T>(
+    operationName: string,
+    operation: (signal: AbortSignal) => Promise<{ data?: T; error?: unknown; response?: Response }>,
+  ): Promise<T | undefined> {
+    try {
+      return await this.#generated(operationName, operation);
+    } catch (error) {
+      if (error instanceof AgentProviderError && error.code === "not_found") return undefined;
+      throw error;
+    }
+  }
+}
+
+/** Locates the primary agent directory from either a primary or a `subagents/<id>` context. */
+function agentLayout(
+  context: DeploymentContext,
+  kind: "primary" | "subagent",
+): { primaryDirectory: string } {
+  const { path } = requireAgent(context);
+  if (kind === "primary") return { primaryDirectory: path };
+  const parent = dirname(path);
+  return { primaryDirectory: basename(parent) === "subagents" ? dirname(parent) : path };
+}
+
+async function authoredSubagentIds(primaryDirectory: string): Promise<string[]> {
+  let entries;
+  try {
+    entries = await readdir(resolve(primaryDirectory, "subagents"), { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+  return entries
+    .filter((entry) => entry.isDirectory() && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(entry.name))
+    .map((entry) => entry.name)
+    .sort((left, right) => left.localeCompare(right));
 }
 
 /** Return whether Tilde reported the one known worker checkpoint that can heal while polling. */

@@ -30,6 +30,7 @@ import { prepareInference } from "./inference.js";
 import instructions from "./instructions.js";
 import awaitShell from "./tools/await_shell.js";
 import bash from "./tools/bash.js";
+import browserSession from "./tools/browser_session.js";
 import configureConnector from "./tools/configure_connector.js";
 import copyFromComputer from "./tools/copy_from_computer.js";
 import copyToComputer from "./tools/copy_to_computer.js";
@@ -46,6 +47,8 @@ import writeFile from "./tools/write_file.js";
 
 const agentApiKey = process.env.AGENT_{{AGENT_ENV_PREFIX}}_API_KEY!;
 const mcpServerId = process.env.AGENT_{{AGENT_ENV_PREFIX}}_MCP_SERVER_ID!;
+// A fork may attach one shared connectors MCP server to every agent beside its own server.
+const sharedConnectorsMcpServerId = process.env.OPENBOT_SHARED_CONNECTORS_MCP_SERVER_ID?.trim();
 
 const client = createClient({
   apiKey: agentApiKey,
@@ -64,6 +67,7 @@ async function localTools(sessionId: string): Promise<ToolSet> {
   const standardTools = {
     await_shell: awaitShell,
     bash,
+    browser_session: browserSession,
     configure_connector: configureConnector,
     copy_from_computer: copyFromComputer(uploadMedia),
     copy_to_computer: copyToComputer(downloadMedia),
@@ -115,9 +119,27 @@ async function managedMcpTools(
     chatkit: { sessionId },
     tools: await localTools(sessionId),
   });
+  const handles = [handle];
   const tools: Record<string, unknown> = await handle.mcp.tools();
+  if (sharedConnectorsMcpServerId && sharedConnectorsMcpServerId !== mcpServerId) {
+    // The shared server carries connector mappings and personal tool federation for every agent;
+    // this agent's own server keeps its local tools and control-plane toolkit.
+    const shared = await context.mcp.connect({
+      agentId: {{{AGENT_ID_JSON}}},
+      serverId: sharedConnectorsMcpServerId,
+      chatkit: { sessionId },
+    });
+    handles.push(shared);
+    for (const [name, definition] of Object.entries(await shared.mcp.tools()))
+      tools[name] ??= definition;
+  }
   assertToolSet(tools);
-  return { tools, closeMcp: () => handle.closeMcp() };
+  return {
+    tools,
+    closeMcp: async () => {
+      await Promise.all(handles.map((entry) => entry.closeMcp()));
+    },
+  };
 }
 
 function assertToolSet(tools: Record<string, unknown>): asserts tools is ToolSet {

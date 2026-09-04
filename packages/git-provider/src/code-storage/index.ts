@@ -162,7 +162,18 @@ export class CodeStorageGitProvider implements GitProvider {
     }
     const existingToken = context.environment[codeStorageRepositoryTokenSecretName]?.trim();
     const setupKey = context.environment[codeStorageSetupPrivateKeyTransientName]?.trim();
-    if (existingToken && !setupKey) return;
+    if (existingToken && !setupKey) {
+      // A hosted bootstrap mints the repository-scoped token server-side and releases it through
+      // the process environment. Persisting it here (idempotently) means a fresh init never needs
+      // the organization key; a re-run with an already stored token is a no-op rewrite. Deployment
+      // validates the organization and repository when it first needs the remote.
+      await context.setSecret(
+        codeStorageRepositoryTokenSecretName,
+        existingToken,
+        "Repository-scoped Code Storage Git credential for this OpenBot fork.",
+      );
+      return;
+    }
     if (!setupKey)
       throw new GitProviderError(
         "invalid_configuration",

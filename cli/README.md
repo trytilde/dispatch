@@ -25,7 +25,10 @@ The CLI operates on the OpenBot repository in the current working directory. For
 - The exe.dev runtime option reconciles one named 2-vCPU/8-GB VM, exposes Vite on its HTTPS origin,
   clones the Code Storage fork, and keeps `pnpm dev` running through systemd user linger. The host
   itself is the Computer and receives the trusted development configuration. This is an
-  explicit trusted single-VM mode, not a sandbox boundary for untrusted agents.
+  explicit trusted single-VM mode, not a sandbox boundary for untrusted agents. Inside the VM the
+  supervised `pnpm dev` runs with `EXE_DEV_INSIDE_VM=1`, which hands the Computer lifecycle to the
+  host provider instead of the outer VM reconciliation; a hosted bootstrap that runs `openbot init`
+  on the VM itself sets the same variable.
 - `openbot secrets set NAME --description TEXT` and `openbot secrets unset NAME` maintain described `configuration/secrets.enc.yaml` entries without putting plaintext values in command arguments. SOPS encrypts only each entry's `value`; its `description` stays readable. Agents pipe values with `--stdin`; descriptions are mandatory.
 - `openbot env set NAME VALUE --description TEXT` and `openbot env unset NAME` maintain `configuration/.env`. Descriptions are mandatory and appear as plaintext comments above quoted values.
 - `openbot auth <login|logout|set-team|whoami>` owns Tilde authentication and team selection. `openbot state <import|export>` performs explicit team-state migrations, while normal OpenBot lifecycles continue to reconcile resources through providers.
@@ -83,6 +86,44 @@ For a private Vercel installation using AWS KMS, the answer object is:
 ```
 
 `aws-profile` is optional and uses the default AWS credential chain when omitted. Other owner identity values are `gcp-kms`, `azure-key-vault`, `vault-transit`, `onepassword`, and `native-age`. Provider questions use their provider-defined question IDs, so custom providers remain automatable through the same input object. Missing-answer errors identify the exact stable ID required.
+
+For the exe.dev runtime, run init from the cloned checkout on the VM (an existing repository) and
+answer the `exe-dev-*`, `code-storage-*`, and `tilde-*` questions:
+
+```json
+{
+  "owner-identity": "native-age",
+  "runtime": "exe-dev",
+  "inference": "vercel",
+  "exe-dev-vm": "openbot-user-one",
+  "exe-dev-cpu": "2",
+  "exe-dev-memory": "8GB",
+  "exe-dev-remote-directory": "/home/exedev/openbot",
+  "exe-dev-public-origin": "",
+  "code-storage-organization": "acme",
+  "code-storage-repository": "users/user-one",
+  "code-storage-github-sync-mode": "none",
+  "tilde-api-key": "secret",
+  "tilde-org-id": "org-id",
+  "tilde-team-id": "team-id",
+  "openbot-deployment-name": "OpenBot"
+}
+```
+
+`exe-dev-public-origin` may be blank to use the `<vm>.exe.xyz` hostname. `code-storage-github-sync-mode`
+accepts `github-app` (then `code-storage-github-owner`, `code-storage-github-repository`, and
+`code-storage-github-default-branch`), `public`, or `none`. `code-storage-setup-private-key` is the
+Code Storage organization key and is needed only when init itself must create the repository and
+mint its Git credential.
+
+A hosted bootstrap can preseed credentials through the init process environment instead of
+answering the questions that would mint them: when `AI_GATEWAY_API_KEY` is set, the Vercel inference
+provider stores that key to SOPS as-is and asks for neither `vercel-token` nor
+`vercel-ai-gateway-api-key-name`; when `CODE_STORAGE_REPOSITORY_TOKEN` is set together with
+`CODE_STORAGE_ORGANIZATION` and `CODE_STORAGE_REPOSITORY`, the Code Storage provider persists the
+repository-scoped token without the organization key. Run that bootstrap with `EXE_DEV_INSIDE_VM=1`
+so the runtime and Computer lifecycles know they already execute on the VM. `openbot init --help`
+lists every question with its `x-openbot-runtimes` applicability (ADR-0039).
 
 Other agent-safe mutations follow the same stdout JSON and nonzero-exit convention:
 

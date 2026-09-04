@@ -351,7 +351,7 @@ export async function initializeOpenBot(options: InitializationOptions): Promise
   const selection = await selectInitializationProviders(
     configurationPath,
     options.prompts,
-    undefined,
+    options.environment ?? process.env,
     async ({ providers }) =>
       configureInitializationStage(
         providers,
@@ -1587,7 +1587,7 @@ export async function selectInitializationProviders(
   );
   if (inference !== "vercel" && inference !== "codex")
     throw new Error(`Unsupported inference provider: ${inference}`);
-  const inferenceProviders = [inferenceProvider(inference, runtime)];
+  const inferenceProviders = [inferenceProvider(inference, runtime, environment)];
   await onSelected?.({ domain: "inference", providers: inferenceProviders, inference });
   return {
     providers: [...runtimeProviders, ...inferenceProviders, ...builtInSharedProviderGroup(runtime)],
@@ -1682,13 +1682,19 @@ async function importConfiguredOpenBot(
   return loadConfigurationModule(path, environment);
 }
 
+/**
+ * Providers whose initialization questions a fresh install collects. `environment` is the process
+ * environment of the init run: credentials a hosted bootstrap released through it (for example
+ * `AI_GATEWAY_API_KEY`) remove the questions and platform dependencies that would otherwise mint them.
+ */
 export function builtInRuntimeInitializationProviders(
   runtime: RuntimeChoice,
   inference: "vercel" | "codex" = "vercel",
+  environment?: NodeJS.ProcessEnv,
 ): readonly InitializableProvider[] {
   return [
     ...builtInRuntimeProviderGroup(runtime),
-    inferenceProvider(inference, runtime),
+    inferenceProvider(inference, runtime, environment),
     ...builtInSharedProviderGroup(runtime),
   ];
 }
@@ -1728,10 +1734,12 @@ function builtInSharedProviderGroup(runtime: RuntimeChoice | "current"): Initial
 function inferenceProvider(
   inference: InferenceChoice,
   runtime: RuntimeChoice | undefined,
+  environment?: NodeJS.ProcessEnv,
 ): InferenceProvider {
   if (inference === "codex") return new CodexInferenceProvider();
   return new VercelInferenceProvider(
     runtime === "tilde-cloud" ? new VercelPlatform({ managed: true }) : undefined,
+    { preseededEnvironment: environment },
   );
 }
 

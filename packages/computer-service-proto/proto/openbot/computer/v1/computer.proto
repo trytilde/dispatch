@@ -15,6 +15,7 @@ service ComputerService {
   rpc ListCuaTools(ListCuaToolsRequest) returns (ListCuaToolsResponse);
   rpc CallCuaTool(CallCuaToolRequest) returns (CallCuaToolResponse);
   rpc EnsureDesktop(EnsureDesktopRequest) returns (EnsureDesktopResponse);
+  rpc EnsureBrowserSession(EnsureBrowserSessionRequest) returns (EnsureBrowserSessionResponse);
   rpc ListPorts(ListPortsRequest) returns (ListPortsResponse);
   rpc TunnelVnc(stream TunnelVncRequest) returns (stream TunnelVncResponse);
 }
@@ -183,6 +184,22 @@ message EnsureDesktopRequest {
 message EnsureDesktopResponse {
   string display = 1;
   uint32 vnc_port = 2;
+}
+
+// Registers (once) and bootstraps the agent display's Chrome as a self-hosted Tilde browser
+// session. Repeated calls converge: the session is reused and the extension runtime is
+// re-bootstrapped only when Chrome restarted or the runtime is disconnected.
+message EnsureBrowserSessionRequest { string agent_id = 1; }
+
+message EnsureBrowserSessionResponse {
+  // Tilde browser session ID accepted by fill_browser_form and the handoff tools.
+  string browser_session_id = 1;
+  // Owner-facing live preview (noVNC) of the agent display hosting the browser.
+  string preview_url = 2;
+  // Loopback Chrome DevTools port of the agent's browser; informational.
+  uint32 remote_debugging_port = 3;
+  // Whether the trusted-runtime extension confirmed its Tilde websocket authenticated.
+  bool runtime_connected = 4;
 }
 
 message ListPortsRequest {}

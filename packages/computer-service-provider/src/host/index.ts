@@ -109,6 +109,12 @@ export class HostComputerProvider extends BaseComputerProvider {
       `sudo install -m 0755 ${shell(resolve(assets, "development-setup.sh"))} /usr/local/bin/setup-openbot-development`,
       `sudo install -m 0755 ${shell(resolve(assets, "openbot-browser.sh"))} /usr/local/bin/openbot-browser`,
       `sudo install -m 0644 ${shell(resolve(assets, "openbot-browser.desktop"))} /usr/share/applications/openbot-browser.desktop`,
+      "sudo install -d -m 0755 /etc/opt/chrome/policies/managed /etc/chromium/policies/managed",
+      `sudo install -m 0644 ${shell(resolve(assets, "openbot-chrome-policy.json"))} /etc/opt/chrome/policies/managed/openbot.json`,
+      `sudo install -m 0644 ${shell(resolve(assets, "openbot-chrome-policy.json"))} /etc/chromium/policies/managed/openbot.json`,
+      "sudo rm -rf /opt/openbot/trusted-runtime-extension",
+      `sudo cp -R ${shell(resolve(assets, "trusted-runtime-extension"))} /opt/openbot/trusted-runtime-extension`,
+      "sudo chmod -R a+rX /opt/openbot/trusted-runtime-extension",
       `sudo install -m 0644 ${shell(resolve(assets, "openbot-files.desktop"))} /usr/share/applications/openbot-files.desktop`,
       `sudo install -m 0755 ${shell(resolve(assets, "start.sh"))} /usr/local/bin/start-openbot-computer`,
       `sudo install -m 0644 ${shell(resolve(assets, "xfce4-panel.xml"))} /opt/openbot/xfce4-panel.xml`,
@@ -288,6 +294,7 @@ export class HostComputerProvider extends BaseComputerProvider {
         COMPUTER_SERVICE_PORT: "4101",
         COMPUTER_WORKSPACE: "/workspace",
         OPENBOT_HOST_COMPUTER: "1",
+        ...trustedHostBrowserRuntimeEnvironment(context.environment),
         ...spec.environment,
       }),
       { mode: 0o600 },
@@ -317,6 +324,29 @@ export class HostComputerProvider extends BaseComputerProvider {
   #handle(id: string, state: "running" | "sleeping"): ComputerHandle {
     return { id, providerId: this.providerId, state, createdAt: new Date() };
   }
+}
+
+/**
+ * The host Computer is the trusted single-VM mode, so its computer-service may register Tilde
+ * browser sessions for the agents' own Chrome. Sandboxed Computers never receive these values.
+ */
+export function trustedHostBrowserRuntimeEnvironment(
+  environment: NodeJS.ProcessEnv | undefined,
+): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const name of [
+    "TILDE_API_KEY",
+    "TILDE_ORG_ID",
+    "TILDE_TEAM_ID",
+    "TILDE_BASE_URL",
+  ] as const) {
+    const value = environment?.[name]?.trim();
+    if (value) values[name] = value;
+  }
+  const previewOrigin =
+    environment?.COMPUTER_PREVIEW_ORIGIN?.trim() || environment?.EXE_DEV_PUBLIC_ORIGIN?.trim();
+  if (previewOrigin) values.COMPUTER_PREVIEW_ORIGIN = previewOrigin;
+  return values;
 }
 
 export const processHostComputerCommandRunner: HostComputerCommandRunner = {

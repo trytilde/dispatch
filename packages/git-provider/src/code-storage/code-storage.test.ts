@@ -73,6 +73,7 @@ describe("CodeStorageGitProvider", () => {
 
   it("does not require the organization key after a repository token exists", async () => {
     const clientFactory = vi.fn();
+    const setSecret = vi.fn();
     const provider = new CodeStorageGitProvider({ clientFactory });
 
     await provider.initialize({
@@ -83,10 +84,49 @@ describe("CodeStorageGitProvider", () => {
         [codeStorageRepositoryTokenSecretName]: "repository-jwt",
       },
       setEnvironment: vi.fn(),
-      setSecret: vi.fn(),
+      setSecret,
     });
 
     expect(clientFactory).not.toHaveBeenCalled();
+    expect(setSecret).toHaveBeenCalledWith(
+      codeStorageRepositoryTokenSecretName,
+      "repository-jwt",
+      expect.stringContaining("Repository-scoped"),
+    );
+  });
+
+  it("stores a token released through the process environment during a fresh init", async () => {
+    // A hosted bootstrap pre-mints the repository JWT and passes the organization and repository
+    // as ordinary init answers; no organization key ever reaches the VM.
+    const clientFactory = vi.fn();
+    const setSecret = vi.fn();
+    const provider = new CodeStorageGitProvider({
+      clientFactory,
+      runGit: vi.fn(async () => {
+        throw new Error("no origin");
+      }),
+    });
+
+    await provider.initialize({
+      repositoryRoot: "/repo",
+      environment: {
+        HOME: "/home/exedev",
+        [codeStorageOrganizationEnvironmentName]: "faro",
+        [codeStorageRepositoryEnvironmentName]: "users/user-one",
+        [codeStorageGitHubSyncModeEnvironmentName]: "none",
+        [codeStorageRepositoryTokenSecretName]: "preseeded-jwt",
+      },
+      setEnvironment: vi.fn(),
+      setSecret,
+    });
+
+    expect(clientFactory).not.toHaveBeenCalled();
+    expect(setSecret).toHaveBeenCalledTimes(1);
+    expect(setSecret).toHaveBeenCalledWith(
+      codeStorageRepositoryTokenSecretName,
+      "preseeded-jwt",
+      expect.any(String),
+    );
   });
 
   it("keeps origin clean and supplies the repository token only to the push", async () => {

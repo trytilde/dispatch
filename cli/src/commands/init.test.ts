@@ -101,6 +101,37 @@ describe("non-interactive initialization prompts", () => {
     ).toThrow("Missing required non-interactive answer: vercel-token");
   });
 
+  it("accepts a hosted exe.dev bootstrap whose credentials arrive through the environment", () => {
+    // The hosted bootstrap releases the org gateway key and the repository JWT into the init
+    // process environment, so neither a Vercel token, a gateway key name, nor the Code Storage
+    // organization key is asked.
+    const answers = {
+      "owner-identity": "native-age",
+      runtime: "exe-dev",
+      inference: "vercel",
+      "exe-dev-vm": "openbot-user-one",
+      "exe-dev-cpu": "2",
+      "exe-dev-memory": "8GB",
+      "exe-dev-remote-directory": "/home/exedev/openbot",
+      "code-storage-organization": "acme",
+      "code-storage-repository": "users/user-one",
+      "code-storage-github-sync-mode": "none",
+      "tilde-api-key": "team-key",
+      "tilde-org-id": "org-one",
+      "tilde-team-id": "team-one",
+      "openbot-deployment-name": "OpenBot",
+    };
+    expect(() =>
+      validateNonInteractiveCoreAnswers(answers, {
+        existingRepository: true,
+        environment: { AI_GATEWAY_API_KEY: "org-gateway-key" },
+      }),
+    ).not.toThrow();
+    expect(() =>
+      validateNonInteractiveCoreAnswers(answers, { existingRepository: true, environment: {} }),
+    ).toThrow("Missing required non-interactive answer: vercel-token");
+  });
+
   it("accepts managed Tilde Cloud answers without GitHub or a persisted Vercel token", () => {
     expect(() =>
       validateNonInteractiveCoreAnswers(
@@ -136,7 +167,15 @@ describe("non-interactive initialization prompts", () => {
     ]);
     expect(schema.properties["vercel-token"]?.description).toContain("Required for Vercel");
     expect(schema.properties["vercel-token"]?.["x-openbot-provider"]).toBe("Vercel");
-    expect(schema.properties["vercel-token"]?.["x-openbot-runtimes"]).toEqual(["local", "vercel"]);
+    expect(schema.properties["vercel-token"]?.["x-openbot-runtimes"]).toEqual([
+      "local",
+      "vercel",
+      "exe-dev",
+    ]);
+    expect(schema.properties["exe-dev-vm"]?.["x-openbot-runtimes"]).toEqual(["exe-dev"]);
+    expect(schema.properties["code-storage-repository"]?.["x-openbot-runtimes"]).toEqual([
+      "exe-dev",
+    ]);
     expect(schema.properties["vercel-token"]?.writeOnly).toBe(true);
     expect(schema.properties["vercel-runtime-project"]?.description).toContain(
       "single Vercel project",
@@ -147,6 +186,7 @@ describe("non-interactive initialization prompts", () => {
       "local",
       "vercel",
       "tilde-cloud",
+      "exe-dev",
     ]);
     for (const [field, definition] of Object.entries(schema.properties))
       expect(definition.description, `${field} must have a description`).toEqual(

@@ -4,18 +4,37 @@ set -euo pipefail
 profile_directory="${HOME}/browser-profile"
 mkdir -p "$profile_directory"
 
-if command -v google-chrome-stable >/dev/null 2>&1; then
-  exec google-chrome-stable \
-    --no-sandbox \
-    --disable-dev-shm-usage \
-    --disable-gpu \
-    --force-renderer-accessibility \
-    --user-data-dir="$profile_directory"
+# Every agent display owns one Chrome with one extension: the Tilde trusted browser runtime.
+# Its DevTools listener binds to loopback on 9200 + the display number, so computer-service can
+# attach to the browser this display already runs and bootstrap the runtime after a restart.
+extension_directory="${OPENBOT_TRUSTED_RUNTIME_EXTENSION:-/opt/openbot/trusted-runtime-extension}"
+flags=(
+  --no-sandbox
+  --disable-dev-shm-usage
+  --disable-gpu
+  --force-renderer-accessibility
+  --no-first-run
+  --no-default-browser-check
+  --password-store=basic
+  --user-data-dir="$profile_directory"
+)
+if [[ -f "$extension_directory/manifest.json" ]]; then
+  flags+=(
+    --load-extension="$extension_directory"
+    --disable-extensions-except="$extension_directory"
+  )
+fi
+display_number="${DISPLAY#:}"
+display_number="${display_number%%.*}"
+if [[ "$display_number" =~ ^[0-9]+$ ]]; then
+  flags+=(
+    --remote-debugging-port=$((9200 + display_number))
+    --remote-allow-origins='http://127.0.0.1:*'
+  )
 fi
 
-exec chromium \
-  --no-sandbox \
-  --disable-dev-shm-usage \
-  --disable-gpu \
-  --force-renderer-accessibility \
-  --user-data-dir="$profile_directory"
+if command -v google-chrome-stable >/dev/null 2>&1; then
+  exec google-chrome-stable "${flags[@]}" "$@"
+fi
+
+exec chromium "${flags[@]}" "$@"

@@ -16,11 +16,21 @@ export const computerImageAssets = {
   marker: resolve(providerAssetDirectory, "marker.hbs"),
   openbotBrowser: resolve(providerAssetDirectory, "openbot-browser.sh.hbs"),
   openbotBrowserDesktop: resolve(providerAssetDirectory, "openbot-browser.desktop.hbs"),
+  openbotChromePolicy: resolve(providerAssetDirectory, "openbot-chrome-policy.json.hbs"),
   openbotFilesDesktop: resolve(providerAssetDirectory, "openbot-files.desktop.hbs"),
   openbotVnc: resolve(providerAssetDirectory, "openbot-vnc.html.hbs"),
   start: resolve(providerAssetDirectory, "start.sh.hbs"),
   xfcePanel: resolve(providerAssetDirectory, "xfce4-panel.xml.hbs"),
 } as const;
+
+/**
+ * Vendored Tilde trusted-runtime extension (see its PROVENANCE.md). These are byte-preserving
+ * third-party files, not generated-file templates, so the image context copies them verbatim.
+ */
+export const trustedRuntimeExtensionDirectory = resolve(
+  providerAssetDirectory,
+  "trusted-runtime-extension",
+);
 
 const sourcePaths = [
   "pnpm-lock.yaml",
@@ -120,6 +130,13 @@ export async function materializeComputerImageContext(
       computerImageAssets.openbotFilesDesktop,
       resolve(assetDestination, "openbot-files.desktop"),
     ),
+    materializeFileTemplate(
+      computerImageAssets.openbotChromePolicy,
+      resolve(assetDestination, "openbot-chrome-policy.json"),
+    ),
+    cp(trustedRuntimeExtensionDirectory, resolve(assetDestination, "trusted-runtime-extension"), {
+      recursive: true,
+    }),
     materializeFileTemplate(computerImageAssets.start, resolve(assetDestination, "start.sh")),
     materializeFileTemplate(
       computerImageAssets.xfcePanel,

@@ -8,6 +8,8 @@ Computer provisioning and lifecycle adapters for the local Linux host, Microsand
 
 Concrete adapters keep their low-level create, wake, exec, file, desktop, and image operations as implementation details used to fulfill those lifecycles. They are not an authored-agent API.
 
+The image and the host install also ship the Tilde trusted-runtime extension at `/opt/openbot/trusted-runtime-extension` and a managed Chrome policy that disables the built-in password manager and sync. `openbot-browser` starts each agent display's Chrome with only that extension, `--password-store=basic`, and a loopback DevTools port of `9200 + display number`, which computer-service uses for `EnsureBrowserSession` (ADR-0040).
+
 Programmatic screenshots and input are not provider operations. The Computer image installs the checksum-pinned Cua executable and SDK runtime; computer-service owns all model-facing GUI calls. Providers retain only owner preview routing through noVNC.
 
 Reusable Vercel AI SDK Computer tools live separately in `@tryopenbot/computer-tools`. This package does not depend on or re-export them. Authored agents call those typed tools, which route through the capability-protected Computer service; they never import this provider package or call Microsandbox or Vercel Sandbox directly.
@@ -35,6 +37,7 @@ All agents share one Computer filesystem and process identity. Populated workspa
   Computer with no inner isolation and publishes noVNC through the owner origin.
 - `ComputerProviderError`, call context, Computer specifications, handles, image records, deployment request types, and `ComputerSeedEntry`: contracts used by lifecycle implementations. Seed entries preserve regular files and trusted-development symlinks.
 - `computerServiceApiKey()` and `scopedCapability()`: validate and scope access to the Computer service.
-- `computerImageAssets`, `computerImageWatchPaths()`, and `materializeComputerImageContext()`: expose provider-owned image inputs and render a build context.
+- `computerImageAssets`, `trustedRuntimeExtensionDirectory`, `computerImageWatchPaths()`, and `materializeComputerImageContext()`: expose provider-owned image inputs (including the vendored Tilde trusted-runtime extension, see its `PROVENANCE.md`) and render a build context.
+- `trustedHostBrowserRuntimeEnvironment()`: the Tilde tenant and preview origin the trusted host Computer hands to computer-service so agents' Chrome can register as self-hosted Tilde browser sessions (ADR-0040).
 - `developmentSandboxSourceFiles()` and `developmentSandboxConfigurationFiles()`: materialize trusted development Computer files.
 - `randomCapability()`, `deterministicComputerId()`, `imageSourceDigest()`, `computerWorkspacePath()`, `scopeComputerExecRequest()`, `logicalComputerPath()`, and `agentWorkspaceRoot()`: deterministic lifecycle and path helpers.

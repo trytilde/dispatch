@@ -73,7 +73,8 @@ pnpm add @trytilde/sdk @trytilde/sdk-vercel-ai-node zod
   request-bound form inside a ChatKit endpoint. Upsert, supersede, forget, and
   finish tools require the current job's exact batch, evidence set, and lease owner.
 - `verifyWebhookRequest`, `signBody`, and `WebhookVerificationError` implement signed webhook
-  verification.
+  verification. `webhookSigningKeyFromEnv(value)` maps the `AGENT_<ID>_WEBHOOK_SIGNING_KEY`
+  environment convention onto the `webhookSigningKey` option.
 
 Compaction is request-scoped and never rewrites ChatKit history. The active agent reports start,
 completion, or failure through `context.session`; ChatKit persists those events while authored
@@ -94,6 +95,40 @@ const message = await convertToAiSdkMessage({
         parts: [{ type: "text", text: `Message in ${received.data.data.chat?.id}` }],
       }),
     },
+  },
+});
+```
+
+## Webhook signature verification
+
+`chatKitEndpoint`, `toolEndpoint`, and `verifyWebhookRequest` share one `webhookSigningKey`
+option typed `string | null`:
+
+- A string is the HMAC key Tilde issued for the endpoint. Every request must carry valid
+  `x-tilde-webhook-id`, `x-tilde-timestamp`, and `x-tilde-signature` headers.
+- An explicit `null` skips verification entirely: no signature headers are required, no
+  timestamp tolerance is enforced, and the SDK emits one `console.warn` per process saying the
+  endpoint accepts unsigned invocations. Use it only for an endpoint that is protected some other
+  way, for example a public agent whose network path already authenticates Tilde.
+- `undefined` or an empty string keeps verification required and rejects every request with
+  `webhookSigningKey is required` (`401` from the endpoints, a `TypeError` from `toolEndpoint`
+  construction), so verification is never skipped by accident.
+
+Generated agents read the key from `AGENT_<ID>_WEBHOOK_SIGNING_KEY` through
+`webhookSigningKeyFromEnv`. Set that variable to the literal value `null` to pass the explicit
+`null`; any other non-empty value is used as the key, and a missing or blank variable stays
+required.
+
+```ts
+import { chatKitEndpoint, webhookSigningKeyFromEnv } from "@trytilde/sdk-vercel-ai-node";
+
+export default chatKitEndpoint({
+  client,
+  responseMode: "agentLoop",
+  // AGENT_FACTORY_WEBHOOK_SIGNING_KEY=null accepts unsigned invocations.
+  webhookSigningKey: webhookSigningKeyFromEnv(process.env.AGENT_FACTORY_WEBHOOK_SIGNING_KEY),
+  async handler(request, context) {
+    return new Response("ok");
   },
 });
 ```

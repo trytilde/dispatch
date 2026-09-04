@@ -33,6 +33,7 @@ import {
   type VerifiedWebhookRequest,
   type VerifyWebhookOptions,
   verifyWebhookRequest,
+  warnUnsignedWebhooksOnce,
   WebhookVerificationError,
 } from "./webhook";
 
@@ -136,6 +137,8 @@ export type ChatKitEndpointLogger = (
 export function chatKitEndpoint(
   options: ChatKitEndpointOptions,
 ): (request: Request) => Promise<Response> {
+  const signatureVerified = options.webhookSigningKey !== null;
+  if (!signatureVerified) warnUnsignedWebhooksOnce();
   return async (request: Request): Promise<Response> => {
     const requestId = crypto.randomUUID();
     const startedAt = Date.now();
@@ -150,10 +153,11 @@ export function chatKitEndpoint(
     let verified: VerifiedWebhookRequest;
     try {
       verified = await verifyWebhookRequest(request.clone(), options);
-      log("info", "webhook verified", {
+      log("info", signatureVerified ? "webhook verified" : "webhook accepted unsigned", {
         ...baseFields,
         webhookId: verified.webhookId,
         timestamp: verified.timestamp,
+        signatureVerified,
         elapsedMs: elapsedMs(startedAt),
       });
     } catch (error) {

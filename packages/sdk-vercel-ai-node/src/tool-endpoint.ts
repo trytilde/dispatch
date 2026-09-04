@@ -3,6 +3,7 @@ import { isRecord } from "@trytilde/sdk/json";
 import {
   type VerifyWebhookOptions,
   verifyWebhookSignature,
+  warnUnsignedWebhooksOnce,
   WebhookVerificationError,
 } from "./webhook";
 
@@ -110,6 +111,7 @@ export function toolEndpoint(
   },
 ): ToolEndpoint {
   validateOptions(options);
+  if (options.webhookSigningKey === null) warnUnsignedWebhooksOnce();
   const tools = options.tools as unknown as readonly RuntimeTool[];
   const toolsById = new Map(tools.map((tool) => [tool.id, tool]));
   const manifestTools = tools.map((tool) => ({
@@ -180,8 +182,8 @@ function validateOptions(
   if (!options.provider.name.trim()) {
     throw new TypeError("toolEndpoint requires provider.name");
   }
-  if (!options.webhookSigningKey) {
-    throw new TypeError("toolEndpoint requires webhookSigningKey");
+  if (options.webhookSigningKey !== null && !options.webhookSigningKey) {
+    throw new TypeError("toolEndpoint requires webhookSigningKey (pass null to skip verification)");
   }
   if (options.tools.length === 0) {
     throw new TypeError("toolEndpoint requires at least one tool");

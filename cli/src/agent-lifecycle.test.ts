@@ -320,6 +320,60 @@ describe("agent resource lifecycle", () => {
     expect(calls.toSorted()).toEqual(["factory", "memory-catcher", "research-assistant"]);
   });
 
+  it("reconciles the primary agent before subagents that pin its shared resources", async () => {
+    vi.mocked(discoverAgents).mockResolvedValueOnce([
+      {
+        slug: "factory",
+        kind: "primary",
+        directory: "/repository/configuration/agent",
+        path: "/repository/configuration/agent/agent.ts",
+      },
+      {
+        slug: "computer",
+        kind: "subagent",
+        directory: "/repository/configuration/agent/subagents/computer",
+        path: "/repository/configuration/agent/subagents/computer/agent.ts",
+      },
+      {
+        slug: "researcher",
+        kind: "subagent",
+        directory: "/repository/configuration/agent/subagents/researcher",
+        path: "/repository/configuration/agent/subagents/researcher/agent.ts",
+      },
+    ]);
+    const calls: string[] = [];
+    const environment: NodeJS.ProcessEnv = {};
+
+    await reconcileAgentResources({
+      repositoryRoot: "/repository",
+      environment,
+      devMode: true,
+      providers: {
+        agent: {
+          deployable: {
+            plan: async () => ({ summary: "agent" }),
+            deploy: async (context) => {
+              if (context.agentKind === "primary") {
+                calls.push(context.agentId!);
+                context.environment.OPENBOT_SHARED_MEMORY_BANK_ID = "bank-one";
+                return;
+              }
+              // Subagents observe what the primary persisted through the shared environment map.
+              expect(context.environment.OPENBOT_SHARED_MEMORY_BANK_ID).toBe("bank-one");
+              calls.push(context.agentId!);
+            },
+          },
+        } as AgentProvider,
+        agentService: {
+          baseUrl: () => new URL("http://127.0.0.1:4100"),
+        } as unknown as AgentServiceProvider,
+      },
+    });
+
+    expect(calls[0]).toBe("factory");
+    expect(calls.toSorted()).toEqual(["computer", "factory", "researcher"]);
+  });
+
   it("serializes repository persistence without poisoning the queue after a failure", async () => {
     const calls: string[] = [];
     let active = 0;

@@ -145,8 +145,15 @@ export async function reconcileAgentResources(
   // initial installation cannot race its own dependency.
   const synthesisIndex = sources.findIndex(({ slug }) => slug === "memory-catcher");
   if (synthesisIndex >= 0) await reconcile(sources[synthesisIndex]!, synthesisIndex);
+  // The primary agent owns the resources a composition root shares with its subagents (memory
+  // bank, skill registry, connectors server), so it reconciles before the remaining agents run
+  // concurrently.
+  const primaryIndex = sources.findIndex(
+    ({ kind }, index) => kind === "primary" && index !== synthesisIndex,
+  );
+  if (primaryIndex >= 0) await reconcile(sources[primaryIndex]!, primaryIndex);
   await mapWithConcurrency(
-    sources.filter((_, index) => index !== synthesisIndex),
+    sources.filter((_, index) => index !== synthesisIndex && index !== primaryIndex),
     10,
     async (source) => reconcile(source, sources.indexOf(source)),
   );

@@ -1,5 +1,8 @@
 {
-  "disabledLabels": ["no-greptile"],
+  "disabledLabels": [
+    "no-greptile"
+  ],
   "triggerOnUpdates": false,
-  "statusCheck": false
+  "statusCheck": false,
+  "skipReview": "AUTOMATIC"
 }

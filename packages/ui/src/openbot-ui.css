@@ -162,7 +162,7 @@ body {
   align-items: center;
   gap: 5px;
 }
-+ .work-overview,
+.work-overview,
 .work-job-detail {
   display: grid;
   gap: 18px;

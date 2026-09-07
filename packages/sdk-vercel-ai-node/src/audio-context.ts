@@ -4,7 +4,7 @@ import type { JsonValue } from "@trytilde/sdk";
 export interface ChatKitAudioContext {
   liveSessionId: string;
   utteranceId: string;
-  mode: "pipeline" | "realtime";
+  mode: "pipeline" | "realtime" | "telnyx_relay";
   live: boolean;
 }
 
@@ -33,7 +33,7 @@ export function parseSpeechContext(value: JsonValue | undefined): ChatKitSpeechC
     Array.isArray(audio) ||
     typeof audio.liveSessionId !== "string" ||
     typeof audio.utteranceId !== "string" ||
-    (audio.mode !== "pipeline" && audio.mode !== "realtime") ||
+    (audio.mode !== "pipeline" && audio.mode !== "realtime" && audio.mode !== "telnyx_relay") ||
     typeof audio.live !== "boolean"
   ) {
     throw new Error("Invalid signed ChatKit audio context");

@@ -37,6 +37,8 @@ describe("ChatKit audio", () => {
       mode: "pipeline",
       stt_model: audio.sttModel,
       max_duration_seconds: 180,
+      language: "en-US",
+      interruptible: true,
     });
     expect(new Headers(options.headers).get("authorization")).toBe("Bearer secret-test");
   });
@@ -81,3 +83,81 @@ describe("ChatKit audio", () => {
     expect(JSON.parse(options.body)).toEqual({ audio: null });
   });
 });
+
+it("round trips carrier relay settings without an OpenAI credential", async () => {
+  const relay: AgentAudioConfiguration = {
+    ...audio,
+    mode: "telnyx_relay",
+    sttModel: "deepgram/nova-3",
+    voice: "Telnyx.Ultra.Callie",
+    language: "en-US",
+    interruptible: false,
+  };
+  const wire = {
+    mode: "telnyx_relay",
+    credential_id: null,
+    stt_model: relay.sttModel,
+    tts_model: relay.ttsModel,
+    realtime_model: relay.realtimeModel,
+    voice: relay.voice,
+    instructions: relay.instructions,
+    max_duration_seconds: relay.maxDurationSeconds,
+    language: "en-US",
+    interruptible: false,
+  };
+  const fetch = vi.fn(async (..._args: Parameters<typeof globalThis.fetch>) =>
+    Response.json({ audio: wire }),
+  );
+  vi.stubGlobal("fetch", fetch);
+  const client = createClient({
+    baseUrl: "https://example.test",
+    teamId: "team",
+    apiKey: "secret-test",
+  });
+  await client.chatkit.audio.configure({ agentId: "relay", audio: relay });
+  const options = fetch.mock.calls[0]?.[1];
+  if (typeof options?.body !== "string") throw new Error("Expected configuration body");
+  expect(JSON.parse(options.body)).toEqual({ audio: wire });
+  expect(await client.chatkit.audio.get({ agentId: "relay" })).toEqual(relay);
+});
+
+it.each(["channel-voice", undefined])(
+  "maps the optional Telnyx channel assignment %s",
+  async (channelInboxId) => {
+    const fetch = vi.fn(async (..._args: Parameters<typeof globalThis.fetch>) =>
+      Response.json({
+        webhook_url: "https://api.example.test/carrier/webhook",
+        ...(channelInboxId ? { route: { channel_inbox_id: channelInboxId } } : {}),
+      }),
+    );
+    vi.stubGlobal("fetch", fetch);
+    const client = createClient({
+      baseUrl: "https://example.test",
+      orgId: "org",
+      teamId: "team",
+      apiKey: "secret-test",
+    });
+    const result = await client.chatkit.audio.configureTelnyx({
+      agentId: "relay",
+      credentialId: "credential-voice",
+      publicKey: "test-public-key",
+      phoneNumber: "+12025550100",
+      connectionId: "application-voice",
+      mediaBaseUrl: "https://media.example.test",
+    });
+    expect(result).toEqual({
+      webhookUrl: "https://api.example.test/carrier/webhook",
+      ...(channelInboxId ? { channelInboxId } : {}),
+    });
+    const options = fetch.mock.calls[0]?.[1];
+    if (typeof options?.body !== "string") throw new Error("Expected Telnyx configuration body");
+    expect(options.method).toBe("PUT");
+    expect(JSON.parse(options.body)).toEqual({
+      credential_id: "credential-voice",
+      public_key: "test-public-key",
+      phone_number: "+12025550100",
+      connection_id: "application-voice",
+      media_base_url: "https://media.example.test",
+    });
+  },
+);

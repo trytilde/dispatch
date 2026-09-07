@@ -82,7 +82,7 @@ const server = createServer(async (incoming, outgoing) => {
         return;
       }
       const registration = registrations[url.searchParams.get("mode") ?? "pipeline"];
-      if (!registration) {
+      if (!registration || url.searchParams.get("mode") === "telnyx_relay") {
         outgoing.writeHead(400).end();
         return;
       }

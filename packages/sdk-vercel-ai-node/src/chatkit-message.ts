@@ -19,7 +19,16 @@ type Awaitable<T> = T | Promise<T>;
 
 export type ChatKitMessageRole = UIMessage["role"];
 
+/** Canonical speech provenance attached to text or UI history by trusted ingress. */
+export type ChatKitSpeechProvenance = {
+  generated: boolean;
+  interrupted: boolean;
+  played_audio_ms?: number | null;
+  reported_spoken_text?: string | null;
+};
+
 export type ChatKitMessageBase = {
+  speech?: ChatKitSpeechProvenance | null;
   id: string;
   role: ChatKitMessageRole;
   created_at?: string;
@@ -30,11 +39,6 @@ export type ChatKitMessageBase = {
 };
 
 export type ChatKitTextMessage = ChatKitMessageBase & {
-  speech?: {
-    generated: boolean;
-    interrupted: boolean;
-    played_audio_ms?: number | null;
-  } | null;
   type: "text";
   text: string;
 };
@@ -782,9 +786,7 @@ async function convertToAiSdkMessageInternal(
           parts: [
             {
               type: "text",
-              text: message.speech?.interrupted
-                ? `[Interrupted speech: this generated transcript may include unplayed words.]\n${message.text}`
-                : message.text,
+              text: message.text,
             },
           ],
           metadata: aiSdkMetadata(message),
@@ -796,6 +798,14 @@ async function convertToAiSdkMessageInternal(
           metadata: aiSdkMetadata(message),
         } as UIMessage);
 
+  if (message.speech?.interrupted) {
+    const reported = message.speech.reported_spoken_text;
+    const note =
+      reported !== undefined && reported !== null
+        ? `[Interrupted speech. Carrier-reported spoken prefix: ${JSON.stringify(reported)}. The following generated response may include unplayed words.]`
+        : "[Interrupted speech: this generated transcript may include unplayed words.]";
+    converted.parts.unshift({ type: "text", text: note });
+  }
   await cacheConvertedMessage(chatKitOptions, converted);
   return converted;
 }

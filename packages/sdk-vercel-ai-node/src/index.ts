@@ -66,6 +66,7 @@ export {
   type ChatKitMessageBase,
   type ChatKitMessageRole,
   type ChatKitSignalMessage,
+  type ChatKitSpeechProvenance,
   type ChatKitTextMessage,
   type ChatKitUiFilePart,
   type ChatKitUiMessage,

@@ -180,6 +180,6 @@ page sizes are clamped to 1–100. Membership lists use the same response shape.
 
 ## Realtime voice
 
-Configure speech with agent registration's `audio` option or `client.chatkit.audio.configure()`. Use `audio.start()` for browser media admission and `audio.configureTelnyx()` to bind a phone route. Rust owns STT/TTS and native OpenAI Realtime. The normal endpoint callback receives `context.audio` and `context.telnyx` for pipeline turns; native transcripts do not invoke it.
+Configure speech with agent registration's `audio` option or `client.chatkit.audio.configure()`. Use `audio.start()` for browser media admission and `audio.configureTelnyx()` to bind a phone route; it returns `webhookUrl` and, when supplied by the API, `channelInboxId`. Modes are `pipeline`, `realtime`, and phone-only `telnyx_relay`. Rust runs OpenAI speech for the first two; Telnyx Conversation Relay runs STT/TTS for relay calls. Relay defaults to `language: "en-US"` and `interruptible: true`, with `sttModel: "deepgram/nova-3"` and `voice: "Telnyx.Ultra.Callie"`. It uses the phone route credential rather than an OpenAI speech credential. The normal endpoint callback receives `context.audio` and `context.telnyx` for pipeline/relay turns; native transcripts do not invoke it. `audio.start()` rejects relay agents.
 
 See [the manual voice example](../../examples/realtime-voice/README.md). Deploy the matching voice API before enabling these wrappers. Browser personal-tool federation and native endpoint-tool bridging are outside this initial slice.

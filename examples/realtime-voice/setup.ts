@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { type AgentAudioConfiguration, createClient } from "@trytilde/sdk";
 
-/** Register two isolated demo agents; never reconfigure an existing phone number. */
+/** Register isolated browser demos and a dedicated carrier relay demo; never reconfigure an existing phone number. */
 async function setup() {
   const client = createClient({
     baseUrl: process.env.TILDE_BASE_URL,
@@ -13,13 +13,15 @@ async function setup() {
   if (!origin || !process.env.TILDE_API_KEY)
     throw new Error("Set AGENT_ENDPOINT_ORIGIN and TILDE_API_KEY in .env.local");
   const agents: Record<string, unknown> = {};
-  for (const mode of ["pipeline", "realtime"] as const) {
+  for (const mode of ["pipeline", "realtime", "telnyx_relay"] as const) {
     const audio: AgentAudioConfiguration = {
       mode,
-      sttModel: "gpt-4o-mini-transcribe",
+      sttModel: mode === "telnyx_relay" ? "deepgram/nova-3" : "gpt-4o-mini-transcribe",
       ttsModel: "gpt-4o-mini-tts",
       realtimeModel: "gpt-realtime",
-      voice: "alloy",
+      voice: mode === "telnyx_relay" ? "Telnyx.Ultra.Callie" : "alloy",
+      language: "en-US",
+      interruptible: true,
       instructions:
         "You are a voice test assistant. Answer briefly. Explain that this is a test when asked.",
       maxDurationSeconds: 180,
@@ -44,7 +46,7 @@ async function setup() {
     "Saved .agents.local.json. Run pnpm dev; attach a Telnyx test number using the README.",
   );
   if (process.env.TELNYX_CREDENTIAL_ID) {
-    const mode = process.env.TELNYX_AGENT_MODE ?? "pipeline";
+    const mode = process.env.TELNYX_AGENT_MODE ?? "telnyx_relay";
     const registration = agents[mode] as { agent: { id: string } } | undefined;
     if (
       !registration ||

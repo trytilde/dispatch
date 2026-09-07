@@ -1,14 +1,17 @@
 # ChatKit voice example
 
-Two registered agents demonstrate the same Tilde-owned audio interface:
+Three registered agents demonstrate the supported voice paths:
 
 - **Pipeline:** Rust streams speech to OpenAI transcription, invokes the normal
   `chatKitEndpoint` callback once per response turn, then streams the callback's
   text through OpenAI TTS.
+- **Telnyx relay:** Telnyx Conversation Relay handles transcription and speech
+  synthesis. Tilde exchanges text with Telnyx and invokes the normal signed
+  callback at `/agent/telnyx_relay`. This mode accepts phone calls only.
 - **Realtime:** Rust maintains an OpenAI Realtime conversation. The model
   generates speech directly; its transcript does not invoke the text callback.
 
-Both create ordinary ChatKit sessions. The pipeline callback receives typed
+All create ordinary ChatKit sessions. Pipeline and relay callbacks receive typed
 `context.audio` and, for phone calls, `context.telnyx`. Audio models and voice
 settings are registered on the Tilde agent, not on the callback.
 
@@ -45,7 +48,7 @@ pnpm setup
 pnpm dev
 ```
 
-Setup registers two new agents and saves their endpoint credentials in ignored
+Setup registers three new agents and saves their endpoint credentials in ignored
 `.agents.local.json` with mode 0600. It does not print those secrets. Re-running
 setup creates new demo agents; delete old demo agents through Tilde when done.
 
@@ -75,6 +78,14 @@ configure Telnyx number/application routes again in the destination installation
 
 Use a dedicated test Voice API application. Do not repoint a production number.
 
+The Telnyx Voice chat provider (`chatkit.channel.telnyx_voice`) uses your existing
+credential, application, and number and creates a ChatKit channel for incoming
+call participants. Generic provider setup offers self-managed webhook setup
+(copy the returned URL) and managed webhook setup (Tilde updates your existing
+application's webhook). Neither creates a Telnyx account, funds service, buys a
+number, or assigns numbers. This example uses `configureTelnyx()` and the manual
+webhook step below.
+
 1. In Tilde managed credentials, create a **Telnyx Voice** credential
    (`chatkit_telnyx_voice`) containing your Telnyx `api_key`. Copy its ID.
 2. In Telnyx, create a Voice API application and select a test number. Copy the
@@ -86,22 +97,35 @@ TELNYX_CREDENTIAL_ID=your-tilde-managed-credential-id
 TELNYX_PUBLIC_KEY=your-base64-ed25519-public-key
 TELNYX_PHONE_NUMBER=+12025550100
 TELNYX_CONNECTION_ID=your-telnyx-voice-application-id
-TELNYX_AGENT_MODE=pipeline
+TELNYX_AGENT_MODE=telnyx_relay
 VOICE_MEDIA_BASE_URL=https://your-public-tilde-api-origin
 ```
 
 4. Setup prints the exact webhook URL. Put it in the test application's **Webhook
    URL**, select POST, and associate the number with that application.
 5. Call your test number manually. Tilde verifies the webhook, checks the number
-   and application, answers, and attaches a one-time authenticated media stream.
-6. To test native speech, bind the route to the realtime demo agent with
+   and application, answers, and connects a one-time authenticated Conversation
+   Relay socket. The relay profile uses `deepgram/nova-3`, `Telnyx.Ultra.Callie`,
+   `language: "en-US"`, and `interruptible: true`. It needs no OpenAI speech
+   credential; the callback still uses its configured text model.
+6. Interrupt a spoken response. The next callback's converted history marks the
+   interrupted response and distinguishes the carrier-reported spoken prefix
+   from generated text. Ending the call stops the relay and pending turn.
+7. To test native speech, bind the route to the realtime demo agent with
    `client.chatkit.audio.configureTelnyx()` and update the application's webhook
    to the returned URL. Do not run both routes for the same application at once.
 
 The API's public HTTPS origin must also accept WSS upgrades. Hookdeck can capture
 and replay lifecycle webhooks but cannot replace the live media WebSocket.
-No ngrok process is started by this example. Telnyx input/output uses PCMU at
-8 kHz; Rust converts generated 24 kHz PCM for carrier playback.
+No ngrok process is started by this example. Relay uses text WebSocket frames;
+Telnyx owns its audio path. Select `TELNYX_AGENT_MODE=pipeline` or `realtime` to
+exercise the existing media adapter, which receives PCMU at 8 kHz and converts
+24 kHz generated PCM for playback. The browser microphone page keeps these two
+modes; it cannot start a `telnyx_relay` session.
+
+See [Telnyx Conversation Relay](https://developers.telnyx.com/docs/voice/programmable-voice/conversation-relay)
+for the carrier protocol. Partial prompts do not invoke the callback; final
+prompts do. Caller ID is carrier context, not a verified Tilde human identity.
 
 For WhatsApp calls, first enable WhatsApp Business Calling in Telnyx and use the
 actual calling application's connection ID. It reaches the same media adapter.

@@ -174,8 +174,12 @@ for a complete endpoint.
 The existing `chatKitEndpoint` callback exposes optional `context.audio`
 (`liveSessionId`, `utteranceId`, `mode`, `live`) and `context.telnyx`
 (`callControlId`, `callSessionId`, `from`, `to`) from the signed speech context.
-Configure STT/TTS on the Tilde agent. The adapter does not run a second audio
+`context.audio.mode` is `pipeline` or `telnyx_relay` for speech-triggered text
+callbacks. Configure speech on the Tilde agent; Telnyx handles STT/TTS for relay
+calls. The adapter does not run a second audio
 pipeline, and native OpenAI Realtime transcript observations do not invoke it.
-Stored native speech marked interrupted is annotated during history conversion
-because generated text may contain unplayed words. See the
-[voice example](../../examples/realtime-voice/README.md) for both modes.
+Stored text and UI speech marked interrupted is annotated during history conversion
+because generated text may contain unplayed words. When the carrier reports a
+spoken prefix in `reported_spoken_text`, the annotation includes that prefix
+separately from the generated response. See the
+[voice example](../../examples/realtime-voice/README.md) for browser and carrier modes.

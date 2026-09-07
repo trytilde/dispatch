@@ -2,9 +2,9 @@ import type { NormalizedConfig } from "../config";
 import { requestJson } from "../internal/fetch-client";
 import { pathWithParams, teamPath } from "../internal/paths";
 
-/** Speech runs in Tilde; the registered endpoint continues generating text. */
+/** Agent-owned voice settings; relay delegates recognition and synthesis to Telnyx. */
 export interface AgentAudioConfiguration {
-  mode: "pipeline" | "realtime";
+  mode: "pipeline" | "realtime" | "telnyx_relay";
   credentialId?: string;
   sttModel: string;
   ttsModel: string;
@@ -12,10 +12,14 @@ export interface AgentAudioConfiguration {
   voice: string;
   instructions: string;
   maxDurationSeconds: number;
+  /** Defaults to en-US when omitted. */
+  language?: string;
+  /** Whether caller speech may interrupt playback; defaults to true. */
+  interruptible?: boolean;
 }
 
 type AudioWire = {
-  mode: "pipeline" | "realtime";
+  mode: "pipeline" | "realtime" | "telnyx_relay";
   credential_id?: string | null;
   stt_model: string;
   tts_model: string;
@@ -23,6 +27,8 @@ type AudioWire = {
   voice: string;
   instructions: string;
   max_duration_seconds: number;
+  language?: string;
+  interruptible?: boolean;
 };
 
 /** Serialize the stable SDK configuration into its API representation. */
@@ -36,6 +42,8 @@ export function audioToWire(value: AgentAudioConfiguration): AudioWire {
     voice: value.voice,
     instructions: value.instructions,
     max_duration_seconds: value.maxDurationSeconds,
+    language: value.language ?? "en-US",
+    interruptible: value.interruptible ?? true,
   };
 }
 
@@ -78,6 +86,8 @@ export class AudioClient {
           voice: a.voice,
           instructions: a.instructions,
           maxDurationSeconds: a.max_duration_seconds,
+          language: a.language ?? "en-US",
+          interruptible: a.interruptible ?? true,
         }
       : null;
   }
@@ -111,8 +121,11 @@ export class AudioClient {
     phoneNumber: string;
     connectionId: string;
     mediaBaseUrl: string;
-  }): Promise<{ webhookUrl: string }> {
-    const result = await requestJson<{ webhook_url: string }>(this.config, {
+  }): Promise<{ webhookUrl: string; channelInboxId?: string }> {
+    const result = await requestJson<{
+      webhook_url: string;
+      route?: { channel_inbox_id?: string | null };
+    }>(this.config, {
       method: "PUT",
       path: `${this.path(input.agentId)}/telnyx`,
       body: {
@@ -123,6 +136,9 @@ export class AudioClient {
         media_base_url: input.mediaBaseUrl,
       },
     });
-    return { webhookUrl: result.webhook_url };
+    return {
+      webhookUrl: result.webhook_url,
+      ...(result.route?.channel_inbox_id ? { channelInboxId: result.route.channel_inbox_id } : {}),
+    };
   }
 }

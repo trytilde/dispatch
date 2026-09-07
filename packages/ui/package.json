@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "src/beautiful-ui/upstream/LICENSE",
+    "src/beautiful-ui/PROVENANCE.md"
   ],
   "type": "module",
   "exports": {
@@ -25,10 +27,14 @@
       "development": "./src/openbot-ui.css",
       "default": "./dist/openbot-ui.css"
     },
-    "./beautiful-ui/*": {
-      "types": "./src/beautiful-ui/upstream/*.tsx",
-      "development": "./src/beautiful-ui/upstream/*.tsx",
-      "import": "./dist/beautiful-ui/upstream/*.js"
+    "./connectors.css": {
+      "development": "./src/connectors.css",
+      "default": "./dist/connectors.css"
+    },
+    "./connectors": {
+      "types": "./src/connectors.ts",
+      "development": "./src/connectors.ts",
+      "import": "./dist/connectors.js"
     }
   },
   "publishConfig": {
@@ -44,9 +50,10 @@
       "./agent-avatar.css": "./dist/agent-avatar.css",
       "./beautiful-ui.css": "./dist/beautiful-ui/upstream/globals.css",
       "./openbot-ui.css": "./dist/openbot-ui.css",
-      "./beautiful-ui/*": {
-        "types": "./dist/beautiful-ui/upstream/*.d.ts",
-        "import": "./dist/beautiful-ui/upstream/*.js"
+      "./connectors.css": "./dist/connectors.css",
+      "./connectors": {
+        "types": "./dist/connectors.d.ts",
+        "import": "./dist/connectors.js"
       }
     },
     "access": "public"
@@ -70,16 +77,18 @@
     "@streamdown/code": "^1.1.1",
     "@streamdown/math": "^1.0.2",
     "@streamdown/mermaid": "^1.0.2",
+    "@tiptap/markdown": "3.31.3",
+    "@tiptap/pm": "3.31.3",
+    "@tiptap/react": "3.31.3",
+    "@tiptap/starter-kit": "3.31.3",
     "ai": "7.0.64",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "glimm": "0.3.0",
     "lucide-react": "^1.31.0",
     "motion": "^13.1.0",
     "nanoid": "^6.0.1",
     "radix-ui": "^1.6.7",
-    "react": "19.1.2",
     "shiki": "^4.4.3",
     "streamdown": "^2.5.0",
     "tailwind-merge": "^3.6.0",
@@ -91,6 +100,7 @@
     "@tryopenbot/client-runtime": "workspace:*",
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",
+    "react": "19.1.2",
     "react-dom": "19.1.2",
     "storybook": "10.5.0",
     "tailwindcss": "4.3.3",

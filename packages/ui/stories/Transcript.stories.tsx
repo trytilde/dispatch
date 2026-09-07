@@ -1,110 +1,145 @@
+import type { ReactNode } from "react";
+import { StoryPrompt, useChatExample } from "./chat-preview.js";
+import { layoutChatTranscript, projectChatTranscript } from "@tryopenbot/client-runtime";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
 import {
-  ChatFindBar,
+  ChatMessage,
+  ConversationMessage,
   FailedSendActions,
-  NewMessagesPill,
   QueuedSendNotice,
   SentWhileOfflineNotice,
   SystemEvent,
   SystemEventChip,
   SystemEventLabel,
-  TranscriptError,
-  TranscriptLoading,
-  TranscriptNotice,
+  ConversationSkeleton,
   TranscriptTimeSeparator,
-  UnknownMessageCard,
   UnreadDivider,
-} from "../src/index.js";
+} from "@tryopenbot/ui";
 
-const meta = { title: "OpenBot/Transcript" } satisfies Meta;
+const meta = {
+  title: "Chat/Events/Transcript",
+  parameters: { layout: "fullscreen", chatPlacement: "event" },
+} satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 const noop = () => undefined;
 
-function FindExample() {
-  const [query, setQuery] = useState("agent");
-  return (
-    <ChatFindBar
-      currentOrdinal={query ? 2 : 0}
-      matchCount={query ? 5 : 0}
-      onClose={noop}
-      onQueryChange={setQuery}
-      onStepNext={noop}
-      onStepPrevious={noop}
-      query={query}
-    />
-  );
-}
-
-export const FindInChat: Story = { render: () => <FindExample /> };
 export const Loading: Story = {
-  render: () => (
-    <div style={{ width: 520 }}>
-      <TranscriptLoading />
-    </div>
-  ),
+  parameters: { chatPlacement: "conversation", chatReplaceHistory: true },
+  render: () => <ConversationSkeleton />,
 };
 export const LoadError: Story = {
+  parameters: { chatPlacement: "prompt" },
   render: () => (
-    <div style={{ width: 520 }}>
-      <TranscriptError onRetry={noop} />
-    </div>
+    <StoryPrompt
+      status={{ kind: "failed", message: "Couldn’t load this conversation. Please try again." }}
+    />
   ),
 };
-
 export const NewMessages: Story = {
-  render: () => (
-    <div style={{ height: 320, position: "relative", width: 620 }}>
-      <NewMessagesPill count={3} direction="down" onDismiss={noop} onJump={noop} />
-    </div>
-  ),
+  parameters: { chatPlacement: "prompt" },
+  render: () => <StoryPrompt newMessageCount={3} showScrollToBottom />,
 };
-
-export const Unread: Story = {
-  render: () => (
-    <div style={{ width: 620 }}>
-      <UnreadDivider />
+export const Unread: Story = { render: () => <UnreadDivider /> };
+function SendNoticeExample({ notice }: { notice: ReactNode }) {
+  const inChat = useChatExample();
+  const message = (role: "user" | "assistant") => (
+    <ConversationMessage role={role} createdAt="2026-09-07T10:03:00Z" notice={notice}>
+      {role === "user"
+        ? "Please review the latest changes."
+        : "I’ll share the latest review with you."}
+    </ConversationMessage>
+  );
+  return inChat ? (
+    message("user")
+  ) : (
+    <div className="message-list">
+      {message("assistant")}
+      {message("user")}
     </div>
-  ),
-};
+  );
+}
 export const QueuedSend: Story = {
-  render: () => <QueuedSendNotice cancellable onCancel={noop} transportDown />,
+  parameters: { chatPlacement: "conversation" },
+  render: () => (
+    <SendNoticeExample notice={<QueuedSendNotice cancellable onCancel={noop} transportDown />} />
+  ),
 };
 export const SentOffline: Story = {
-  render: () => <SentWhileOfflineNotice composedAt="2026-08-15T12:00:00Z" />,
+  parameters: { chatPlacement: "conversation" },
+  render: () => (
+    <SendNoticeExample notice={<SentWhileOfflineNotice composedAt="2026-08-15T12:00:00Z" />} />
+  ),
 };
 export const FailedSend: Story = {
-  render: () => <FailedSendActions onDelete={noop} onResend={noop} />,
-};
-export const Notice: Story = {
+  parameters: { chatPlacement: "conversation" },
   render: () => (
-    <TranscriptNotice actionLabel="Reconnect" onAction={noop} tone="warning">
-      Connection interrupted. New messages will be queued.
-    </TranscriptNotice>
+    <SendNoticeExample notice={<FailedSendActions onDelete={noop} onResend={noop} />} />
   ),
 };
-export const TimeSeparator: Story = {
-  render: () => (
-    <div style={{ width: 620 }}>
-      <TranscriptTimeSeparator dateTime="2026-08-15" label="Today" />
+function DayHistoryExample() {
+  const now = new Date();
+  const dates = [3, 1, 0, 0, 0].map((days, index) => {
+    const date = new Date(now);
+    date.setDate(date.getDate() - days);
+    date.setHours(10 + index, 3, 0, 0);
+    return date.toISOString();
+  });
+  const items = layoutChatTranscript(
+    projectChatTranscript(
+      dates.map((created_at, index) => ({
+        id: `day-message-${index}`,
+        created_at,
+        session_id: "example",
+        type: "ui",
+        role: index === 4 ? "user" : "assistant",
+        parts: [
+          {
+            type: "text",
+            text: [
+              "The earlier review is ready.",
+              "Yesterday’s update is ready.",
+              "Here is today’s update.",
+              "One more detail from the same side.",
+              "Thanks, I’ll review it.",
+            ][index]!,
+          },
+        ],
+      })),
+    ),
+  );
+  return (
+    <div className="message-list">
+      {items.map((item) =>
+        item.kind === "day" ? (
+          <TranscriptTimeSeparator key={item.id} dateTime={item.date} now={now} />
+        ) : item.kind === "message" ? (
+          <ChatMessage
+            key={item.id}
+            message={item.message}
+            role={item.alignment === "self" ? "user" : "assistant"}
+            createdAt={item.message.created_at}
+            continuedPrevious={item.continuedPrevious}
+            continuedNext={item.continuedNext}
+            resolveAttachmentUrl={async () => ""}
+          />
+        ) : null,
+      )}
     </div>
-  ),
+  );
+}
+export const TimeSeparator: Story = {
+  parameters: { chatPlacement: "conversation", chatReplaceHistory: true },
+  render: () => <DayHistoryExample />,
 };
 
 export const SystemEventRow: Story = {
   render: () => (
-    <div style={{ width: 620 }}>
-      <SystemEvent>
-        <SystemEventLabel>Computer connected</SystemEventLabel>
-        <SystemEventChip leading="⌁" onClick={noop}>
-          View activity
-        </SystemEventChip>
-      </SystemEvent>
-    </div>
+    <SystemEvent>
+      <SystemEventLabel>Computer connected</SystemEventLabel>
+      <SystemEventChip leading="⌁" onClick={noop}>
+        View activity
+      </SystemEventChip>
+    </SystemEvent>
   ),
-};
-
-export const UnknownMessage: Story = {
-  render: () => <UnknownMessageCard messageType="future-message" />,
 };

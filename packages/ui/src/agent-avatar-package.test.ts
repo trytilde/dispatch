@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+import runtimePackageJson from "../../client-runtime/package.json" with { type: "json" };
 import packageJson from "../package.json" with { type: "json" };
 
 const manifest = packageJson as {
@@ -24,7 +25,9 @@ describe("AgentAvatar package entry", () => {
 
   it("does not require client-runtime for the standalone entry", () => {
     expect(manifest.dependencies?.["@tryopenbot/client-runtime"]).toBeUndefined();
-    expect(manifest.peerDependencies?.["@tryopenbot/client-runtime"]).toBe("0.1.0");
+    expect(manifest.peerDependencies?.["@tryopenbot/client-runtime"]).toBe(
+      runtimePackageJson.version,
+    );
     expect(manifest.peerDependenciesMeta?.["@tryopenbot/client-runtime"]?.optional).toBe(true);
   });
 });

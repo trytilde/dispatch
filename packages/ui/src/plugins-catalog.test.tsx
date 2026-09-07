@@ -57,7 +57,7 @@ describe("PluginsCatalog loading and avatars", () => {
     expect(markup).toContain("!size-full");
     expect(markup).toContain("bg-surface");
     expect(markup).not.toContain("Work");
-    expect(markup).not.toContain("Personal");
+    expect(markup).not.toContain(">Personal</h3>");
     expect(markup).not.toContain("Remove from Factory");
   });
 

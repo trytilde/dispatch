@@ -1,3 +1,7 @@
+import { createPromptRuntime, type PromptRuntime } from "../prompt.js";
+import type { PromptAttachmentPlatform } from "../contracts/prompt.js";
+import { createSessionRuntime, type SessionRuntime } from "../session.js";
+import { createPluginsRuntime, type PluginsRuntime } from "../plugins.js";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import type { OpenBotClient } from "../chat/client.js";
 import type { CreatedAgent } from "../contracts/agents.js";
@@ -195,6 +199,9 @@ export interface OpenBotActions {
 }
 
 export interface OpenBotRuntime {
+  prompt: PromptRuntime;
+  session: SessionRuntime;
+  plugins: PluginsRuntime;
   client: OpenBotClient;
   store: StoreApi<OpenBotState>;
   actions: OpenBotActions;
@@ -202,6 +209,7 @@ export interface OpenBotRuntime {
 }
 
 export interface OpenBotRuntimeOptions {
+  attachments?: PromptAttachmentPlatform;
   client: OpenBotClient;
   auth: ClientAuthAdapter;
   agentSort?: AgentSortOrder;
@@ -264,11 +272,52 @@ const initialState: OpenBotState = {
 };
 
 export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRuntime {
+  const plugins = createPluginsRuntime(options.client);
+  let conversationGeneration = 0;
   const restoredAgentSetup = options.agentSetupPersistence?.load();
   const store = createStore<OpenBotState>(() => ({
     ...initialState,
     agentSetup: restoredAgentSetup?.status === "setting_up" ? restoredAgentSetup : idleAgentSetup,
   }));
+  const session = createSessionRuntime(options.client, {
+    getAgents: () => store.getState().sidebar.agents,
+    getCurrentUser: () => store.getState().auth.session?.user,
+    onRenamed: (renamed) =>
+      store.setState((state) => ({
+        sidebar: {
+          ...state.sidebar,
+          agents: state.sidebar.agents.map((agent) => ({
+            ...agent,
+            sessions: {
+              ...agent.sessions,
+              items: agent.sessions.items.map((item) =>
+                item.id === renamed.id ? { ...item, ...renamed } : item,
+              ),
+            },
+          })),
+        },
+      })),
+    async onFindMessage(hit) {
+      const seen = new Set<string>();
+      while (
+        store.getState().conversation.selectedSessionId === hit.session.id &&
+        hit.message &&
+        !store.getState().conversation.messages.some((message) => message.id === hit.message!.id)
+      ) {
+        const token = store.getState().conversation.nextMessageToken;
+        if (!token || seen.has(token)) break;
+        seen.add(token);
+        await loadOlderMessages();
+      }
+    },
+  });
+  const prompt = createPromptRuntime({
+    client: options.client,
+    platform: options.attachments,
+    ensureSession,
+    submit: sendMessage,
+    canSend: () => session.store.getState().access.kind === "enabled",
+  });
   const now = options.now ?? (() => new Date());
   const createId = options.createId ?? (() => globalThis.crypto.randomUUID());
   const schedule = options.schedule ?? ((callback, delay) => setTimeout(callback, delay));
@@ -277,6 +326,8 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
   const sessionSort = options.sessionSort ?? "updated_at";
   const busySessionIds = new Set<string>();
   const liveMessagesBySession = new Map<string, ChatMessage[]>();
+  let toolHistoryDirty = false;
+  let toolHistoryTimer: ReturnType<typeof setTimeout> | undefined;
   const participantEventsBySession = new Map<string, ParticipantEvent[]>();
   let chatKitRealtimeObserver: AbortController | undefined;
   let agentSetupObserver: AbortController | undefined;
@@ -398,6 +449,11 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
   }
 
   function applyConversationSnapshot(sessionId: string, snapshot: ConversationSnapshot): void {
+    const selected = store
+      .getState()
+      .sidebar.agents.flatMap((agent) => agent.sessions.items)
+      .find((item) => item.id === sessionId);
+    session.select(sessionId, selected?.title ?? "");
     const messages = uniqueMessages(snapshot.messages.items);
     const participantEvents = uniqueParticipantEvents(snapshot.participant_events ?? []);
     liveMessagesBySession.set(sessionId, messages);
@@ -557,6 +613,8 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
   }
 
   async function steerQueuedTurn(id: string): Promise<void> {
+    if (session.store.getState().access.kind !== "enabled")
+      throw new Error("You must participate in this session before steering it.");
     const sessionId = store.getState().conversation.selectedSessionId;
     if (!sessionId) return;
     const previous = store.getState().conversation.queuedTurns;
@@ -581,6 +639,37 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     }, 120);
   }
 
+  function scheduleProjectedToolHistory(): void {
+    if (!toolHistoryDirty || store.getState().conversation.agentBusy || toolHistoryTimer) return;
+    toolHistoryTimer = schedule(() => {
+      toolHistoryTimer = undefined;
+      const sessionId = store.getState().conversation.selectedSessionId;
+      if (!sessionId || store.getState().conversation.agentBusy) return;
+      toolHistoryDirty = false;
+      void options.client
+        .getMessages(sessionId)
+        .then((response) => {
+          if (
+            store.getState().conversation.selectedSessionId !== sessionId ||
+            store.getState().conversation.agentBusy
+          ) {
+            toolHistoryDirty = true;
+            return;
+          }
+          const ids = new Set(response.items.map((message) => message.id));
+          const messages = uniqueMessages([
+            ...store.getState().conversation.messages.filter((message) => !ids.has(message.id)),
+            ...response.items,
+          ]);
+          liveMessagesBySession.set(sessionId, messages);
+          updateConversation({ messages });
+        })
+        .catch(() => {
+          toolHistoryDirty = true;
+        });
+    }, 120);
+  }
+
   function beginChatKitWorkspaceObservation(): void {
     if (chatKitRealtimeObserver && !chatKitRealtimeObserver.signal.aborted) return;
     const controller = new AbortController();
@@ -595,6 +684,11 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
             controller.signal,
             (event) => {
               if (event.id && seenEventIds.has(event.id)) return;
+              // Tilde's tool.execution envelope is not session-scoped. Never guess its chat.
+              if (event.type === "tool.execution") {
+                toolHistoryDirty = true;
+                scheduleProjectedToolHistory();
+              }
               applyAgentEvent(store, event);
               applySessionEvent(store, event);
               if (event.type === "access.changed") scheduleSidebarRefresh();
@@ -611,6 +705,8 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
               const reduction = reduceLiveChatEvent(currentMessages, event, sessionId, now());
               liveMessagesBySession.set(sessionId, reduction.messages);
               if (event.type === "participant.joined" || event.type === "participant.left") {
+                if (session.store.getState().sessionId === sessionId)
+                  void session.refreshParticipants();
                 const participantEvents = uniqueParticipantEvents([
                   ...(participantEventsBySession.get(sessionId) ?? []),
                   event,
@@ -665,6 +761,7 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
               if (event.type === "session.created" || event.type === "session.access.updated")
                 scheduleSidebarRefresh();
               rememberChatKitRealtimeEvent(event.id, seenEventIds);
+              scheduleProjectedToolHistory();
             },
             async () => {
               // Keep the socket-ready barrier bounded to one aggregate bootstrap request.
@@ -727,31 +824,38 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     clearSearch();
   }
 
-  async function selectSession(agentId: string, session: ChatSession): Promise<void> {
+  async function selectSession(agentId: string, selectedSession: ChatSession): Promise<void> {
+    if (store.getState().conversation.selectedSessionId !== selectedSession.id) {
+      conversationGeneration++;
+      prompt.reset(selectedSession.id);
+    }
+    session.select(selectedSession.id, selectedSession.title ?? "");
     updateSidebar({ selectedAgentId: agentId });
     updateConversation({
-      selectedSessionId: session.id,
-      messages: liveMessagesBySession.get(session.id) ?? [],
+      selectedSessionId: selectedSession.id,
+      messages: liveMessagesBySession.get(selectedSession.id) ?? [],
       nextMessageToken: undefined,
       queuedTurns: [],
-      participantEvents: participantEventsBySession.get(session.id) ?? [],
+      participantEvents: participantEventsBySession.get(selectedSession.id) ?? [],
       activity: [],
       loading: true,
-      agentBusy: busySessionIds.has(session.id),
+      agentBusy: busySessionIds.has(selectedSession.id),
       streamStatus: chatKitRealtimeObserver?.signal.aborted === false ? "Live" : "Connecting",
       turnStatus: "",
       error: "",
     });
     try {
-      const snapshot = await options.client.getConversationSnapshot(session.id);
-      if (store.getState().conversation.selectedSessionId === session.id) {
-        applyConversationSnapshot(session.id, snapshot);
-        await options.client.updateSessionReadState(session.id, false).catch(() => undefined);
+      const snapshot = await options.client.getConversationSnapshot(selectedSession.id);
+      if (store.getState().conversation.selectedSessionId === selectedSession.id) {
+        applyConversationSnapshot(selectedSession.id, snapshot);
+        await options.client
+          .updateSessionReadState(selectedSession.id, false)
+          .catch(() => undefined);
       }
     } catch (error) {
       updateConversation({ error: errorMessage(error) });
     } finally {
-      if (store.getState().conversation.selectedSessionId === session.id)
+      if (store.getState().conversation.selectedSessionId === selectedSession.id)
         updateConversation({ loading: false });
     }
   }
@@ -762,6 +866,9 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     const userId = store.getState().auth.session?.user.subject ?? "";
     const userSession = userId ? userSessionForAgent(agent, userId) : undefined;
     if (userSession) return await selectSession(agentId, userSession);
+    conversationGeneration++;
+    prompt.reset();
+    session.reset();
     updateSidebar({ selectedAgentId: agentId });
     updateConversation({
       selectedSessionId: "",
@@ -777,6 +884,9 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
   }
 
   function startNewConversation(agentId: string): void {
+    conversationGeneration++;
+    prompt.reset();
+    session.reset();
     if (!store.getState().sidebar.agents.some((agent) => agent.id === agentId)) return;
     updateSidebar({ selectedAgentId: agentId });
     updateConversation({
@@ -840,6 +950,9 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
   }
 
   async function sendMessage(input: SendMessageInput): Promise<void> {
+    const generation = conversationGeneration;
+    if (session.store.getState().access.kind !== "enabled")
+      throw new Error("Join this API session or reply through its source before sending.");
     const text = input.text.trim();
     const state = store.getState();
     const agentId = state.sidebar.selectedAgentId;
@@ -902,6 +1015,7 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       // turn visible while that request is pending; queue SSE events own durable reconciliation.
       updateConversation({ submitting: false });
       const response = await responsePromise;
+      if (generation !== conversationGeneration) return;
       sessionId = response.session.id;
       updateSidebar({
         agents: addSession(store.getState().sidebar.agents, agentId, response.session),
@@ -911,6 +1025,7 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
         turnStatus: activeAtDispatch ? "Queued" : "Completed",
       });
     } catch (error) {
+      if (generation !== conversationGeneration) throw error;
       updateConversation({
         error: errorMessage(error),
         turnStatus: "Turn failed",
@@ -926,7 +1041,7 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
       if (sessionId) await refreshMessages(sessionId).catch(() => undefined);
       throw error;
     } finally {
-      updateConversation({ submitting: false });
+      if (generation === conversationGeneration) updateConversation({ submitting: false });
     }
   }
 
@@ -1268,6 +1383,10 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
     },
     async signOut() {
       await options.auth.signOut();
+      conversationGeneration++;
+      plugins.reset();
+      session.reset();
+      prompt.reset();
       workspaceInitialized = false;
       chatKitRealtimeObserver?.abort();
       agentSetupObserver?.abort();
@@ -1332,14 +1451,24 @@ export function createOpenBotRuntime(options: OpenBotRuntimeOptions): OpenBotRun
 
   return {
     client: options.client,
+    plugins,
+    session,
+    prompt,
     store,
     actions,
     dispose() {
+      conversationGeneration++;
+      plugins.dispose();
+      session.dispose();
+      prompt.dispose();
       chatKitRealtimeObserver?.abort();
       agentSetupObserver?.abort();
       stopRoutinePolling();
       stopWorkPolling();
       if (sidebarRefreshTimer) cancelScheduled(sidebarRefreshTimer);
+      if (toolHistoryTimer) cancelScheduled(toolHistoryTimer);
+      toolHistoryTimer = undefined;
+      toolHistoryDirty = false;
       queueRefreshes.clear();
     },
   };

@@ -1,38 +1,12 @@
+import { ToolCallEvent } from "./chat-events.js";
+import { toolCallPresentation, expandToolBatches } from "@tryopenbot/client-runtime";
+import { AudioPlayer } from "./content-components.js";
+import type { ChatPart } from "@tryopenbot/client-runtime";
 import { useEffect, useRef, useState } from "react";
 import { DownloadIcon, ExternalLinkIcon, XIcon } from "lucide-react";
-import {
-  Reasoning,
-  ReasoningContent,
-  ReasoningTrigger,
-} from "./components/ai-elements/reasoning.js";
 export { MarkdownText } from "./markdown-components.js";
 
-export interface MessagePart {
-  type: string;
-  text?: string | null;
-  state?: string | null;
-  filename?: string | null;
-  media_type?: string;
-  mediaType?: string;
-  size_bytes?: number | null;
-  sizeBytes?: number | null;
-  url?: string;
-  attachment_id?: string | null;
-  attachmentId?: string | null;
-  tool_name?: string;
-  toolName?: string;
-  tool_invocation_id?: string;
-  toolCallId?: string;
-  input?: unknown;
-  output?: unknown;
-  error_text?: string | null;
-  errorText?: string | null;
-  approval?: unknown;
-  title?: string | null;
-  source_id?: string;
-  data?: unknown;
-  provider_metadata?: unknown;
-}
+export type MessagePart = ChatPart;
 
 export interface ConnectionView {
   id: string;
@@ -43,6 +17,9 @@ export interface ConnectionView {
 }
 
 export interface FileCardProps {
+  /** Delegate opening to a shared gallery when attachments belong to one collection. */
+  onPreview?: (url: string) => void;
+  compact?: boolean;
   part: MessagePart;
   sessionId: string;
   resolveAttachmentUrl: (sessionId: string, attachmentId: string) => Promise<string>;
@@ -106,34 +83,24 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
   );
 }
 
-export function ReasoningCard({ state = "", text }: { state?: string | null; text: string }) {
-  return (
-    <Reasoning className="reasoning-part" isStreaming={state === "streaming"}>
-      <ReasoningTrigger />
-      <ReasoningContent>{text}</ReasoningContent>
-    </Reasoning>
-  );
-}
-
 export function ToolCallCard({ part }: { part: MessagePart }) {
-  const state = part.state ?? "";
-  const error = part.error_text ?? part.errorText;
   return (
-    <details className="tool-part" open={state.includes("approval")}>
-      <summary>
-        <span className={`tool-state ${state}`} />
-        {part.tool_name ?? part.toolName ?? part.type.replace(/^tool-/, "") ?? "Tool"}
-        <small>{formatState(state)}</small>
-      </summary>
-      {part.input !== undefined ? <JsonBlock label="Input" value={part.input} /> : null}
-      {part.output !== undefined ? <JsonBlock label="Output" value={part.output} /> : null}
-      {error ? <p className="part-error">{error}</p> : null}
-      {part.approval ? <JsonBlock label="Approval" value={part.approval} /> : null}
-    </details>
+    <>
+      {expandToolBatches([part]).map((child, index) => (
+        <ToolCallEvent key={child.tool_invocation_id ?? index} call={toolCallPresentation(child)} />
+      ))}
+    </>
   );
 }
 
-export function FileCard({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: FileCardProps) {
+export function FileCard({
+  part,
+  sessionId,
+  resolveAttachmentUrl,
+  rewriteUrl,
+  compact = false,
+  onPreview,
+}: FileCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const directUrl = part.url ? safeUrl(rewriteUrl(part.url)) : undefined;
@@ -180,7 +147,10 @@ export function FileCard({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: 
 
   async function open(openViewer = true): Promise<void> {
     if (resolvedUrl) {
-      if (openViewer) setViewerOpen(true);
+      if (openViewer) {
+        if (onPreview) onPreview(resolvedUrl);
+        else setViewerOpen(true);
+      }
       return;
     }
     if (!attachmentId || loading) return;
@@ -191,7 +161,10 @@ export function FileCard({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: 
       const safe = safeUrl(url);
       if (!safe) throw new Error("Attachment URL is invalid");
       setResolvedUrl(safe);
-      if (openViewer) setViewerOpen(true);
+      if (openViewer) {
+        if (onPreview) onPreview(safe);
+        else setViewerOpen(true);
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Attachment unavailable");
     } finally {
@@ -202,67 +175,86 @@ export function FileCard({ part, sessionId, resolveAttachmentUrl, rewriteUrl }: 
   const filename = part.filename || "Attachment";
   const unavailable = Boolean(error) || (!resolvedUrl && !attachmentId && !loading);
   const detail = `${mediaType}${formatSize(part.size_bytes ?? part.sizeBytes)}`;
+  if (mediaType.startsWith("audio/") && resolvedUrl && !unavailable)
+    return <AudioPlayer name={filename} src={resolvedUrl} onUnavailable={mediaFailed} />;
   return (
     <>
-      <div
-        className={`file-part media-part ${mediaKind(mediaType)} ${unavailable ? "unavailable" : ""}`}
-      >
-        {unavailable ? (
-          <div className="media-unavailable" role="status">
-            <FileTypeIcon />
-            <span>
-              <strong>{error || "Attachment unavailable"}</strong>
-              <small>{filename}</small>
+      {compact ? (
+        <button
+          type="button"
+          className="message-attachment-chip"
+          aria-label={`Preview ${filename}`}
+          onClick={() => void open()}
+          disabled={loading}
+        >
+          {mediaType.startsWith("image/") && resolvedUrl && !error ? (
+            <img className="file-thumb" src={resolvedUrl} alt="" onError={mediaFailed} />
+          ) : (
+            <span className="attachment-glyph">
+              <FileTypeIcon />
             </span>
-            {attachmentId ? (
-              <button onClick={() => void open(false)} type="button">
-                Retry
-              </button>
-            ) : null}
-          </div>
-        ) : loading && !resolvedUrl ? (
-          <div className="media-loading" role="status">
-            <span />
-            Preparing preview…
-          </div>
-        ) : mediaType.startsWith("image/") && resolvedUrl ? (
-          <button
-            aria-label={`Preview ${filename}`}
-            className="image-preview"
-            onClick={() => setViewerOpen(true)}
-            type="button"
-          >
-            <img alt={filename} loading="lazy" onError={mediaFailed} src={resolvedUrl} />
-          </button>
-        ) : mediaType.startsWith("video/") && resolvedUrl ? (
-          <video controls onError={mediaFailed} preload="metadata" src={resolvedUrl} />
-        ) : mediaType.startsWith("audio/") && resolvedUrl ? (
-          <div className="audio-preview">
-            <FileTypeIcon />
-            <audio controls onError={mediaFailed} preload="metadata" src={resolvedUrl} />
-          </div>
-        ) : (
-          <button className="document-preview" onClick={() => void open()} type="button">
-            <FileTypeIcon />
-            <span>
-              <strong>{filename}</strong>
-              <small>{loading ? "Preparing preview…" : detail}</small>
-            </span>
-            <span aria-hidden="true">↗</span>
-          </button>
-        )}
-        {richMedia && resolvedUrl && !unavailable ? (
-          <div className="media-caption">
-            <span>
-              <strong>{filename}</strong>
-              <small>{detail}</small>
-            </span>
-            <button onClick={() => setViewerOpen(true)} type="button">
-              Preview
+          )}
+          <span>
+            <strong>{filename}</strong>
+            <small>{loading ? "Preparing preview…" : error || detail}</small>
+          </span>
+        </button>
+      ) : (
+        <div
+          className={`file-part media-part ${mediaKind(mediaType)} ${unavailable ? "unavailable" : ""}`}
+        >
+          {unavailable ? (
+            <div className="media-unavailable" role="status">
+              <FileTypeIcon />
+              <span>
+                <strong>{error || "Attachment unavailable"}</strong>
+                <small>{filename}</small>
+              </span>
+              {attachmentId ? (
+                <button onClick={() => void open(false)} type="button">
+                  Retry
+                </button>
+              ) : null}
+            </div>
+          ) : loading && !resolvedUrl ? (
+            <div className="media-loading" role="status">
+              <span />
+              Preparing preview…
+            </div>
+          ) : mediaType.startsWith("image/") && resolvedUrl ? (
+            <button
+              aria-label={`Preview ${filename}`}
+              className="image-preview"
+              onClick={() => void open()}
+              type="button"
+            >
+              <img alt={filename} loading="lazy" onError={mediaFailed} src={resolvedUrl} />
             </button>
-          </div>
-        ) : null}
-      </div>
+          ) : mediaType.startsWith("video/") && resolvedUrl ? (
+            <video controls onError={mediaFailed} preload="metadata" src={resolvedUrl} />
+          ) : (
+            <button className="document-preview" onClick={() => void open()} type="button">
+              <FileTypeIcon />
+              <span>
+                <strong>{filename}</strong>
+                <small>{loading ? "Preparing preview…" : detail}</small>
+              </span>
+              <span aria-hidden="true">↗</span>
+            </button>
+          )}
+          {richMedia && resolvedUrl && !unavailable ? (
+            <div className="media-caption">
+              <span>
+                <strong>{filename}</strong>
+                <small>{detail}</small>
+              </span>
+              <button onClick={() => void open()} type="button">
+                Preview
+              </button>
+            </div>
+          ) : null}
+        </div>
+      )}
       {resolvedUrl ? (
         <FileViewer
           mediaType={mediaType}
@@ -294,6 +286,7 @@ function FileTypeIcon() {
 }
 
 export function FileViewer({ open, title, subtitle, url, mediaType, onClose }: FileViewerProps) {
+  if (mediaType.startsWith("audio/")) return open ? <AudioPlayer name={title} src={url} /> : null;
   if (mediaType.startsWith("image/") || mediaType.startsWith("video/")) {
     return (
       <MediaViewer
@@ -315,7 +308,7 @@ export function FileViewer({ open, title, subtitle, url, mediaType, onClose }: F
   );
 }
 
-function DocumentFileViewer({ open, title, subtitle, url, mediaType, onClose }: FileViewerProps) {
+function DocumentFileViewer({ open, title, subtitle, url, onClose }: FileViewerProps) {
   useModalLifecycle(open, onClose);
 
   if (!open) return null;
@@ -348,11 +341,7 @@ function DocumentFileViewer({ open, title, subtitle, url, mediaType, onClose }: 
           </span>
         </header>
         <div className="file-viewer-body">
-          {mediaType.startsWith("audio/") ? (
-            <audio controls src={url} />
-          ) : (
-            <iframe src={url} title={title} />
-          )}
+          <iframe src={url} title={title} />
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { createWebAttachments } from "./web-attachments.js";
 import {
   createClientAuthAdapter,
   createOpenBotClient,
@@ -52,4 +53,12 @@ const agentSetupPersistence = {
   },
 };
 
-export const openBotRuntime = createOpenBotRuntime({ client, auth, agentSetupPersistence });
+const webAttachments = createWebAttachments();
+export const openBotRuntime = createOpenBotRuntime({
+  client,
+  auth,
+  agentSetupPersistence,
+  attachments: webAttachments.platform,
+});
+export const registerPromptFiles = (files: Iterable<File>) =>
+  openBotRuntime.prompt.addAttachments(webAttachments.register(files));

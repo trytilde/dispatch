@@ -44,3 +44,8 @@ wire and durable-state authorities.
 
 - 2026-09-01: Replaced the separate proposal settings UI with an inline,
   authenticated ChatKit Human Approval decision.
+
+
+## Superseded on 2026-09-07
+
+[ADR 0044](0044-reusable-kit-and-direct-resource-workflows.md) replaces proposals with native permission-controlled workflows and managed skills. Earlier rationale is retained as history.

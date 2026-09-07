@@ -437,6 +437,8 @@ describe("OpenBot client", () => {
       fetch: async (input, init) => {
         const url = requestUrl(input);
         calls.push({ method: init?.method ?? "GET", url });
+        if (url.startsWith("/api/tilde/user-tools/"))
+          return Response.json({ ...catalog, managed_providers: [] });
         const nativePage = nativePluginCatalogPage(url, catalog);
         if (nativePage) return Response.json(nativePage);
         if (url === "/api/tilde/mcp/provider-catalog") return Response.json({ items: [] });
@@ -455,9 +457,9 @@ describe("OpenBot client", () => {
       expect.arrayContaining([
         {
           method: "GET",
-          url: "/api/tilde/mcp/available-tool-groups?deployment_alias=latest&include_global=true&page_size=100",
+          url: "/api/tilde/user-tools/mcp/tool-providers?scope=all",
         },
-        { method: "GET", url: "/api/tilde/mcp/provider-catalog" },
+        { method: "GET", url: "/api/tilde/user-tools/skills?scope=all" },
         { method: "DELETE", url: "/api/tilde/mcp/tool-group/github%2Fwork" },
         { method: "DELETE", url: "/api/tilde/mcp/tool-group/github-personal" },
         {

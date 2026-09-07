@@ -1,3 +1,4 @@
+import { MarkdownPromptInput } from "./markdown-prompt-input.js";
 import {
   useEffect,
   useRef,
@@ -7,7 +8,9 @@ import {
   type FocusEventHandler,
   type FormEventHandler,
   type RefObject,
+  type ReactNode,
 } from "react";
+import { XIcon } from "lucide-react";
 import { PlusIcon, ReplyIcon, SendIcon } from "./workspace-icons.js";
 
 export interface ComposerAttachment {
@@ -19,6 +22,7 @@ export interface ComposerAttachment {
   error?: string;
   /** Local blob URL for image previews while the upload is pending. */
   previewUrl?: string;
+  removable?: boolean;
 }
 
 export interface ComposerReply {
@@ -36,16 +40,16 @@ export interface ChatComposerProps {
   error?: string;
   reply?: ComposerReply;
   attachments: readonly ComposerAttachment[];
-  inputRef: RefObject<HTMLTextAreaElement | null>;
+  inputRef: RefObject<HTMLElement | null>;
   fileInputRef: RefObject<HTMLInputElement | null>;
   onSubmit: FormEventHandler<HTMLFormElement>;
   onDraftChange: (value: string) => void;
-  onFocus?: FocusEventHandler<HTMLTextAreaElement>;
-  onBlur?: FocusEventHandler<HTMLTextAreaElement>;
+  onFocus?: FocusEventHandler<HTMLElement>;
+  onBlur?: FocusEventHandler<HTMLElement>;
   onDragStateChange: (active: boolean) => void;
   onFilesAdded: (files: FileList) => void;
   onRemoveAttachment: (id: string) => void;
-  onCancelReply: () => void;
+  onCancelReply?: () => void;
   onStop: () => void;
 }
 
@@ -166,8 +170,9 @@ export function ChatComposer({
                   type="button"
                   onClick={() => onRemoveAttachment(attachment.id)}
                   aria-label="Remove file"
+                  disabled={attachment.removable === false}
                 >
-                  ×
+                  <XIcon aria-hidden />
                 </button>
                 {attachment.status === "uploading" ? (
                   <i style={{ width: `${attachment.progress * 100}%` }} />
@@ -222,10 +227,11 @@ export function ChatComposer({
               <PlusIcon />
             </button>
           </div>
-          <textarea
-            aria-label="Message"
+          <MarkdownPromptInput
+            draft={draft}
+            onChange={onDraftChange}
             disabled={!agentAvailable}
-            ref={inputRef}
+            inputRef={inputRef}
             placeholder={
               agentAvailable
                 ? busy
@@ -233,28 +239,8 @@ export function ChatComposer({
                   : "Write a message…"
                 : "No agent is available."
             }
-            value={draft}
-            onChange={(event) => onDraftChange(event.target.value)}
-            onBlur={onBlur}
             onFocus={onFocus}
-            onKeyDown={(event) => {
-              const coarsePointer =
-                event.currentTarget.ownerDocument.defaultView?.matchMedia?.("(pointer: coarse)")
-                  .matches ?? false;
-              if (
-                shouldSubmitComposerKey({
-                  key: event.key,
-                  shiftKey: event.shiftKey,
-                  metaKey: event.metaKey,
-                  ctrlKey: event.ctrlKey,
-                  composing: event.nativeEvent.isComposing,
-                  coarsePointer,
-                })
-              ) {
-                event.preventDefault();
-                event.currentTarget.form?.requestSubmit();
-              }
-            }}
+            onBlur={onBlur}
           />
           <div className="composer-actions">
             {busy ? (
@@ -280,4 +266,37 @@ function formatBytes(value: number): string {
   if (value < 1024) return `${value} B`;
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** Keeps the queue and input in one layout row, including on narrow viewports. */
+export function ChatComposerDock({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = ref.current;
+    const parent = element?.parentElement;
+    if (!element || !parent) return;
+    const property = "--composer-dock-height";
+    const previous = parent.style.getPropertyValue(property);
+    const measure = () =>
+      parent.style.setProperty(property, `${element.getBoundingClientRect().height}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      if (previous) parent.style.setProperty(property, previous);
+      else parent.style.removeProperty(property);
+    };
+  }, []);
+  return (
+    <div className={`composer-dock ${className}`.trim()} ref={ref}>
+      {children}
+    </div>
+  );
 }

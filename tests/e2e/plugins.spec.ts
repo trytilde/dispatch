@@ -6,6 +6,8 @@ function chatKitRealtimeBootstrap(sidebar: { items: unknown[]; next_page_token?:
 }
 
 function nativePluginResourceKey(path: string) {
+  if (path.endsWith("/api/tilde/user-tools/mcp/tool-providers")) return "tool_providers";
+  if (path.endsWith("/api/tilde/user-tools/skills")) return "skills";
   if (path.endsWith("/api/tilde/mcp/available-tool-groups")) return "tool_providers";
   if (path.endsWith("/api/tilde/mcp/tool-group")) return "tool_accounts";
   if (path.endsWith("/api/tilde/mcp/mcp-server")) return "mcp_servers";
@@ -629,14 +631,18 @@ test.beforeEach(async ({ page }) => {
           skills: registrySkills(agentId),
         })),
       };
-      await route.fulfill({ json: { items: catalog[resourceKey] } });
+      await route.fulfill({
+        json: path.includes("/user-tools/")
+          ? { ...catalog, managed_providers: [] }
+          : { items: catalog[resourceKey] },
+      });
       return;
     }
     if (path.endsWith("/api/tilde/mcp/provider-catalog") && method === "GET") {
       await route.fulfill({ json: { items: [] } });
       return;
     }
-    if (path.endsWith("/api/tilde/provider-setup/start") && method === "POST") {
+    if (path.endsWith("/provider-setup/start") && method === "POST") {
       googleAccountCreated = true;
       await route.fulfill({
         json: {
@@ -646,7 +652,24 @@ test.beforeEach(async ({ page }) => {
             "google_mail",
             "google_mail_managed_oauth",
           ),
-          next_action: { type: "redirect", url: "about:blank" },
+          setup_id: "mcp:google-mail-work",
+          next_action: { type: "redirect", url: "https://oauth.example.test/authorize" },
+        },
+      });
+      return;
+    }
+    if (path.includes("/provider-setup/") && path.endsWith("/resume") && method === "POST") {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      await route.fulfill({
+        json: {
+          setup_id: "mcp:google-mail-work",
+          resource: account(
+            "google-mail-work",
+            "Work Gmail",
+            "google_mail",
+            "google_mail_managed_oauth",
+          ),
+          next_action: { type: "complete" },
         },
       });
       return;
@@ -933,7 +956,7 @@ test("manages tools and skills by bot", async ({ page }) => {
   const createRequest = page.waitForRequest(
     (request) =>
       request.method() === "POST" &&
-      new URL(request.url()).pathname.endsWith("/api/tilde/provider-setup/start"),
+      new URL(request.url()).pathname.endsWith("/provider-setup/start"),
   );
   await continueButton.click();
   expect((await createRequest).postDataJSON()).toMatchObject({

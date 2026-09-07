@@ -1,0 +1,17 @@
+---
+name: tilde-connectors
+description: Discover existing connector accounts, choose user or bot ownership, and complete native OAuth or managed credential setup.
+---
+
+# Enable connections
+
+Read the hosted Tilde `enable-connections` skill before acting. It is the canonical process guide: https://docs.trytilde.ai/llms/connections.md.
+
+1. Identify the authenticated target user and your agent bundle. Search enabled capabilities for both scopes and verify the correct account. Reuse an already usable account without prompting for setup again.
+2. If a new account is needed, decide whether it belongs to the user or this bot. If unclear, ask whether other bots should have access: yes generally means personal/user, no generally means bot-owned. Preserve that choice in native resource creation and MCP mappings.
+3. Discover provider and credential-source IDs, then invoke native Tilde creation/brokering. Do not call a preliminary account-picker tool or create a capability proposal. The pending resource and `connector_setup_required` result drive the enable-provider card.
+4. In API chat clients, the card opens secure setup modals for that existing resource. In WhatsApp, iMessage, Slack and other external channels, invoke sendMessage with the server-returned broker or hosted setup URL. Never invent URLs or request secrets in chat.
+5. Wait for native setup completion. Enable only required tools and map them to the selected MCP. Use personal resource APIs for personal accounts; use your own bundle for bot-owned resources. Native permissions apply to every call.
+6. Verify account status and mappings, then resume the task. Reconcile existing IDs before retrying partially completed operations.
+
+Use speaker-scoped federation to access user tools. Do not copy user credentials into an agent bundle, silently change ownership, or widen permissions to bypass an authorization failure.

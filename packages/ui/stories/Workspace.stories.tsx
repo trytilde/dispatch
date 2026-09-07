@@ -1,32 +1,26 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { createRef, useRef, useState } from "react";
 import {
   AgentAvatar,
   AgentListItem,
   AgentSearchDialog,
-  ChatComposer,
   ChatHeader,
   ChatPane,
   ComputerIcon,
-  ConversationMessage,
-  ConversationSurface,
   ListIcon,
   MoreIcon,
   PlusIcon,
   ReplyIcon,
-  ScrollToLatestButton,
   SearchIcon,
   SendIcon,
-  ThinkingIndicator,
   useWorkspaceLayout,
   WorkspaceAccount,
   WorkspaceShell,
   WorkspaceSidebar,
   ClockIcon,
-} from "../src/index.js";
+} from "@tryopenbot/ui";
 
 const meta = {
-  title: "OpenBot/Workspace",
+  title: "Dispatch/Workspace",
   parameters: { layout: "centered" },
 } satisfies Meta;
 
@@ -116,101 +110,6 @@ export const Sidebar: Story = {
         searchValue=""
         selectedAgentId="hello-world"
       />
-    </div>
-  ),
-};
-
-export const Header: Story = {
-  render: () => (
-    <div style={{ width: 720 }}>
-      <ChatHeader
-        agentId="hello-world"
-        agentName="Hello World"
-        computerOpen
-        onToggleComputer={noop}
-      />
-    </div>
-  ),
-};
-
-export const Message: Story = {
-  render: () => (
-    <div style={{ width: 620 }}>
-      <ConversationMessage
-        createdAt="2026-08-15T12:00:00Z"
-        onCopy={noop}
-        onReply={noop}
-        onStartThread={noop}
-        onToggleMenu={noop}
-        role="agent"
-      >
-        <p>I found the answer and organized the result.</p>
-      </ConversationMessage>
-    </div>
-  ),
-};
-
-export const Thinking: Story = {
-  render: () => <ThinkingIndicator>Working through the request</ThinkingIndicator>,
-};
-
-function ComposerExample() {
-  const [draft, setDraft] = useState("Draft a concise launch plan");
-  return (
-    <div style={{ width: 680 }}>
-      <ChatComposer
-        agentAvailable
-        attachments={[]}
-        busy={false}
-        draft={draft}
-        dragging={false}
-        expanded
-        error=""
-        fileInputRef={createRef<HTMLInputElement>()}
-        inputRef={createRef<HTMLTextAreaElement>()}
-        onCancelReply={noop}
-        onDraftChange={setDraft}
-        onDragStateChange={noop}
-        onFilesAdded={noop}
-        onRemoveAttachment={noop}
-        onStop={noop}
-        onSubmit={(event) => event.preventDefault()}
-        submitting={false}
-      />
-    </div>
-  );
-}
-
-export const Composer: Story = { render: () => <ComposerExample /> };
-
-function SurfaceExample() {
-  const ref = useRef<HTMLDivElement>(null);
-  return (
-    <div style={{ height: 300, width: 620 }}>
-      <ConversationSurface onScroll={noop} scrollRef={ref}>
-        <div className="message-list">
-          <ConversationMessage createdAt="2026-08-15T12:00:00Z" role="agent">
-            A reusable conversation surface.
-          </ConversationMessage>
-        </div>
-      </ConversationSurface>
-    </div>
-  );
-}
-
-export const Conversation: Story = { render: () => <SurfaceExample /> };
-export const ScrollToLatest: Story = { render: () => <ScrollToLatestButton onClick={noop} /> };
-export const ChatPaneSurface: Story = {
-  render: () => (
-    <div style={{ height: 300, width: 620 }}>
-      <ChatPane>
-        <ChatHeader
-          agentId="hello-world"
-          agentName="Hello World"
-          computerOpen={false}
-          onToggleComputer={noop}
-        />
-      </ChatPane>
     </div>
   ),
 };

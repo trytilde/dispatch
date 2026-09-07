@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 import { seedCompletedOnboarding } from "./onboarding-state.js";
 
 function chatKitRealtimeBootstrap(items: unknown[]) {
@@ -6,6 +6,8 @@ function chatKitRealtimeBootstrap(items: unknown[]) {
 }
 
 function nativePluginResourceKey(path: string) {
+  if (path.endsWith("/api/tilde/user-tools/mcp/tool-providers")) return "tool_providers";
+  if (path.endsWith("/api/tilde/user-tools/skills")) return "skills";
   if (path.endsWith("/api/tilde/mcp/available-tool-groups")) return "tool_providers";
   if (path.endsWith("/api/tilde/mcp/tool-group")) return "tool_accounts";
   if (path.endsWith("/api/tilde/mcp/mcp-server")) return "mcp_servers";
@@ -116,6 +118,7 @@ test("lists the user's continuous chat and the agent's named threads", async ({ 
   const messageRequests: string[] = [];
   const defaultUpdatedAt = "2026-08-25T08:00:00.000Z";
   await page.route("**/api/chat/**", async (route) => {
+    if (await routeSessionMetadata(route)) return;
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/workspace/bootstrap")) {
       await route.fulfill({
@@ -530,6 +533,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   });
 
   await page.route("**/api/chat/**", async (route) => {
+    if (await routeSessionMetadata(route)) return;
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (path.endsWith("/workspace/bootstrap")) {
@@ -922,7 +926,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   await page.keyboard.press("Control+b");
   await expect(page.locator(".rail")).toHaveCSS("width", "400px");
   await expect(page.locator("[data-menu-row] strong").first()).toBeVisible();
-  await expect(page.getByText("Working session")).toHaveCount(0);
+  await expect(page.locator(".chat-header").getByText("Working session")).toBeVisible();
   await expect(page.locator(".message-list").getByText("Ready when you are.")).toBeVisible();
   await expect(
     page.locator(".message-list").getByText("Streaming preview", { exact: true }),
@@ -997,7 +1001,7 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
   }
   expect(queueBounds.x + queueBounds.width).toBeLessThanOrEqual(floatingPreviewBounds.x - 16);
   await page.getByRole("button", { name: "Edit queued message" }).click();
-  await expect(page.getByRole("textbox", { name: "Message", exact: true })).toHaveValue(
+  await expect(page.getByRole("textbox", { name: "Message", exact: true })).toHaveText(
     "Queued follow-up",
   );
   await page.getByLabel("Add photos and files").click();
@@ -1013,15 +1017,24 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
     page.locator(".message-list").getByText("The file is clear and complete.", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: /Thinking I’ll inspect the attachment before answering/ }),
+    page
+      .getByRole("group", { name: "Chat event", exact: true })
+      .getByText("Inspecting the attachment", { exact: true }),
   ).toBeVisible();
   await expect(
     page
       .getByLabel("Agent message")
       .filter({ hasText: "I’ll inspect the attachment before answering." }),
-  ).toHaveCount(0);
+  ).toHaveCount(1);
+  await expect(page.locator(".chat-event .message-bubble")).toHaveCount(0);
   await expect(page.getByText("Read this file", { exact: true })).toBeVisible();
-  await expect(page.getByText("Read file")).toBeVisible();
+  const toolRow = page.locator(".tool-call-event").first();
+  await expect(toolRow).not.toContainText("Read file");
+  await toolRow.getByRole("button", { name: "Expand tool details" }).click();
+  await expect(toolRow.locator(".tool-pattern-input")).toContainText("$");
+  await expect(toolRow.locator(".tool-pattern-output")).toContainText("bytes");
+  await expect(toolRow).not.toContainText("Input");
+  await expect(toolRow).not.toContainText("Output");
   await page.getByRole("button", { name: /screenshot.png/ }).click();
   const mediaViewer = page.getByRole("dialog", { name: "Media preview" });
   await expect(mediaViewer).toBeVisible();
@@ -1039,28 +1052,12 @@ test("streams rich messages and uploads a file through Tilde ChatKit", async ({ 
     "https://github.com/login/oauth/authorize?client_id=openbot-test",
   );
   await page.getByLabel("Agent message").first().hover();
-  await page.getByLabel("Reply").first().click();
-  await expect(page.getByText("Replying to Hello World")).toBeVisible();
-  await page.getByLabel("Cancel reply").click();
-  await page.getByLabel("Agent message").first().hover();
-  await page.getByLabel("More message actions").first().click({ force: true });
-  await page.getByRole("menuitem", { name: "Start a thread" }).click();
-  const exchange = page.getByRole("dialog", { name: "Agent handoff" });
-  await expect(exchange).toBeVisible();
-  await expect(
-    exchange.getByRole("paragraph").filter({ hasText: "Ready when you are." }),
-  ).toBeVisible();
-  await expect(exchange.getByText("Replying to Hello World")).toBeVisible();
-  await expect(exchange.locator(".thread-overlay-sheet")).toHaveCSS(
-    "animation-timing-function",
-    "linear(0 0%, 0.01588 2%, 0.05618 4%, 0.11201 6%, 0.1768 8%, 0.2458 10%, 0.31562 12%, 0.38392 14%, 0.44914 16%, 0.51029 18%, 0.56683 20%, 0.61852 22%, 0.66534 24%, 0.70743 26%, 0.74501 28%, 0.77838 30%, 0.80788 32%, 0.83383 34%, 0.85658 36%, 0.87645 38%, 0.89376 40%, 0.92183 44%, 0.94282 48%, 0.95838 52%, 0.96984 56%, 0.97823 60%, 0.98435 64%, 0.98878 68%, 0.99198 72%, 0.99594 80%, 0.99829 90%, 1 100%)",
-  );
-  await page.keyboard.press("Escape");
-  await expect(exchange).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Reply", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "More message actions" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Toggle Computer pane" }).click();
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const selector of [".message-list", "text=/tool call/", ".connection-card", ".composer"]) {
+  for (const selector of [".message-list", ".tool-call-event", ".connection-card", ".composer"]) {
     const bounds = await page.locator(selector).first().boundingBox();
     if (!bounds) throw new Error(`${selector} is not visible in the mobile chat`);
     expect(bounds.x).toBeGreaterThanOrEqual(0);
@@ -1084,6 +1081,7 @@ test("creates a bot and sends its first message", async ({ page }) => {
     await route.fulfill({ contentType: "text/html", body: "<main>Agent desktop</main>" });
   });
   await page.route("**/api/chat/**", async (route) => {
+    if (await routeSessionMetadata(route)) return;
     const request = route.request();
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/workspace/bootstrap")) {
@@ -1206,7 +1204,7 @@ test("creates a bot and sends its first message", async ({ page }) => {
   await expect(page.locator('.agent-setup-content[data-avatar-id="new-bot-0-2"]')).toBeVisible();
   await expect(page.locator('[data-menu-row][aria-current="page"]')).toContainText("Reviewer");
   await expect(page.getByRole("heading", { name: "Reviewer" })).toBeVisible();
-  const composer = page.getByPlaceholder("Write a message…");
+  const composer = page.getByRole("textbox", { name: "Message", exact: true });
   await composer.fill("Hello from the test");
   await composer.press("Enter");
   await expect.poll(() => firstMessage).toBe("Hello from the test");
@@ -1225,6 +1223,7 @@ test("queues another turn while the agent is busy", async ({ page }) => {
   });
 
   await page.route("**/api/chat/**", async (route) => {
+    if (await routeSessionMetadata(route)) return;
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname;
@@ -1529,7 +1528,9 @@ test("configures a connector through the in-chat account picker", async ({ page 
         skill_registries: [],
       };
       await route.fulfill({
-        json: { items: catalog[resourceKey] },
+        json: path.includes("/user-tools/")
+          ? { ...catalog, managed_providers: [] }
+          : { items: catalog[resourceKey] },
       });
       return;
     }
@@ -1560,6 +1561,7 @@ test("configures a connector through the in-chat account picker", async ({ page 
   });
 
   await page.route("**/api/chat/**", async (route) => {
+    if (await routeSessionMetadata(route)) return;
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (path.endsWith("/workspace/bootstrap")) {
@@ -1677,6 +1679,7 @@ test.fixme("shows the computer boot stage", async ({ page }) => {
 async function routeDefaultWorkspace(page: Page): Promise<void> {
   const now = new Date().toISOString();
   await page.route("**/api/chat/**", async (route) => {
+    if (await routeSessionMetadata(route)) return;
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/workspace/bootstrap")) {
       await route.fulfill({
@@ -1809,5 +1812,268 @@ async function routeChatKitWorkspaceSocket(
         websocket_url: websocketUrl,
       },
     });
+  });
+}
+
+async function routeSessionMetadata(route: Route): Promise<boolean> {
+  const path = new URL(route.request().url()).pathname;
+  if (route.request().method() !== "GET") return false;
+  if (path.endsWith("/chat-channels")) {
+    await route.fulfill({ json: [] });
+    return true;
+  }
+  if (/\/sessions\/[^/]+\/participants$/.test(path)) {
+    await route.fulfill({
+      json: [
+        {
+          participant_type: "human",
+          participant_handle: "owner",
+          membership_source: "explicit",
+          role: "owner",
+          principal_user_id: "e2e-owner",
+          joined_at: "2026-09-07",
+          inbox: { id: "ui-inbox", provider_id: "chatkit.channel.vercel-ui" },
+          instance: { id: "owner-instance", user_display_name: "E2E Owner" },
+        },
+      ],
+    });
+    return true;
+  }
+  if (/\/sessions\/[^/]+\/invitations$/.test(path)) {
+    await route.fulfill({ json: [] });
+    return true;
+  }
+  if (path.endsWith("/_identity/team-members")) {
+    await route.fulfill({ json: { items: [] } });
+    return true;
+  }
+  return false;
+}
+
+test("finds messages only in the current chat through Ctrl+F without resizing the header", async ({
+  page,
+}) => {
+  await routeDefaultWorkspace(page);
+  const now = "2026-09-07T10:00:00Z";
+  const message = {
+    id: "matching-message",
+    type: "ui",
+    session_id: "session-one",
+    role: "assistant",
+    created_at: now,
+    parts: [{ type: "text", text: "A needle marker in this conversation." }],
+  };
+  await page.route("**/api/chat/workspace/sessions/session-one/snapshot*", (route) =>
+    route.fulfill({
+      json: {
+        messages: {
+          items: Array.from({ length: 12 }, (_, index) => ({
+            ...message,
+            id: `recent-${index}`,
+            parts: [{ type: "text", text: `Recent message ${index}` }],
+          })),
+          next_page_token: "older-page",
+        },
+        participant_events: [],
+        queued_turns: { items: [] },
+        snapshot_revision: 0,
+      },
+    }),
+  );
+  const historyRequests: URL[] = [];
+  await page.route("**/api/chat/workspace/sessions/session-one/messages?*", (route) => {
+    historyRequests.push(new URL(route.request().url()));
+    return route.fulfill({ json: { items: [message] } });
+  });
+  const searches: URL[] = [];
+  await page.route("**/api/chat/workspace/search?*", (route) => {
+    searches.push(new URL(route.request().url()));
+    return route.fulfill({
+      json: {
+        items: [
+          {
+            kind: "message",
+            session: { id: "session-one", created_at: now, updated_at: now },
+            message,
+          },
+          {
+            kind: "message",
+            session: { id: "different-chat", created_at: now, updated_at: now },
+            message: { ...message, id: "foreign", session_id: "different-chat" },
+          },
+        ],
+      },
+    });
+  });
+  await page.goto("/");
+  await expect(
+    page.locator(".conversation").getByText("Recent message 11", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('[data-message-id="matching-message"]')).toHaveCount(0);
+  const before = await page.locator(".chat-header").boundingBox();
+  await page.keyboard.press("Control+f");
+  await page.getByRole("textbox", { name: "Find in chat", exact: true }).fill("needle");
+  await expect.poll(() => searches.length).toBe(1);
+  expect(searches[0]!.searchParams.get("session_id")).toBe("session-one");
+  await expect(page.locator(".chat-header .chat-find-bar [role=status]")).toHaveText("1/1");
+  await expect(page.locator('[data-message-id="matching-message"]')).toHaveClass(
+    /chat-find-current/,
+  );
+  expect(historyRequests[0]!.searchParams.get("next_page_token")).toBe("older-page");
+  await expect
+    .poll(() => page.evaluate(() => CSS.highlights.get("chat-find-match")?.size ?? 0))
+    .toBeGreaterThan(0);
+  await expect(page.locator('[data-message-id="matching-message"]')).toBeInViewport();
+  const after = await page.locator(".chat-header").boundingBox();
+  expect(after!.height).toBe(before!.height);
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".chat-find-bar")).toHaveCount(0);
+});
+
+test("renames chats and adds existing participants using the shared header runtime", async ({
+  page,
+}) => {
+  await routeDefaultWorkspace(page);
+  const now = "2026-09-07T10:00:00Z";
+  await page.route("**/api/chat/workspace/sessions/session-one/snapshot*", (route) =>
+    route.fulfill({
+      json: {
+        messages: { items: [] },
+        participant_events: [],
+        queued_turns: { items: [] },
+        snapshot_revision: 0,
+      },
+    }),
+  );
+  let renamed = "";
+  await page.route("**/api/chat/workspace/sessions/session-one/rename", (route) => {
+    renamed = route.request().postDataJSON().title;
+    return route.fulfill({
+      json: { id: "session-one", title: renamed, created_at: now, updated_at: now },
+    });
+  });
+  await page.route("**/api/chat/_identity/team-members?*", (route) =>
+    route.fulfill({
+      json: {
+        items: [
+          {
+            user: {
+              id: "alex",
+              display_name: "Alex",
+              email: "alex@example.test",
+              user_type: "human",
+            },
+          },
+        ],
+      },
+    }),
+  );
+  const members = [
+    {
+      participant_type: "human",
+      participant_handle: "owner",
+      membership_source: "explicit",
+      role: "owner",
+      principal_user_id: "e2e-owner",
+      joined_at: now,
+      inbox: { id: "ui-inbox", provider_id: "chatkit.channel.vercel-ui" },
+      instance: { id: "owner-instance", user_display_name: "Owner" },
+    },
+  ];
+  let added: Record<string, unknown> | undefined;
+  await page.route("**/api/chat/sessions/session-one/participants", (route) => {
+    if (route.request().method() === "POST") {
+      added = route.request().postDataJSON().participant;
+      const person = {
+        ...members[0]!,
+        role: "member",
+        principal_user_id: "alex",
+        participant_handle: "alex",
+        instance: { id: "alex-instance", user_display_name: "Alex" },
+      };
+      members.push(person);
+      return route.fulfill({ json: person });
+    }
+    return route.fulfill({ json: members });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Edit chat name" }).click();
+  await page.getByRole("textbox", { name: "Chat name", exact: true }).fill("Release plan");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect.poll(() => renamed).toBe("Release plan");
+  await expect(page.locator(".chat-header")).toContainText("Release plan");
+  await page.getByRole("button", { name: "Manage participants" }).click();
+  const dialog = page.getByRole("dialog", { name: "Participants", exact: true });
+  await expect(dialog.getByRole("listbox")).toHaveCount(0);
+  await dialog.getByRole("combobox", { name: "Search people and agents" }).fill("Alex");
+  await dialog.getByRole("option", { name: /Alex/ }).click();
+  await expect(dialog.getByRole("list", { name: "Current participants" })).toContainText("Alex");
+  expect(added).toMatchObject({
+    tilde_user_id: "alex",
+    inbox_id: "ui-inbox",
+    participant_type: "human",
+  });
+});
+
+for (const kind of ["external", "api"] as const) {
+  test(`enforces ${kind} session participation in the floating prompt`, async ({ page }) => {
+    await routeDefaultWorkspace(page);
+    const now = "2026-09-07T10:00:00Z";
+    const provider = kind === "external" ? "chatkit.channel.slack" : "chatkit.channel.vercel-ui";
+    let joined = false;
+    const member = (userId: string) => ({
+      participant_type: "human",
+      participant_handle: userId,
+      membership_source: kind === "external" ? "provider" : "explicit",
+      role: "member",
+      principal_user_id: userId,
+      joined_at: now,
+      inbox: {
+        id: "source-inbox",
+        provider_id: provider,
+        display_name: kind === "external" ? "Slack" : "API",
+      },
+      instance: { id: `${userId}-instance`, user_display_name: userId },
+    });
+    await page.route("**/api/chat/workspace/sessions/session-one/snapshot*", (route) =>
+      route.fulfill({
+        json: {
+          messages: { items: [] },
+          participant_events: [],
+          queued_turns: { items: [] },
+          snapshot_revision: 0,
+        },
+      }),
+    );
+    await page.route("**/api/chat/sessions/session-one/participants", (route) =>
+      route.fulfill({ json: [member("other"), ...(joined ? [member("e2e-owner")] : [])] }),
+    );
+    let joinRequest: Record<string, unknown> | undefined;
+    await page.route("**/api/chat/sessions/session-one/join", (route) => {
+      joinRequest = route.request().postDataJSON();
+      joined = true;
+      return route.fulfill({ json: member("e2e-owner") });
+    });
+    await page.goto("/");
+    const prompt = page.locator(".chat-prompt");
+    await expect(prompt.getByRole("button", { name: "Send message", exact: true })).toBeDisabled();
+    await expect(prompt.getByRole("textbox", { name: "Message", exact: true })).toHaveCount(0);
+    if (kind === "external") {
+      await expect(prompt).toContainText("Chat sessions can only be messaged from");
+      await expect(prompt).toContainText("Slack");
+      await expect(page.locator(".chat-header .session-source")).toContainText("Slack");
+      expect(joinRequest).toBeUndefined();
+    } else {
+      await expect(prompt).toContainText("You must join this session");
+      await prompt.getByRole("link", { name: "here", exact: true }).click();
+      await expect(prompt.getByRole("textbox", { name: "Message", exact: true })).toBeEnabled();
+      expect(joinRequest).toMatchObject({
+        participant: {
+          inbox_id: "source-inbox",
+          tilde_user_id: "e2e-owner",
+          participant_type: "human",
+        },
+      });
+    }
   });
 }

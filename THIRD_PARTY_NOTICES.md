@@ -9,7 +9,8 @@ copyright and license status.
 - Retrieved: 2026-08-17, directly from the site's published component source
   (the payload behind its "Copy code" affordance)
 - Upstream description: copy-paste components for AI-native interfaces
-- Files: `packages/ui/src/beautiful-ui/upstream/`
+- Retained files: the theme/license in `packages/ui/src/beautiful-ui/upstream/`
+  and production reconstructions/forks in its sibling `atoms/` and `blocks/` directories.
 - License: MIT, copyright (c) 2026 Shane Levine, published at
   <https://www.beautifului.dev/license>; preserved in
   `packages/ui/src/beautiful-ui/upstream/LICENSE`
@@ -20,7 +21,8 @@ An earlier 2026-08-12 retrieval came from the
 it. Per-file SHA-256 values at retrieval and the small recorded OpenBot
 modifications (analytics removal, import-path rewrites) are documented in
 `packages/ui/src/beautiful-ui/PROVENANCE.md`. OpenBot-specific composition is
-kept outside the upstream directory.
+kept outside the upstream directory. Unused React demos were removed in September
+2026; the retained tool/reasoning forks and attribution remain.
 
 ## shadcn/ui
 
@@ -41,12 +43,6 @@ kept outside the upstream directory.
   utilities remapped as above; a type cast added for the
   `streamdown`/`@streamdown/*` shiki version skew.
 
-## glimm
-
-- Source: <https://www.npmjs.com/package/glimm>
-- License: MIT
-- Used by the vendored Beautiful UI `prompt-bar` component; declared as a
-  regular npm dependency of `packages/ui`.
 
 ## Cua Driver and GUI Automation skill
 

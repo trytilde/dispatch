@@ -3289,170 +3289,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List safe extension proposals
-         * @description Lists redacted proposal review snapshots for the authorized team.
-         */
-        get: operations["chatkit-list-self-extension-proposals"];
-        put?: never;
-        /**
-         * Propose a safe agent extension
-         * @description Creates a durable, server-validated proposal with a redacted diff, permission and credential requirements, cost and egress implications, affected audiences, and exact rollback plan. The requesting agent cannot approve or execute it.
-         */
-        post: operations["chatkit-propose-self-extension"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Inspect a safe extension proposal
-         * @description Returns the complete redacted review document and durable execution receipts.
-         */
-        get: operations["chatkit-get-self-extension-proposal"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Approve a safe extension proposal
-         * @description Records an explicit human owner/admin approval and queues durable execution. Agent callers cannot approve.
-         */
-        post: operations["chatkit-approve-self-extension-proposal"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Cancel a safe extension proposal
-         * @description Cancels a pending or approved proposal before execution starts.
-         */
-        post: operations["chatkit-cancel-self-extension-proposal"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/decision": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Answer a capability-change approval
-         * @description Atomically records an authenticated human Yes/No against the exact proposal hash and generation, completes its linked Human Approval, and queues approved work.
-         */
-        post: operations["chatkit-decide-capability-change"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/outputs/claim": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Claim safe extension outputs
-         * @description Returns and consumes encrypted one-time execution values to an explicit human owner/admin reviewer. Agent callers cannot claim outputs.
-         */
-        post: operations["chatkit-claim-self-extension-proposal-outputs"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/reject": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Reject a safe extension proposal
-         * @description Records an explicit human owner/admin rejection without creating resources.
-         */
-        post: operations["chatkit-reject-self-extension-proposal"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/rollback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Roll back a safe extension proposal
-         * @description Queues durable reverse-order cleanup of only resources recorded as created by this proposal.
-         */
-        post: operations["chatkit-rollback-self-extension-proposal"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/team/{team_id}/chatkit/session": {
         parameters: {
             query?: never;
@@ -6203,6 +6039,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/mcp/tool-providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-tool-provider-inventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/mcp/tools": {
         parameters: {
             query?: never;
@@ -7870,6 +7722,22 @@ export interface paths {
          * @description Idempotently remove a principal grant while preserving a private owner.
          */
         delete: operations["remove_skill_visibility_grant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-skill-resource-inventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -11378,22 +11246,6 @@ export interface components {
             id?: string;
             token?: string;
         };
-        /** @description Model-visible capability confirmation. It deliberately contains no approval token. */
-        CapabilityChangeApproval: {
-            approval_id: string;
-            instructions: string;
-            /** Format: int64 */
-            proposal_generation: number;
-            proposal_hash: string;
-            proposal_id: string;
-            status: string;
-            title: string;
-        };
-        /**
-         * @description The only supported decisions for an inline capability confirmation.
-         * @enum {string}
-         */
-        CapabilityChangeDecision: "approve" | "reject";
         /**
          * @description Body used by root-specific ownership-change operations. The target owner is
          *     always the effective actor; APIs do not expose arbitrary user transfer.
@@ -12563,20 +12415,6 @@ export interface components {
             resource_server_credential_id?: null | components["schemas"]["WrappedUuidV4"];
             user_credential_id?: null | components["schemas"]["WrappedUuidV4"];
         };
-        /** @description Agent-authored intent submitted to the server for validation and previewing. */
-        CreateSelfExtensionProposalInner: {
-            category: components["schemas"]["SelfExtensionCategory"];
-            /** @description Provider/domain desired state. Plaintext credential fields are rejected. */
-            desired_state: components["schemas"]["WrappedJsonValue"];
-            /** Format: int64 */
-            expires_in_seconds?: number;
-            idempotency_key: string;
-            rationale: string;
-            requesting_agent_id: string;
-            run_id?: string | null;
-            session_id?: string | null;
-            title: string;
-        };
         /** @description Inner create fields for a ChatKit session. */
         CreateSessionInner: {
             authorization?: components["schemas"]["ResourceAuthorizationModes"];
@@ -13262,14 +13100,6 @@ export interface components {
         DebugAuthProfilesResponse: {
             profiles: string[];
         };
-        /** @description Exact client binding posted when a human presses Yes or No. */
-        DecideCapabilityChangeRequest: {
-            approval_id: string;
-            decision: components["schemas"]["CapabilityChangeDecision"];
-            /** Format: int64 */
-            proposal_generation: number;
-            proposal_hash: string;
-        };
         /** @description Request body for accepting or declining a room invitation. */
         DecideChatKitRoomInvitationRequestInner: {
             decision: components["schemas"]["ChatKitRoomInvitationDecision"];
@@ -13829,10 +13659,6 @@ export interface components {
             /** @enum {string} */
             type: "browser_session_handoff";
             ws_url: string;
-        } | {
-            proposal_id: string;
-            /** @enum {string} */
-            type: "capability_change";
         };
         HumanApprovalActionResponse: {
             approval: components["schemas"]["HumanApprovalAction"];
@@ -15128,20 +14954,6 @@ export interface components {
          * @enum {string}
          */
         ProductSubscriptionStatus: "inactive" | "sync_pending" | "trialing" | "active" | "past_due" | "suspended" | "canceled";
-        /** @description A required credential descriptor. It intentionally cannot carry a value. */
-        ProposalCredentialRequirement: {
-            brokered_by: string;
-            credential_type: string;
-            purpose: string;
-            required_fields?: string[];
-        };
-        /** @description One permission or audience expansion shown before approval. */
-        ProposalPermissionChange: {
-            permission: string;
-            plane: string;
-            principals?: string[];
-            reason: string;
-        };
         /** @description Response for setup or app provisioning lifecycle calls. */
         ProviderAppProvisioningResponse: {
             next_action: components["schemas"]["ProviderProvisioningNextAction"];
@@ -16144,71 +15956,6 @@ export interface components {
         SelectDebugAuthProfileRequest: {
             profile: string;
         };
-        /**
-         * @description Resource families an agent may propose but never directly provision.
-         * @enum {string}
-         */
-        SelfExtensionCategory: "connector" | "mcp_server" | "skill_registry" | "custom_tool" | "agent" | "memory_bank" | "wiki";
-        /** @description Server-authored review document rendered by every client without category branches. */
-        SelfExtensionPreview: {
-            affected_agents?: string[];
-            affected_users?: string[];
-            cost_summary: string;
-            credentials?: components["schemas"]["ProposalCredentialRequirement"][];
-            egress_destinations?: string[];
-            permissions?: components["schemas"]["ProposalPermissionChange"][];
-            /** @description Concrete desired-state diff with secret references but no secret values. */
-            resource_diff: components["schemas"]["WrappedJsonValue"];
-            rollback_plan: string;
-            security_summary: string;
-        };
-        /** @description Public proposal snapshot. It never returns worker leases or secret material. */
-        SelfExtensionProposal: {
-            /** @description Secret-free binding used by clients to render and submit the exact approval. */
-            approval: components["schemas"]["CapabilityChangeApproval"];
-            approved_by_user_id?: string | null;
-            calling_subject_id: string;
-            category: components["schemas"]["SelfExtensionCategory"];
-            continuation?: null | components["schemas"]["WrappedJsonValue"];
-            created_at: components["schemas"]["WrappedChronoDateTime"];
-            desired_state: components["schemas"]["WrappedJsonValue"];
-            error_message?: string | null;
-            expires_at: components["schemas"]["WrappedChronoDateTime"];
-            /** Format: int64 */
-            generation: number;
-            id: string;
-            org_id: string;
-            outputs_available: boolean;
-            preview: components["schemas"]["SelfExtensionPreview"];
-            rationale: string;
-            requesting_agent_id: string;
-            requesting_user_id?: string | null;
-            resources?: components["schemas"]["SelfExtensionResource"][];
-            run_id?: string | null;
-            session_id?: string | null;
-            status: components["schemas"]["SelfExtensionStatus"];
-            team_id: string;
-            title: string;
-            updated_at: components["schemas"]["WrappedChronoDateTime"];
-        };
-        /** @description One-time execution values, returned only to an authorized human reviewer. */
-        SelfExtensionProposalOutputs: {
-            values?: {
-                [key: string]: string;
-            };
-        };
-        /** @description A resource receipt used for idempotency and exact rollback ownership. */
-        SelfExtensionResource: {
-            created_by_proposal: boolean;
-            id: string;
-            key: string;
-            kind: string;
-        };
-        /**
-         * @description Durable proposal lifecycle. Execution and rollback are leased worker states.
-         * @enum {string}
-         */
-        SelfExtensionStatus: "pending" | "approved" | "executing" | "executed" | "rejected" | "cancelled" | "expired" | "rollback_queued" | "rolling_back" | "rolled_back" | "error";
         SelfProfileAvatarResponse: {
             avatar: components["schemas"]["UserAvatar"];
         };
@@ -16600,6 +16347,11 @@ export interface components {
             team_id: string;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
         };
+        SkillRegistryMembershipView: {
+            agent_id?: string | null;
+            id: components["schemas"]["WrappedUuidV4"];
+            skill_ids: components["schemas"]["WrappedUuidV4"][];
+        };
         SkillRegistryPaginatedResponse: {
             items: components["schemas"]["SkillRegistry"][];
             next_page_token?: string;
@@ -16610,6 +16362,23 @@ export interface components {
             enabled_skills?: components["schemas"]["EnabledSkillsSpec"];
             id?: string | null;
             name?: string | null;
+        };
+        SkillResourceInventory: {
+            skill_providers: components["schemas"]["ProxiedSkillProvider"][];
+            skill_registries: components["schemas"]["SkillRegistryMembershipView"][];
+            skills: components["schemas"]["SkillResourceView"][];
+        };
+        SkillResourceView: {
+            assigned_agent_ids: string[];
+            description: string;
+            enabled_for_personal: boolean;
+            id: components["schemas"]["WrappedUuidV4"];
+            name: string;
+            personal_user_id?: string | null;
+            source_commit_hash?: string | null;
+            source_kind: string;
+            source_path?: string | null;
+            source_provider_id?: string | null;
         };
         SkillSummary: {
             description: string;
@@ -17109,6 +16878,24 @@ export interface components {
          * @enum {string}
          */
         ToolInvocationState: "input-streaming" | "input-available" | "approval-requested" | "approval-responded" | "output-available" | "output-error" | "output-denied";
+        ToolProviderAccountView: {
+            assigned_agent_ids: string[];
+            credential_source_type_id: string;
+            display_name: string;
+            enabled_for_personal: boolean;
+            enabled_tool_source_type_ids: string[];
+            id: string;
+            personal_user_id?: string | null;
+            status: string;
+            tool_group_source_type_id: string;
+        };
+        ToolProviderInventory: {
+            managed_providers: components["schemas"]["McpProviderCatalogEntry"][];
+            mcp_servers: components["schemas"]["McpServerInstanceSerializedWithFunctions"][];
+            proxied_mcp_servers: components["schemas"]["ProxiedMcpServerListItem"][];
+            tool_accounts: components["schemas"]["ToolProviderAccountView"][];
+            tool_providers: components["schemas"]["ToolGroupSourceSerialized"][];
+        };
         ToolSourceSerialized: {
             annotations?: null | components["schemas"]["WrappedJsonValue"];
             categories: string[];
@@ -25945,214 +25732,6 @@ export interface operations {
             };
         };
     };
-    "chatkit-list-self-extension-proposals": {
-        parameters: {
-            query?: {
-                status?: components["schemas"]["SelfExtensionStatus"];
-                requesting_agent_id?: string;
-                page_size?: number;
-            };
-            header?: never;
-            path: {
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"][];
-                };
-            };
-        };
-    };
-    "chatkit-propose-self-extension": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateSelfExtensionProposalInner"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
-    "chatkit-get-self-extension-proposal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
-    "chatkit-approve-self-extension-proposal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
-    "chatkit-cancel-self-extension-proposal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
-    "chatkit-decide-capability-change": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DecideCapabilityChangeRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
-    "chatkit-claim-self-extension-proposal-outputs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposalOutputs"];
-                };
-            };
-        };
-    };
-    "chatkit-reject-self-extension-proposal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
-    "chatkit-rollback-self-extension-proposal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
     "list-sessions": {
         parameters: {
             query?: {
@@ -33193,6 +32772,30 @@ export interface operations {
             };
         };
     };
+    "list-tool-provider-inventory": {
+        parameters: {
+            query?: {
+                scope?: "all" | "personal" | "bots";
+                user_id?: string | null;
+            };
+            header?: never;
+            path: {
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolProviderInventory"];
+                };
+            };
+        };
+    };
     "list-tools": {
         parameters: {
             query: {
@@ -36293,6 +35896,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "list-skill-resource-inventory": {
+        parameters: {
+            query?: {
+                scope?: "all" | "personal" | "bots";
+                user_id?: string | null;
+            };
+            header?: never;
+            path: {
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillResourceInventory"];
+                };
             };
         };
     };

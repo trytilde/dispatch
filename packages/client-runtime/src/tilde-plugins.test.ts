@@ -4,9 +4,9 @@ import { createTildePluginsClient } from "./tilde-plugins.js";
 describe("Tilde plugin client", () => {
   it("prefers first-class providers, resolves their Tilde icons, and caches one snapshot", async () => {
     const requestJson = vi.fn(async (path: string) => {
-      if (path.startsWith("/api/tilde/mcp/available-tool-groups?"))
+      if (path.startsWith("/api/tilde/user-tools/mcp/tool-providers?"))
         return {
-          items: [
+          tool_providers: [
             {
               type_id: "stripe",
               name: "Stripe",
@@ -18,10 +18,7 @@ describe("Tilde plugin client", () => {
               icon_url: "/app/images/tool-provider-icons/agentmail.svg",
             },
           ],
-        };
-      if (path.startsWith("/api/tilde/mcp/tool-group?"))
-        return {
-          items: [
+          tool_accounts: [
             {
               id: "stripe-work",
               display_name: "Work",
@@ -29,16 +26,14 @@ describe("Tilde plugin client", () => {
               tool_group_source_type_id: "stripe",
             },
           ],
-        };
-      if (path === "/api/tilde/mcp/provider-catalog")
-        return {
-          items: [
+          mcp_servers: [],
+          proxied_mcp_servers: [],
+          managed_providers: [
             { id: "stripe", name: "Stripe", tool_provider_type_id: "managed_mcp:stripe" },
             { id: "agentmail", name: "AgentMail", tool_provider_type_id: "managed_mcp:agentmail" },
           ],
         };
-      if (path === "/api/tilde/skill-providers") return { items: [] };
-      return { items: [] };
+      return { skills: [], skill_registries: [], skill_providers: [] };
     });
     const client = createTildePluginsClient({
       requestJson,
@@ -56,36 +51,33 @@ describe("Tilde plugin client", () => {
     expect(second).toEqual(first);
     expect(
       requestJson.mock.calls.filter(([path]) =>
-        String(path).startsWith("/api/tilde/mcp/available-tool-groups?"),
+        String(path).startsWith("/api/tilde/user-tools/mcp/tool-providers?"),
       ),
     ).toHaveLength(1);
   });
 
-  it("loads and exhausts native Tilde resource pages", async () => {
-    const requestJson = vi.fn(async (path: string) => {
-      if (path.startsWith("/api/tilde/mcp/available-tool-groups?"))
-        return path.includes("next_page_token=providers-2")
-          ? { items: [{ type_id: "google_mail", name: "Google Mail" }] }
-          : {
-              items: [{ type_id: "github", name: "GitHub" }],
-              next_page_token: "providers-2",
-            };
-      if (path === "/api/tilde/skill-providers") return { items: [] };
-      if (path === "/api/tilde/mcp/provider-catalog") return { items: [] };
-      return { items: [] };
-    });
+  it("requests one inventory per resource and keeps scope caches separate", async () => {
+    const requestJson = vi.fn(async (path: string) =>
+      path.includes("/mcp/tool-providers?")
+        ? {
+            tool_providers: [{ type_id: "github", name: "GitHub" }],
+            tool_accounts: [],
+            mcp_servers: [],
+            proxied_mcp_servers: [],
+            managed_providers: [],
+          }
+        : { skills: [], skill_providers: [], skill_registries: [] },
+    );
     const client = createTildePluginsClient(requestJson);
-
-    await expect(client.getPluginsCatalog()).resolves.toMatchObject({
-      tools: [{ provider: { type_id: "github" } }, { provider: { type_id: "google_mail" } }],
-    });
+    await client.getPluginsCatalog("all");
+    await client.getPluginsCatalog("all");
+    expect(requestJson).toHaveBeenCalledTimes(2);
+    await client.getPluginsCatalog("personal");
+    expect(requestJson).toHaveBeenCalledTimes(4);
     expect(requestJson).toHaveBeenCalledWith(
-      "/api/tilde/mcp/available-tool-groups?deployment_alias=latest&include_global=true&page_size=100",
+      "/api/tilde/user-tools/mcp/tool-providers?scope=personal",
     );
-    expect(requestJson).toHaveBeenCalledWith(
-      "/api/tilde/mcp/available-tool-groups?deployment_alias=latest&include_global=true&page_size=100&next_page_token=providers-2",
-    );
-    expect(requestJson).not.toHaveBeenCalledWith("/api/tilde/openbot/plugins/catalog");
+    expect(requestJson).toHaveBeenCalledWith("/api/tilde/user-tools/skills?scope=personal");
   });
 
   it("uses provider setup directly for ordinary connectors", async () => {
@@ -207,5 +199,43 @@ describe("Tilde plugin client", () => {
     expect(
       calls.find((call) => call.path === "/api/tilde/mcp/proxied-mcp-servers")?.body,
     ).toContain('"resource_server_credential_id":"credential-one"');
+  });
+});
+
+describe("personal catalog ownership", () => {
+  it("deletes in the personal namespace and prevents treating federation as a team account binding", async () => {
+    const request = vi.fn(async (path: string) => {
+      if (path.includes("/mcp/tool-providers?"))
+        return {
+          tool_providers: [{ type_id: "github", name: "GitHub" }],
+          tool_accounts: [
+            {
+              id: "personal-account",
+              display_name: "Personal",
+              status: "active",
+              tool_group_source_type_id: "github",
+              personal_user_id: "owner",
+              enabled_for_personal: true,
+              assigned_agent_ids: ["assistant"],
+            },
+          ],
+          mcp_servers: [],
+          proxied_mcp_servers: [],
+          managed_providers: [],
+        };
+      if (path.includes("/user-tools/skills?"))
+        return { skills: [], skill_providers: [], skill_registries: [] };
+      return { items: [] };
+    });
+    const client = createTildePluginsClient(request);
+    await client.deleteConnectorAccounts(["personal-account"]);
+    expect(request).toHaveBeenCalledWith(
+      "/api/tilde/user-tools/personal/owner/mcp/tool-group/personal-account",
+      { method: "DELETE" },
+    );
+    await expect(
+      client.setToolAccountForAgent("personal-account", "assistant", false),
+    ).rejects.toThrow("inherited");
+    expect(request.mock.calls.some(([path]) => path.includes("enable-and-bind"))).toBe(false);
   });
 });

@@ -1,21 +1,3 @@
-export { default as ApprovalCard } from "./beautiful-ui/upstream/approval-card.js";
-export { default as BeautifulChatComposer } from "./beautiful-ui/upstream/chat-composer.js";
-export { default as BeautifulCodeBlock } from "./beautiful-ui/upstream/code-block.js";
-export { default as BeautifulSidebarNav } from "./beautiful-ui/upstream/sidebar-nav.js";
-export { default as ContextCards } from "./beautiful-ui/upstream/context-cards.js";
-export { default as DiffTable } from "./beautiful-ui/upstream/diff-table.js";
-export { default as FilterTable } from "./beautiful-ui/upstream/filter-table.js";
-export { default as FineTuneCard } from "./beautiful-ui/upstream/fine-tune-card.js";
-export { default as Flowchart } from "./beautiful-ui/upstream/flowchart.js";
-export { default as LoadingState } from "./beautiful-ui/upstream/loading-state.js";
-export { default as PromptBar } from "./beautiful-ui/upstream/prompt-bar.js";
-export { default as RecommendationCard } from "./beautiful-ui/upstream/recommendation-card.js";
-export { default as RecordsTable } from "./beautiful-ui/upstream/records-table.js";
-export { default as SearchList } from "./beautiful-ui/upstream/search-list.js";
-export { default as StreamingText } from "./beautiful-ui/upstream/streaming-text.js";
-export { default as TaskRows } from "./beautiful-ui/upstream/task-rows.js";
-export { default as ThinkingState } from "./beautiful-ui/upstream/thinking-state.js";
-export { default as ToolChips } from "./beautiful-ui/upstream/tool-chips.js";
 export {
   Button,
   type ButtonProps,
@@ -108,7 +90,6 @@ export {
 export { cn } from "./lib/utils.js";
 export { MenuIcon } from "lucide-react";
 export { Shimmer, type ShimmerProps } from "./beautiful-ui/atoms/shimmer.js";
-export { StreamText, type StreamTextProps } from "./beautiful-ui/atoms/stream-text.js";
 export { AgentWorkspacePanel, type AgentWorkspacePanelProps } from "./agent-workspace-panel.js";
 export { ComputerStagePlaceholder, type ComputerStagePlaceholderProps } from "./computer-stage.js";
 export {
@@ -200,6 +181,7 @@ export {
 export {
   CONNECTOR_SELECTION_TOOL_NAME,
   ConnectorAccountGrid,
+  ConnectorGlyph,
   type ConnectorAccountGridProps,
   type ConnectorAccountView,
   type ConnectorCredentialSourceView,
@@ -213,10 +195,6 @@ export {
   type ConnectorSelectionView,
 } from "./connector-components.js";
 export {
-  CapabilityApprovalCard,
-  type CapabilityApprovalCardProps,
-} from "./capability-approval-components.js";
-export {
   ConnectionCard,
   type ConnectionView,
   FileCard,
@@ -228,7 +206,6 @@ export {
   MediaViewer,
   type MediaViewerItem,
   type MediaViewerProps,
-  ReasoningCard,
   ToolCallCard,
 } from "./rich-message-components.js";
 export {
@@ -240,6 +217,7 @@ export {
 } from "./chat-components.js";
 export {
   ChatComposer,
+  ChatComposerDock,
   type ChatComposerProps,
   type ComposerAttachment,
   type ComposerReply,
@@ -253,31 +231,11 @@ export {
   type WorkspaceShellProps,
 } from "./workspace-shell.js";
 export {
-  ActivityEmpty,
   ActivityQueue,
   type ActivityQueueProps,
-  ActivityTimeline,
-  AgentActivity,
-  type AgentActivityProps,
   type ActivityQueueItem,
-  type ActivityTimelineItem,
-} from "./agent-activity.js";
-export {
-  DialogSurface,
-  type DialogSurfaceProps,
-  LocalToolPermissionCard,
-  type LocalToolPermissionCardProps,
-  LocalToolPermissionDock,
-  type LocalToolPermissionResolution,
-  type LocalToolPermissionStatus,
-  type PermissionAction,
-  type PermissionDisclosure,
-  PermissionRequestCard,
-  type PermissionRequestCardProps,
-  type PermissionStatus,
-  ThreadOverlay,
-  type ThreadOverlayProps,
-} from "./overlay-components.js";
+} from "./activity-queue.js";
+export { DialogSurface, type DialogSurfaceProps } from "./overlay-components.js";
 export {
   ChatFindBar,
   type ChatFindBarProps,
@@ -292,10 +250,7 @@ export {
   SystemEvent,
   SystemEventChip,
   SystemEventLabel,
-  TranscriptError,
   TranscriptLoading,
-  TranscriptNotice,
-  type TranscriptNoticeProps,
   TranscriptTimeSeparator,
   UnknownMessageCard,
   type UnknownMessageCardProps,
@@ -304,14 +259,9 @@ export {
 export {
   AudioPlayer,
   type AudioPlayerProps,
-  ComputerHandoffCard,
-  type ComputerHandoffCardProps,
-  type ComputerHandoffStatus,
   DiagramCard,
   type DiagramCardProps,
   type DiagramRenderState,
-  LinkHoverPreview,
-  type LinkHoverPreviewProps,
   LinkPreviewCard,
   type LinkPreviewCardProps,
   type LinkPreviewMetadata,
@@ -328,16 +278,10 @@ export {
   InputGroup,
   type InputGroupProps,
   KeyboardKey,
-  ModelPicker,
-  type ModelPickerOption,
-  type ModelPickerProps,
-  ScrollArea,
   SelectField,
   type SelectOption,
   StatusBadge,
   type StatusBadgeTone,
-  TextRoll,
-  VoiceWaveform,
 } from "./primitive-components.js";
 export {
   getThemePreference,
@@ -428,3 +372,130 @@ export {
   type RoutineSettingsProps,
   type RoutineSettingsRow,
 } from "./routine-settings.js";
+
+export {
+  SettingsShell,
+  SettingsContent,
+  SettingsNavigation,
+  AppearanceSettings,
+  type SettingsShellProps,
+  type SettingsContentProps,
+  type SettingsSection,
+  type SettingsDestination,
+} from "./settings-shell.js";
+export { Input } from "./components/ui/input.js";
+export { Textarea } from "./components/ui/textarea.js";
+export { Badge, badgeVariants } from "./components/ui/badge.js";
+export {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./components/ui/tooltip.js";
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectScrollDownButton,
+  SelectScrollUpButton,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "./components/ui/select.js";
+export { Separator } from "./components/ui/separator.js";
+
+export { PluginsSettingsView, type PluginsSettingsViewProps } from "./plugins-settings-view.js";
+
+export { ChatPrompt, PromptStatusBadge, type ChatPromptProps } from "./chat-prompt.js";
+
+export {
+  ParticipantAvatar,
+  ParticipantAvatarStack,
+  SessionIcon,
+  type AvatarParticipant,
+} from "./participant-avatars.js";
+export {
+  SessionParticipantsDialog,
+  type SessionParticipantsDialogProps,
+} from "./session-participants-dialog.js";
+
+export { SessionSourceIcon, SessionSourceBadge } from "./session-source.js";
+
+export {
+  ChatEventSurface,
+  ToolCallEvent,
+  ToolCallChain,
+  type ToolCallChainItem,
+  ToolSummaryEvent,
+} from "./chat-events.js";
+
+export { ChatMessage } from "./message-content.js";
+
+export { useChatFindHighlight } from "./chat-find-highlight.js";
+
+export { ConnectorEnableCard, type ConnectorEnableCardProps } from "./connector-enable-card.js";
+
+export { ChatConnectorDialog, type ChatConnectorDialogProps } from "./chat-connector-dialog.js";
+
+export {
+  PluginProviderCard,
+  type PluginProviderCardProps,
+  PluginItemRow,
+  type PluginItemRowProps,
+  PluginSearchField,
+  type PluginSearchFieldProps,
+  PluginCategorySection,
+  type PluginCategorySectionProps,
+  PluginCategoryFilter,
+  type PluginCategoryFilterProps,
+  PluginAgentFilter,
+  type PluginAgentFilterProps,
+  PluginCatalogSkeleton,
+} from "./plugins-catalog.js";
+export {
+  RoutineSettingsHeader,
+  type RoutineSettingsHeaderProps,
+  RoutineFilters,
+  type RoutineFiltersProps,
+  type RoutineStatusFilter,
+  RoutineSummary,
+  RoutineStatusBadge,
+  RoutineActionsMenu,
+  type RoutineActionsMenuProps,
+  RoutineTable,
+  type RoutineTableProps,
+  RoutineTableRow,
+  type RoutineTableRowProps,
+  RoutineDeleteDialog,
+  type RoutineDeleteDialogProps,
+} from "./routine-components.js";
+export { RoutineListItem, type RoutineListItemProps } from "./routines-section.js";
+
+export {
+  RoutineProviderCard,
+  type RoutineProviderCardProps,
+  RoutineConnectionRow,
+  type RoutineConnectionRowProps,
+} from "./signals-settings.js";
+
+export { ResourceScopeFilter } from "./resource-scope-filter.js";
+
+export {
+  Button as ControlButton,
+  buttonVariants as controlButtonVariants,
+} from "./components/ui/button.js";
+
+export { FormDialogContent, DialogHeader, DialogFooter } from "./form-dialog.js";
+
+export {
+  PageHeader,
+  SectionTitle,
+  ComingSoon,
+  ErrorNotice,
+  EmptyState,
+  LoadingRows,
+  StatusDot,
+  Field,
+} from "./screen-states.js";

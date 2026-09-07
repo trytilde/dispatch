@@ -1,3 +1,4 @@
+import type { ResourceScope } from "./contracts/plugins.js";
 import { z } from "zod";
 import type {
   McpProviderCatalogEntry,
@@ -6,7 +7,9 @@ import type {
   ProxiedSkillProvider,
   Skill,
   SkillRegistry,
-  ToolGroupInstanceListItem,
+  ToolProviderAccountView,
+  SkillResourceView,
+  SkillRegistryMembershipView,
   ToolGroupSourceSerialized,
 } from "@trytilde/api-client/generated";
 import { PluginsCatalogSchema, type PluginsCatalog } from "./contracts/plugins.js";
@@ -34,12 +37,12 @@ type NativeResource<T> = T & Record<string, unknown>;
 
 interface TildePluginResources {
   tool_providers: NativeResource<ToolGroupSourceSerialized>[];
-  tool_accounts: NativeResource<ToolGroupInstanceListItem>[];
+  tool_accounts: NativeResource<ToolProviderAccountView>[];
   mcp_servers: NativeResource<McpServerInstanceSerializedWithFunctions>[];
   proxied_mcp_servers: NativeResource<ProxiedMcpServerListItem>[];
-  skills: NativeResource<Skill>[];
+  skills: NativeResource<SkillResourceView>[];
   skill_providers: NativeResource<ProxiedSkillProvider>[];
-  skill_registries: NativeResource<SkillRegistry>[];
+  skill_registries: NativeResource<SkillRegistryMembershipView>[];
 }
 
 export function createTildePluginsClient(transport: RequestJson | TildePluginsTransport) {
@@ -50,23 +53,12 @@ export function createTildePluginsClient(transport: RequestJson | TildePluginsTr
       ? transport.apiBaseUrl()
       : transport.apiBaseUrl;
   };
-  let cachedCatalog: { expiresAt: number; value: Promise<PluginsCatalog> } | undefined;
+  let cachedCatalog:
+    | { scope: ResourceScope; expiresAt: number; value: Promise<PluginsCatalog> }
+    | undefined;
   const invalidateCatalog = () => {
     cachedCatalog = undefined;
   };
-  const listToolProviders = () =>
-    listNativeResources<ToolGroupSourceSerialized>(
-      requestJson,
-      "/api/tilde/mcp/available-tool-groups",
-      {
-        deployment_alias: "latest",
-        include_global: "true",
-      },
-    );
-  const listToolAccounts = () =>
-    listNativeResources<ToolGroupInstanceListItem>(requestJson, "/api/tilde/mcp/tool-group", {
-      include_global: "false",
-    });
   const listMcpServers = () =>
     listNativeResources<McpServerInstanceSerializedWithFunctions>(
       requestJson,
@@ -85,39 +77,42 @@ export function createTildePluginsClient(transport: RequestJson | TildePluginsTr
   const listSkillRegistries = () =>
     listNativeResources<SkillRegistry>(requestJson, "/api/tilde/skill-registry");
 
-  async function catalog() {
-    const [
-      toolProviders,
-      toolAccounts,
-      mcpServers,
-      proxiedMcpServers,
-      skills,
-      skillProviders,
-      skillRegistries,
-    ] = await Promise.all([
-      listToolProviders(),
-      listToolAccounts(),
-      listMcpServers(),
-      listProxiedMcpServers(),
-      listSkills(),
-      listSkillProviders(),
-      listSkillRegistries(),
+  async function catalog(scope: ResourceScope) {
+    const query = `scope=${scope}`;
+    const [tools, skills] = await Promise.all([
+      requestJson(`/api/tilde/user-tools/mcp/tool-providers?${query}`),
+      requestJson(`/api/tilde/user-tools/skills?${query}`),
     ]);
-    return {
-      tool_providers: toolProviders,
-      tool_accounts: toolAccounts,
-      mcp_servers: mcpServers,
-      proxied_mcp_servers: proxiedMcpServers,
-      skills,
-      skill_providers: skillProviders,
-      skill_registries: skillRegistries,
-    } satisfies TildePluginResources;
+    const toolData = z
+      .object({
+        tool_providers: z.array(RecordSchema),
+        tool_accounts: z.array(RecordSchema),
+        mcp_servers: z.array(RecordSchema),
+        proxied_mcp_servers: z.array(RecordSchema),
+        managed_providers: z.array(RecordSchema),
+      })
+      .parse(tools);
+    const skillData = z
+      .object({
+        skills: z.array(RecordSchema),
+        skill_providers: z.array(RecordSchema),
+        skill_registries: z.array(RecordSchema),
+      })
+      .parse(skills);
+    return { ...toolData, ...skillData } as unknown as TildePluginResources & {
+      managed_providers: NativeResource<McpProviderCatalogEntry>[];
+    };
   }
 
-  async function getPluginsCatalog(): Promise<PluginsCatalog> {
-    if (cachedCatalog && cachedCatalog.expiresAt > Date.now()) return await cachedCatalog.value;
-    const value = loadPluginsCatalog();
-    cachedCatalog = { expiresAt: Date.now() + 30_000, value };
+  async function getPluginsCatalog(
+    scope: ResourceScope = "all",
+    options: { refresh?: boolean } = {},
+  ): Promise<PluginsCatalog> {
+    if (options.refresh) invalidateCatalog();
+    if (cachedCatalog && cachedCatalog.scope === scope && cachedCatalog.expiresAt > Date.now())
+      return await cachedCatalog.value;
+    const value = loadPluginsCatalog(scope);
+    cachedCatalog = { scope, expiresAt: Date.now() + 30_000, value };
     try {
       return await value;
     } catch (error) {
@@ -126,17 +121,10 @@ export function createTildePluginsClient(transport: RequestJson | TildePluginsTr
     }
   }
 
-  async function loadPluginsCatalog(): Promise<PluginsCatalog> {
-    const [resources, managed] = await Promise.all([
-      catalog(),
-      requestJson("/api/tilde/mcp/provider-catalog"),
-    ]);
+  async function loadPluginsCatalog(scope: ResourceScope): Promise<PluginsCatalog> {
+    const resources = await catalog(scope);
     return PluginsCatalogSchema.parse(
-      projectPlugins(
-        resources,
-        ManagedProviderPageSchema.parse(managed).items as NativeResource<McpProviderCatalogEntry>[],
-        apiBaseUrl(),
-      ),
+      projectPlugins(resources, resources.managed_providers, apiBaseUrl()),
     );
   }
 
@@ -195,14 +183,21 @@ export function createTildePluginsClient(transport: RequestJson | TildePluginsTr
     },
 
     async deleteConnectorAccounts(accountIds: readonly string[]): Promise<void> {
-      const proxied = await listProxiedMcpServers();
+      const [proxied, inventory] = await Promise.all([listProxiedMcpServers(), catalog("all")]);
+      const personalOwners = new Map(
+        inventory.tool_accounts
+          .filter((account) => typeof account.personal_user_id === "string")
+          .map((account) => [text(account.id), text(account.personal_user_id)]),
+      );
       const proxiedIds = new Set(proxied.map((item) => text(record(item.tool_group_instance)?.id)));
       await Promise.all(
         accountIds.map((accountId) =>
           requestJson(
-            proxiedIds.has(accountId)
-              ? `/api/tilde/mcp/proxied-mcp-servers/${encodeURIComponent(accountId)}`
-              : `/api/tilde/mcp/tool-group/${encodeURIComponent(accountId)}`,
+            personalOwners.has(accountId)
+              ? `/api/tilde/user-tools/personal/${encodeURIComponent(personalOwners.get(accountId)!)}/mcp/tool-group/${encodeURIComponent(accountId)}`
+              : proxiedIds.has(accountId)
+                ? `/api/tilde/mcp/proxied-mcp-servers/${encodeURIComponent(accountId)}`
+                : `/api/tilde/mcp/tool-group/${encodeURIComponent(accountId)}`,
             { method: "DELETE" },
           ),
         ),
@@ -215,6 +210,17 @@ export function createTildePluginsClient(transport: RequestJson | TildePluginsTr
       agentId: string,
       enabled: boolean,
     ): Promise<void> {
+      const inventory = await catalog("all");
+      if (
+        inventory.tool_accounts.some(
+          (account) =>
+            text(account.id) === accountId && typeof account.personal_user_id === "string",
+        )
+      ) {
+        throw new Error(
+          "Personal accounts are inherited through the bot MCP server's personal-tool policy.",
+        );
+      }
       const server = (await listMcpServers()).find(
         (candidate) => text(candidate.agent_id) === agentId,
       );
@@ -496,7 +502,9 @@ function projectPlugins(
         .filter((account) => text(account.tool_group_source_type_id) === text(provider.type_id))
         .map((account) => ({
           ...serializeAccount(account),
-          assigned_agent_ids: assignedAgentIds(text(account.id), agentServers),
+          assigned_agent_ids: Array.isArray(account.assigned_agent_ids)
+            ? strings(account.assigned_agent_ids)
+            : assignedAgentIds(text(account.id), agentServers),
         })),
     }));
 
@@ -513,7 +521,9 @@ function projectPlugins(
         ...serializeAccount(account),
         display_name: text(record(item.server)?.display_name) || text(account.id),
         provider_type_id: providerId,
-        assigned_agent_ids: assignedAgentIds(text(account.id), agentServers),
+        assigned_agent_ids: Array.isArray(account.assigned_agent_ids)
+          ? strings(account.assigned_agent_ids)
+          : assignedAgentIds(text(account.id), agentServers),
       };
     });
     const native = tools.find(
@@ -574,7 +584,9 @@ function projectPlugins(
           ...serializeAccount(account),
           display_name: text(record(item.server)?.display_name) || text(account.id),
           provider_type_id: providerId,
-          assigned_agent_ids: assignedAgentIds(text(account.id), agentServers),
+          assigned_agent_ids: Array.isArray(account.assigned_agent_ids)
+            ? strings(account.assigned_agent_ids)
+            : assignedAgentIds(text(account.id), agentServers),
         };
       }),
     });
@@ -600,20 +612,26 @@ function serializeSkills(
     categories: strings(provider.categories).length ? strings(provider.categories) : ["other"],
     icon_key: trustedProviderIconKey(provider),
     skills: records(provider.skills).map((trustedSkill) => {
-      const materialized = catalog.skills.find(
+      const materialized = catalog.skills.filter(
         (skill) =>
           text(skill.source_provider_id) === text(provider.id) &&
           text(skill.source_path) === text(trustedSkill.source_path),
       );
-      const materializedId = text(materialized?.id);
-      if (materializedId) materializedTrustedIds.add(materializedId);
+      for (const skill of materialized) materializedTrustedIds.add(text(skill.id));
       return {
         id: trustedCatalogSkillId(text(provider.id), text(trustedSkill.id)),
         name: text(trustedSkill.name),
         description: text(trustedSkill.description),
-        assigned_agent_ids: materializedId
-          ? assignedSkillAgentIds(materializedId, agentRegistries)
-          : [],
+        enabled_for_personal: materialized.some((skill) => skill.enabled_for_personal === true),
+        assigned_agent_ids: [
+          ...new Set(
+            materialized.flatMap((skill) =>
+              Array.isArray(skill.assigned_agent_ids)
+                ? strings(skill.assigned_agent_ids)
+                : assignedSkillAgentIds(text(skill.id), agentRegistries),
+            ),
+          ),
+        ],
       };
     }),
   }));
@@ -632,7 +650,12 @@ function serializeSkills(
       id: text(skill.id),
       name: displaySkillName(text(skill.name), agentIds),
       description: text(skill.description),
-      assigned_agent_ids: assignedSkillAgentIds(text(skill.id), agentRegistries),
+      assigned_agent_ids: Array.isArray(skill.assigned_agent_ids)
+        ? strings(skill.assigned_agent_ids)
+        : assignedSkillAgentIds(text(skill.id), agentRegistries),
+      enabled_for_personal: skill.enabled_for_personal === true,
+      personal_user_id:
+        typeof skill.personal_user_id === "string" ? skill.personal_user_id : undefined,
     });
     grouped.set(category, group);
   }
@@ -669,6 +692,8 @@ function teamSkillProvider(
       name: string;
       description: string;
       assigned_agent_ids: string[];
+      enabled_for_personal?: boolean;
+      personal_user_id?: string;
     }>,
   };
 }
@@ -766,6 +791,12 @@ function serializeAccount(account: Record<string, unknown>) {
     id: text(account.id),
     display_name: text(account.display_name) || text(account.id),
     status: text(account.status) || "unknown",
+    ...(typeof account.enabled_for_personal === "boolean"
+      ? { enabled_for_personal: account.enabled_for_personal }
+      : {}),
+    ...(typeof account.personal_user_id === "string"
+      ? { personal_user_id: account.personal_user_id }
+      : {}),
     ...(text(account.tool_group_source_type_id)
       ? { provider_type_id: text(account.tool_group_source_type_id) }
       : {}),
@@ -791,7 +822,10 @@ function assignedSkillAgentIds(
   registries: ReadonlyMap<string, Record<string, unknown>>,
 ): string[] {
   return [...registries].flatMap(([agentId, registry]) =>
-    records(registry.skills).some((skill) => text(skill.id) === skillId) ? [agentId] : [],
+    strings(registry.skill_ids).includes(skillId) ||
+    records(registry.skills).some((skill) => text(skill.id) === skillId)
+      ? [agentId]
+      : [],
   );
 }
 

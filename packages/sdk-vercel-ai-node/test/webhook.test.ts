@@ -282,6 +282,70 @@ describe("chatKitEndpoint", () => {
     expect(response.headers.get("x-tilde-chatkit-response-mode")).toBe("tool");
   });
 
+  it("discovers custom connection tools and invokes them with server-bound coordinates", async () => {
+    const fetcher = vi.fn<typeof fetch>(async (_url, options) =>
+      options?.method === "POST"
+        ? Response.json({
+            provider_id: "chatkit.channel.custom",
+            tool_name: "archiveConversation",
+            result: { archived: true },
+          })
+        : Response.json({
+            tools: [
+              {
+                name: "archiveConversation",
+                description: "Archive this conversation",
+                input_schema: { type: "object", additionalProperties: false },
+                output_schema: { type: "object" },
+                read_only: false,
+              },
+            ],
+            context: {
+              agent_inbox_instance_id: "agent-bound",
+              target_inbox_instance_id: "target-bound",
+              trigger_message_id: "trigger-bound",
+            },
+          }),
+    );
+    const endpoint = testChatKitEndpoint({
+      webhookSigningKey: key,
+      responseMode: "tool",
+      client: { fetch: fetcher },
+      handler: async (_request, context) => {
+        expect(context.session.tools).toHaveProperty("archiveConversation");
+        expect(context.session.tools).not.toHaveProperty("sendMessage");
+        expect(context.$provider?.tools).toBe(context.session.tools);
+        const action = context.session.tools?.archiveConversation;
+        if (!action?.execute) throw new Error("Custom tool missing");
+        expect(
+          await action.execute({}, { toolCallId: "stable-call", messages: [], context: undefined }),
+        ).toEqual({
+          archived: true,
+        });
+        return new Response("ok");
+      },
+    });
+    const response = await endpoint(
+      signedRequest({ messages: [] }, Math.floor(Date.now() / 1000), {
+        "x-tilde-org-id": "org-123",
+        "x-tilde-team-id": "team_123",
+        "x-tilde-session-id": "session_1",
+        "x-tilde-agent-instance-id": "agent_instance",
+        "x-tilde-target-instance-id": "target_instance",
+        "x-tilde-trigger-message-id": "trigger_1",
+        "x-tilde-chat-provider-id": "chatkit.channel.custom",
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(JSON.parse(fetcher.mock.calls[1]?.[1]?.body as string)).toEqual({
+      agent_inbox_instance_id: "agent-bound",
+      target_inbox_instance_id: "target-bound",
+      trigger_message_id: "trigger-bound",
+      tool_call_id: "stable-call",
+      input: {},
+    });
+  });
+
   it("adds the configured request timeout to the forwarded signal", async () => {
     const handler = vi.fn(async (request: Request) => {
       await new Promise<void>((resolve) => {

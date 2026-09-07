@@ -63,6 +63,25 @@ const allowedRoutes: readonly AllowedRoute[] = [
   },
 ];
 
+const userSetupRoutes: readonly AllowedRoute[] = [
+  { pattern: /^personal\/[^/]+\/mcp\/tool-group\/[^/]+$/, methods: methods("GET", "DELETE") },
+  { pattern: /^mcp\/tool-providers$/, methods: methods("GET") },
+  { pattern: /^skills$/, methods: methods("GET") },
+  { pattern: /^provider-setup\/[^/]+\/resume$/, methods: methods("POST") },
+  { pattern: /^credential\/setup-items$/, methods: methods("GET") },
+  { pattern: /^credential\/setup-items\/[^/]+$/, methods: methods("GET") },
+  {
+    pattern: /^credential\/setup-items\/[^/]+\/(?:start|resume|complete)$/,
+    methods: methods("POST"),
+  },
+  {
+    pattern: /^credential\/source\/[^/]+\/(?:resource-server|user-credential)(?:\/encrypt)?$/,
+    methods: methods("POST"),
+  },
+  { pattern: /^mcp\/mcp-server$/, methods: methods("GET", "POST") },
+  { pattern: /^mcp\/mcp-server\/[^/]+$/, methods: methods("GET") },
+];
+
 export interface TildeProxyOptions {
   apiKey: string;
   orgId: string;
@@ -81,22 +100,51 @@ export function registerTildeProxy(app: Hono, configuredOptions?: TildeProxyOpti
         503,
       );
 
-    const relativePath = safeRelativePath(context.req.path.slice(proxyPrefix.length));
+    const suppliedPath = context.req.path.slice(proxyPrefix.length);
+    const userSetup = suppliedPath.startsWith("user-tools/");
+    const relativePath = safeRelativePath(
+      userSetup ? suppliedPath.slice("user-tools/".length) : suppliedPath,
+    );
     const method = context.req.method as AllowedMethod;
-    if (!relativePath || !isAllowed(relativePath, method))
+    const ownerToken = (context.var as { ownerAccessToken?: string }).ownerAccessToken;
+    if (userSetup && !ownerToken)
+      return context.json(
+        { error: "An authenticated user is required for personal tool setup" },
+        401,
+      );
+    if (
+      !relativePath ||
+      !(
+        isAllowed(relativePath, method) ||
+        (userSetup &&
+          userSetupRoutes.some(
+            (route) => route.pattern.test(relativePath) && route.methods.has(method),
+          ))
+      )
+    )
       return context.json({ error: "Unsupported Tilde operation" }, 404);
 
     const incomingUrl = new URL(context.req.url);
+    const personal = userSetup
+      ? /^personal\/([^/]+)\/(mcp\/tool-group\/[^/]+)$/.exec(relativePath)
+      : null;
     const upstreamUrl = new URL(
-      `/api/v1/team/${encodeURIComponent(options.teamId)}/${relativePath}`,
+      personal
+        ? `/api/v1/user/${personal[1]}/${personal[2]}`
+        : `/api/v1/team/${encodeURIComponent(options.teamId)}/${relativePath}`,
       options.baseUrl ?? defaultTildeBaseUrl,
     );
     upstreamUrl.search = incomingUrl.search;
 
     try {
+      const headersForUpstream = upstreamHeaders(context, options);
+      if (userSetup) {
+        headersForUpstream.delete("x-api-key");
+        headersForUpstream.set("authorization", `Bearer ${ownerToken}`);
+      }
       const upstream = await (options.fetch ?? globalThis.fetch)(upstreamUrl, {
         method,
-        headers: upstreamHeaders(context, options),
+        headers: headersForUpstream,
         body: await requestBody(context),
         signal: context.req.raw.signal,
         redirect: "manual",

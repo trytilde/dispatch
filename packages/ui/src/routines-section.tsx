@@ -28,25 +28,12 @@ export function RoutinesSection({
       {sorted.length > 0 ? (
         <div className="flex flex-col gap-0.5">
           {sorted.map((routine) => (
-            <button
-              className="flex w-full items-center gap-2.5 rounded-control px-1.5 py-2 text-left
-                transition-colors hover:bg-hover"
+            <RoutineListItem
               key={routine.id}
-              onClick={() => onOpen(routine.id)}
-              type="button"
-            >
-              {routine.enabled ? (
-                <ClockIcon aria-hidden className="size-4 shrink-0 text-ink-2" />
-              ) : (
-                <CirclePauseIcon aria-hidden className="size-4 shrink-0 text-ink-3" />
-              )}
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="truncate text-[12.5px] font-medium text-ink">{routine.name}</span>
-                <span className="truncate text-[12px] text-ink-2">
-                  {routineDetail(routine, [...providers])}
-                </span>
-              </span>
-            </button>
+              routine={routine}
+              providers={providers}
+              onOpen={onOpen}
+            />
           ))}
         </div>
       ) : settled ? (
@@ -66,5 +53,39 @@ export function RoutinesSection({
         </div>
       ) : null}
     </section>
+  );
+}
+
+export interface RoutineListItemProps {
+  routine: Routine;
+  providers?: readonly SignalProvider[];
+  description?: string;
+  onOpen: (routineId: string) => void;
+}
+export function RoutineListItem({
+  routine,
+  providers = [],
+  description,
+  onOpen,
+}: RoutineListItemProps) {
+  return (
+    <button
+      className="flex w-full items-center gap-2.5 rounded-control px-1.5 py-2 text-left
+                transition-colors hover:bg-hover"
+      onClick={() => onOpen(routine.id)}
+      type="button"
+    >
+      {routine.enabled ? (
+        <ClockIcon aria-hidden className="size-4 shrink-0 text-ink-2" />
+      ) : (
+        <CirclePauseIcon aria-hidden className="size-4 shrink-0 text-ink-3" />
+      )}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate text-[12.5px] font-medium text-ink">{routine.name}</span>
+        <span className="truncate text-[12px] text-ink-2">
+          {description ?? routineDetail(routine, [...providers])}
+        </span>
+      </span>
+    </button>
   );
 }

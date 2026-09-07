@@ -12449,6 +12449,832 @@
         ]
       }
     },
+    "/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}": {
+      "get": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Get custom ChatKit connection",
+        "description": "Returns the definition reference and public connection configuration.",
+        "operationId": "chatkit-get-custom-connection",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomConnectionInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/messages": {
+      "post": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Ingest custom provider message",
+        "description": "Accepts a normalized external event using only the owning connection runtime token.",
+        "operationId": "chatkit-ingest-custom-provider-message",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomInboundMessage"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomIngressReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/runtime": {
+      "post": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Custom provider runtime operation",
+        "description": "Manage only conversations and attachments bound to the authenticated connection.",
+        "operationId": "chatkit-custom-provider-runtime",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomRuntimeCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomRuntimeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/runtime-token/rotate": {
+      "post": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Rotate custom connection credentials",
+        "description": "Immediately revokes the old token and returns its replacement once.",
+        "operationId": "chatkit-rotate-custom-connection-credentials",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomConnectionCredentials"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/work": {
+      "get": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Inspect durable normalized-event and cleanup work without exposing payloads.",
+        "operationId": "chatkit-list-custom-connection-work",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomConnectionWorkPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/work/retry": {
+      "post": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Retry a dead-letter item with its original deduplication identity.",
+        "operationId": "chatkit-retry-custom-connection-work",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "connection_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryConnectionWork"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteInboxResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/custom-providers": {
+      "get": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "List custom ChatKit provider",
+        "description": "Manage a reusable tenant-scoped ChatKit implementation.",
+        "operationId": "chatkit-list-custom-provider",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomProviderList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Create custom ChatKit provider",
+        "description": "Manage a reusable tenant-scoped ChatKit implementation.",
+        "operationId": "chatkit-create-custom-provider",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomProviderRegistrationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomProviderRegistration"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}": {
+      "get": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Get custom ChatKit provider",
+        "description": "Manage a reusable tenant-scoped ChatKit implementation.",
+        "operationId": "chatkit-get-custom-provider",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomChatKitProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Update custom ChatKit provider",
+        "description": "Manage a reusable tenant-scoped ChatKit implementation.",
+        "operationId": "chatkit-update-custom-provider",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomProviderRegistrationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomChatKitProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Delete custom ChatKit provider",
+        "description": "Manage a reusable tenant-scoped ChatKit implementation.",
+        "operationId": "chatkit-delete-custom-provider",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteInboxResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/connections": {
+      "get": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "List custom ChatKit connections",
+        "description": "Lists public connection configuration within a single team and definition.",
+        "operationId": "chatkit-list-custom-connections",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomConnectionInfoPaginatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/disable": {
+      "post": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Disable custom ChatKit provider",
+        "description": "Manage a reusable tenant-scoped ChatKit implementation.",
+        "operationId": "chatkit-disable-custom-provider",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomChatKitProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/enable": {
+      "post": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Enable custom ChatKit provider",
+        "description": "Manage a reusable tenant-scoped ChatKit implementation.",
+        "operationId": "chatkit-enable-custom-provider",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomChatKitProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/refresh": {
+      "post": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Refresh custom ChatKit provider",
+        "description": "Manage a reusable tenant-scoped ChatKit implementation.",
+        "operationId": "chatkit-refresh-custom-provider",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomChatKitProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/signing-key/rotate": {
+      "post": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Rotate custom ChatKit provider",
+        "description": "Manage a reusable tenant-scoped ChatKit implementation.",
+        "operationId": "chatkit-rotate-custom-provider",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomProviderRegistration"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/team/{team_id}/chatkit/identities/link": {
       "post": {
         "tags": [
@@ -12773,405 +13599,6 @@
             "bearer_token": []
           }
         ]
-      }
-    },
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals": {
-      "get": {
-        "tags": [
-          "chatkit",
-          "v1"
-        ],
-        "summary": "List safe extension proposals",
-        "description": "Lists redacted proposal review snapshots for the authorized team.",
-        "operationId": "chatkit-list-self-extension-proposals",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/SelfExtensionStatus"
-            }
-          },
-          {
-            "name": "requesting_agent_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page_size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SelfExtensionProposal"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "chatkit",
-          "v1"
-        ],
-        "summary": "Propose a safe agent extension",
-        "description": "Creates a durable, server-validated proposal with a redacted diff, permission and credential requirements, cost and egress implications, affected audiences, and exact rollback plan. The requesting agent cannot approve or execute it.",
-        "operationId": "chatkit-propose-self-extension",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateSelfExtensionProposalInner"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SelfExtensionProposal"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}": {
-      "get": {
-        "tags": [
-          "chatkit",
-          "v1"
-        ],
-        "summary": "Inspect a safe extension proposal",
-        "description": "Returns the complete redacted review document and durable execution receipts.",
-        "operationId": "chatkit-get-self-extension-proposal",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "proposal_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SelfExtensionProposal"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/approve": {
-      "post": {
-        "tags": [
-          "chatkit",
-          "v1"
-        ],
-        "summary": "Approve a safe extension proposal",
-        "description": "Records an explicit human owner/admin approval and queues durable execution. Agent callers cannot approve.",
-        "operationId": "chatkit-approve-self-extension-proposal",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "proposal_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SelfExtensionProposal"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/cancel": {
-      "post": {
-        "tags": [
-          "chatkit",
-          "v1"
-        ],
-        "summary": "Cancel a safe extension proposal",
-        "description": "Cancels a pending or approved proposal before execution starts.",
-        "operationId": "chatkit-cancel-self-extension-proposal",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "proposal_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SelfExtensionProposal"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/decision": {
-      "post": {
-        "tags": [
-          "chatkit",
-          "v1"
-        ],
-        "summary": "Answer a capability-change approval",
-        "description": "Atomically records an authenticated human Yes/No against the exact proposal hash and generation, completes its linked Human Approval, and queues approved work.",
-        "operationId": "chatkit-decide-capability-change",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "proposal_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DecideCapabilityChangeRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SelfExtensionProposal"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/outputs/claim": {
-      "post": {
-        "tags": [
-          "chatkit",
-          "v1"
-        ],
-        "summary": "Claim safe extension outputs",
-        "description": "Returns and consumes encrypted one-time execution values to an explicit human owner/admin reviewer. Agent callers cannot claim outputs.",
-        "operationId": "chatkit-claim-self-extension-proposal-outputs",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "proposal_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SelfExtensionProposalOutputs"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/reject": {
-      "post": {
-        "tags": [
-          "chatkit",
-          "v1"
-        ],
-        "summary": "Reject a safe extension proposal",
-        "description": "Records an explicit human owner/admin rejection without creating resources.",
-        "operationId": "chatkit-reject-self-extension-proposal",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "proposal_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SelfExtensionProposal"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/rollback": {
-      "post": {
-        "tags": [
-          "chatkit",
-          "v1"
-        ],
-        "summary": "Roll back a safe extension proposal",
-        "description": "Queues durable reverse-order cleanup of only resources recorded as created by this proposal.",
-        "operationId": "chatkit-rollback-self-extension-proposal",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "proposal_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SelfExtensionProposal"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/v1/team/{team_id}/chatkit/session": {
@@ -15731,6 +16158,64 @@
         ]
       }
     },
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/events/stream": {
+      "get": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "Stream ChatKit session events",
+        "description": "Resumable SSE with canonical audience filtering and periodic authorization revalidation. Use after_revision or Last-Event-ID to reconnect.",
+        "operationId": "chatkit-stream-session-events",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
+          {
+            "name": "after_revision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical session event stream",
+            "content": {
+              "text/event-stream": {}
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/invitations": {
       "get": {
         "tags": [
@@ -16684,6 +17169,56 @@
             "bearer_token": []
           }
         ]
+      }
+    },
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/provider-tools": {
+      "get": {
+        "tags": [
+          "chatkit"
+        ],
+        "summary": "List session provider tools",
+        "description": "Returns server-bound invocation context and the authorized provider tool catalog.",
+        "operationId": "chatkit-list-session-provider-tools",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomSessionToolCatalog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/tools/sendMessage": {
@@ -25807,6 +26342,60 @@
         ]
       }
     },
+    "/api/v1/team/{team_id}/mcp/tool-providers": {
+      "get": {
+        "tags": [
+          "mcp"
+        ],
+        "operationId": "list-tool-provider-inventory",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "personal",
+                "bots"
+              ]
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolProviderInventory"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/team/{team_id}/mcp/tools": {
       "get": {
         "tags": [
@@ -31517,6 +32106,60 @@
         "responses": {
           "200": {
             "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/team/{team_id}/skills": {
+      "get": {
+        "tags": [
+          "skills"
+        ],
+        "operationId": "list-skill-resource-inventory",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "personal",
+                "bots"
+              ]
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillResourceInventory"
+                }
+              }
+            }
           }
         }
       }
@@ -44195,6 +44838,18 @@
           }
         }
       },
+      "AssociatedToolkit": {
+        "type": "object",
+        "description": "An optional toolkit backend materialized as an ordinary custom Tools provider.",
+        "required": [
+          "discovery_url"
+        ],
+        "properties": {
+          "discovery_url": {
+            "type": "string"
+          }
+        }
+      },
       "Attachment": {
         "type": "object",
         "description": "ChatKit-owned attachment metadata.",
@@ -44731,51 +45386,6 @@
           }
         }
       },
-      "CapabilityChangeApproval": {
-        "type": "object",
-        "description": "Model-visible capability confirmation. It deliberately contains no approval token.",
-        "required": [
-          "approval_id",
-          "proposal_id",
-          "proposal_hash",
-          "proposal_generation",
-          "status",
-          "title",
-          "instructions"
-        ],
-        "properties": {
-          "approval_id": {
-            "type": "string"
-          },
-          "instructions": {
-            "type": "string"
-          },
-          "proposal_generation": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "proposal_hash": {
-            "type": "string"
-          },
-          "proposal_id": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          }
-        }
-      },
-      "CapabilityChangeDecision": {
-        "type": "string",
-        "description": "The only supported decisions for an inline capability confirmation.",
-        "enum": [
-          "approve",
-          "reject"
-        ]
-      },
       "ChangeResourceOwnershipRequest": {
         "type": "object",
         "description": "Body used by root-specific ownership-change operations. The target owner is\nalways the effective actor; APIs do not expose arbitrary user transfer.",
@@ -44785,6 +45395,72 @@
         "properties": {
           "ownership": {
             "$ref": "#/components/schemas/ResourceOwnership"
+          }
+        }
+      },
+      "ChannelDeliveryOptions": {
+        "type": "object",
+        "description": "Private send intent; never include this value in canonical public events.",
+        "properties": {
+          "attachment_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bcc": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "cc": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "html": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider_options": {
+            "description": "Opaque extension interpreted exclusively by the owning adapter."
+          },
+          "reply_all": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "visible_recipients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomExternalIdentity"
+            }
           }
         }
       },
@@ -45627,6 +46303,86 @@
         ],
         "description": "Trusted durable execution context supplied by ChatKit to an HTTP agent.\n\nThis is Tilde-owned control state, not conversation or provider metadata."
       },
+      "ChatKitIdentity": {
+        "type": "object",
+        "description": "A party that can appear in a ChatKit session.",
+        "required": [
+          "id",
+          "org_id",
+          "team_id",
+          "kind",
+          "display_name",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "agent_inbox_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Set when this address belongs to one of our agents."
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "external_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The address within that scheme. `None` only for [`ChatKitIdentityKind::TildeUser`]."
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChatKitIdentityKind"
+          },
+          "metadata": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "provider_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Namespace that owns the address. Two GitHub organizations can both have\na `dan`, so the scheme alone is never unique."
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "tilde_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Set only by a verified linking flow, or by us when registering an\naddress for one of our own principals. `None` means no authority."
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "verified_at": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedChronoDateTime"
+              }
+            ]
+          }
+        }
+      },
       "ChatKitIdentityKind": {
         "type": "string",
         "description": "Address scheme for a [`ChatKitIdentity`].",
@@ -45799,6 +46555,66 @@
           "human",
           "agent"
         ]
+      },
+      "ChatKitProviderManifest": {
+        "type": "object",
+        "description": "Discovery document served by the customer's SDK endpoint.",
+        "required": [
+          "protocol_version",
+          "version",
+          "display_name",
+          "description",
+          "invoke_url",
+          "configuration_schema",
+          "capabilities"
+        ],
+        "properties": {
+          "auth_methods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomProviderAuthMethod"
+            }
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/CustomProviderCapabilities"
+          },
+          "configuration_schema": {},
+          "description": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomProviderField"
+            }
+          },
+          "invoke_url": {
+            "type": "string"
+          },
+          "protocol_version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "session_tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomSessionTool"
+            }
+          },
+          "subscriptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "version": {
+            "type": "string"
+          }
+        }
       },
       "ChatKitRealtimeSocketTicket": {
         "type": "object",
@@ -49049,55 +49865,6 @@
           }
         }
       },
-      "CreateSelfExtensionProposalInner": {
-        "type": "object",
-        "description": "Agent-authored intent submitted to the server for validation and previewing.",
-        "required": [
-          "requesting_agent_id",
-          "idempotency_key",
-          "category",
-          "title",
-          "rationale",
-          "desired_state"
-        ],
-        "properties": {
-          "category": {
-            "$ref": "#/components/schemas/SelfExtensionCategory"
-          },
-          "desired_state": {
-            "$ref": "#/components/schemas/WrappedJsonValue",
-            "description": "Provider/domain desired state. Plaintext credential fields are rejected."
-          },
-          "expires_in_seconds": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "idempotency_key": {
-            "type": "string"
-          },
-          "rationale": {
-            "type": "string"
-          },
-          "requesting_agent_id": {
-            "type": "string"
-          },
-          "run_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "session_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "title": {
-            "type": "string"
-          }
-        }
-      },
       "CreateSessionInner": {
         "type": "object",
         "description": "Inner create fields for a ChatKit session.",
@@ -50623,6 +51390,1123 @@
           "not_billable"
         ]
       },
+      "CustomChatKitProvider": {
+        "type": "object",
+        "description": "Stable registration, separate from any configured connection.",
+        "required": [
+          "id",
+          "org_id",
+          "team_id",
+          "display_name",
+          "discovery_url",
+          "enabled",
+          "local_running_endpoint",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "discovery_url": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_discovery_at": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedChronoDateTime"
+              }
+            ]
+          },
+          "last_discovery_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "local_running_endpoint": {
+            "type": "boolean"
+          },
+          "manifest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChatKitProviderManifest"
+              }
+            ]
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          }
+        }
+      },
+      "CustomConnectionCredentials": {
+        "type": "object",
+        "description": "Returned once after rotation, with remote notification outcome for host recovery.",
+        "required": [
+          "runtime_token",
+          "backend_notified"
+        ],
+        "properties": {
+          "backend_notified": {
+            "type": "boolean"
+          },
+          "runtime_token": {
+            "type": "string"
+          }
+        }
+      },
+      "CustomConnectionInfo": {
+        "type": "object",
+        "description": "Public connection configuration; runtime credentials and setup state are excluded.",
+        "required": [
+          "setup_id",
+          "enabled",
+          "id",
+          "org_id",
+          "team_id",
+          "definition_id",
+          "display_name",
+          "status",
+          "configuration"
+        ],
+        "properties": {
+          "configuration": {},
+          "default_agent_inbox_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "definition_id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "setup_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "tool_group_instance_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "toolkit_discovery_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CustomConnectionInfoPaginatedResponse": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomConnectionInfo"
+            }
+          },
+          "next_page_token": {
+            "type": "string"
+          }
+        }
+      },
+      "CustomConnectionWork": {
+        "type": "object",
+        "description": "Operational diagnostics omit normalized message bodies and credentials.",
+        "required": [
+          "work_id",
+          "kind",
+          "status",
+          "attempts",
+          "created_at",
+          "next_attempt_at"
+        ],
+        "properties": {
+          "attempts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "next_attempt_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "status": {
+            "type": "string"
+          },
+          "work_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CustomConnectionWorkPaginatedResponse": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomConnectionWork"
+            }
+          },
+          "next_page_token": {
+            "type": "string"
+          }
+        }
+      },
+      "CustomExternalIdentity": {
+        "type": "object",
+        "description": "One external address; callers cannot grant themselves principal authority.",
+        "required": [
+          "external_id",
+          "display_name",
+          "kind"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "external_id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChatKitIdentityKind"
+          }
+        }
+      },
+      "CustomInboundMessage": {
+        "type": "object",
+        "description": "Normalized event accepted using a single connection's runtime credential.",
+        "required": [
+          "event_id",
+          "conversation_key",
+          "external_message_id",
+          "sender",
+          "text"
+        ],
+        "properties": {
+          "attachment_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "conversation_key": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "external_message_id": {
+            "type": "string"
+          },
+          "provider_metadata": {},
+          "provider_thread": {},
+          "sender": {
+            "$ref": "#/components/schemas/CustomExternalIdentity"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "CustomIngressReceipt": {
+        "type": "object",
+        "description": "A durable ingestion acknowledgment, including replay of an existing event.",
+        "required": [
+          "event_id",
+          "message_id",
+          "status"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "CustomProviderAuthMethod": {
+        "type": "object",
+        "description": "Provider-owned authorization method; secret fields are never list outputs.",
+        "required": [
+          "id",
+          "display_name",
+          "description",
+          "fields"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomProviderField"
+            }
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "CustomProviderCapabilities": {
+        "type": "object",
+        "description": "Content conversion and runtime features declared by a backend.",
+        "properties": {
+          "attachments": {
+            "type": "boolean"
+          },
+          "delivery": {
+            "type": "boolean"
+          },
+          "html": {
+            "type": "boolean"
+          },
+          "identity": {
+            "type": "boolean"
+          },
+          "inbound": {
+            "type": "boolean"
+          },
+          "markdown": {
+            "type": "boolean"
+          },
+          "max_length": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "streaming": {
+            "type": "boolean"
+          },
+          "toolkit": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CustomProviderField": {
+        "type": "object",
+        "description": "Named schema-backed field rendered by the existing generic setup flow.",
+        "required": [
+          "name",
+          "label",
+          "field_type"
+        ],
+        "properties": {
+          "field_type": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "placeholder": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CustomProviderInvocation": {
+        "type": "object",
+        "description": "Exact signed remote invocation. Secret-bearing payloads intentionally omit Debug.",
+        "required": [
+          "protocol_version",
+          "manifest_version",
+          "request_id",
+          "scope",
+          "operation",
+          "input",
+          "configuration",
+          "secrets"
+        ],
+        "properties": {
+          "configuration": {},
+          "context": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CustomSessionContext"
+              }
+            ]
+          },
+          "input": {},
+          "manifest_version": {
+            "type": "string"
+          },
+          "operation": {
+            "$ref": "#/components/schemas/CustomProviderOperation"
+          },
+          "protocol_version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/CustomProviderScope"
+          },
+          "secrets": {}
+        }
+      },
+      "CustomProviderList": {
+        "type": "object",
+        "description": "A paginated team catalog; continuation uses the existing timestamp cursor.",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomChatKitProvider"
+            }
+          },
+          "next_page_token": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CustomProviderOperation": {
+        "type": "string",
+        "description": "Tilde-owned protocol operations are typed independently of provider business inputs.",
+        "enum": [
+          "setup_start",
+          "setup_resume",
+          "disconnect",
+          "runtime_credentials_updated",
+          "toolkit_configured",
+          "register_identity",
+          "normalize_mentions",
+          "list_session_tools",
+          "invoke_session_tool",
+          "reconcile_session_tool",
+          "prepare_send",
+          "deliver",
+          "reconcile_delivery"
+        ]
+      },
+      "CustomProviderRegistration": {
+        "type": "object",
+        "description": "Signing material is returned only by explicit create/rotate operations.",
+        "required": [
+          "provider",
+          "signing_key"
+        ],
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/CustomChatKitProvider"
+          },
+          "signing_key": {
+            "type": "string"
+          }
+        }
+      },
+      "CustomProviderRegistrationInput": {
+        "type": "object",
+        "description": "Input for creating or editing a reusable backend registration.",
+        "required": [
+          "display_name",
+          "discovery_url"
+        ],
+        "properties": {
+          "discovery_url": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "local_running_endpoint": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CustomProviderScope": {
+        "type": "object",
+        "description": "Tenant-scoped coordinates recovered from persisted records.",
+        "required": [
+          "org_id",
+          "team_id",
+          "definition_id",
+          "connection_id"
+        ],
+        "properties": {
+          "connection_id": {
+            "type": "string"
+          },
+          "definition_id": {
+            "type": "string"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CustomReconciliation": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "result",
+              "status"
+            ],
+            "properties": {
+              "result": {},
+              "status": {
+                "type": "string",
+                "enum": [
+                  "applied"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "absent"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "reason",
+              "status"
+            ],
+            "properties": {
+              "reason": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "uncertain"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Remote mutations must distinguish absence from an unresolved prior attempt."
+      },
+      "CustomRuntimeCommand": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "operation"
+            ],
+            "properties": {
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "register_agent_identity"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "tags",
+              "operation"
+            ],
+            "properties": {
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "normalize_mentions"
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "conversation_key",
+              "operation"
+            ],
+            "properties": {
+              "conversation_key": {
+                "type": "string"
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "ensure_conversation"
+                ]
+              },
+              "provider_thread": {},
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "session_id",
+              "media_type",
+              "operation"
+            ],
+            "properties": {
+              "filename": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "media_type": {
+                "type": "string"
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "create_attachment_upload"
+                ]
+              },
+              "session_id": {
+                "type": "string"
+              },
+              "size_bytes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int64"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "session_id",
+              "attachment_id",
+              "operation"
+            ],
+            "properties": {
+              "attachment_id": {
+                "type": "string"
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "complete_attachment_upload"
+                ]
+              },
+              "session_id": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "size_bytes": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int64"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "session_id",
+              "attachment_id",
+              "operation"
+            ],
+            "properties": {
+              "attachment_id": {
+                "type": "string"
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "attachment_download"
+                ]
+              },
+              "session_id": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "session_id",
+              "identity",
+              "operation"
+            ],
+            "properties": {
+              "identity": {
+                "$ref": "#/components/schemas/CustomExternalIdentity"
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "upsert_participant"
+                ]
+              },
+              "session_id": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "session_id",
+              "external_id",
+              "operation"
+            ],
+            "properties": {
+              "external_id": {
+                "type": "string"
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "leave_participant"
+                ]
+              },
+              "session_id": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "session_id",
+              "operation"
+            ],
+            "properties": {
+              "next_page_token": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "history"
+                ]
+              },
+              "page_size": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int64"
+              },
+              "session_id": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "description": "Narrow operations a provider may perform inside its own bound conversations."
+      },
+      "CustomRuntimeResponse": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "identity",
+              "type"
+            ],
+            "properties": {
+              "identity": {
+                "$ref": "#/components/schemas/ChatKitIdentity"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "identity"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "identities",
+              "type"
+            ],
+            "properties": {
+              "identities": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChatKitIdentity"
+                }
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "mentions"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "session_id",
+              "type"
+            ],
+            "properties": {
+              "session_id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "conversation"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "upload",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "upload"
+                ]
+              },
+              "upload": {
+                "$ref": "#/components/schemas/CreateAttachmentUploadResponse"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "attachment",
+              "type"
+            ],
+            "properties": {
+              "attachment": {
+                "$ref": "#/components/schemas/Attachment"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "attachment"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "download",
+              "type"
+            ],
+            "properties": {
+              "download": {
+                "$ref": "#/components/schemas/GetAttachmentDownloadUrlResponse"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "download"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "participant",
+              "type"
+            ],
+            "properties": {
+              "participant": {
+                "$ref": "#/components/schemas/ChatKitParticipant"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "participant"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "left"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "messages",
+              "type"
+            ],
+            "properties": {
+              "messages": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CustomVisibleMessage"
+                }
+              },
+              "next_page_token": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "history"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Runtime responses deliberately expose no general team resource operations."
+      },
+      "CustomSessionContext": {
+        "type": "object",
+        "description": "Coordinates verified against the active turn before invoking a session tool.",
+        "required": [
+          "session_id",
+          "agent_inbox_instance_id",
+          "target_inbox_instance_id",
+          "trigger_message_id",
+          "execution_id",
+          "conversation_key",
+          "external_message_id",
+          "provider_message",
+          "provider_thread"
+        ],
+        "properties": {
+          "agent_inbox_instance_id": {
+            "type": "string"
+          },
+          "conversation_key": {
+            "type": "string"
+          },
+          "execution_id": {
+            "type": "string"
+          },
+          "external_message_id": {
+            "type": "string"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomSessionParticipant"
+            }
+          },
+          "provider_message": {},
+          "provider_thread": {
+            "description": "Only the provider adapter interprets this external reply handle."
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "target_inbox_instance_id": {
+            "type": "string"
+          },
+          "trigger_message_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CustomSessionParticipant": {
+        "type": "object",
+        "description": "Active delivery roster, excluding Tilde authorization principals and other connections' addresses.",
+        "required": [
+          "instance_id",
+          "display_name",
+          "is_agent"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "external_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instance_id": {
+            "type": "string"
+          },
+          "is_agent": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CustomSessionTool": {
+        "type": "object",
+        "description": "Tool schemas describe business inputs only. Context travels separately.",
+        "required": [
+          "name",
+          "description",
+          "input_schema",
+          "output_schema"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "input_schema": {},
+          "name": {
+            "type": "string"
+          },
+          "output_schema": {},
+          "read_only": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CustomSessionToolCatalog": {
+        "type": "object",
+        "description": "Server-bound tool catalog for the authenticated agent's current turn.",
+        "required": [
+          "tools"
+        ],
+        "properties": {
+          "context": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CustomSessionContext"
+              }
+            ]
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomSessionTool"
+            }
+          }
+        }
+      },
       "CustomSkillSpec": {
         "type": "object",
         "required": [
@@ -50816,6 +52700,33 @@
           }
         }
       },
+      "CustomVisibleMessage": {
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "text",
+          "sender_display_name",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "$ref": "#/components/schemas/WrappedChronoDateTime"
+          },
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/MessageRole"
+          },
+          "sender_display_name": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
       "DataUIPart": {
         "type": "object",
         "description": "Data UI part - represents custom data parts",
@@ -50853,31 +52764,6 @@
             "items": {
               "type": "string"
             }
-          }
-        }
-      },
-      "DecideCapabilityChangeRequest": {
-        "type": "object",
-        "description": "Exact client binding posted when a human presses Yes or No.",
-        "required": [
-          "approval_id",
-          "proposal_hash",
-          "proposal_generation",
-          "decision"
-        ],
-        "properties": {
-          "approval_id": {
-            "type": "string"
-          },
-          "decision": {
-            "$ref": "#/components/schemas/CapabilityChangeDecision"
-          },
-          "proposal_generation": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "proposal_hash": {
-            "type": "string"
           }
         }
       },
@@ -52790,24 +54676,6 @@
               },
               "ws_url": {
                 "type": "string"
-              }
-            }
-          },
-          {
-            "type": "object",
-            "required": [
-              "proposal_id",
-              "type"
-            ],
-            "properties": {
-              "proposal_id": {
-                "type": "string"
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "capability_change"
-                ]
               }
             }
           }
@@ -57659,58 +59527,6 @@
           "canceled"
         ]
       },
-      "ProposalCredentialRequirement": {
-        "type": "object",
-        "description": "A required credential descriptor. It intentionally cannot carry a value.",
-        "required": [
-          "credential_type",
-          "purpose",
-          "brokered_by"
-        ],
-        "properties": {
-          "brokered_by": {
-            "type": "string"
-          },
-          "credential_type": {
-            "type": "string"
-          },
-          "purpose": {
-            "type": "string"
-          },
-          "required_fields": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "ProposalPermissionChange": {
-        "type": "object",
-        "description": "One permission or audience expansion shown before approval.",
-        "required": [
-          "permission",
-          "plane",
-          "reason"
-        ],
-        "properties": {
-          "permission": {
-            "type": "string"
-          },
-          "plane": {
-            "type": "string"
-          },
-          "principals": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "reason": {
-            "type": "string"
-          }
-        }
-      },
       "ProviderAppProvisioningResponse": {
         "type": "object",
         "description": "Response for setup or app provisioning lifecycle calls.",
@@ -61149,6 +62965,17 @@
           }
         }
       },
+      "RetryConnectionWork": {
+        "type": "object",
+        "required": [
+          "work_id"
+        ],
+        "properties": {
+          "work_id": {
+            "type": "string"
+          }
+        }
+      },
       "RetryMemorySourceBody": {
         "type": "object",
         "required": [
@@ -61914,255 +63741,6 @@
           }
         }
       },
-      "SelfExtensionCategory": {
-        "type": "string",
-        "description": "Resource families an agent may propose but never directly provision.",
-        "enum": [
-          "connector",
-          "mcp_server",
-          "skill_registry",
-          "custom_tool",
-          "agent",
-          "memory_bank",
-          "wiki"
-        ]
-      },
-      "SelfExtensionPreview": {
-        "type": "object",
-        "description": "Server-authored review document rendered by every client without category branches.",
-        "required": [
-          "resource_diff",
-          "cost_summary",
-          "security_summary",
-          "rollback_plan"
-        ],
-        "properties": {
-          "affected_agents": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "affected_users": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "cost_summary": {
-            "type": "string"
-          },
-          "credentials": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProposalCredentialRequirement"
-            }
-          },
-          "egress_destinations": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "permissions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProposalPermissionChange"
-            }
-          },
-          "resource_diff": {
-            "$ref": "#/components/schemas/WrappedJsonValue",
-            "description": "Concrete desired-state diff with secret references but no secret values."
-          },
-          "rollback_plan": {
-            "type": "string"
-          },
-          "security_summary": {
-            "type": "string"
-          }
-        }
-      },
-      "SelfExtensionProposal": {
-        "type": "object",
-        "description": "Public proposal snapshot. It never returns worker leases or secret material.",
-        "required": [
-          "id",
-          "org_id",
-          "team_id",
-          "requesting_agent_id",
-          "calling_subject_id",
-          "category",
-          "status",
-          "title",
-          "rationale",
-          "desired_state",
-          "preview",
-          "approval",
-          "generation",
-          "outputs_available",
-          "expires_at",
-          "created_at",
-          "updated_at"
-        ],
-        "properties": {
-          "approval": {
-            "$ref": "#/components/schemas/CapabilityChangeApproval",
-            "description": "Secret-free binding used by clients to render and submit the exact approval."
-          },
-          "approved_by_user_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "calling_subject_id": {
-            "type": "string"
-          },
-          "category": {
-            "$ref": "#/components/schemas/SelfExtensionCategory"
-          },
-          "continuation": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/WrappedJsonValue",
-                "description": "Secret-free server-authored provider setup continuation."
-              }
-            ]
-          },
-          "created_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          },
-          "desired_state": {
-            "$ref": "#/components/schemas/WrappedJsonValue"
-          },
-          "error_message": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "expires_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          },
-          "generation": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "id": {
-            "type": "string"
-          },
-          "org_id": {
-            "type": "string"
-          },
-          "outputs_available": {
-            "type": "boolean"
-          },
-          "preview": {
-            "$ref": "#/components/schemas/SelfExtensionPreview"
-          },
-          "rationale": {
-            "type": "string"
-          },
-          "requesting_agent_id": {
-            "type": "string"
-          },
-          "requesting_user_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "resources": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SelfExtensionResource"
-            }
-          },
-          "run_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "session_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "status": {
-            "$ref": "#/components/schemas/SelfExtensionStatus"
-          },
-          "team_id": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "updated_at": {
-            "$ref": "#/components/schemas/WrappedChronoDateTime"
-          }
-        }
-      },
-      "SelfExtensionProposalOutputs": {
-        "type": "object",
-        "description": "One-time execution values, returned only to an authorized human reviewer.",
-        "properties": {
-          "values": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "SelfExtensionResource": {
-        "type": "object",
-        "description": "A resource receipt used for idempotency and exact rollback ownership.",
-        "required": [
-          "kind",
-          "key",
-          "id",
-          "created_by_proposal"
-        ],
-        "properties": {
-          "created_by_proposal": {
-            "type": "boolean"
-          },
-          "id": {
-            "type": "string"
-          },
-          "key": {
-            "type": "string"
-          },
-          "kind": {
-            "type": "string"
-          }
-        }
-      },
-      "SelfExtensionStatus": {
-        "type": "string",
-        "description": "Durable proposal lifecycle. Execution and rollback are leased worker states.",
-        "enum": [
-          "pending",
-          "approved",
-          "executing",
-          "executed",
-          "rejected",
-          "cancelled",
-          "expired",
-          "rollback_queued",
-          "rolling_back",
-          "rolled_back",
-          "error"
-        ]
-      },
       "SelfProfileAvatarResponse": {
         "type": "object",
         "required": [
@@ -62293,6 +63871,12 @@
           "content"
         ],
         "properties": {
+          "attachment_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          },
           "bcc": {
             "type": [
               "array",
@@ -62318,6 +63902,17 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "provider_options": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WrappedJsonValue",
+                "description": "Private adapter extensions, never interpreted as routing or authority."
+              }
             ]
           },
           "reply_all": {
@@ -63880,6 +65475,30 @@
           }
         }
       },
+      "SkillRegistryMembershipView": {
+        "type": "object",
+        "required": [
+          "id",
+          "skill_ids"
+        ],
+        "properties": {
+          "agent_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/WrappedUuidV4"
+          },
+          "skill_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WrappedUuidV4"
+            }
+          }
+        }
+      },
       "SkillRegistryPaginatedResponse": {
         "type": "object",
         "required": [
@@ -63922,6 +65541,92 @@
             ]
           },
           "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SkillResourceInventory": {
+        "type": "object",
+        "required": [
+          "skills",
+          "skill_registries",
+          "skill_providers"
+        ],
+        "properties": {
+          "skill_providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProxiedSkillProvider"
+            }
+          },
+          "skill_registries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillRegistryMembershipView"
+            }
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillResourceView"
+            }
+          }
+        }
+      },
+      "SkillResourceView": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "source_kind",
+          "enabled_for_personal",
+          "assigned_agent_ids"
+        ],
+        "properties": {
+          "assigned_agent_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "enabled_for_personal": {
+            "type": "boolean"
+          },
+          "id": {
+            "$ref": "#/components/schemas/WrappedUuidV4"
+          },
+          "name": {
+            "type": "string"
+          },
+          "personal_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_commit_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_kind": {
+            "type": "string"
+          },
+          "source_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_provider_id": {
             "type": [
               "string",
               "null"
@@ -65992,6 +67697,99 @@
           "output-error",
           "output-denied"
         ]
+      },
+      "ToolProviderAccountView": {
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "status",
+          "tool_group_source_type_id",
+          "credential_source_type_id",
+          "enabled_for_personal",
+          "assigned_agent_ids",
+          "enabled_tool_source_type_ids"
+        ],
+        "properties": {
+          "assigned_agent_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "credential_source_type_id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "enabled_for_personal": {
+            "type": "boolean"
+          },
+          "enabled_tool_source_type_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "personal_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "tool_group_source_type_id": {
+            "type": "string"
+          }
+        }
+      },
+      "ToolProviderInventory": {
+        "type": "object",
+        "required": [
+          "tool_providers",
+          "tool_accounts",
+          "mcp_servers",
+          "proxied_mcp_servers",
+          "managed_providers"
+        ],
+        "properties": {
+          "managed_providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/McpProviderCatalogEntry"
+            }
+          },
+          "mcp_servers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/McpServerInstanceSerializedWithFunctions"
+            }
+          },
+          "proxied_mcp_servers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProxiedMcpServerListItem"
+            }
+          },
+          "tool_accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolProviderAccountView"
+            }
+          },
+          "tool_providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolGroupSourceSerialized"
+            }
+          }
+        }
       },
       "ToolSourceSerialized": {
         "type": "object",

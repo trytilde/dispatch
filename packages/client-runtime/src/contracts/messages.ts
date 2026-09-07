@@ -6,6 +6,7 @@ export const ChatPartSchema = z
     type: z.string(),
     text: z.string().nullable().optional(),
     state: z.string().nullable().optional(),
+    summary: z.string().nullable().optional(),
     filename: z.string().nullable().optional(),
     media_type: z.string().optional(),
     mediaType: z.string().optional(),
@@ -26,6 +27,7 @@ export const ChatPartSchema = z
     title: z.string().nullable().optional(),
     source_id: z.string().optional(),
     data_type: z.string().optional(),
+    dataType: z.string().optional(),
     data: z.unknown().optional(),
     provider_metadata: z.unknown().optional(),
   })
@@ -38,6 +40,7 @@ export const ChatMessageSchema = z
     type: z.string(),
     role: z.string(),
     session_id: z.string(),
+    from_inbox_instance_id: z.string().nullish(),
     in_reply_to_message_id: z.string().nullable().optional(),
     in_reply_to_inbox_id: z.string().nullable().optional(),
     user_display_name: z.string().optional(),

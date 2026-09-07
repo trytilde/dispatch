@@ -1,3 +1,4 @@
+import { mandatoryTildeSkills } from "./platform-skills.js";
 import { readdir } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import type { DeploymentContext, DeploymentPlan } from "@tryopenbot/runtime-provider";
@@ -165,7 +166,10 @@ export class TildeAgentProvider implements AgentProvider {
     const endpointUrl = new URL(`/api/agents/${slug}`, `${origin}/`);
     const hasCredentials =
       Boolean(context.environment[apiKeyName]) && Boolean(context.environment[webhookKeyName]);
-    const enabledSkills = deployment?.skills ?? (await this.#skills.bundleSkills(context));
+    const enabledSkills = await withRequiredSkills(
+      slug,
+      deployment?.skills ?? (await this.#skills.bundleSkills(context)),
+    );
     let operation = await this.#generated(`provision Agent Resource Bundle "${slug}"`, (signal) =>
       chatkitProvisionAgentResourceBundle({
         client: this.#api,
@@ -433,7 +437,10 @@ export class TildeAgentProvider implements AgentProvider {
     for (const agentId of agentIds) {
       const agentPath =
         agentId === "factory" ? primaryDirectory : resolve(primaryDirectory, "subagents", agentId);
-      const bundle = await this.#skills.bundleSkills({ ...context, agentId, agentPath });
+      const bundle = await withRequiredSkills(
+        agentId,
+        await this.#skills.bundleSkills({ ...context, agentId, agentPath }),
+      );
       for (const skill of bundle.custom ?? []) custom.set(skill.key, skill);
       for (const entry of bundle.managed ?? []) {
         const ids = managed.get(entry.provider_id) ?? new Set<string>();
@@ -816,4 +823,22 @@ function agentErrorCode(status: number | undefined): AgentProviderError["code"] 
     default:
       return "provider_unavailable";
   }
+}
+
+async function withRequiredSkills(
+  agentId: string,
+  skills: EnabledSkillsSpec,
+): Promise<EnabledSkillsSpec> {
+  const required = await mandatoryTildeSkills(agentId);
+  const names = new Set(required.map((skill) => skill.name));
+  const managed = [...(skills.managed ?? [])];
+  const existing = managed.find((entry) => entry.provider_id === "tilde");
+  if (!existing) managed.push({ provider_id: "tilde", skill_ids: ["enable-connections"] });
+  else if (existing.skill_ids?.length && !existing.skill_ids.includes("enable-connections"))
+    existing.skill_ids = [...existing.skill_ids, "enable-connections"];
+  return {
+    ...skills,
+    managed,
+    custom: [...(skills.custom ?? []).filter((skill) => !names.has(skill.name)), ...required],
+  };
 }

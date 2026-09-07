@@ -25,6 +25,9 @@ const methods = (...values: AllowedMethod[]): ReadonlySet<AllowedMethod> => new 
 
 /** Exact ChatKit operations consumed by Client Runtime. */
 const allowedTeamRoutes: readonly AllowedRoute[] = [
+  { pattern: /^chat-channels$/, methods: methods("GET") },
+  { pattern: /^sessions\/[^/]+\/join$/, methods: methods("POST") },
+  { pattern: /^_identity\/team-members$/, methods: methods("GET") },
   { pattern: /^workspace\/sidebar$/, methods: methods("GET") },
   { pattern: /^workspace\/bootstrap$/, methods: methods("GET") },
   { pattern: /^workspace\/search$/, methods: methods("GET") },
@@ -312,6 +315,8 @@ function resolveUpstreamPath(
   relativePath: string,
   options: Pick<TildeChatProxyOptions, "orgId" | "teamId">,
 ): string | undefined {
+  if (relativePath === "_identity/team-members")
+    return `/api/v1/identity/teams/${encodeURIComponent(options.teamId)}/members`;
   if (!relativePath.startsWith(rootChatKitPrefix)) {
     return `/api/v1/team/${encodeURIComponent(options.teamId)}/chatkit/${relativePath}`;
   }

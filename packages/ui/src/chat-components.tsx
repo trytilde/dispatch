@@ -1,13 +1,27 @@
+import { SessionSourceBadge } from "./session-source.js";
+import { useId, useState } from "react";
+import { PencilIcon, UsersRoundIcon } from "lucide-react";
+import type { SessionParticipant, SessionSource } from "@tryopenbot/client-runtime";
+import { SessionIcon } from "./participant-avatars.js";
+import { DialogSurface } from "./overlay-components.js";
+import { ChatFindBar, type ChatFindBarProps } from "./transcript-components.js";
 import type { ReactNode } from "react";
 import { MenuIcon, WaypointsIcon } from "lucide-react";
 import { AgentAvatar } from "./agent-avatar.js";
 import { LoaderGrid, useElapsed } from "./beautiful-ui/blocks/loader-grid.js";
 import { Button } from "./components/ui/button.js";
-import { ComputerIcon, MoreIcon, ReplyIcon } from "./workspace-icons.js";
+import { ComputerIcon } from "./workspace-icons.js";
 
 export interface ChatHeaderProps {
   agentId?: string;
-  agentName: string;
+  agentName?: string;
+  participants?: readonly SessionParticipant[];
+  currentUserId?: string;
+  sessionName?: string;
+  source?: SessionSource;
+  find?: ChatFindBarProps;
+  onRenameSession?: (title: string) => Promise<void>;
+  onManageParticipants?: () => void;
   /** Agent is mid-turn — the avatar spins its orbit. */
   busy?: boolean;
   computerOpen?: boolean;
@@ -19,7 +33,14 @@ export interface ChatHeaderProps {
 
 export function ChatHeader({
   agentId,
-  agentName,
+  agentName = "Assistant",
+  participants,
+  currentUserId,
+  sessionName,
+  source,
+  find,
+  onRenameSession,
+  onManageParticipants,
   busy = false,
   computerOpen,
   onToggleComputer,
@@ -27,8 +48,32 @@ export function ChatHeader({
   detailsOpen = false,
   onToggleDetails,
 }: ChatHeaderProps) {
+  const formId = useId();
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [renameError, setRenameError] = useState("");
+  const others =
+    participants?.filter((participant) => !currentUserId || participant.userId !== currentUserId) ??
+    [];
+  const names = others.length
+    ? others.map((participant) => participant.name).join(", ")
+    : agentName;
+  async function rename() {
+    if (!onRenameSession || !draftName.trim() || saving) return;
+    setSaving(true);
+    setRenameError("");
+    try {
+      await onRenameSession(draftName.trim());
+      setEditing(false);
+    } catch (error) {
+      setRenameError(error instanceof Error ? error.message : "Could not rename this chat");
+    } finally {
+      setSaving(false);
+    }
+  }
   return (
-    <header className="chat-header">
+    <header className="chat-header" data-find-open={Boolean(find) || undefined}>
       {onOpenSidebar ? (
         <Button
           aria-label="Open navigation"
@@ -42,16 +87,56 @@ export function ChatHeader({
         </Button>
       ) : null}
       <div className="chat-identity">
-        {agentId ? (
+        {participants?.length ? (
+          <SessionIcon participants={participants} currentUserId={currentUserId} />
+        ) : agentId ? (
           <AgentAvatar id={agentId} state={busy ? "working" : "idle"} />
         ) : (
-          <span className="agent-avatar">O</span>
+          <span className="agent-avatar">{agentName.charAt(0).toUpperCase()}</span>
         )}
         <div className="chat-title">
-          <h2>{agentName}</h2>
+          <h2 title={sessionName ? `${names} · ${sessionName}` : names}>
+            <span className="chat-participant-names">{names}</span>
+            {onManageParticipants ? (
+              <button
+                className="chat-people-edit"
+                type="button"
+                aria-label="Manage participants"
+                onClick={onManageParticipants}
+              >
+                <UsersRoundIcon aria-hidden />
+              </button>
+            ) : null}
+            {source ? <SessionSourceBadge source={source} /> : null}
+            {sessionName ? (
+              <>
+                <span aria-hidden="true"> · </span>
+                <span>{sessionName}</span>
+              </>
+            ) : null}
+          </h2>
+          {onRenameSession ? (
+            <button
+              type="button"
+              className="chat-name-edit"
+              aria-label="Edit chat name"
+              onClick={() => {
+                setDraftName(sessionName ?? "");
+                setRenameError("");
+                setEditing(true);
+              }}
+            >
+              <PencilIcon aria-hidden />
+            </button>
+          ) : null}
         </div>
       </div>
-      <div className="chat-actions">
+      {find ? (
+        <div className="chat-header-find">
+          <ChatFindBar {...find} />
+        </div>
+      ) : null}
+      <div className="chat-actions" hidden={Boolean(find)}>
         {onToggleDetails ? (
           <button
             aria-expanded={detailsOpen}
@@ -75,11 +160,56 @@ export function ChatHeader({
           </button>
         ) : null}
       </div>
+      {editing ? (
+        <DialogSurface
+          open
+          title="Edit chat name"
+          onClose={() => !saving && setEditing(false)}
+          actions={
+            <>
+              <button type="button" disabled={saving} onClick={() => setEditing(false)}>
+                Cancel
+              </button>
+              <button
+                className="primary"
+                type="submit"
+                form={formId}
+                disabled={saving || !draftName.trim()}
+              >
+                Save
+              </button>
+            </>
+          }
+        >
+          <form
+            id={formId}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void rename();
+            }}
+          >
+            <label className="session-name-field">
+              Chat name
+              <input
+                autoFocus
+                aria-label="Chat name"
+                value={draftName}
+                onChange={(event) => setDraftName(event.target.value)}
+              />
+            </label>
+            {renameError ? <p role="alert">{renameError}</p> : null}
+          </form>
+        </DialogSurface>
+      ) : null}
     </header>
   );
 }
 
 export interface ConversationMessageProps {
+  tone?: "warning";
+  attachments?: ReactNode;
+  notice?: ReactNode;
+  messageId?: string;
   role: string;
   createdAt: string;
   continuedPrevious?: boolean;
@@ -87,63 +217,33 @@ export interface ConversationMessageProps {
   /** Message is attachments only — the bubble renders bare. */
   mediaOnly?: boolean;
   children: ReactNode;
-  menuOpen?: boolean;
-  onReply?: () => void;
-  onToggleMenu?: () => void;
-  onStartThread?: () => void;
-  onCopy?: () => void;
 }
 
 export function ConversationMessage({
+  notice,
+  tone,
+  attachments,
+  messageId,
   role,
   createdAt,
   continuedPrevious = false,
   continuedNext = false,
   mediaOnly = false,
   children,
-  menuOpen = false,
-  onReply,
-  onToggleMenu,
-  onStartThread,
-  onCopy,
 }: ConversationMessageProps) {
   return (
     <article
+      data-message-id={messageId}
+      data-tone={tone}
       aria-label={role === "user" ? "Your message" : "Agent message"}
       className={`message ${role} ${continuedPrevious ? "continued-previous" : "group-start"} ${continuedNext ? "continued-next" : ""} ${mediaOnly ? "media-only" : ""}`}
     >
-      <div className="message-bubble">{children}</div>
+      {children ? <div className="message-bubble">{children}</div> : null}
+      {attachments ? <div className="message-attachments">{attachments}</div> : null}
+      {notice ? <div className="message-notice">{notice}</div> : null}
       <div className="message-footer">
         <time dateTime={createdAt}>{formatTime(createdAt)}</time>
       </div>
-      {onReply || onToggleMenu ? (
-        <div className="message-actions">
-          {onReply ? (
-            <button aria-label="Reply" onClick={onReply}>
-              <ReplyIcon />
-            </button>
-          ) : null}
-          {onToggleMenu ? (
-            <button aria-label="More message actions" onClick={onToggleMenu}>
-              <MoreIcon />
-            </button>
-          ) : null}
-          {menuOpen ? (
-            <div className="message-menu" role="menu">
-              {onStartThread ? (
-                <button role="menuitem" onClick={onStartThread}>
-                  Start a thread
-                </button>
-              ) : null}
-              {onCopy ? (
-                <button role="menuitem" onClick={onCopy}>
-                  Copy
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
     </article>
   );
 }
@@ -173,5 +273,5 @@ function formatTime(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.valueOf())
     ? ""
-    : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 }

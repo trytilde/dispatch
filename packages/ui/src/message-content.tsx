@@ -1,19 +1,27 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { ConnectorEnableCard } from "./connector-enable-card.js";
+import { ConversationMessage, type ConversationMessageProps } from "./chat-components.js";
 import {
-  capabilityChangeApprovalFromPart,
-  type CapabilityChangeApproval,
+  isToolSummaryPart,
+  toolCallPresentation,
+  expandToolBatches,
+  connectorSetupRequestFromPart,
+  type ConnectorSetupRequest,
 } from "@tryopenbot/client-runtime";
-import { CapabilityApprovalCard } from "./capability-approval-components.js";
+import { ToolCallEvent, ToolCallChain } from "./chat-events.js";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  ConnectorAccountGrid,
   connectorSelectionViewFromPart,
   type ConnectorAccountView,
   type ConnectorSelectionView,
 } from "./connector-components.js";
-import { ThinkingBlock, ToolsBlock } from "./message-blocks.js";
+import { ThinkingBlock, toolAttachmentFilePart } from "./message-blocks.js";
 import {
   ConnectionCard,
   FileCard,
+  MediaViewer,
+  type MediaViewerItem,
   formatState,
   JsonBlock,
   MarkdownText,
@@ -37,6 +45,7 @@ export interface MessageContentMessage {
 
 /** Owner interactions for in-chat connector selection cards. */
 export interface ConnectorPartActions {
+  onSetupRequired?: (request: ConnectorSetupRequest) => void;
   onSelectAccount: (selection: ConnectorSelectionView, account: ConnectorAccountView) => void;
   onAddAccount: (selection: ConnectorSelectionView) => void;
   busy?: boolean;
@@ -47,13 +56,6 @@ export interface MessageContentProps {
   resolveAttachmentUrl: (sessionId: string, attachmentId: string) => Promise<string>;
   rewriteUrl?: (url: string) => string;
   connectorActions?: ConnectorPartActions;
-  capabilityApprovalActions?: {
-    onDecision: (
-      approval: CapabilityChangeApproval,
-      decision: "approve" | "reject",
-    ) => Promise<CapabilityChangeApproval>;
-    loadCurrent: (approval: CapabilityChangeApproval) => Promise<CapabilityChangeApproval>;
-  };
 }
 
 export function MessageContent({
@@ -61,7 +63,6 @@ export function MessageContent({
   resolveAttachmentUrl,
   rewriteUrl = (url) => url,
   connectorActions,
-  capabilityApprovalActions,
 }: MessageContentProps) {
   if (message.type === "ui" && message.parts) {
     const mediaParts = message.parts.filter(
@@ -73,16 +74,12 @@ export function MessageContent({
       mediaParts.every((part) => (part.media_type ?? part.mediaType ?? "").startsWith("image/"));
     return (
       <div className={`message-parts ${imageGallery ? "media-gallery" : ""}`}>
-        {message.parts.map((part, index) =>
-          renderPart(
-            part,
-            index,
-            message.session_id,
-            resolveAttachmentUrl,
-            rewriteUrl,
-            connectorActions,
-            capabilityApprovalActions,
-          ),
+        {renderContentParts(
+          message.parts,
+          message.session_id,
+          resolveAttachmentUrl,
+          rewriteUrl,
+          connectorActions,
         )}
       </div>
     );
@@ -111,6 +108,54 @@ export function MessageContent({
   return <MarkdownText text={text} />;
 }
 
+/** Only contiguous generic tools form a chain; dedicated tool UIs remain boundaries. */
+function renderContentParts(
+  parts: readonly MessagePart[],
+  sessionId: string,
+  resolveAttachmentUrl: MessageContentProps["resolveAttachmentUrl"],
+  rewriteUrl: NonNullable<MessageContentProps["rewriteUrl"]>,
+  connectorActions?: ConnectorPartActions,
+): ReactNode[] {
+  parts = expandToolBatches(parts);
+  const generic = (part: MessagePart) =>
+    isToolSummaryPart(part) ||
+    (isToolPart(part) &&
+      !connectorSetupRequestFromPart(part) &&
+      !connectorSelectionViewFromPart(part) &&
+      !toolAttachmentFilePart(part));
+  const output: ReactNode[] = [];
+  for (let index = 0; index < parts.length; index++) {
+    const part = parts[index]!;
+    if (generic(part)) {
+      const start = index;
+      const calls = [
+        {
+          id: part.toolCallId ?? part.tool_invocation_id ?? `${index}`,
+          call: toolCallPresentation(part),
+        },
+      ];
+      while (parts[index + 1] && generic(parts[index + 1]!)) {
+        const next = parts[++index]!;
+        calls.push({
+          id: next.toolCallId ?? next.tool_invocation_id ?? `${index}`,
+          call: toolCallPresentation(next),
+        });
+      }
+      output.push(
+        calls.length > 1 ? (
+          <ToolCallChain key={`tools-${start}`} calls={calls} />
+        ) : (
+          <ToolCallEvent key={`tools-${start}`} call={calls[0]!.call} />
+        ),
+      );
+    } else
+      output.push(
+        renderPart(part, index, sessionId, resolveAttachmentUrl, rewriteUrl, connectorActions),
+      );
+  }
+  return output;
+}
+
 function renderPart(
   part: MessagePart,
   index: number,
@@ -118,45 +163,43 @@ function renderPart(
   resolveAttachmentUrl: MessageContentProps["resolveAttachmentUrl"],
   rewriteUrl: NonNullable<MessageContentProps["rewriteUrl"]>,
   connectorActions?: ConnectorPartActions,
-  capabilityApprovalActions?: MessageContentProps["capabilityApprovalActions"],
 ): ReactNode {
   const key = `${part.type}-${part.tool_invocation_id ?? part.toolCallId ?? part.attachment_id ?? part.attachmentId ?? index}`;
+  if (isToolSummaryPart(part)) return <ToolCallEvent key={key} call={toolCallPresentation(part)} />;
+  const setupRequest = connectorSetupRequestFromPart(part);
+  if (setupRequest)
+    return (
+      <ConnectorEnableCard
+        key={key}
+        providerName={setupRequest.provider_name}
+        iconUrl={setupRequest.icon_url ?? undefined}
+        disabled={!connectorActions?.onSetupRequired || connectorActions.busy}
+        onEnable={() => connectorActions?.onSetupRequired?.(setupRequest)}
+      />
+    );
   const connectorSelection = connectorSelectionViewFromPart(part);
-  const capabilityApproval = capabilityChangeApprovalFromPart(part);
-  if (capabilityApproval)
+  if (connectorSelection)
     return (
-      <CapabilityApprovalCard
-        approval={capabilityApproval}
+      <ConnectorEnableCard
         key={key}
-        loadCurrent={
-          capabilityApprovalActions
-            ? () => capabilityApprovalActions.loadCurrent(capabilityApproval)
-            : undefined
-        }
-        onDecision={
-          capabilityApprovalActions
-            ? (decision) => capabilityApprovalActions.onDecision(capabilityApproval, decision)
-            : undefined
-        }
+        providerName={connectorSelection.providerName}
+        iconUrl={connectorSelection.iconUrl}
+        disabled={!connectorActions || connectorActions.busy}
+        onEnable={() => connectorActions?.onAddAccount(connectorSelection)}
       />
     );
-  if (connectorSelection) {
+  const toolAttachment = toolAttachmentFilePart(part);
+  if (toolAttachment)
     return (
-      <ConnectorAccountGrid
-        busy={connectorActions?.busy ?? false}
+      <FileCard
         key={key}
-        selection={connectorSelection}
-        {...(connectorActions
-          ? {
-              onSelectAccount: (account: ConnectorAccountView) =>
-                connectorActions.onSelectAccount(connectorSelection, account),
-              onAddAccount: () => connectorActions.onAddAccount(connectorSelection),
-            }
-          : {})}
+        part={toolAttachment}
+        sessionId={sessionId}
+        resolveAttachmentUrl={resolveAttachmentUrl}
+        rewriteUrl={rewriteUrl}
       />
     );
-  }
-  if (isToolPart(part)) return <ToolsBlock key={key} parts={[part]} />;
+  if (isToolPart(part)) return <ToolCallEvent key={key} call={toolCallPresentation(part)} />;
   switch (part.type) {
     case "text":
       return <MarkdownText key={key} text={part.text ?? ""} />;
@@ -299,4 +342,113 @@ function signalText(message: MessageContentMessage): string {
   }
   if (message.type === "signal" && message.data) return stringify(message.data);
   return message.type === "signal" ? "Signal received" : "";
+}
+
+/** One message: content in a bubble and attachment chips immediately underneath. */
+export function ChatMessage({
+  message,
+  resolveAttachmentUrl,
+  rewriteUrl = (url) => url,
+  connectorActions,
+  ...presentation
+}: MessageContentProps & Omit<ConversationMessageProps, "children" | "attachments">) {
+  const [gallery, setGallery] = useState<{ items: MediaViewerItem[]; index: number }>();
+  const previewRequest = useRef(0);
+  useEffect(() => {
+    setGallery(undefined);
+    return () => {
+      previewRequest.current++;
+    };
+  }, [message.session_id, presentation.messageId]);
+  const isDetachedFile = (part: MessagePart) =>
+    (part.type === "file" || part.type === "image") &&
+    !(part.media_type ?? part.mediaType ?? "").startsWith("audio/");
+  const files = (message.parts ?? []).filter(isDetachedFile);
+  const parts = (message.parts ?? []).filter((part) => !isDetachedFile(part));
+  const hasText = parts.length > 0 || Boolean(message.text?.trim());
+  const isGalleryFile = (part: MessagePart) =>
+    /^(image|video)\//.test(part.media_type ?? part.mediaType ?? "");
+  async function openGallery(clicked: MessagePart, clickedUrl: string) {
+    const request = ++previewRequest.current;
+    const media = files.filter(isGalleryFile);
+    const results = await Promise.allSettled(
+      media.map(async (part, index): Promise<MediaViewerItem> => {
+        const attachmentId = part.attachment_id ?? part.attachmentId;
+        const url =
+          part === clicked
+            ? clickedUrl
+            : part.url
+              ? safeUrl(rewriteUrl(part.url))
+              : attachmentId
+                ? safeUrl(await resolveAttachmentUrl(message.session_id, attachmentId))
+                : undefined;
+        if (!url) throw new Error("Preview unavailable");
+        return {
+          id: String(index),
+          title: part.filename ?? (typeof part.name === "string" ? part.name : "Attachment"),
+          url,
+          mediaType: part.media_type ?? part.mediaType ?? "image/*",
+        };
+      }),
+    );
+    if (request !== previewRequest.current) return;
+    const items = results.flatMap((result) =>
+      result.status === "fulfilled" ? [result.value] : [],
+    );
+    setGallery({
+      items,
+      index: Math.max(
+        0,
+        items.findIndex((item) => item.id === String(media.indexOf(clicked))),
+      ),
+    });
+  }
+
+  return (
+    <>
+      <ConversationMessage
+        {...presentation}
+        attachments={
+          files.length
+            ? files.map((part, index) => (
+                <FileCard
+                  key={part.attachment_id ?? part.attachmentId ?? index}
+                  compact
+                  onPreview={
+                    isGalleryFile(part)
+                      ? (url) => {
+                          void openGallery(part, url);
+                        }
+                      : undefined
+                  }
+                  part={part}
+                  sessionId={message.session_id}
+                  resolveAttachmentUrl={resolveAttachmentUrl}
+                  rewriteUrl={rewriteUrl}
+                />
+              ))
+            : undefined
+        }
+      >
+        {hasText ? (
+          <MessageContent
+            message={{ ...message, parts }}
+            resolveAttachmentUrl={resolveAttachmentUrl}
+            rewriteUrl={rewriteUrl}
+            connectorActions={connectorActions}
+          />
+        ) : null}
+      </ConversationMessage>
+      <MediaViewer
+        open={Boolean(gallery)}
+        items={gallery?.items ?? []}
+        activeIndex={gallery?.index ?? 0}
+        onSelect={(index) => setGallery((current) => (current ? { ...current, index } : undefined))}
+        onClose={() => {
+          previewRequest.current++;
+          setGallery(undefined);
+        }}
+      />
+    </>
+  );
 }

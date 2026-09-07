@@ -84,3 +84,29 @@ flowchart LR
 - 2026-08-30T09:07:00+02:00: Recorded the narrow-viewport overlay and composer policy for the shared
   web/Electron renderer: full-screen workspace navigation and search, bottom drawers for compact
   settings/dialog flows, full-screen content-heavy dialogs, and a non-zooming sticky composer.
+
+- 2026-09-07T16:34:58+02:00: Removed message-level Reply/Copy/Start-a-thread controls,
+  their application entry points and quoted-reply runtime state. Controlled
+  prompt-reply/overlay presentations remain UI primitives. Audio attachments use
+  the inline player inside the message bubble; unsupported-message presentation
+  uses ordinary message geometry with a warning background.
+
+- 2026-09-07T17:14:17+02:00: Consolidated transcript loading
+  on the conversation skeleton and load errors on the prompt failed status. The
+  prompt owns one mutually exclusive scroll/new-message control. Generic tools
+  share an unboxed wrench/text row with optional collapsed input/output details;
+  summary projections omit those details. Dedicated tool UIs retain priority,
+  and reasoning uses the Beautiful UI trace presentation.
+
+- 2026-09-07T17:37:50+02:00: Removed unused Beautiful UI
+  demos while retaining production atoms and reasoning/tool-pattern forks. Generic
+  tool chains use the retained Tools pattern with leading chevrons, compact typed
+  parameters and output-only disclosure; summary projections never gain details.
+  Message-associated delivery notices belong in a sender-aligned notice slot.
+
+- 2026-09-07T18:19:06+02:00: Extracted public controlled
+  settings cards, item rows, filters, routine table/list/status/action/delete and
+  provider-connection components. Existing Dispatch compositions use the same
+  implementations; other hosts may omit agent controls and provide their own
+  actions, descriptions and portal theme classes. Removed the unused ThreadOverlay
+  and Agent Exchange stories. Full tool/reasoning output scrolls above 400px.

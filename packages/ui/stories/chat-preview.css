@@ -1,0 +1,168 @@
+.chat-story-layout {
+  width: min(960px, 100%);
+  margin: 0 auto;
+  padding: 28px;
+  display: grid;
+  gap: 40px;
+  color: var(--ink);
+}
+.chat-story-section {
+  min-width: 0;
+}
+.chat-story-label {
+  margin: 0 0 16px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: 0.04em;
+}
+.chat-story-isolated {
+  position: relative;
+  min-width: 0;
+  padding: 20px 0;
+}
+.chat-story-isolated > *,
+.chat-story-subject > *,
+.chat-story-control > * {
+  max-width: 100%;
+}
+.chat-story-isolated .queue-panel {
+  width: min(656px, 100%);
+}
+.chat-story-isolated .composer-shell {
+  width: min(680px, 100%);
+  margin-inline: auto;
+}
+.chat-story-context {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--page);
+}
+.chat-story-context .chat-pane {
+  display: flex;
+  flex-direction: column;
+  height: 620px;
+  border: 0;
+  border-radius: inherit;
+}
+.chat-story-context .chat-window-drag-region {
+  display: none;
+}
+.chat-story-context .chat-header {
+  flex-shrink: 0;
+  border-radius: 18px 18px 0 0;
+  min-height: 56px;
+}
+.chat-story-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.chat-story-body .conversation {
+  flex: 1;
+  padding: 24px 28px;
+}
+.chat-story-context .message-list {
+  width: 100%;
+  padding: 0;
+}
+.chat-story-subject {
+  min-width: 0;
+}
+.chat-story-subject .message-bubble > * {
+  max-width: 100%;
+}
+.chat-story-control {
+  position: relative;
+  margin-bottom: 12px;
+}
+.chat-story-context .composer-dock {
+  flex-shrink: 0;
+}
+/* Examples stay inside their own frame, including at mobile widths. */
+.chat-story-layout .composer-shell {
+  position: relative;
+  inset: auto;
+  max-width: 100%;
+}
+.chat-story-layout .composer-shell > .composer {
+  max-width: none;
+}
+.chat-story-layout .scroll-latest {
+  position: relative;
+  inset: auto;
+  margin: 0 auto;
+  transform: none;
+}
+@media (max-width: 720px) {
+  .chat-story-layout {
+    padding: 16px;
+    gap: 28px;
+  }
+  .chat-story-context .chat-pane {
+    height: 580px;
+  }
+  .chat-story-body .conversation {
+    padding: 16px;
+  }
+  .chat-story-isolated .composer-shell {
+    width: 100%;
+  }
+}
+
+.chat-story-layout [data-story-sample] svg[viewBox] {
+  max-width: 100%;
+}
+
+.chat-story-context .conversation {
+  padding-bottom: calc(var(--composer-dock-height, 72px) + 24px);
+}
+.chat-story-isolated .chat-prompt {
+  margin-bottom: 0;
+}
+.chat-story-header-variants {
+  display: grid;
+  gap: 20px;
+}
+.chat-story-header-variants > div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.chat-story-header-variants small {
+  display: block;
+  color: var(--ink-3);
+  margin-bottom: 8px;
+}
+
+/* A story wrapper must not create an extra gap between consecutive messages. */
+.chat-story-context .message:not(.user) + .chat-story-subject .message:not(.user):first-child,
+.chat-story-context .message.user + .chat-story-subject .message.user:first-child {
+  margin-top: 0;
+}
+.chat-story-layout[data-transcript-example] .chat-story-isolated {
+  display: flex;
+  justify-content: center;
+}
+.chat-story-layout[data-transcript-example] .chat-story-isolated > * {
+  width: 100%;
+}
+.chat-story-context[data-transcript-example] .chat-story-subject {
+  width: 100%;
+  align-self: stretch;
+}
+.chat-story-context[data-transcript-example] .chat-event {
+  margin-inline: auto;
+  width: 100%;
+}
+.chat-story-context[data-transcript-example] .message-send-notice,
+.chat-story-context[data-transcript-example] .system-event {
+  justify-content: center;
+}
+
+.chat-story-layout[data-transcript-example] .chat-story-isolated .message-send-notice,
+.chat-story-layout[data-transcript-example] .chat-story-isolated .system-event {
+  justify-content: center;
+}

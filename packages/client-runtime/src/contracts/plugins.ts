@@ -1,8 +1,13 @@
 import { z } from "zod";
 import { ConnectorAccountSchema, ConnectorProviderSchema } from "./connectors.js";
 
+export const ResourceScopeSchema = z.enum(["all", "personal", "bots"]);
+export type ResourceScope = z.infer<typeof ResourceScopeSchema>;
+
 export const PluginToolAccountSchema = ConnectorAccountSchema.extend({
   assigned_agent_ids: z.array(z.string()),
+  enabled_for_personal: z.boolean().optional(),
+  personal_user_id: z.string().nullish(),
 });
 export type PluginToolAccount = z.infer<typeof PluginToolAccountSchema>;
 
@@ -17,6 +22,8 @@ export const PluginSkillSchema = z.object({
   name: z.string(),
   description: z.string(),
   assigned_agent_ids: z.array(z.string()),
+  enabled_for_personal: z.boolean().optional(),
+  personal_user_id: z.string().nullish(),
 });
 export type PluginSkill = z.infer<typeof PluginSkillSchema>;
 

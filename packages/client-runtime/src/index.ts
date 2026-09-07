@@ -4,7 +4,6 @@ export * from "./chat/reducer.js";
 export * from "./chat/sse.js";
 export * from "./chat/websocket.js";
 export * from "./contracts/attachments.js";
-export * from "./contracts/capability-approvals.js";
 export * from "./contracts/agents.js";
 export * from "./contracts/auth.js";
 export * from "./contracts/common.js";
@@ -28,3 +27,28 @@ export * from "./onboarding.js";
 export * from "./queue.js";
 export * from "./state/runtime.js";
 export * from "./workspaces.js";
+
+export * from "./connections.js";
+export * from "./plugins.js";
+export * from "./provider-setup.js";
+
+export * from "./contracts/prompt.js";
+
+export * from "./contracts/session.js";
+export * from "./session.js";
+
+export * from "./prompt.js";
+
+export * from "./contracts/transcript.js";
+
+export {
+  createChatConnectorRuntime,
+  type ChatConnectorState,
+  type ChatConnectorClient,
+} from "./chat-connectors.js";
+export { createNativeConnectorSetupTransport } from "./native-connector-setup.js";
+export {
+  createTildeSignalClient,
+  createTildeRoutineClient,
+  type TildeSettingsTransport,
+} from "./tilde-settings.js";

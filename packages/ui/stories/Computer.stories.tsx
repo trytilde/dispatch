@@ -11,9 +11,9 @@ import {
   ComputerStagePlaceholder,
   ComputerTakingLongerDialog,
   ComputerUnreachableDialog,
-} from "../src/index.js";
+} from "@tryopenbot/ui";
 
-const meta = { title: "OpenBot/Computer" } satisfies Meta;
+const meta = { title: "Dispatch/Computer" } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 const noop = () => undefined;

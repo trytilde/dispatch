@@ -2943,6 +2943,272 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get custom ChatKit connection
+         * @description Returns the definition reference and public connection configuration.
+         */
+        get: operations["chatkit-get-custom-connection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest custom provider message
+         * @description Accepts a normalized external event using only the owning connection runtime token.
+         */
+        post: operations["chatkit-ingest-custom-provider-message"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/runtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Custom provider runtime operation
+         * @description Manage only conversations and attachments bound to the authenticated connection.
+         */
+        post: operations["chatkit-custom-provider-runtime"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/runtime-token/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate custom connection credentials
+         * @description Immediately revokes the old token and returns its replacement once.
+         */
+        post: operations["chatkit-rotate-custom-connection-credentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inspect durable normalized-event and cleanup work without exposing payloads. */
+        get: operations["chatkit-list-custom-connection-work"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/work/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry a dead-letter item with its original deduplication identity. */
+        post: operations["chatkit-retry-custom-connection-work"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/custom-providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List custom ChatKit provider
+         * @description Manage a reusable tenant-scoped ChatKit implementation.
+         */
+        get: operations["chatkit-list-custom-provider"];
+        put?: never;
+        /**
+         * Create custom ChatKit provider
+         * @description Manage a reusable tenant-scoped ChatKit implementation.
+         */
+        post: operations["chatkit-create-custom-provider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get custom ChatKit provider
+         * @description Manage a reusable tenant-scoped ChatKit implementation.
+         */
+        get: operations["chatkit-get-custom-provider"];
+        /**
+         * Update custom ChatKit provider
+         * @description Manage a reusable tenant-scoped ChatKit implementation.
+         */
+        put: operations["chatkit-update-custom-provider"];
+        post?: never;
+        /**
+         * Delete custom ChatKit provider
+         * @description Manage a reusable tenant-scoped ChatKit implementation.
+         */
+        delete: operations["chatkit-delete-custom-provider"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List custom ChatKit connections
+         * @description Lists public connection configuration within a single team and definition.
+         */
+        get: operations["chatkit-list-custom-connections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable custom ChatKit provider
+         * @description Manage a reusable tenant-scoped ChatKit implementation.
+         */
+        post: operations["chatkit-disable-custom-provider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enable custom ChatKit provider
+         * @description Manage a reusable tenant-scoped ChatKit implementation.
+         */
+        post: operations["chatkit-enable-custom-provider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh custom ChatKit provider
+         * @description Manage a reusable tenant-scoped ChatKit implementation.
+         */
+        post: operations["chatkit-refresh-custom-provider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/signing-key/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate custom ChatKit provider
+         * @description Manage a reusable tenant-scoped ChatKit implementation.
+         */
+        post: operations["chatkit-rotate-custom-provider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/chatkit/identities/link": {
         parameters: {
             query?: never;
@@ -3017,170 +3283,6 @@ export interface paths {
          * @description Loads JSON-safe cached agent-facing representations for ChatKit messages.
          */
         post: operations["chatkit-hydrate-converted-messages"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List safe extension proposals
-         * @description Lists redacted proposal review snapshots for the authorized team.
-         */
-        get: operations["chatkit-list-self-extension-proposals"];
-        put?: never;
-        /**
-         * Propose a safe agent extension
-         * @description Creates a durable, server-validated proposal with a redacted diff, permission and credential requirements, cost and egress implications, affected audiences, and exact rollback plan. The requesting agent cannot approve or execute it.
-         */
-        post: operations["chatkit-propose-self-extension"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Inspect a safe extension proposal
-         * @description Returns the complete redacted review document and durable execution receipts.
-         */
-        get: operations["chatkit-get-self-extension-proposal"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Approve a safe extension proposal
-         * @description Records an explicit human owner/admin approval and queues durable execution. Agent callers cannot approve.
-         */
-        post: operations["chatkit-approve-self-extension-proposal"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Cancel a safe extension proposal
-         * @description Cancels a pending or approved proposal before execution starts.
-         */
-        post: operations["chatkit-cancel-self-extension-proposal"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/decision": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Answer a capability-change approval
-         * @description Atomically records an authenticated human Yes/No against the exact proposal hash and generation, completes its linked Human Approval, and queues approved work.
-         */
-        post: operations["chatkit-decide-capability-change"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/outputs/claim": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Claim safe extension outputs
-         * @description Returns and consumes encrypted one-time execution values to an explicit human owner/admin reviewer. Agent callers cannot claim outputs.
-         */
-        post: operations["chatkit-claim-self-extension-proposal-outputs"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/reject": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Reject a safe extension proposal
-         * @description Records an explicit human owner/admin rejection without creating resources.
-         */
-        post: operations["chatkit-reject-self-extension-proposal"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/rollback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Roll back a safe extension proposal
-         * @description Queues durable reverse-order cleanup of only resources recorded as created by this proposal.
-         */
-        post: operations["chatkit-rollback-self-extension-proposal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3655,6 +3757,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/events/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream ChatKit session events
+         * @description Resumable SSE with canonical audience filtering and periodic authorization revalidation. Use after_revision or Last-Event-ID to reconnect.
+         */
+        get: operations["chatkit-stream-session-events"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/invitations": {
         parameters: {
             query?: never;
@@ -3818,6 +3940,26 @@ export interface paths {
          * @description Unlinks a participant from a ChatKit session.
          */
         delete: operations["chatkit-remove-session-participant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/sessions/{session_id}/provider-tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List session provider tools
+         * @description Returns server-bound invocation context and the authorized provider tool catalog.
+         */
+        get: operations["chatkit-list-session-provider-tools"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5897,6 +6039,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/mcp/tool-providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-tool-provider-inventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/mcp/tools": {
         parameters: {
             query?: never;
@@ -7564,6 +7722,22 @@ export interface paths {
          * @description Idempotently remove a principal grant while preserving a private owner.
          */
         delete: operations["remove_skill_visibility_grant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-skill-resource-inventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -10930,6 +11104,10 @@ export interface components {
             synthesizer_agent_id: string;
             synthesizer_team_id: string;
         };
+        /** @description An optional toolkit backend materialized as an ordinary custom Tools provider. */
+        AssociatedToolkit: {
+            discovery_url: string;
+        };
         /** @description ChatKit-owned attachment metadata. */
         Attachment: {
             bucket: string;
@@ -11068,28 +11246,25 @@ export interface components {
             id?: string;
             token?: string;
         };
-        /** @description Model-visible capability confirmation. It deliberately contains no approval token. */
-        CapabilityChangeApproval: {
-            approval_id: string;
-            instructions: string;
-            /** Format: int64 */
-            proposal_generation: number;
-            proposal_hash: string;
-            proposal_id: string;
-            status: string;
-            title: string;
-        };
-        /**
-         * @description The only supported decisions for an inline capability confirmation.
-         * @enum {string}
-         */
-        CapabilityChangeDecision: "approve" | "reject";
         /**
          * @description Body used by root-specific ownership-change operations. The target owner is
          *     always the effective actor; APIs do not expose arbitrary user transfer.
          */
         ChangeResourceOwnershipRequest: {
             ownership: components["schemas"]["ResourceOwnership"];
+        };
+        /** @description Private send intent; never include this value in canonical public events. */
+        ChannelDeliveryOptions: {
+            attachment_ids?: string[];
+            bcc?: string[] | null;
+            cc?: string[] | null;
+            html?: string | null;
+            /** @description Opaque extension interpreted exclusively by the owning adapter. */
+            provider_options?: unknown;
+            reply_all?: boolean | null;
+            subject?: string | null;
+            to?: string[] | null;
+            visible_recipients?: components["schemas"]["CustomExternalIdentity"][];
         };
         /** @description Approval information in an HTTP agent tool invocation. */
         ChatApproval: {
@@ -11318,6 +11493,32 @@ export interface components {
             /** @enum {string} */
             kind: "agent_job";
         });
+        /** @description A party that can appear in a ChatKit session. */
+        ChatKitIdentity: {
+            /** @description Set when this address belongs to one of our agents. */
+            agent_inbox_id?: string | null;
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            display_name: string;
+            /** @description The address within that scheme. `None` only for [`ChatKitIdentityKind::TildeUser`]. */
+            external_id?: string | null;
+            id: string;
+            kind: components["schemas"]["ChatKitIdentityKind"];
+            metadata?: Record<string, never> | null;
+            org_id: string;
+            /**
+             * @description Namespace that owns the address. Two GitHub organizations can both have
+             *     a `dan`, so the scheme alone is never unique.
+             */
+            provider_id?: string | null;
+            team_id: string;
+            /**
+             * @description Set only by a verified linking flow, or by us when registering an
+             *     address for one of our own principals. `None` means no authority.
+             */
+            tilde_user_id?: string | null;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+            verified_at?: null | components["schemas"]["WrappedChronoDateTime"];
+        };
         /**
          * @description Address scheme for a [`ChatKitIdentity`].
          * @enum {string}
@@ -11388,6 +11589,21 @@ export interface components {
          * @enum {string}
          */
         ChatKitParticipantType: "human" | "agent";
+        /** @description Discovery document served by the customer's SDK endpoint. */
+        ChatKitProviderManifest: {
+            auth_methods?: components["schemas"]["CustomProviderAuthMethod"][];
+            capabilities: components["schemas"]["CustomProviderCapabilities"];
+            configuration_schema: unknown;
+            description: string;
+            display_name: string;
+            fields?: components["schemas"]["CustomProviderField"][];
+            invoke_url: string;
+            /** Format: int32 */
+            protocol_version: number;
+            session_tools?: components["schemas"]["CustomSessionTool"][];
+            subscriptions?: string[];
+            version: string;
+        };
         ChatKitRealtimeSocketTicket: {
             expires_at: components["schemas"]["WrappedChronoDateTime"];
             /** @description Stable subprotocol prefix. Append `.` and the returned ticket. */
@@ -12199,20 +12415,6 @@ export interface components {
             resource_server_credential_id?: null | components["schemas"]["WrappedUuidV4"];
             user_credential_id?: null | components["schemas"]["WrappedUuidV4"];
         };
-        /** @description Agent-authored intent submitted to the server for validation and previewing. */
-        CreateSelfExtensionProposalInner: {
-            category: components["schemas"]["SelfExtensionCategory"];
-            /** @description Provider/domain desired state. Plaintext credential fields are rejected. */
-            desired_state: components["schemas"]["WrappedJsonValue"];
-            /** Format: int64 */
-            expires_in_seconds?: number;
-            idempotency_key: string;
-            rationale: string;
-            requesting_agent_id: string;
-            run_id?: string | null;
-            session_id?: string | null;
-            title: string;
-        };
         /** @description Inner create fields for a ChatKit session. */
         CreateSessionInner: {
             authorization?: components["schemas"]["ResourceAuthorizationModes"];
@@ -12556,6 +12758,291 @@ export interface components {
          * @enum {string}
          */
         CurrentSeatStatus: "active" | "not_assigned" | "not_billable";
+        /** @description Stable registration, separate from any configured connection. */
+        CustomChatKitProvider: {
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            discovery_url: string;
+            display_name: string;
+            enabled: boolean;
+            id: string;
+            last_discovery_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            last_discovery_error?: string | null;
+            local_running_endpoint: boolean;
+            manifest?: null | components["schemas"]["ChatKitProviderManifest"];
+            org_id: string;
+            /** Format: int64 */
+            revision: number;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        /** @description Returned once after rotation, with remote notification outcome for host recovery. */
+        CustomConnectionCredentials: {
+            backend_notified: boolean;
+            runtime_token: string;
+        };
+        /** @description Public connection configuration; runtime credentials and setup state are excluded. */
+        CustomConnectionInfo: {
+            configuration: unknown;
+            default_agent_inbox_id?: string | null;
+            definition_id: string;
+            display_name: string;
+            enabled: boolean;
+            id: string;
+            org_id: string;
+            setup_id: string;
+            status: string;
+            team_id: string;
+            tool_group_instance_id?: string | null;
+            toolkit_discovery_url?: string | null;
+        };
+        CustomConnectionInfoPaginatedResponse: {
+            items: components["schemas"]["CustomConnectionInfo"][];
+            next_page_token?: string;
+        };
+        /** @description Operational diagnostics omit normalized message bodies and credentials. */
+        CustomConnectionWork: {
+            /** Format: int64 */
+            attempts: number;
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            kind: string;
+            last_error?: string | null;
+            next_attempt_at: components["schemas"]["WrappedChronoDateTime"];
+            status: string;
+            work_id: string;
+        };
+        CustomConnectionWorkPaginatedResponse: {
+            items: components["schemas"]["CustomConnectionWork"][];
+            next_page_token?: string;
+        };
+        /** @description One external address; callers cannot grant themselves principal authority. */
+        CustomExternalIdentity: {
+            display_name: string;
+            external_id: string;
+            kind: components["schemas"]["ChatKitIdentityKind"];
+        };
+        /** @description Normalized event accepted using a single connection's runtime credential. */
+        CustomInboundMessage: {
+            attachment_ids?: string[];
+            conversation_key: string;
+            event_id: string;
+            external_message_id: string;
+            provider_metadata?: unknown;
+            provider_thread?: unknown;
+            sender: components["schemas"]["CustomExternalIdentity"];
+            text: string;
+        };
+        /** @description A durable ingestion acknowledgment, including replay of an existing event. */
+        CustomIngressReceipt: {
+            event_id: string;
+            message_id: string;
+            status: string;
+        };
+        /** @description Provider-owned authorization method; secret fields are never list outputs. */
+        CustomProviderAuthMethod: {
+            description: string;
+            display_name: string;
+            fields: components["schemas"]["CustomProviderField"][];
+            id: string;
+        };
+        /** @description Content conversion and runtime features declared by a backend. */
+        CustomProviderCapabilities: {
+            attachments?: boolean;
+            delivery?: boolean;
+            html?: boolean;
+            identity?: boolean;
+            inbound?: boolean;
+            markdown?: boolean;
+            max_length?: number | null;
+            streaming?: boolean;
+            toolkit?: boolean;
+        };
+        /** @description Named schema-backed field rendered by the existing generic setup flow. */
+        CustomProviderField: {
+            field_type: string;
+            label: string;
+            name: string;
+            placeholder?: string;
+            required?: boolean;
+        };
+        /** @description Exact signed remote invocation. Secret-bearing payloads intentionally omit Debug. */
+        CustomProviderInvocation: {
+            configuration: unknown;
+            context?: null | components["schemas"]["CustomSessionContext"];
+            input: unknown;
+            manifest_version: string;
+            operation: components["schemas"]["CustomProviderOperation"];
+            /** Format: int32 */
+            protocol_version: number;
+            request_id: string;
+            scope: components["schemas"]["CustomProviderScope"];
+            secrets: unknown;
+        };
+        /** @description A paginated team catalog; continuation uses the existing timestamp cursor. */
+        CustomProviderList: {
+            items: components["schemas"]["CustomChatKitProvider"][];
+            next_page_token?: string | null;
+        };
+        /**
+         * @description Tilde-owned protocol operations are typed independently of provider business inputs.
+         * @enum {string}
+         */
+        CustomProviderOperation: "setup_start" | "setup_resume" | "disconnect" | "runtime_credentials_updated" | "toolkit_configured" | "register_identity" | "normalize_mentions" | "list_session_tools" | "invoke_session_tool" | "reconcile_session_tool" | "prepare_send" | "deliver" | "reconcile_delivery";
+        /** @description Signing material is returned only by explicit create/rotate operations. */
+        CustomProviderRegistration: {
+            provider: components["schemas"]["CustomChatKitProvider"];
+            signing_key: string;
+        };
+        /** @description Input for creating or editing a reusable backend registration. */
+        CustomProviderRegistrationInput: {
+            discovery_url: string;
+            display_name: string;
+            local_running_endpoint?: boolean;
+        };
+        /** @description Tenant-scoped coordinates recovered from persisted records. */
+        CustomProviderScope: {
+            connection_id: string;
+            definition_id: string;
+            org_id: string;
+            team_id: string;
+        };
+        /** @description Remote mutations must distinguish absence from an unresolved prior attempt. */
+        CustomReconciliation: {
+            result: unknown;
+            /** @enum {string} */
+            status: "applied";
+        } | {
+            /** @enum {string} */
+            status: "absent";
+        } | {
+            reason: string;
+            /** @enum {string} */
+            status: "uncertain";
+        };
+        /** @description Narrow operations a provider may perform inside its own bound conversations. */
+        CustomRuntimeCommand: {
+            /** @enum {string} */
+            operation: "register_agent_identity";
+        } | {
+            /** @enum {string} */
+            operation: "normalize_mentions";
+            tags: string[];
+        } | {
+            conversation_key: string;
+            /** @enum {string} */
+            operation: "ensure_conversation";
+            provider_thread?: unknown;
+            title?: string | null;
+        } | {
+            filename?: string | null;
+            media_type: string;
+            /** @enum {string} */
+            operation: "create_attachment_upload";
+            session_id: string;
+            /** Format: int64 */
+            size_bytes?: number | null;
+        } | {
+            attachment_id: string;
+            /** @enum {string} */
+            operation: "complete_attachment_upload";
+            session_id: string;
+            sha256?: string | null;
+            /** Format: int64 */
+            size_bytes?: number | null;
+        } | {
+            attachment_id: string;
+            /** @enum {string} */
+            operation: "attachment_download";
+            session_id: string;
+        } | {
+            identity: components["schemas"]["CustomExternalIdentity"];
+            /** @enum {string} */
+            operation: "upsert_participant";
+            session_id: string;
+        } | {
+            external_id: string;
+            /** @enum {string} */
+            operation: "leave_participant";
+            session_id: string;
+        } | {
+            next_page_token?: string | null;
+            /** @enum {string} */
+            operation: "history";
+            /** Format: int64 */
+            page_size?: number | null;
+            session_id: string;
+        };
+        /** @description Runtime responses deliberately expose no general team resource operations. */
+        CustomRuntimeResponse: {
+            identity: components["schemas"]["ChatKitIdentity"];
+            /** @enum {string} */
+            type: "identity";
+        } | {
+            identities: components["schemas"]["ChatKitIdentity"][];
+            /** @enum {string} */
+            type: "mentions";
+        } | {
+            session_id: string;
+            /** @enum {string} */
+            type: "conversation";
+        } | {
+            /** @enum {string} */
+            type: "upload";
+            upload: components["schemas"]["CreateAttachmentUploadResponse"];
+        } | {
+            attachment: components["schemas"]["Attachment"];
+            /** @enum {string} */
+            type: "attachment";
+        } | {
+            download: components["schemas"]["GetAttachmentDownloadUrlResponse"];
+            /** @enum {string} */
+            type: "download";
+        } | {
+            participant: components["schemas"]["ChatKitParticipant"];
+            /** @enum {string} */
+            type: "participant";
+        } | {
+            /** @enum {string} */
+            type: "left";
+        } | {
+            messages: components["schemas"]["CustomVisibleMessage"][];
+            next_page_token?: string | null;
+            /** @enum {string} */
+            type: "history";
+        };
+        /** @description Coordinates verified against the active turn before invoking a session tool. */
+        CustomSessionContext: {
+            agent_inbox_instance_id: string;
+            conversation_key: string;
+            execution_id: string;
+            external_message_id: string;
+            participants?: components["schemas"]["CustomSessionParticipant"][];
+            provider_message: unknown;
+            /** @description Only the provider adapter interprets this external reply handle. */
+            provider_thread: unknown;
+            session_id: string;
+            target_inbox_instance_id: string;
+            trigger_message_id: string;
+        };
+        /** @description Active delivery roster, excluding Tilde authorization principals and other connections' addresses. */
+        CustomSessionParticipant: {
+            display_name: string;
+            external_id?: string | null;
+            instance_id: string;
+            is_agent: boolean;
+        };
+        /** @description Tool schemas describe business inputs only. Context travels separately. */
+        CustomSessionTool: {
+            description: string;
+            input_schema: unknown;
+            name: string;
+            output_schema: unknown;
+            read_only?: boolean;
+        };
+        /** @description Server-bound tool catalog for the authenticated agent's current turn. */
+        CustomSessionToolCatalog: {
+            context?: null | components["schemas"]["CustomSessionContext"];
+            tools: components["schemas"]["CustomSessionTool"][];
+        };
         CustomSkillSpec: {
             content: string;
             description: string;
@@ -12597,6 +13084,13 @@ export interface components {
             tool_group_source_type_id: string;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
         };
+        CustomVisibleMessage: {
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            id: string;
+            role: components["schemas"]["MessageRole"];
+            sender_display_name: string;
+            text: string;
+        };
         /** @description Data UI part - represents custom data parts */
         DataUIPart: {
             data: components["schemas"]["WrappedJsonValue"];
@@ -12605,14 +13099,6 @@ export interface components {
         };
         DebugAuthProfilesResponse: {
             profiles: string[];
-        };
-        /** @description Exact client binding posted when a human presses Yes or No. */
-        DecideCapabilityChangeRequest: {
-            approval_id: string;
-            decision: components["schemas"]["CapabilityChangeDecision"];
-            /** Format: int64 */
-            proposal_generation: number;
-            proposal_hash: string;
         };
         /** @description Request body for accepting or declining a room invitation. */
         DecideChatKitRoomInvitationRequestInner: {
@@ -13173,10 +13659,6 @@ export interface components {
             /** @enum {string} */
             type: "browser_session_handoff";
             ws_url: string;
-        } | {
-            proposal_id: string;
-            /** @enum {string} */
-            type: "capability_change";
         };
         HumanApprovalActionResponse: {
             approval: components["schemas"]["HumanApprovalAction"];
@@ -14472,20 +14954,6 @@ export interface components {
          * @enum {string}
          */
         ProductSubscriptionStatus: "inactive" | "sync_pending" | "trialing" | "active" | "past_due" | "suspended" | "canceled";
-        /** @description A required credential descriptor. It intentionally cannot carry a value. */
-        ProposalCredentialRequirement: {
-            brokered_by: string;
-            credential_type: string;
-            purpose: string;
-            required_fields?: string[];
-        };
-        /** @description One permission or audience expansion shown before approval. */
-        ProposalPermissionChange: {
-            permission: string;
-            plane: string;
-            principals?: string[];
-            reason: string;
-        };
         /** @description Response for setup or app provisioning lifecycle calls. */
         ProviderAppProvisioningResponse: {
             next_action: components["schemas"]["ProviderProvisioningNextAction"];
@@ -15321,6 +15789,9 @@ export interface components {
         RetainMemoryBody: {
             document: components["schemas"]["MemoryDocument"];
         };
+        RetryConnectionWork: {
+            work_id: string;
+        };
         RetryMemorySourceBody: {
             source_id: string;
             source_kind: components["schemas"]["MemorySourceKind"];
@@ -15485,71 +15956,6 @@ export interface components {
         SelectDebugAuthProfileRequest: {
             profile: string;
         };
-        /**
-         * @description Resource families an agent may propose but never directly provision.
-         * @enum {string}
-         */
-        SelfExtensionCategory: "connector" | "mcp_server" | "skill_registry" | "custom_tool" | "agent" | "memory_bank" | "wiki";
-        /** @description Server-authored review document rendered by every client without category branches. */
-        SelfExtensionPreview: {
-            affected_agents?: string[];
-            affected_users?: string[];
-            cost_summary: string;
-            credentials?: components["schemas"]["ProposalCredentialRequirement"][];
-            egress_destinations?: string[];
-            permissions?: components["schemas"]["ProposalPermissionChange"][];
-            /** @description Concrete desired-state diff with secret references but no secret values. */
-            resource_diff: components["schemas"]["WrappedJsonValue"];
-            rollback_plan: string;
-            security_summary: string;
-        };
-        /** @description Public proposal snapshot. It never returns worker leases or secret material. */
-        SelfExtensionProposal: {
-            /** @description Secret-free binding used by clients to render and submit the exact approval. */
-            approval: components["schemas"]["CapabilityChangeApproval"];
-            approved_by_user_id?: string | null;
-            calling_subject_id: string;
-            category: components["schemas"]["SelfExtensionCategory"];
-            continuation?: null | components["schemas"]["WrappedJsonValue"];
-            created_at: components["schemas"]["WrappedChronoDateTime"];
-            desired_state: components["schemas"]["WrappedJsonValue"];
-            error_message?: string | null;
-            expires_at: components["schemas"]["WrappedChronoDateTime"];
-            /** Format: int64 */
-            generation: number;
-            id: string;
-            org_id: string;
-            outputs_available: boolean;
-            preview: components["schemas"]["SelfExtensionPreview"];
-            rationale: string;
-            requesting_agent_id: string;
-            requesting_user_id?: string | null;
-            resources?: components["schemas"]["SelfExtensionResource"][];
-            run_id?: string | null;
-            session_id?: string | null;
-            status: components["schemas"]["SelfExtensionStatus"];
-            team_id: string;
-            title: string;
-            updated_at: components["schemas"]["WrappedChronoDateTime"];
-        };
-        /** @description One-time execution values, returned only to an authorized human reviewer. */
-        SelfExtensionProposalOutputs: {
-            values?: {
-                [key: string]: string;
-            };
-        };
-        /** @description A resource receipt used for idempotency and exact rollback ownership. */
-        SelfExtensionResource: {
-            created_by_proposal: boolean;
-            id: string;
-            key: string;
-            kind: string;
-        };
-        /**
-         * @description Durable proposal lifecycle. Execution and rollback are leased worker states.
-         * @enum {string}
-         */
-        SelfExtensionStatus: "pending" | "approved" | "executing" | "executed" | "rejected" | "cancelled" | "expired" | "rollback_queued" | "rolling_back" | "rolled_back" | "error";
         SelfProfileAvatarResponse: {
             avatar: components["schemas"]["UserAvatar"];
         };
@@ -15580,10 +15986,12 @@ export interface components {
         };
         /** @description Model-visible parameters for the session-bound communication tool. */
         SendSessionMessageInput: {
+            attachment_ids?: components["schemas"]["WrappedUuidV4"][];
             bcc?: string[] | null;
             cc?: string[] | null;
             content: string;
             html?: string | null;
+            provider_options?: null | components["schemas"]["WrappedJsonValue"];
             reply_all?: boolean | null;
             subject?: string | null;
             to?: string[] | null;
@@ -15939,6 +16347,11 @@ export interface components {
             team_id: string;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
         };
+        SkillRegistryMembershipView: {
+            agent_id?: string | null;
+            id: components["schemas"]["WrappedUuidV4"];
+            skill_ids: components["schemas"]["WrappedUuidV4"][];
+        };
         SkillRegistryPaginatedResponse: {
             items: components["schemas"]["SkillRegistry"][];
             next_page_token?: string;
@@ -15949,6 +16362,23 @@ export interface components {
             enabled_skills?: components["schemas"]["EnabledSkillsSpec"];
             id?: string | null;
             name?: string | null;
+        };
+        SkillResourceInventory: {
+            skill_providers: components["schemas"]["ProxiedSkillProvider"][];
+            skill_registries: components["schemas"]["SkillRegistryMembershipView"][];
+            skills: components["schemas"]["SkillResourceView"][];
+        };
+        SkillResourceView: {
+            assigned_agent_ids: string[];
+            description: string;
+            enabled_for_personal: boolean;
+            id: components["schemas"]["WrappedUuidV4"];
+            name: string;
+            personal_user_id?: string | null;
+            source_commit_hash?: string | null;
+            source_kind: string;
+            source_path?: string | null;
+            source_provider_id?: string | null;
         };
         SkillSummary: {
             description: string;
@@ -16448,6 +16878,24 @@ export interface components {
          * @enum {string}
          */
         ToolInvocationState: "input-streaming" | "input-available" | "approval-requested" | "approval-responded" | "output-available" | "output-error" | "output-denied";
+        ToolProviderAccountView: {
+            assigned_agent_ids: string[];
+            credential_source_type_id: string;
+            display_name: string;
+            enabled_for_personal: boolean;
+            enabled_tool_source_type_ids: string[];
+            id: string;
+            personal_user_id?: string | null;
+            status: string;
+            tool_group_source_type_id: string;
+        };
+        ToolProviderInventory: {
+            managed_providers: components["schemas"]["McpProviderCatalogEntry"][];
+            mcp_servers: components["schemas"]["McpServerInstanceSerializedWithFunctions"][];
+            proxied_mcp_servers: components["schemas"]["ProxiedMcpServerListItem"][];
+            tool_accounts: components["schemas"]["ToolProviderAccountView"][];
+            tool_providers: components["schemas"]["ToolGroupSourceSerialized"][];
+        };
         ToolSourceSerialized: {
             annotations?: null | components["schemas"]["WrappedJsonValue"];
             categories: string[];
@@ -24606,6 +25054,504 @@ export interface operations {
             };
         };
     };
+    "chatkit-get-custom-connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomConnectionInfo"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-ingest-custom-provider-message": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomInboundMessage"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomIngressReceipt"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-custom-provider-runtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomRuntimeCommand"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomRuntimeResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-rotate-custom-connection-credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomConnectionCredentials"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-list-custom-connection-work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomConnectionWorkPaginatedResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-retry-custom-connection-work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetryConnectionWork"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteInboxResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-list-custom-provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomProviderList"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-create-custom-provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomProviderRegistrationInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomProviderRegistration"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-get-custom-provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomChatKitProvider"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-update-custom-provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomProviderRegistrationInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomChatKitProvider"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-delete-custom-provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteInboxResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-list-custom-connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomConnectionInfoPaginatedResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-disable-custom-provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomChatKitProvider"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-enable-custom-provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomChatKitProvider"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-refresh-custom-provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomChatKitProvider"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-rotate-custom-provider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomProviderRegistration"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "link-team-identity": {
         parameters: {
             query?: never;
@@ -24782,214 +25728,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    "chatkit-list-self-extension-proposals": {
-        parameters: {
-            query?: {
-                status?: components["schemas"]["SelfExtensionStatus"];
-                requesting_agent_id?: string;
-                page_size?: number;
-            };
-            header?: never;
-            path: {
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"][];
-                };
-            };
-        };
-    };
-    "chatkit-propose-self-extension": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateSelfExtensionProposalInner"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
-    "chatkit-get-self-extension-proposal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
-    "chatkit-approve-self-extension-proposal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
-    "chatkit-cancel-self-extension-proposal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
-    "chatkit-decide-capability-change": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DecideCapabilityChangeRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
-    "chatkit-claim-self-extension-proposal-outputs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposalOutputs"];
-                };
-            };
-        };
-    };
-    "chatkit-reject-self-extension-proposal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
-                };
-            };
-        };
-    };
-    "chatkit-rollback-self-extension-proposal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                team_id: string;
-                proposal_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SelfExtensionProposal"];
                 };
             };
         };
@@ -26353,6 +27091,39 @@ export interface operations {
             };
         };
     };
+    "chatkit-stream-session-events": {
+        parameters: {
+            query?: {
+                after_revision?: number | null;
+            };
+            header?: never;
+            path: {
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Canonical session event stream */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": unknown;
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "chatkit-list-room-invitations": {
         parameters: {
             query?: {
@@ -26826,6 +27597,36 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "chatkit-list-session-provider-tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomSessionToolCatalog"];
+                };
+            };
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -31971,6 +32772,30 @@ export interface operations {
             };
         };
     };
+    "list-tool-provider-inventory": {
+        parameters: {
+            query?: {
+                scope?: "all" | "personal" | "bots";
+                user_id?: string | null;
+            };
+            header?: never;
+            path: {
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolProviderInventory"];
+                };
+            };
+        };
+    };
     "list-tools": {
         parameters: {
             query: {
@@ -35071,6 +35896,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "list-skill-resource-inventory": {
+        parameters: {
+            query?: {
+                scope?: "all" | "personal" | "bots";
+                user_id?: string | null;
+            };
+            header?: never;
+            path: {
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillResourceInventory"];
+                };
             };
         };
     };

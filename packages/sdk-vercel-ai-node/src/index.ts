@@ -253,3 +253,5 @@ export {
   webhookSigningKeyFromEnv,
   WebhookVerificationError,
 } from "./webhook";
+
+export { sessionProviderTools } from "./session-provider-tools";

@@ -1,4 +1,5 @@
 import type { ChatKitAudioContext, ChatKitTelnyxContext } from "./audio-context";
+import { sessionProviderTools } from "./session-provider-tools";
 import type {
   ChatKitCompactionCheckpoint,
   ChatKitCompactionLifecycle,
@@ -305,7 +306,11 @@ export function chatKitEndpoint(
         });
       },
     };
-    const sessionTools = toolSession ? createChatKitSessionTools(client, toolSession) : undefined;
+    const sessionTools = toolSession
+      ? toolSession.providerId === "chatkit.channel.custom"
+        ? await sessionProviderTools(client, { sessionId: sessionId.value })
+        : createChatKitSessionTools(client, toolSession)
+      : undefined;
     const currentRequestMessageIds = messageIds(body.messages);
     const session: ChatKitSessionClient = {
       id: sessionId.value,

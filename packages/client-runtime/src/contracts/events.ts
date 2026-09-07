@@ -1,3 +1,4 @@
+import { ToolExecutionViewSchema } from "./transcript.js";
 import { z } from "zod";
 import { ChatMessageSchema } from "./messages.js";
 import { QueuedTurnSchema } from "./queue.js";
@@ -65,7 +66,7 @@ const baseEvent = {
 export const ParticipantIdentitySchema = z.object({
   participant_handle: z.string().min(1),
   participant_type: z.enum(["human", "agent"]),
-  membership_source: z.enum(["explicit", "provider", "recipient"]),
+  membership_source: z.enum(["explicit", "invitation", "provider", "recipient"]),
   inbox_id: z.string().min(1),
   inbox_instance_id: z.string().min(1),
   display_name: z.string(),
@@ -90,6 +91,11 @@ export const ParticipantEventSchema = z.discriminatedUnion("type", [
 export type ParticipantEvent = z.infer<typeof ParticipantEventSchema>;
 
 export const ChatEventSchema = z.discriminatedUnion("type", [
+  z.object({
+    ...baseEvent,
+    type: z.literal("tool.execution"),
+    data: z.object({ execution: ToolExecutionViewSchema }),
+  }),
   z.object({ ...baseEvent, type: z.literal("access.changed") }),
   z.object({
     ...baseEvent,

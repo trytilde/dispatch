@@ -3,12 +3,14 @@ import type { NormalizedConfig } from "../config";
 import { requestJson } from "../internal/fetch-client";
 import { buildUrl, pathWithParams, teamPath } from "../internal/paths";
 import type { JsonObject, JsonValue } from "../tools";
+import { CustomChatKitProvidersClient, sessionProviderTools } from "./custom-providers";
 import { MessagesClient } from "./messages";
 import { ChatKitRoomsClient } from "./rooms";
 export * from "./rooms";
 import { AgentRunsClient } from "./runs";
 import { ChatKitRoutinesClient } from "./routines";
 import { ChatKitWorkClient } from "./work";
+import { type ChatKitSessionStreamOptions, streamSessionEvents } from "./session-stream";
 
 export * from "./jobs";
 export * from "./routines";
@@ -228,12 +230,65 @@ export type InvokeSessionProviderToolResult = {
 
 export class ChatKitClient {
   readonly audio: AudioClient;
+  readonly customProviders: CustomChatKitProvidersClient;
+
+  /** Submit a caller-owned turn and retain its snapshot cursor for streaming recovery. */
+  async submitTurn(input: {
+    agentId: string;
+    sessionId?: string;
+    title?: string;
+    text: string;
+    attachments?: {
+      attachmentId: string;
+      sizeBytes?: number;
+      sha256?: string;
+    }[];
+  }): Promise<{
+    sessionId: string;
+    snapshotRevision: number;
+    conversation: JsonObject;
+  }> {
+    const raw = await requestJson<{
+      session: { id: string };
+      conversation: JsonObject & { snapshot_revision: number };
+    }>(this.#config, {
+      method: "POST",
+      path: pathWithParams(
+        teamPath(this.#config, "/api/v1/team/{team_id}/chatkit/workspace/agents/{agent_id}/turns"),
+        { agent_id: input.agentId },
+      ),
+      body: {
+        session_id: input.sessionId ?? null,
+        title: input.title ?? null,
+        text: input.text,
+        attachments: (input.attachments ?? []).map((file) => ({
+          attachment_id: file.attachmentId,
+          size_bytes: file.sizeBytes ?? null,
+          sha256: file.sha256 ?? null,
+        })),
+      },
+    });
+    return {
+      sessionId: raw.session.id,
+      snapshotRevision: raw.conversation.snapshot_revision,
+      conversation: raw.conversation,
+    };
+  }
+
+  streamSessionEvents(input: ChatKitSessionStreamOptions) {
+    return streamSessionEvents(this.#config, input);
+  }
+
+  sessionTools(input: { sessionId: string }) {
+    return sessionProviderTools(this.#config, input);
+  }
   readonly #config: NormalizedConfig;
   readonly #messages: MessagesClient;
   readonly rooms: ChatKitRoomsClient;
   readonly runs: AgentRunsClient;
 
   constructor(config: NormalizedConfig, messages = new MessagesClient(config)) {
+    this.customProviders = new CustomChatKitProvidersClient(config);
     this.#config = config;
     this.audio = new AudioClient(config);
     this.#messages = messages;

@@ -8,7 +8,7 @@ import {
 const evidenceId = "11111111-1111-4111-8111-111111111111";
 
 describe("createMemorySynthesisTools", () => {
-  it("keeps only bound mutations and read-only skill discovery", () => {
+  it("keeps bound mutations, authorized history search and read-only skill discovery", () => {
     const executable = { execute: vi.fn() } as never;
     const bound = { memory_upsert: executable, finish_synthesis: executable };
     expect(
@@ -16,6 +16,7 @@ describe("createMemorySynthesisTools", () => {
         restrictMemorySynthesisTools(
           {
             ...bound,
+            chatkit_search_history: executable,
             search_skills: executable,
             read_skill: executable,
             sendMessage: executable,
@@ -26,7 +27,13 @@ describe("createMemorySynthesisTools", () => {
           bound,
         ),
       ).toSorted(),
-    ).toEqual(["finish_synthesis", "memory_upsert", "read_skill", "search_skills"]);
+    ).toEqual([
+      "chatkit_search_history",
+      "finish_synthesis",
+      "memory_upsert",
+      "read_skill",
+      "search_skills",
+    ]);
   });
 
   it("exposes bank-free tools backed by one synthesis session client", async () => {

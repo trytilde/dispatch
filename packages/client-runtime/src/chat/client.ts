@@ -1,3 +1,11 @@
+import { createNativeConnectorSetupTransport } from "../native-connector-setup.js";
+import type { ProviderSetupTransport } from "../provider-setup.js";
+import {
+  ChatChannelsSchema,
+  type ChatChannelDescriptor,
+  TeamPeoplePageSchema,
+  type ParticipantCandidate,
+} from "../contracts/session.js";
 import { z } from "zod";
 import {
   AttachmentDownloadSchema,
@@ -56,6 +64,7 @@ import {
   RoomInvitationListSchema,
   RoomInvitationSchema,
   RoomRosterSchema,
+  RoomParticipantSchema,
   type InviteRoomUserInput,
   type RoomInvitation,
   type RoomParticipant,
@@ -132,6 +141,17 @@ export interface OpenBotClient {
   interruptSession(sessionId: string): Promise<void>;
   getMessages(sessionId: string, nextPageToken?: string | null): Promise<ChatMessagePage>;
   getRoomRoster(sessionId: string): Promise<RoomParticipant[]>;
+  addRoomAgent(sessionId: string, agentId: string, name: string): Promise<RoomParticipant>;
+  getTeamPeople(): Promise<ParticipantCandidate[]>;
+  getChatChannels(): Promise<ChatChannelDescriptor[]>;
+  addRoomPerson(
+    sessionId: string,
+    input: { inboxId: string; userId: string; name: string },
+  ): Promise<RoomParticipant>;
+  joinRoom(
+    sessionId: string,
+    input: { inboxId: string; userId: string; name: string; instanceId?: string },
+  ): Promise<RoomParticipant>;
   getRoomInvitations(sessionId: string): Promise<RoomInvitation[]>;
   inviteRoomUser(sessionId: string, input: InviteRoomUserInput): Promise<RoomInvitation>;
   decideRoomInvitation(
@@ -195,10 +215,18 @@ export interface OpenBotClient {
   listConnectorProviders(): Promise<ConnectorProvider[]>;
   listConnectorAccounts(providerTypeId?: string): Promise<ConnectorAccount[]>;
   waitForConnectorAccount(accountId: string): Promise<ConnectorAccount>;
+  createConnectorSetupTransport(): ProviderSetupTransport;
+  listUserConnectorAccounts(userId: string, providerTypeId: string): Promise<ConnectorAccount[]>;
+  createUserMcpTarget(userId: string): Promise<{ id: string; name: string }>;
+  listUserMcpTargets(userId: string): Promise<Array<{ id: string; name: string }>>;
+  bindConnectorForUser(userId: string, accountId: string, mcpServerId: string): Promise<void>;
   createConnectorAccount(input: CreateConnectorAccountInput): Promise<CreateConnectorAccountResult>;
   bindConnector(agentId: string, accountId: string): Promise<void>;
   deleteConnectorAccounts(accountIds: readonly string[]): Promise<void>;
-  getPluginsCatalog(): Promise<PluginsCatalog>;
+  getPluginsCatalog(
+    scope?: import("../contracts/plugins.js").ResourceScope,
+    options?: { refresh?: boolean },
+  ): Promise<PluginsCatalog>;
   setToolAccountForAgent(accountId: string, agentId: string, enabled: boolean): Promise<void>;
   setSkillForAgent(skillId: string, agentId: string, enabled: boolean): Promise<void>;
   createAttachment(sessionId: string, input: CreateAttachmentInput): Promise<AttachmentUpload>;
@@ -228,6 +256,7 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
   const fetchImplementation = options.fetch ?? globalThis.fetch.bind(globalThis);
   const baseUrl = options.baseUrl?.replace(/\/$/, "") ?? "";
   let tildeApiBaseUrl = options.tildeApiBaseUrl;
+  let tildeTeamId: string | undefined;
 
   const resolve = (path: string): string => `${baseUrl}${path}`;
 
@@ -313,6 +342,7 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
       if (!response.ok) throw await responseError(response);
       const session = AuthenticatedSessionSchema.parse(await response.json());
       tildeApiBaseUrl = session.tilde?.api_base_url ?? tildeApiBaseUrl;
+      tildeTeamId = session.tilde?.team_id;
       return session;
     },
     logout: () => empty("/auth/logout", { method: "POST" }),
@@ -418,6 +448,81 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
         ChatMessagePageSchema,
       );
     },
+    async getChatChannels() {
+      const channels = await json(chatPath("chat-channels"), ChatChannelsSchema);
+      return channels.map((channel) => ({
+        ...channel,
+        ...(channel.icon_url && tildeApiBaseUrl
+          ? { icon_url: new URL(channel.icon_url, tildeApiBaseUrl).href }
+          : {}),
+      }));
+    },
+    joinRoom: (sessionId, input) =>
+      json(chatPath(`sessions/${encodeURIComponent(sessionId)}/join`), RoomParticipantSchema, {
+        method: "POST",
+        body: JSON.stringify({
+          participant: {
+            participant_type: "human",
+            inbox_id: input.inboxId,
+            tilde_user_id: input.userId,
+            display_name: input.name,
+            ...(input.instanceId ? { instance_id: input.instanceId } : {}),
+          },
+        }),
+      }),
+    async getTeamPeople() {
+      const people: ParticipantCandidate[] = [];
+      const seen = new Set<string>();
+      let token: string | null | undefined;
+      do {
+        const query = new URLSearchParams({ page_size: "100", user_type: "human" });
+        if (token) query.set("next_page_token", token);
+        const page = await json(chatPath(`_identity/team-members?${query}`), TeamPeoplePageSchema);
+        people.push(
+          ...page.items
+            .filter((item) => item.user.user_type === "human")
+            .map(({ user }) => ({
+              id: user.id,
+              userId: user.id,
+              kind: "human" as const,
+              name: user.display_name || user.email || "Team member",
+              ...(user.email ? { email: user.email } : {}),
+            })),
+        );
+        token = page.next_page_token;
+        if (token && seen.has(token))
+          throw new Error("People directory returned a repeated page cursor");
+        if (token) seen.add(token);
+      } while (token);
+      return people;
+    },
+    addRoomPerson: (sessionId, input) =>
+      json(
+        chatPath(`sessions/${encodeURIComponent(sessionId)}/participants`),
+        RoomParticipantSchema,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            participant: {
+              participant_type: "human",
+              inbox_id: input.inboxId,
+              tilde_user_id: input.userId,
+              display_name: input.name,
+            },
+          }),
+        },
+      ),
+    addRoomAgent: (sessionId, agentId, name) =>
+      json(
+        chatPath(`sessions/${encodeURIComponent(sessionId)}/participants`),
+        RoomParticipantSchema,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            participant: { participant_type: "agent", inbox_id: agentId, display_name: name },
+          }),
+        },
+      ),
     getRoomRoster: (sessionId) =>
       json(chatPath(`sessions/${encodeURIComponent(sessionId)}/participants`), RoomRosterSchema),
     getRoomInvitations: (sessionId) =>
@@ -606,6 +711,90 @@ export function createOpenBotClient(options: OpenBotClientOptions = {}): OpenBot
       ),
     ...routines,
     ...signals,
+    createConnectorSetupTransport: () =>
+      createNativeConnectorSetupTransport(
+        (path, init) => json(path, z.unknown(), init),
+        () => tildeTeamId,
+      ),
+    async listUserConnectorAccounts(userId, providerTypeId) {
+      if (!userId) throw new Error("A target user is required.");
+      const schema = z.object({
+        id: z.string(),
+        display_name: z.string(),
+        status: z.string(),
+        tool_group_source_type_id: z.string(),
+        credential_source_type_id: z.string().optional(),
+      });
+      const page = await json(
+        "/api/tilde/user-tools/mcp/tool-group?page_size=200",
+        z.object({ items: z.array(schema) }),
+      );
+      return page.items
+        .filter((account) => account.tool_group_source_type_id === providerTypeId)
+        .map((account) => ({
+          id: account.id,
+          display_name: account.display_name,
+          status: account.status,
+          provider_type_id: account.tool_group_source_type_id,
+          credential_source_type_id: account.credential_source_type_id,
+        }));
+    },
+    async listUserMcpTargets(_userId) {
+      const schema = z.object({ id: z.string(), name: z.string(), agent_id: z.string().nullish() });
+      const page = await json(
+        "/api/tilde/user-tools/mcp/mcp-server?page_size=200",
+        z.object({ items: z.array(schema) }),
+      );
+      const servers = page.items.filter((server) => !server.agent_id);
+      return servers.map(({ id, name }) => ({ id, name }));
+    },
+    async createUserMcpTarget(userId) {
+      const schema = z.object({ id: z.string(), name: z.string(), agent_id: z.string().nullish() });
+      const id = `user-tools-${userId}`;
+      const response = await request(
+        `/api/tilde/user-tools/mcp/mcp-server/${encodeURIComponent(id)}`,
+      );
+      if (response.ok) {
+        const existing = schema.parse(await response.json());
+        if (existing.agent_id) throw new Error("This tools MCP is agent-owned.");
+        return existing;
+      }
+      if (response.status !== 404) throw await responseError(response);
+      const server = await json("/api/tilde/user-tools/mcp/mcp-server", schema, {
+        method: "POST",
+        body: JSON.stringify({
+          id,
+          name: "My tools",
+          is_dynamic_tool_discovery: true,
+          user_tool_federation_mode: "all",
+          user_tool_federation_selections: [],
+        }),
+      });
+      return { id: server.id, name: server.name };
+    },
+    async bindConnectorForUser(userId, accountId, mcpServerId) {
+      if (!userId || !mcpServerId) throw new Error("Choose the target user's MCP server.");
+      const server = await json(
+        `/api/tilde/user-tools/mcp/mcp-server/${encodeURIComponent(mcpServerId)}`,
+        z.object({ id: z.string(), agent_id: z.string().nullish() }),
+      );
+      if (server.agent_id)
+        throw new Error("User connectors cannot be bound to an agent's own MCP server.");
+      const result = await json(
+        `/api/tilde/user-tools/mcp/tool-group/${encodeURIComponent(accountId)}/tools/enable-and-bind`,
+        z.object({ complete: z.boolean() }),
+        {
+          method: "POST",
+          body: JSON.stringify({
+            all_tools: true,
+            tool_source_type_ids: [],
+            mcp_server_instance_ids: [mcpServerId],
+          }),
+        },
+      );
+      if (!result.complete)
+        throw new Error("Some tools could not be enabled. Retry to finish connecting.");
+    },
     async createConnectorAccount(input) {
       return await plugins.createNativeConnectorAccount(input);
     },

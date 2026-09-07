@@ -656,6 +656,42 @@ describe("bare OpenBot server", () => {
     expect(upstreamCalls).toBe(0);
   });
 
+  it("bridges only a read of the configured team's people directory", async () => {
+    const urls: string[] = [];
+    const app = createApp({
+      tildeChatProxy: {
+        apiKey: "test-key",
+        orgId: "org-one",
+        teamId: "team-one",
+        baseUrl: "https://tilde.test",
+        fetch: async (input) => {
+          urls.push(
+            typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
+          );
+          return Response.json({ items: [] });
+        },
+      },
+    });
+    const response = await app.request(
+      "https://openbot.test/api/chat/_identity/team-members?user_type=human&page_size=100",
+    );
+    expect(response.status).toBe(200);
+    expect(urls[0]).toBe(
+      "https://tilde.test/api/v1/identity/teams/team-one/members?user_type=human&page_size=100",
+    );
+    expect(
+      (
+        await app.request("https://openbot.test/api/chat/_identity/team-members", {
+          method: "POST",
+        })
+      ).status,
+    ).toBe(404);
+    expect(
+      (await app.request("https://openbot.test/api/chat/_identity/teams/another-team/members"))
+        .status,
+    ).toBe(404);
+  });
+
   it("allows only the room operations consumed by Client Runtime", async () => {
     const calls: Array<[string, string]> = [];
     const chatApp = createApp({

@@ -7,8 +7,20 @@ export const RoomParticipantSchema = z.object({
   role: z.enum(["owner", "admin", "member"]),
   principal_user_id: z.string().nullish(),
   joined_at: z.string(),
-  instance: z.record(z.string(), z.unknown()),
-  inbox: z.record(z.string(), z.unknown()),
+  instance: z
+    .object({
+      id: z.string(),
+      inbox_id: z.string().optional(),
+      user_display_name: z.string().optional(),
+    })
+    .passthrough(),
+  inbox: z
+    .object({
+      id: z.string(),
+      display_name: z.string().nullish(),
+      provider_id: z.string().optional(),
+    })
+    .passthrough(),
 });
 export type RoomParticipant = z.infer<typeof RoomParticipantSchema>;
 

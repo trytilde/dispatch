@@ -1,5 +1,9 @@
-import { useMemo, useState, type FormEvent } from "react";
-import { connectorSetupFields, type ConnectorSetupField } from "@tryopenbot/client-runtime";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import {
+  connectorSetupFields,
+  connectorSetupValues,
+  type ConnectorSetupField,
+} from "@tryopenbot/client-runtime";
 import { ExternalLinkIcon, KeyRoundIcon, ShieldCheckIcon, UserRoundIcon } from "lucide-react";
 import { Button } from "./beautiful-ui/atoms/button.js";
 import { Dialog, DialogContent, DialogTitle } from "./components/ui/dialog.js";
@@ -38,6 +42,7 @@ export interface ConnectorCredentialSourceView {
 }
 
 export interface ConnectorSelectionView {
+  targetUserId?: string;
   providerTypeId: string;
   providerName: string;
   /** Provider branding from Tilde catalog metadata (https or data: URI). */
@@ -67,6 +72,7 @@ export function connectorSelectionViewFromPart(
   const providerName = asText(record.provider_name) || providerTypeId;
   if (!providerTypeId || !Array.isArray(record.accounts)) return undefined;
   return {
+    ...(asText(record.target_user_id) ? { targetUserId: asText(record.target_user_id) } : {}),
     providerTypeId,
     providerName,
     ...(asText(record.icon_url) ? { iconUrl: asText(record.icon_url) } : {}),
@@ -194,7 +200,7 @@ export function ConnectorAccountGrid({
   );
 }
 
-function ConnectorGlyph({
+export function ConnectorGlyph({
   iconUrl,
   name,
   providerSize = false,
@@ -241,6 +247,13 @@ export interface ConnectorSetupSubmit {
 
 export interface ConnectorSetupDialogProps {
   providerName: string;
+  hideAccountName?: boolean;
+  instructions?: ReactNode;
+  submitLabel?: string;
+  /** Host-owned copy; the default preserves Dispatch wording. */
+  accountNameDescription?: string;
+  /** Applied to the portal content so host themes also reach dialogs. */
+  contentClassName?: string;
   /** Provider branding from Tilde catalog metadata (https or data: URI). */
   providerIconUrl?: string;
   credentialSources: ConnectorCredentialSourceView[];
@@ -250,11 +263,17 @@ export interface ConnectorSetupDialogProps {
   authorizationUrl?: string;
   onSubmit: (input: ConnectorSetupSubmit) => void;
   onReopenAuthorization?: () => void;
+  onFinishAuthorization?: () => void;
   onClose: () => void;
 }
 
 export function ConnectorSetupDialog({
   providerName,
+  hideAccountName = false,
+  instructions,
+  submitLabel,
+  accountNameDescription = "Used to identify this account when choosing it for a bot.",
+  contentClassName,
   providerIconUrl,
   credentialSources,
   submitting = false,
@@ -262,6 +281,7 @@ export function ConnectorSetupDialog({
   authorizationUrl,
   onSubmit,
   onReopenAuthorization,
+  onFinishAuthorization,
   onClose,
 }: ConnectorSetupDialogProps) {
   const [sourceTypeId, setSourceTypeId] = useState(credentialSources[0]?.typeId ?? "");
@@ -270,6 +290,7 @@ export function ConnectorSetupDialog({
     credentialSources[0];
   const [displayName, setDisplayName] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
+  const [validationError, setValidationError] = useState("");
 
   const resourceFields = useMemo(
     () => connectorSetupFields(source?.resourceServerSchema),
@@ -282,20 +303,22 @@ export function ConnectorSetupDialog({
   const fields = [...resourceFields, ...userFields];
   const missingRequired =
     !source ||
-    !displayName.trim() ||
+    (!hideAccountName && !displayName.trim()) ||
     fields.some((field) => field.required && !values[field.key]?.trim());
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!source || missingRequired || submitting) return;
-    const bucket = (candidates: ConnectorSetupField[]): Record<string, unknown> | undefined => {
-      const entries = candidates
-        .map((field) => [field.key, values[field.key]?.trim() ?? ""] as const)
-        .filter(([, value]) => value.length > 0);
-      return entries.length > 0 ? Object.fromEntries(entries) : undefined;
-    };
-    const resourceServerValues = bucket(resourceFields);
-    const userCredentialValues = bucket(userFields);
+    let resourceServerValues: Record<string, unknown> | undefined;
+    let userCredentialValues: Record<string, unknown> | undefined;
+    try {
+      resourceServerValues = connectorSetupValues(resourceFields, values);
+      userCredentialValues = connectorSetupValues(userFields, values);
+      setValidationError("");
+    } catch (reason) {
+      setValidationError(reason instanceof Error ? reason.message : "Check the connection fields.");
+      return;
+    }
     onSubmit({
       credentialSourceTypeId: source.typeId,
       displayName: displayName.trim(),
@@ -312,8 +335,9 @@ export function ConnectorSetupDialog({
       }}
     >
       <DialogContent
+        overlayClassName={contentClassName}
         aria-describedby={undefined}
-        className="max-h-[80vh] max-w-[460px] overflow-y-auto p-[22px]"
+        className={`max-h-[80vh] max-w-[460px] overflow-y-auto p-[22px]${contentClassName ? ` ${contentClassName}` : ""}`}
       >
         <form className="grid gap-4" onSubmit={handleSubmit}>
           <header className="flex items-start gap-3">
@@ -335,11 +359,17 @@ export function ConnectorSetupDialog({
                 </p>
               </div>
               <div className="flex justify-end gap-2">
-                <Button onClick={() => onReopenAuthorization?.()} variant="secondary">
+                <Button type="button" onClick={() => onReopenAuthorization?.()} variant="secondary">
                   <ExternalLinkIcon aria-hidden="true" className="size-3.5" />
                   Reopen authorization
                 </Button>
-                <Button onClick={onClose}>Done</Button>
+                <Button
+                  type="button"
+                  disabled={submitting}
+                  onClick={onFinishAuthorization ?? onClose}
+                >
+                  Done
+                </Button>
               </div>
             </div>
           ) : (
@@ -372,23 +402,24 @@ export function ConnectorSetupDialog({
                 </p>
               ) : null}
 
-              <label className="grid gap-1.5">
-                <span className="flex items-center gap-1.5 text-xs font-medium text-ink-2">
-                  <UserRoundIcon aria-hidden="true" className="size-3.5" />
-                  Account name
-                </span>
-                <input
-                  autoFocus
-                  className="h-9 rounded-lg border-[0.5px] border-line-strong bg-field px-3
+              {instructions}
+              {!hideAccountName ? (
+                <label className="grid gap-1.5">
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-ink-2">
+                    <UserRoundIcon aria-hidden="true" className="size-3.5" />
+                    Account name
+                  </span>
+                  <input
+                    autoFocus
+                    className="h-9 rounded-lg border-[0.5px] border-line-strong bg-field px-3
                     text-[12.5px] text-ink shadow-inset-field outline-none focus:border-accent"
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  required
-                  value={displayName}
-                />
-                <span className="text-[11px] leading-4 text-ink-3">
-                  Used to identify this account when choosing it for a bot.
-                </span>
-              </label>
+                    onChange={(event) => setDisplayName(event.target.value)}
+                    required
+                    value={displayName}
+                  />
+                  <span className="text-[11px] leading-4 text-ink-3">{accountNameDescription}</span>
+                </label>
+              ) : null}
 
               {fields.map((field) => (
                 <label className="grid gap-1.5" key={field.key}>
@@ -443,8 +474,10 @@ export function ConnectorSetupDialog({
                 </div>
               ) : null}
 
-              {error ? (
-                <p className="m-0 rounded-lg bg-red-tint px-3 py-2 text-xs text-red">{error}</p>
+              {error || validationError ? (
+                <p className="m-0 rounded-lg bg-red-tint px-3 py-2 text-xs text-red">
+                  {error || validationError}
+                </p>
               ) : null}
 
               <div className="flex justify-end gap-2 pt-1">
@@ -460,7 +493,7 @@ export function ConnectorSetupDialog({
                       <ExternalLinkIcon aria-hidden="true" className="size-3.5" />
                     </>
                   ) : (
-                    "Connect"
+                    (submitLabel ?? "Connect")
                   )}
                 </Button>
               </div>

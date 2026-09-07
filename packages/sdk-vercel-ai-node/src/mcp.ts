@@ -19,6 +19,7 @@ import type { ToolExecutionOptions, ToolSet } from "ai";
  *   conversation off the current session
  * - `chatkit_wait_for_response` — wait for that reply
  * - `chatkit_list_participants` — who is in the current conversation
+ * - `chatkit_search_history` — current and shared-user history, limited to active membership
  *
  * None of them take a session id: the session comes from this connection, so a
  * conversation the caller was not authorized for cannot be addressed. Reaching

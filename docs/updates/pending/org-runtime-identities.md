@@ -1,0 +1,48 @@
+# Org identity SDK and shared runtime proxy
+
+PR: Pending
+
+## Intent of the change
+
+Let independently authenticated applications provision identities and securely proxy runtime requests under immutable identity/team context.
+
+## Architecture changes
+
+Identity decision: [0042-org-runtime-identities.md](../../adrs/0042-org-runtime-identities.md).
+
+```mermaid
+flowchart LR
+  Session["Verified application session"] --> Mapping["Persisted issuer/subject mapping"]
+  Mapping --> Proxy["Server proxy: org token + identity + team"]
+  Proxy --> Runtime["Tilde identity and resource authorization"]
+  Account["Tilde login account"] --> Link["Managed identity link"]
+  Link --> Runtime
+```
+
+Governing decision: [0041-repository-documentation-convention](../../adrs/0041-repository-documentation-convention.md).
+The documentation convention preserves runtime architecture; the identity/authentication changes below establish separate account and runtime authorities.
+
+```mermaid
+flowchart LR
+  Agent["Agent and PR workflows"] --> Convention["docs/README.md"]
+  Convention --> Decisions["docs/adrs"]
+  Convention --> Updates["docs/updates"]
+  Convention --> Guides["Owning README and public guides"]
+```
+
+## Summarized changes
+
+- Added identity CRUD/lookup/identifier removal, team membership management, initial-team provisioning, managed linking, immutable runtime clients, and the Fetch proxy.
+- Prevented application credential leakage through redirects on handwritten and generated transports; froze context and copied headers across concurrent requests.
+- Added CSP sandbox/nosniff protection to proxied active content and explicit rejection of unsupported gRPC delegation.
+- Regenerated OpenAPI clients with explicit account/proxy security schemes and nonduplicated path parameters.
+- Updated SDK/public documentation, Changesets, ADRs, and the common agent/PR documentation workflow.
+- Validation: `pnpm check` passed with 39 existing warnings; `pnpm build` passed. `TILDE_API_DIR=... pnpm openbot sdk refresh` passed all 288 SDK-family tests, including 123 core SDK tests and 151 Vercel AI Node tests. `pnpm openbot sdk smoke` passed a clean packed consumer build/run.
+- Cross-client parity: no Dispatch application UI capability changed; server-only application delegation is a shared SDK surface. No new external dependencies, protobuf contract changes, or internal metadata semantics were introduced. Tracked upstream configuration remains only `configuration/.gitignore`.
+- Live separate-Clerk/provider validation and coordinated npm publication remain outstanding; no production deployment is included in this PR.
+
+## Critical to apply
+
+yes
+
+Publish coordinated SDK/API-client versions and deploy the matching Tilde API before using the new exports. Existing local snapshot versions precede current registry releases; release versioning must use the repository Changesets workflow and authenticated publication.

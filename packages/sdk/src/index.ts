@@ -154,3 +154,14 @@ export {
   type UpdateMcpServerInput,
   wrapMcpClientWithLocalTools,
 } from "./tools";
+
+export {
+  IdentitiesClient,
+  IdentityApiError,
+  type RuntimeIdentity,
+  type RuntimeIdentityTeam,
+  type IdentityIdentifier,
+  type CreateIdentityInput,
+  type UpdateIdentityInput,
+  type LinkIdentityInput,
+} from "./identities";

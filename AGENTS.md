@@ -207,8 +207,8 @@ For browser-visible changes, verify the real route, console, network, and visibl
 - The deploy script coordinates Vercel, Tilde API reconciliation, encrypted environment, Sandbox snapshot, and smoke tests. Do not replace it with a raw production deploy.
 - Commit, push, open a PR, merge, or deploy only when requested.
 - Create every PR with the `no-greptile` label. Never tag, request, or wait for Greptile or another external review bot.
-- Before creating or updating a PR, always review the full diff for major architecture, strongly opinionated code, or durable code/product design decisions. If found, pause and prompt the user through an ADR under `docs/adrs/`; do not silently invent or skip the decision.
-- Keep ADRs concise. Start with caveman-style `In brief` bullets and add a small Mermaid diagram when it clarifies a real relationship or flow. When amending a governing ADR, append a chronological ISO-8601 timestamped bullet under `Updates` and preserve older entries.
+- Before creating or updating a PR, always review the full diff for major architecture, strongly opinionated code, or durable code/product design decisions. Create or update the governing ADR under `docs/adrs/` for resolved decisions; ask only when the underlying choice is unresolved.
+- Keep ADRs concise. Start with concise `In brief` bullets and add a small Mermaid diagram when it clarifies a real relationship or flow. When amending a governing ADR, append a chronological ISO-8601 timestamped bullet under `Updates` and preserve older entries.
 - Before handoff, review the diff for secrets, generated noise, unrelated changes, and the exact checks run.
 
 ## Relevant skills
@@ -225,3 +225,14 @@ For browser-visible changes, verify the real route, console, network, and visibl
 - `vercel`, `tilde`: platform-specific work.
 - `update-openapi-generated-client`, `add-sdk-wrapper`, `expose-api-change`: generated Tilde API refresh and stable SDK wrapper work.
 - `safe-refactor`, `surgical-patch`, `migration`, `lean-build`, `verify-and-stop`: scope-specific engineering workflows.
+
+## Required documentation maintenance
+
+For every change, follow [docs/README.md](docs/README.md). Read relevant
+`docs/adrs/` first; create or update records for durable decisions and keep setup,
+README, and public documentation in sync. Maintain the complete change record at
+`docs/updates/pending/<short-slug>.md` until a PR number exists, then rename it to
+`docs/updates/<actual-pr-number>.md` and refresh it after every revision. Missing
+or stale required documentation blocks completion. Record already authorized
+decisions directly; ask only about unresolved choices. See
+[maintain-docs](.agents/skills/maintain-docs/SKILL.md) for the workflow.

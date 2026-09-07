@@ -5,6 +5,16 @@ description: Refresh the generated OpenAPI TypeScript types and validate the SDK
 
 # Update OpenAPI Generated Client
 
+## Repository documentation requirements
+
+Follow [docs/README.md](../../../docs/README.md) for every change in this workflow. Create or update
+ADRs for resolved durable decisions, keep affected README/setup/public docs current,
+and maintain the complete pending or PR-numbered update record after every revision.
+Use the shared templates and section names. Missing or stale required documentation
+blocks completion. Document already authorized decisions without asking again; ask
+only about unresolved choices. These requirements govern documentation instructions
+elsewhere in this skill; preserve its repository-specific implementation and checks.
+
 Use this when `/root/tilde-api/openapi.cloud.json` or a worktree OpenAPI file changes.
 
 ## Process

@@ -32,6 +32,11 @@
       "types": "./src/json.ts",
       "development": "./src/json.ts",
       "import": "./dist/json.js"
+    },
+    "./proxy": {
+      "types": "./src/proxy.ts",
+      "development": "./src/proxy.ts",
+      "import": "./dist/proxy.js"
     }
   },
   "publishConfig": {
@@ -47,6 +52,10 @@
       "./json": {
         "types": "./dist/json.d.ts",
         "import": "./dist/json.js"
+      },
+      "./proxy": {
+        "types": "./dist/proxy.d.ts",
+        "import": "./dist/proxy.js"
       }
     },
     "access": "public"

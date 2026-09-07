@@ -9,6 +9,16 @@ metadata:
 
 # Database Schema And Query Changes
 
+## Repository documentation requirements
+
+Follow [docs/README.md](../../../docs/README.md) for every change in this workflow. Create or update
+ADRs for resolved durable decisions, keep affected README/setup/public docs current,
+and maintain the complete pending or PR-numbered update record after every revision.
+Use the shared templates and section names. Missing or stale required documentation
+blocks completion. Document already authorized decisions without asking again; ask
+only about unresolved choices. These requirements govern documentation instructions
+elsewhere in this skill; preserve its repository-specific implementation and checks.
+
 OpenBot uses Drizzle over local SQLite or remote libSQL/Turso. The database stores installation, onboarding, sandbox lease, and deployment checkpoint state only. Tilde owns agents, chats, tools, skills, and memory. `EnvProvider` owns secrets.
 
 The source of truth is:

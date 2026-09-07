@@ -5,6 +5,8 @@ export type Config = {
   orgSubdomain?: boolean;
   teamId?: string;
   apiKey?: string;
+  proxyToken?: string;
+  identityId?: string;
   tunnel?: boolean;
   cloudflaredPath?: string;
   bearerToken?: string;
@@ -12,10 +14,12 @@ export type Config = {
   headers?: RequestInit["headers"];
 };
 
-export type NormalizedConfig = Omit<Config, "baseUrl" | "teamId"> & {
-  baseUrl: string;
-  teamId: string;
-};
+export type NormalizedConfig = Readonly<
+  Omit<Config, "baseUrl" | "teamId"> & {
+    baseUrl: string;
+    teamId: string;
+  }
+>;
 
 export function createConfig(input: Config = {}): NormalizedConfig {
   const headers = new Headers(input.headers);
@@ -25,12 +29,21 @@ export function createConfig(input: Config = {}): NormalizedConfig {
     env("TILDE_BASE_URL") ??
     "https://api.trytilde.ai";
   const teamId = input.teamId ?? env("TILDE_TEAM_ID");
-  if (!teamId || teamId.trim().length === 0) {
+  if ((!teamId || teamId.trim().length === 0) && !input.proxyToken) {
     throw new TypeError("teamId is required");
   }
-  const bearerToken = input.bearerToken ?? env("TILDE_BEARER_TOKEN");
-  const apiKey = input.apiKey ?? env("TILDE_API_KEY");
-  if (!bearerToken && !apiKey && !hasAuthHeader(headers)) {
+  const bearerToken =
+    input.bearerToken ?? (input.proxyToken ? undefined : env("TILDE_BEARER_TOKEN"));
+  const apiKey = input.apiKey ?? (input.proxyToken ? undefined : env("TILDE_API_KEY"));
+  if (
+    input.proxyToken &&
+    (bearerToken || apiKey || hasAuthHeader(headers) || headers.has("cookie"))
+  )
+    throw new TypeError("Proxy tokens cannot be combined with other credentials");
+  if (input.identityId && !input.proxyToken)
+    throw new TypeError("identityId requires a proxyToken");
+  if (input.proxyToken && !input.orgId) throw new TypeError("proxyToken requires orgId");
+  if (!input.proxyToken && !bearerToken && !apiKey && !hasAuthHeader(headers)) {
     throw new TypeError("apiKey or bearerToken is required");
   }
 
@@ -44,22 +57,34 @@ export function createConfig(input: Config = {}): NormalizedConfig {
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new TypeError("baseUrl must use http or https");
   }
+  if (url.username || url.password || url.search || url.hash) {
+    throw new TypeError("baseUrl cannot contain credentials, query, or fragment");
+  }
 
   const baseUrl =
     input.orgSubdomain === false
       ? baseUrlInput.replace(/\/+$/, "")
       : canonicalizeBaseUrlForOrg(baseUrlInput, input.orgId);
-  return {
+  return Object.freeze({
     ...input,
+    headers: Object.freeze(Object.fromEntries(headers.entries())),
     baseUrl,
-    teamId: teamId.trim(),
+    teamId: teamId?.trim() ?? "",
     ...(apiKey ? { apiKey } : {}),
     ...(bearerToken ? { bearerToken } : {}),
-  };
+  });
 }
 
 export function configHeaders(config: Config): Headers {
   const headers = new Headers(config.headers);
+  if (config.proxyToken) {
+    for (const name of ["authorization", "x-api-key", "cookie", "x-tilde-identity-id"])
+      headers.delete(name);
+    headers.set("x-tilde-proxy-token", config.proxyToken);
+    headers.set("x-tilde-org-id", config.orgId!);
+    if (config.identityId) headers.set("x-tilde-identity-id", config.identityId);
+    return headers;
+  }
   if (config.orgSubdomain === false && config.orgId && !headers.has("x-tilde-org-id")) {
     headers.set("x-tilde-org-id", config.orgId);
   }
@@ -72,13 +97,25 @@ export function configHeaders(config: Config): Headers {
 }
 
 export function configFetch(config: Config): typeof fetch {
-  if (config.fetch) {
-    return config.fetch;
-  }
-  if (typeof fetch === "undefined") {
+  const send = config.fetch ?? globalThis.fetch;
+  if (!send) {
     throw new TypeError("No fetch implementation is available");
   }
-  return fetch;
+  if (!config.proxyToken) return send;
+  const upstreamOrigin = new URL(config.baseUrl!).origin;
+  return async (input, init) => {
+    const headers = new Headers(
+      init?.headers ?? (input instanceof Request ? input.headers : undefined),
+    );
+    const target = new URL(input instanceof Request ? input.url : String(input));
+    // Generated clients pass a Request, while handwritten wrappers pass URL/init.
+    // Neither may send an application credential to another origin or follow a
+    // redirect: Fetch retains custom authentication headers across redirects.
+    if (headers.has("x-tilde-proxy-token") && target.origin !== upstreamOrigin) {
+      throw new TypeError("Proxy credentials must remain on the configured Tilde origin");
+    }
+    return send(input, { ...init, redirect: "error", credentials: "omit" });
+  };
 }
 
 function baseUrlFromOrgId(

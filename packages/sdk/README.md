@@ -164,7 +164,7 @@ not grant org administration or enroll a subscription. Email identifiers alone
 never establish account ownership.
 
 
-Org application clients also expose `identities.listTeams(identityId, offset?)`,
+Org application clients also expose `identities.listTeams(identityId, { pageSize?, nextPageToken? })`,
 `addTeam(identityId, teamId)`, `removeTeam(identityId, teamId)`, and
 `removeIdentifier(identityId, { namespace, value })`. These require unbound
 `identities:manage` authority; adding runtime membership never assigns account roles.
@@ -173,3 +173,7 @@ Application-token transports reject redirects, snapshot/freeze identity and team
 configuration, and replace caller authentication headers. The Fetch proxy adds
 sandbox/nosniff protection for navigated upstream content. Org proxy credentials
 are not supported by the gRPC reverse proxy and fail explicitly there.
+
+Identity lists use `identities.list({ pageSize?, nextPageToken? })` and return
+`{ items, next_page_token }`. Pass the returned cursor unchanged to the next call;
+page sizes are clamped to 1–100. Membership lists use the same response shape.

@@ -18,6 +18,27 @@ export interface RuntimeIdentityTeam {
   team_id: string;
   role: string;
 }
+/** Cursor pagination shared by organization identity lists. */
+export interface IdentityListOptions {
+  pageSize?: number;
+  nextPageToken?: string;
+}
+export interface IdentityPage<T> {
+  items: T[];
+  next_page_token: string | null;
+}
+
+function pageQuery(options: IdentityListOptions): string {
+  const params = new URLSearchParams();
+  if (options.pageSize !== undefined) {
+    if (!Number.isSafeInteger(options.pageSize)) throw new TypeError("pageSize must be an integer");
+    params.set("page_size", String(Math.min(100, Math.max(1, options.pageSize))));
+  }
+  if (options.nextPageToken !== undefined) params.set("next_page_token", options.nextPageToken);
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
 export interface CreateIdentityInput {
   kind?: "human" | "agent";
   displayName?: string;
@@ -54,10 +75,8 @@ export class IdentitiesClient {
     );
   }
 
-  async list(offset = 0): Promise<RuntimeIdentity[]> {
-    if (!Number.isSafeInteger(offset) || offset < 0)
-      throw new TypeError("offset must be a nonnegative integer");
-    return this.request(`/api/v1/identity/identities?offset=${offset}`, undefined, "GET");
+  async list(options: IdentityListOptions = {}): Promise<IdentityPage<RuntimeIdentity>> {
+    return this.request(`/api/v1/identity/identities${pageQuery(options)}`, undefined, "GET");
   }
 
   async update(identityId: string, input: UpdateIdentityInput): Promise<RuntimeIdentity> {
@@ -72,11 +91,12 @@ export class IdentitiesClient {
     );
   }
 
-  async listTeams(identityId: string, offset = 0): Promise<RuntimeIdentityTeam[]> {
-    if (!Number.isSafeInteger(offset) || offset < 0)
-      throw new TypeError("offset must be a nonnegative integer");
+  async listTeams(
+    identityId: string,
+    options: IdentityListOptions = {},
+  ): Promise<IdentityPage<RuntimeIdentityTeam>> {
     return this.request(
-      `/api/v1/identity/identities/${encodeURIComponent(identityId)}/teams?offset=${offset}`,
+      `/api/v1/identity/identities/${encodeURIComponent(identityId)}/teams${pageQuery(options)}`,
       undefined,
       "GET",
     );

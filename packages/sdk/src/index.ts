@@ -160,6 +160,8 @@ export {
   IdentityApiError,
   type RuntimeIdentity,
   type RuntimeIdentityTeam,
+  type IdentityListOptions,
+  type IdentityPage,
   type IdentityIdentifier,
   type CreateIdentityInput,
   type UpdateIdentityInput,

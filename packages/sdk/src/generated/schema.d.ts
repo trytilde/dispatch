@@ -906,6 +906,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/identity/onboarding/organization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create the account's first native organization and team */
+        post: operations["onboard-organization"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/identity/organizations": {
         parameters: {
             query?: never;
@@ -7708,6 +7725,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/tilde-pay/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Provision Tilde Pay
+         * @description Idempotently enroll billing, create a customer when details are supplied, create a wallet after KYC, configure the wallet MCP server and tools, and optionally configure browser tools when enabled.
+         */
+        post: operations["tilde-pay-provision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/tilde-pay/payments/mpp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make MPP payment
+         * @description Make an MPP payment from a Tilde Pay wallet.
+         */
+        post: operations["tilde-pay-payment-mpp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/tilde-pay/payments/x402": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make x402 payment
+         * @description Make an x402 payment from a Tilde Pay wallet.
+         */
+        post: operations["tilde-pay-payment-x402"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/tilde-pay/wallet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Tilde Pay wallet summary
+         * @description Return wallet, balances, fiat deposit information, and crypto deposit information for Tilde Pay.
+         */
+        get: operations["tilde-pay-wallet-summary"];
+        put?: never;
+        /**
+         * Create Tilde Pay wallet
+         * @description Create a Tilde Pay wallet after KYC and return product-shaped wallet details.
+         */
+        post: operations["tilde-pay-wallet-create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/tilde-pay/wallet/wait-until-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Wait for Tilde Pay balance
+         * @description Poll wallet balances until the requested asset reaches the requested minimum.
+         */
+        post: operations["tilde-pay-wallet-wait-until-balance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/trusted-runtime": {
         parameters: {
             query?: never;
@@ -7758,6 +7879,294 @@ export interface paths {
          * @description Patch trusted runtime metadata or status.
          */
         patch: operations["update-trusted-runtime"];
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List wallets
+         * @description List wallets for the current org/team.
+         */
+        get: operations["wallet-list"];
+        put?: never;
+        /**
+         * Create wallet
+         * @description Create a Tilde wallet by provisioning a Privy EVM wallet, Compose virtual IBAN, and Compose crypto deposit wallet.
+         */
+        post: operations["wallet-create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/customer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List wallet customers
+         * @description List wallet customers for the current org/team.
+         */
+        get: operations["wallet-customer-list"];
+        put?: never;
+        /**
+         * Create wallet customer
+         * @description Create a Compose customer and return a KYC verification link for wallet onboarding.
+         */
+        post: operations["wallet-customer-create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/customer/{customer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wallet customer
+         * @description Get a wallet customer by local id.
+         */
+        get: operations["wallet-customer-get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/customer/{customer_id}/kyc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wallet customer KYC details
+         * @description Return the stored Compose KYC verification status and KYC flow URL for a wallet customer.
+         */
+        get: operations["wallet-customer-kyc-get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wallet
+         * @description Get a wallet by id.
+         */
+        get: operations["wallet-get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wallet balances
+         * @description Refresh and return Compose balances for this wallet.
+         */
+        get: operations["wallet-get-balances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/crypto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wallet crypto deposit information
+         * @description Return crypto deposit information for this wallet.
+         */
+        get: operations["wallet-get-crypto-deposit-information"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/fiat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wallet fiat deposit information
+         * @description Refresh and return Compose fiat deposit information for this wallet.
+         */
+        get: operations["wallet-get-fiat-deposit-information"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/payments/mpp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make MPP payment
+         * @description Make an MPP payment from the wallet using the configured payment adapter.
+         */
+        post: operations["wallet-make-mpp-payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/payments/x402": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make x402 payment
+         * @description Make an x402 payment from the wallet using the configured payment adapter.
+         */
+        post: operations["wallet-make-x402-payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List wallet transaction history
+         * @description Return cached transaction history for this wallet without scanning the chain.
+         */
+        get: operations["wallet-transaction-history-list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh wallet transaction history
+         * @description Scan configured chains for wallet-linked USDC transfers and upsert cached transaction history.
+         */
+        post: operations["wallet-transaction-history-refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/virtual-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create wallet virtual account
+         * @description Create a currency-denominated Compose virtual account for an existing wallet.
+         */
+        post: operations["wallet-virtual-account-create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/wait-until-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Wait until wallet balance
+         * @description Poll the local wallet balance cache until an asset reaches the requested minimum.
+         */
+        post: operations["wallet-wait-until-balance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/team/{team_id}/wiki-ontology-templates": {
@@ -10168,6 +10577,13 @@ export interface components {
             invitation_id: string;
             password: string;
         };
+        /** @description Canonical tenant destination after accepting an invitation with a login account. */
+        AcceptInvitationResponse: {
+            identity_id: string;
+            invitation: components["schemas"]["UserInvitation"];
+            org_id: string;
+            team_id: string;
+        };
         /** @description Explicit login-account membership, independent of runtime identity availability. */
         AccountOrganizationMembership: {
             account_id: string;
@@ -11277,6 +11693,11 @@ export interface components {
             identity: components["schemas"]["Identity"];
             local_runtime_tunnel_domain: string;
             local_runtime_tunnel_origin: string;
+            /**
+             * @description True after explicit first-organization creation, even if that org was removed.
+             *     A membership-less completed account needs invitation/link recovery, not replay.
+             */
+            organization_onboarding_completed?: boolean | null;
             organizations: components["schemas"]["UserOrganization"][];
             teams: components["schemas"]["UserTeam"][];
         };
@@ -11708,6 +12129,11 @@ export interface components {
         CreatePageTypeVersionBody: {
             schema: unknown;
         };
+        CreatePayWalletRequest: {
+            name: string;
+            owner_id?: string | null;
+            wallet_customer_id: string;
+        };
         CreatePersonalToolGroupInstanceBody: {
             authorization?: components["schemas"]["ResourceAuthorizationModes"];
             credential_source_type_id: string;
@@ -11996,6 +12422,19 @@ export interface components {
             metadata?: null | components["schemas"]["Metadata"];
             user_credential_configuration: components["schemas"]["WrappedJsonValue"];
         };
+        CreateWalletBody: {
+            name: string;
+            owner_id?: string | null;
+            wallet_customer_id: string;
+        };
+        CreateWalletCustomerBody: {
+            account_type?: string;
+            name: string;
+            owner_id?: string | null;
+        };
+        CreateWalletVirtualAccountBody: {
+            currency: string;
+        };
         CreateWikiAssetBody: {
             alt_text?: string | null;
             checksum?: string | null;
@@ -12242,6 +12681,16 @@ export interface components {
             contents: string;
             filename: string;
         };
+        DirectTokenPayment: {
+            amount: string;
+            asset?: string;
+            chain?: string;
+            destination_address: string;
+            destination_asset?: string | null;
+            destination_chain?: string | null;
+            /** Format: int64 */
+            slippage_bps?: number | null;
+        };
         /** @description Selects one package file for a lazy download URL. */
         DownloadSkillPackageFileRequest: {
             path: string;
@@ -12370,6 +12819,25 @@ export interface components {
             attachment: components["schemas"]["Attachment"];
             download_url: string;
             expires_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        GetBalancesResponse: {
+            balances: components["schemas"]["WrappedJsonValue"];
+            wallet_id: string;
+        };
+        GetCryptoDepositInformationResponse: {
+            crypto: components["schemas"]["WrappedJsonValue"];
+            wallet_id: string;
+        };
+        GetFiatDepositInformationResponse: {
+            currency: string;
+            fiat: components["schemas"]["WrappedJsonValue"];
+            wallet_id: string;
+        };
+        GetWalletCustomerKycResponse: {
+            compose_customer_id: string;
+            kyc_flow_link?: string | null;
+            kyc_verified: boolean;
+            wallet_customer_id: string;
         };
         /** @description Durable desired outcome owned by one explicit agent in one conversation. */
         Goal: {
@@ -12826,6 +13294,10 @@ export interface components {
             role: string;
             team_id: string;
         };
+        IdentityTeamMembershipPaginatedResponse: {
+            items: components["schemas"]["IdentityTeamMembership"][];
+            next_page_token?: string;
+        };
         /** @description One pending or completed challenge. The code hash is never on the wire. */
         IdentityVerification: {
             /** Format: int32 */
@@ -13160,6 +13632,82 @@ export interface components {
             provider_id: string;
             /** @enum {string} */
             type: "custom_oidc";
+        };
+        MakeMppPaymentRequest: {
+            body?: unknown;
+            headers?: {
+                [key: string]: string;
+            };
+            max_amount?: string | null;
+            max_amount_atomic?: string | null;
+            method?: string | null;
+            payment?: null | components["schemas"]["DirectTokenPayment"];
+            preferred_assets?: string[];
+            /**
+             * @description Payment-channel contract addresses the caller explicitly permits.
+             *     Stateful methods that sign a server-selected channel, such as the
+             *     Stellar `channel` intent, require this pin on their first use. A
+             *     validated `session_snapshot` pins subsequent requests.
+             */
+            preferred_channels?: string[];
+            preferred_networks?: string[];
+            preferred_recipients?: string[];
+            /**
+             * @description Session lifecycle action (`open`, `voucher`, `commit`, `topUp`, or
+             *     `close`). Omit to open when no snapshot is supplied and voucher
+             *     otherwise.
+             */
+            session_action?: string | null;
+            /**
+             * @description Incremental session amount in atomic units. Required for voucher and
+             *     commit actions unless the challenge pins an increment.
+             */
+            session_amount_atomic?: string | null;
+            /** @description Delivery identifier required by a metered `commit` action. */
+            session_delivery_id?: string | null;
+            session_snapshot?: null | components["schemas"]["PaymentSessionSnapshot"];
+            /**
+             * @description Preferred method-specific settlement mode. Methods that negotiate
+             *     client versus server broadcast currently accept `push` or `pull`.
+             */
+            settlement_mode?: string | null;
+            /**
+             * @description Payment transport. Defaults to `http`; use `mcp` for MCP's nested
+             *     payment metadata or `jsonrpc` for the generic root `_meta` binding.
+             *     Tempo session challenges also support `sse` and `websocket` (`ws`) for
+             *     metered streaming with in-band voucher and receipt handling.
+             */
+            transport?: string | null;
+            url: string;
+            wallet_id: string;
+        };
+        MakeX402PaymentRequest: {
+            body?: unknown;
+            headers?: {
+                [key: string]: string;
+            };
+            max_amount?: string | null;
+            max_amount_atomic?: string | null;
+            method?: string | null;
+            payment?: null | components["schemas"]["DirectTokenPayment"];
+            preferred_assets?: string[];
+            preferred_networks?: string[];
+            preferred_recipients?: string[];
+            /**
+             * @description Stateful scheme action (`open`, `voucher`, or `refund`). Omit to open
+             *     when no snapshot is supplied and voucher otherwise.
+             */
+            session_action?: string | null;
+            /** @description Incremental amount for voucher/close actions, in atomic units. */
+            session_amount_atomic?: string | null;
+            session_snapshot?: null | components["schemas"]["PaymentSessionSnapshot"];
+            /**
+             * @description Payment transport. Defaults to `http`; use `mcp` when `body` is the
+             *     JSON-RPC MCP tool-call request that should be retried with x402 metadata.
+             */
+            transport?: string | null;
+            url: string;
+            wallet_id: string;
         };
         ManagedSkillSelection: {
             provider_id: string;
@@ -13590,6 +14138,15 @@ export interface components {
             expected_revision: number;
             path: string;
         };
+        OnboardOrganizationRequest: {
+            name: string;
+            team_name: string;
+        };
+        OnboardOrganizationResponse: {
+            identity_id: string;
+            org_id: string;
+            team_id: string;
+        };
         /** @description A page type bundled by an ontology template. */
         OntologyPageTypeDefinition: {
             description: string;
@@ -13676,6 +14233,10 @@ export interface components {
             revoked_at?: null | components["schemas"]["WrappedChronoDateTime"];
             token_prefix: string;
         };
+        OrgProxyTokenPaginatedResponse: {
+            items: components["schemas"]["OrgProxyToken"][];
+            next_page_token?: string;
+        };
         Organization: {
             /**
              * @description Browser app origin (for example `https://heyash.ai/app`) that owns links Tilde generates
@@ -13743,6 +14304,65 @@ export interface components {
          * @enum {string}
          */
         PartState: "streaming" | "done";
+        /** @enum {string} */
+        PayOnboardingStep: "enter_details" | "complete_kyc" | "ready";
+        PayPaymentRequest: {
+            body?: unknown;
+            headers?: {
+                [key: string]: string;
+            };
+            max_amount?: string | null;
+            max_amount_atomic?: string | null;
+            method?: string | null;
+            payment?: null | components["schemas"]["DirectTokenPayment"];
+            preferred_assets?: string[];
+            preferred_channels?: string[];
+            preferred_networks?: string[];
+            preferred_recipients?: string[];
+            session_action?: string | null;
+            session_amount_atomic?: string | null;
+            session_delivery_id?: string | null;
+            session_snapshot?: null | components["schemas"]["PaymentSessionSnapshot"];
+            settlement_mode?: string | null;
+            transport?: string | null;
+            url: string;
+            wallet_id: string;
+        };
+        PayWalletSummaryError: {
+            field: string;
+            message: string;
+        };
+        PayWalletSummaryResponse: {
+            balances?: null | components["schemas"]["GetBalancesResponse"];
+            crypto_deposit?: null | components["schemas"]["GetCryptoDepositInformationResponse"];
+            fiat_deposit?: null | components["schemas"]["GetFiatDepositInformationResponse"];
+            summary_errors?: components["schemas"]["PayWalletSummaryError"][];
+            wallet?: null | components["schemas"]["Wallet"];
+        };
+        PaymentResponse: {
+            protocol: string;
+            response: components["schemas"]["WrappedJsonValue"];
+            wallet_id: string;
+        };
+        /**
+         * @description Opaque-enough client state needed to safely resume a stateful payment
+         *     scheme after a process restart. Every field is authenticated again against
+         *     the next server challenge before it is used.
+         */
+        PaymentSessionSnapshot: {
+            authorized_signer: string;
+            channel_id: string;
+            cumulative_amount: string;
+            deposit_amount: string;
+            /** Format: int64 */
+            expires_at: number;
+            metadata?: unknown;
+            method: string;
+            network: string;
+            /** Format: int64 */
+            nonce: number;
+            protocol: string;
+        };
         PersonalMcpServerInstanceSerialized: {
             agent_id?: string | null;
             authorization?: components["schemas"]["ResourceAuthorizationModes"];
@@ -14130,6 +14750,23 @@ export interface components {
         ProvisionIdentityTeamRequest: {
             name: string;
         };
+        ProvisionPayBrowserResponse: {
+            browser_definition_id: string;
+            enabled_tool_ids: string[];
+        };
+        ProvisionTildePayRequest: {
+            account_type?: string | null;
+            name?: string | null;
+            owner_id?: string | null;
+        };
+        ProvisionTildePayResponse: {
+            browser?: null | components["schemas"]["ProvisionPayBrowserResponse"];
+            customer?: null | components["schemas"]["WalletCustomer"];
+            kyc?: null | components["schemas"]["GetWalletCustomerKycResponse"];
+            mcp?: null | components["schemas"]["SetupPayMcpResponse"];
+            next_step: components["schemas"]["PayOnboardingStep"];
+            wallet?: null | components["schemas"]["Wallet"];
+        };
         /** @description App credentials and metadata created by a provider provisioner. */
         ProvisionedProviderApp: {
             created_resource_server_credential_ids: components["schemas"]["WrappedUuidV4"][];
@@ -14322,6 +14959,12 @@ export interface components {
         RefreshTokenRequest: {
             /** @description The refresh token. If not provided, will be read from cookie. */
             refresh_token?: string | null;
+        };
+        RefreshWalletTransactionHistoryResponse: {
+            inserted_or_updated: number;
+            linked_transactions: number;
+            scanned_chains: string[];
+            wallet_id: string;
         };
         RegisterAgentTool: {
             display_name: string;
@@ -14835,6 +15478,10 @@ export interface components {
             kind: components["schemas"]["UserType"];
             org_id: string;
         };
+        RuntimeIdentityPaginatedResponse: {
+            items: components["schemas"]["RuntimeIdentity"][];
+            next_page_token?: string;
+        };
         SelectDebugAuthProfileRequest: {
             profile: string;
         };
@@ -15026,6 +15673,12 @@ export interface components {
          */
         SetResourceAccessModeRequest: {
             mode: components["schemas"]["ResourceAccessMode"];
+        };
+        SetupPayMcpResponse: {
+            enabled_tool_ids: string[];
+            mcp_path: string;
+            mcp_server_id: string;
+            tool_group_instance_id: string;
         };
         SignalAction: {
             agent_inbox_id: string;
@@ -16345,6 +16998,130 @@ export interface components {
          * @enum {string}
          */
         VerifiedIdentityLinkSource: "provider_attested" | "challenge" | "admin";
+        WaitForPayBalanceRequest: {
+            asset: string;
+            /** Format: double */
+            minimum_amount: number;
+            /** Format: int64 */
+            poll_interval_secs?: number | null;
+            /** Format: int64 */
+            timeout_secs?: number | null;
+            wallet_id: string;
+        };
+        WaitUntilBalanceRequest: {
+            asset: string;
+            /** Format: double */
+            minimum_amount: number;
+            /** Format: int64 */
+            poll_interval_secs?: number;
+            /** Format: int64 */
+            timeout_secs?: number;
+            wallet_id: string;
+        };
+        WaitUntilBalanceResponse: {
+            /** Format: double */
+            observed_amount: number;
+            satisfied: boolean;
+            wallet_id: string;
+        };
+        Wallet: {
+            cached_compose_balances?: null | components["schemas"]["WrappedJsonValue"];
+            compose_customer_id: string;
+            compose_deposit_chain: string;
+            compose_deposit_currency: string;
+            compose_deposit_wallet_id?: string | null;
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            id: string;
+            last_compose_sync_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            name: string;
+            org_id: string;
+            owner_id?: string | null;
+            privy_evm_address: string;
+            privy_wallet_id: string;
+            status: string;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+            wallet_customer_id: string;
+        };
+        WalletCustomer: {
+            account_type: string;
+            compose_customer_id: string;
+            compose_customer_payload: components["schemas"]["WrappedJsonValue"];
+            compose_kyc_payload?: null | components["schemas"]["WrappedJsonValue"];
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            id: string;
+            kyc_flow_link?: string | null;
+            kyc_verified: boolean;
+            name: string;
+            org_id: string;
+            owner_id?: string | null;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        WalletCustomerPaginatedResponse: {
+            items: components["schemas"]["WalletCustomer"][];
+            next_page_token?: string;
+        };
+        WalletMerchant: {
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            favicon_url?: string | null;
+            icon_fetched_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            icon_media_type?: string | null;
+            icon_sha256?: string | null;
+            id: string;
+            merchant_url: string;
+            name?: string | null;
+            org_id: string;
+            origin: string;
+            raw_metadata: components["schemas"]["WrappedJsonValue"];
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        WalletPaginatedResponse: {
+            items: components["schemas"]["Wallet"][];
+            next_page_token?: string;
+        };
+        WalletTransactionHistoryItem: {
+            amount?: string | null;
+            /** Format: int32 */
+            amount_decimals?: number | null;
+            amount_raw?: string | null;
+            asset?: string | null;
+            chain?: string | null;
+            counterparty_address?: string | null;
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            direction: string;
+            id: string;
+            item_type: string;
+            merchant?: null | components["schemas"]["WalletMerchant"];
+            merchant_id?: string | null;
+            occurred_at: components["schemas"]["WrappedChronoDateTime"];
+            org_id: string;
+            raw_payload: components["schemas"]["WrappedJsonValue"];
+            scanned_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            status: string;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+            wallet_id: string;
+        };
+        WalletTransactionHistoryItemPaginatedResponse: {
+            items: components["schemas"]["WalletTransactionHistoryItem"][];
+            next_page_token?: string;
+        };
+        WalletVirtualAccount: {
+            cached_compose_deposit_info?: null | components["schemas"]["WrappedJsonValue"];
+            compose_customer_id: string;
+            compose_virtual_account_id: string;
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            currency: string;
+            id: string;
+            org_id: string;
+            status?: string | null;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+            wallet_customer_id: string;
+            wallet_id: string;
+        };
         /** @description Safe public metadata for a webhook signing key. Secret material is omitted. */
         WebhookSigningKeyMetadata: {
             created_at: components["schemas"]["WrappedChronoDateTime"];
@@ -17837,8 +18614,10 @@ export interface operations {
     "list-identities": {
         parameters: {
             query?: {
-                /** @description Nonnegative pagination offset; page size is 100 */
-                offset?: number;
+                /** @description Page size; defaults to 50 and is clamped to 1..100 */
+                page_size?: number;
+                /** @description Opaque cursor returned by the previous page */
+                next_page_token?: string;
             };
             header?: {
                 /** @description Organization routing when not selected by host */
@@ -17854,7 +18633,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RuntimeIdentity"][];
+                    "application/json": components["schemas"]["RuntimeIdentityPaginatedResponse"];
                 };
             };
             401: {
@@ -18151,8 +18930,10 @@ export interface operations {
     "list-identity-teams": {
         parameters: {
             query?: {
-                /** @description Nonnegative pagination offset; page size is 100 */
-                offset?: number;
+                /** @description Page size; defaults to 50 and is clamped to 1..100 */
+                page_size?: number;
+                /** @description Opaque cursor returned by the previous page */
+                next_page_token?: string;
             };
             header?: {
                 /** @description Organization routing when not selected by host */
@@ -18171,7 +18952,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IdentityTeamMembership"][];
+                    "application/json": components["schemas"]["IdentityTeamMembershipPaginatedResponse"];
                 };
             };
         };
@@ -18248,7 +19029,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserInvitation"];
+                    "application/json": components["schemas"]["AcceptInvitationResponse"];
                 };
             };
             403: {
@@ -18505,6 +19286,45 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "onboard-organization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OnboardOrganizationRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardOrganizationResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
             };
         };
     };
@@ -19570,8 +20390,10 @@ export interface operations {
     "list-proxy-tokens": {
         parameters: {
             query?: {
-                /** @description Nonnegative pagination offset; page size is 100 */
-                offset?: number;
+                /** @description Page size; defaults to 50 and is clamped to 1..100 */
+                page_size?: number;
+                /** @description Opaque cursor returned by the previous page */
+                next_page_token?: string;
             };
             header?: {
                 /** @description Organization routing when not selected by host */
@@ -19587,7 +20409,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OrgProxyToken"][];
+                    "application/json": components["schemas"]["OrgProxyTokenPaginatedResponse"];
                 };
             };
             401: {
@@ -34506,6 +35328,164 @@ export interface operations {
             };
         };
     };
+    "tilde-pay-provision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProvisionTildePayRequest"];
+            };
+        };
+        responses: {
+            /** @description Fully reconciled Tilde Pay onboarding state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvisionTildePayResponse"];
+                };
+            };
+        };
+    };
+    "tilde-pay-payment-mpp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Tilde Pay payment response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+        };
+    };
+    "tilde-pay-payment-x402": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Tilde Pay payment response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+        };
+    };
+    "tilde-pay-wallet-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tilde Pay wallet summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayWalletSummaryResponse"];
+                };
+            };
+        };
+    };
+    "tilde-pay-wallet-create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePayWalletRequest"];
+            };
+        };
+        responses: {
+            /** @description Tilde Pay wallet summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayWalletSummaryResponse"];
+                };
+            };
+        };
+    };
+    "tilde-pay-wallet-wait-until-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaitForPayBalanceRequest"];
+            };
+        };
+        responses: {
+            /** @description Tilde Pay balance wait result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitUntilBalanceResponse"];
+                };
+            };
+        };
+    };
     "list-trusted-runtimes": {
         parameters: {
             query?: {
@@ -34687,6 +35667,505 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "wallet-list": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                owner_id?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List wallets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "wallet-create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWalletBody"];
+            };
+        };
+        responses: {
+            /** @description Created wallet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Upstream provider error */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "wallet-customer-list": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                owner_id?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List wallet customers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletCustomerPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "wallet-customer-create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWalletCustomerBody"];
+            };
+        };
+        responses: {
+            /** @description Created wallet customer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletCustomer"];
+                };
+            };
+        };
+    };
+    "wallet-customer-get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet customer ID */
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet customer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletCustomer"];
+                };
+            };
+        };
+    };
+    "wallet-customer-kyc-get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet customer ID */
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet customer KYC details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetWalletCustomerKycResponse"];
+                };
+            };
+        };
+    };
+    "wallet-get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"];
+                };
+            };
+        };
+    };
+    "wallet-get-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet balances */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetBalancesResponse"];
+                };
+            };
+        };
+    };
+    "wallet-get-crypto-deposit-information": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet crypto deposit information */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetCryptoDepositInformationResponse"];
+                };
+            };
+        };
+    };
+    "wallet-get-fiat-deposit-information": {
+        parameters: {
+            query?: {
+                currency?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet fiat deposit information */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetFiatDepositInformationResponse"];
+                };
+            };
+        };
+    };
+    "wallet-make-mpp-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MakeMppPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Payment response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+        };
+    };
+    "wallet-make-x402-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MakeX402PaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Payment response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+        };
+    };
+    "wallet-transaction-history-list": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                next_page_token?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet transaction history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletTransactionHistoryItemPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "wallet-transaction-history-refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet transaction history refresh result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefreshWalletTransactionHistoryResponse"];
+                };
+            };
+        };
+    };
+    "wallet-virtual-account-create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWalletVirtualAccountBody"];
+            };
+        };
+        responses: {
+            /** @description Created wallet virtual account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletVirtualAccount"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Upstream provider error */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "wallet-wait-until-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaitUntilBalanceRequest"];
+            };
+        };
+        responses: {
+            /** @description Wait result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitUntilBalanceResponse"];
                 };
             };
         };

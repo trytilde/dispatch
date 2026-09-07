@@ -54,7 +54,7 @@ describe("application identity client", () => {
     const identity = { id: "alice", org_id: "org-a", identifiers: [] };
     const send = vi
       .fn<typeof fetch>()
-      .mockResolvedValueOnce(Response.json([membership]))
+      .mockResolvedValueOnce(Response.json({ items: [membership], next_page_token: null }))
       .mockResolvedValueOnce(Response.json(membership))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
       .mockResolvedValueOnce(Response.json(identity));
@@ -65,7 +65,10 @@ describe("application identity client", () => {
       proxyToken: "server-only",
       fetch: send,
     });
-    expect(await client.identities.listTeams("alice", 100)).toEqual([membership]);
+    expect(await client.identities.listTeams("alice", { pageSize: 100 })).toEqual({
+      items: [membership],
+      next_page_token: null,
+    });
     expect(await client.identities.addTeam("alice", "team-b")).toEqual(membership);
     expect(await client.identities.removeTeam("alice", "team-b")).toBeUndefined();
     expect(
@@ -77,7 +80,7 @@ describe("application identity client", () => {
         init?.method,
       ]),
     ).toEqual([
-      ["https://api.tilde.test/api/v1/identity/identities/alice/teams?offset=100", "GET"],
+      ["https://api.tilde.test/api/v1/identity/identities/alice/teams?page_size=100", "GET"],
       ["https://api.tilde.test/api/v1/identity/identities/alice/teams/team-b", "PUT"],
       ["https://api.tilde.test/api/v1/identity/identities/alice/teams/team-b", "DELETE"],
       ["https://api.tilde.test/api/v1/identity/identities/alice/identifiers", "DELETE"],
@@ -105,7 +108,32 @@ describe("application identity client", () => {
     await expect(
       bound.identities.removeIdentifier("alice", { namespace: "crm", value: "one" }),
     ).rejects.toThrow("unbound");
-    await expect(app.identities.listTeams("alice", -1)).rejects.toThrow("offset");
+    await expect(app.identities.listTeams("alice", { pageSize: NaN })).rejects.toThrow("pageSize");
     expect(send).not.toHaveBeenCalled();
+  });
+  it("round-trips opaque cursors and clamps page sizes on both list routes", async () => {
+    const cursor = "time+id/with=padding";
+    const send = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async () => Response.json({ items: [], next_page_token: cursor }));
+    const app = createClient({
+      baseUrl: "https://api.tilde.test",
+      orgSubdomain: false,
+      orgId: "org-a",
+      proxyToken: "secret",
+      fetch: send,
+    });
+    const page = await app.identities.list({ pageSize: 500 });
+    await app.identities.listTeams("alice/a", {
+      pageSize: 0,
+      nextPageToken: page.next_page_token!,
+    });
+    const urls = send.mock.calls.map(
+      ([url]) => new URL(url instanceof Request ? url.url : url.toString()),
+    );
+    expect(urls[0]!.searchParams.get("page_size")).toBe("100");
+    expect(urls[1]!.pathname).toContain("alice%2Fa/teams");
+    expect(urls[1]!.searchParams.get("page_size")).toBe("1");
+    expect(urls[1]!.searchParams.get("next_page_token")).toBe(cursor);
   });
 });

@@ -5,6 +5,16 @@ description: Prepare a focused change from an OpenBot fork for contribution to u
 
 # Contribute Upstream
 
+## Repository documentation requirements
+
+Follow [docs/README.md](../../../docs/README.md) for every change in this workflow. Create or update
+ADRs for resolved durable decisions, keep affected README/setup/public docs current,
+and maintain the complete pending or PR-numbered update record after every revision.
+Use the shared templates and section names. Missing or stale required documentation
+blocks completion. Document already authorized decisions without asking again; ask
+only about unresolved choices. These requirements govern documentation instructions
+elsewhere in this skill; preserve its repository-specific implementation and checks.
+
 1. Identify the minimal reusable change. Exclude fork-specific `configuration/`, secrets, branding, and deployment state unless upstream explicitly requests them.
 2. Before separating the contribution, search for `DO NOT UPSTREAM` markers. Treat every marked range or complete file as a hard exclusion from the upstream branch. Do not remove or rewrite marked fork behavior merely to make the upstream diff clean.
 3. Mark fork-only code with balanced, language-valid comments containing these exact tokens and a concrete reason:

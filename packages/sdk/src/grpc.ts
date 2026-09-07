@@ -15,6 +15,11 @@ export function createTildeGrpcReverseProxy(
   options: CreateTildeGrpcReverseProxyOptions,
 ): TildeGrpcReverseProxy {
   const { client, profileId } = options;
+  if (client.config.proxyToken) {
+    throw new TypeError(
+      "Org proxy delegation is supported over HTTP; gRPC requires its own API credential",
+    );
+  }
   if (!profileId.trim()) {
     throw new TypeError("profileId is required");
   }

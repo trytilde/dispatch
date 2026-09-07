@@ -140,3 +140,40 @@ await recordCodingAgentEvent({
   },
 });
 ```
+
+## Application authentication and organization identities
+
+Use `createClient({ orgId, proxyToken, orgSubdomain: false })` on your server to
+provision organization-owned identities with `createIdentity`, resolve optional
+unique identifiers with `identities.resolve`, and idempotently create an initial
+team with `identities.provisionTeam`. These operations need their corresponding
+application capabilities. `forTeam({ teamId, identityId })` returns a new scoped
+client without mutating another request.
+
+`@trytilde/sdk/proxy` exports `createTildeProxy({ baseUrl, orgId, proxyToken,
+mountPath, resolveSession })`. The session resolver verifies your application's
+login and returns `{ identityId, teamIds }` or null. The proxy replaces incoming
+credentials/identity headers, validates the selected team, permits runtime routes,
+preserves streaming and cancellation, and never exposes the server credential.
+Mutating browser requests must be same-origin. Account/billing/provisioning routes
+are excluded from this browser transport.
+
+`linkIdentity({ identityId, returnUrl, delivery? })` starts Tilde's hosted account
+linking flow. Register exact return URLs on the application token. Linking does
+not grant org administration or enroll a subscription. Email identifiers alone
+never establish account ownership.
+
+
+Org application clients also expose `identities.listTeams(identityId, { pageSize?, nextPageToken? })`,
+`addTeam(identityId, teamId)`, `removeTeam(identityId, teamId)`, and
+`removeIdentifier(identityId, { namespace, value })`. These require unbound
+`identities:manage` authority; adding runtime membership never assigns account roles.
+
+Application-token transports reject redirects, snapshot/freeze identity and team
+configuration, and replace caller authentication headers. The Fetch proxy adds
+sandbox/nosniff protection for navigated upstream content. Org proxy credentials
+are not supported by the gRPC reverse proxy and fail explicitly there.
+
+Identity lists use `identities.list({ pageSize?, nextPageToken? })` and return
+`{ items, next_page_token }`. Pass the returned cursor unchanged to the next call;
+page sizes are clamped to 1–100. Membership lists use the same response shape.

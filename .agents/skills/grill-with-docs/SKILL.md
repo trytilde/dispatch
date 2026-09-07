@@ -63,6 +63,16 @@ prose and append a timestamped bullet under `## Updates` as specified by
 
 ### Guide major decisions into ADRs
 
-Recommend an ADR for a major architecture, strongly opinionated code, or durable code/product design decision whose reasoning should survive the current change. Ask one decision question at a time, give a recommended answer, and write the record only after the user confirms the choice. Use [ADR-FORMAT.md](./ADR-FORMAT.md).
+Create or update an ADR for a durable architecture or product decision whose reasoning should survive the change. Write resolved decisions directly, including choices already confirmed in the task. Ask one question at a time only when an underlying choice remains unresolved. Use [ADR-FORMAT.md](./ADR-FORMAT.md).
 
 </supporting-info>
+
+## Repository documentation requirements
+
+Follow [docs/README.md](../../../docs/README.md) for every change in this workflow. Create or update
+ADRs for resolved durable decisions, keep affected README/setup/public docs current,
+and maintain the complete pending or PR-numbered update record after every revision.
+Use the shared templates and section names. Missing or stale required documentation
+blocks completion. Document already authorized decisions without asking again; ask
+only about unresolved choices. These requirements govern documentation instructions
+elsewhere in this skill; preserve its repository-specific implementation and checks.

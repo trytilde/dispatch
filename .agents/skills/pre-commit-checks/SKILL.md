@@ -5,6 +5,16 @@ description: Run OpenBot's TypeScript, protobuf, Vitest, build, browser, provide
 
 # Pre-Commit Checks
 
+## Repository documentation requirements
+
+Follow [docs/README.md](../../../docs/README.md) for every change in this workflow. Create or update
+ADRs for resolved durable decisions, keep affected README/setup/public docs current,
+and maintain the complete pending or PR-numbered update record after every revision.
+Use the shared templates and section names. Missing or stale required documentation
+blocks completion. Document already authorized decisions without asking again; ask
+only about unresolved choices. These requirements govern documentation instructions
+elsewhere in this skill; preserve its repository-specific implementation and checks.
+
 Use repository-pinned Node.js 24 and pnpm 10 tooling. Start narrow, then run the gates required by the changed surface.
 
 ## First Guard

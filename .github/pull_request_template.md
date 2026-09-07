@@ -63,16 +63,16 @@
 
 <!-- Keep exactly one applicable checkbox selected and explain when useful. -->
 
-## Fork update record
+## PR update record
 
-- [ ] This draft PR was opened before its update record was generated.
+- [ ] The pending record was prepared with the implementation and renamed using this PR’s verified number.
 - [ ] `docs/updates/<this-pr-number>.md` describes the complete current PR.
-- [ ] Generation analyzed the full diff, commits, review discussion, and every thread in the local coding-agent database—not only the current task.
-- [ ] The record has all four required headings, a Mermaid diagram, and exact `yes` or `no` fork criticality.
+- [ ] Generation analyzed the full diff, commits, review discussion, and relevant task evidence for this change.
+- [ ] The record has all four required headings, a Mermaid diagram, and exact `yes` or `no` critical-to-apply value.
 - [ ] The record excludes secrets, unrelated thread material, generated deployment state, and fork-specific configuration.
 - [ ] The record was refreshed after the latest implementation or review change.
 
-<!-- Link docs/updates/<this-pr-number>.md and disclose any thread-inspection limitation. -->
+<!-- Link docs/updates/<this-pr-number>.md and state material validation or evidence gaps. -->
 
 ## Frontend evidence
 
@@ -80,7 +80,7 @@
 
 ## Known limitations and follow-ups
 
-<!-- Remaining limitations, deferred work, or `none`. Use the exact <FOLLOW UP> block syntax from CONTEXT.md for actionable out-of-scope feature planning found during the local coding-agent thread audit. Link existing issues and state owner, trigger, work, and acceptance proof. -->
+<!-- Remaining limitations, deferred work, or `none`. Use the exact <FOLLOW UP> block syntax from CONTEXT.md for actionable out-of-scope feature planning found during review of this change. Link existing issues and state owner, trigger, work, and acceptance proof. -->
 
 ## Final diff review
 
@@ -90,3 +90,11 @@
 - [ ] The PR remains draft until checks and accepted feedback are current.
 - [ ] Current PR checks and unresolved review feedback were inspected after the latest push.
 - [ ] The `no-greptile` label was present when the PR was created; no external review bot was triggered.
+
+## Documentation
+
+- Link the current `docs/updates/<actual-pr-number>.md` record (rename the pending record after PR creation).
+- Link new or amended ADRs under `docs/adrs/`, or state `ADR review: no new decision` with a reason.
+- List affected README, setup/deployment, and public documentation changes; link related repository PRs and merge order.
+- Confirm the update record describes the full current diff, actual validation, and required consumer/operator actions.
+- Refresh this section and the same update record after subsequent review or rebase changes.

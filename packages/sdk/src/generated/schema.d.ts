@@ -24,6 +24,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/billing/accounts/{account_id}/enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** An organization administrator explicitly assigns a Core seat to a linked login account. */
+        post: operations["billing-enroll-account"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/accounts/{account_id}/seat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke an account seat without deleting its runtime identity or organization membership. */
+        delete: operations["billing-remove-account-seat"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/ai-credits/ensure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ensure organization AI Gateway
+         * @description Idempotently registers an existing organization for billing and provisions its encrypted organization-scoped AI Gateway credential and budget.
+         */
+        post: operations["billing-ai-gateway-ensure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/billing/ai-credits/receipts": {
         parameters: {
             query?: never;
@@ -139,7 +193,7 @@ export interface paths {
         put?: never;
         /**
          * Enroll current human in a product
-         * @description Creates one deduplicated human Core or Pay seat, synchronizes the exact organization quantity with Autumn, and never bills agent identities.
+         * @description An organization administrator explicitly enrolls their login account in Core. Runtime identities never allocate seats.
          */
         post: operations["billing-product-enroll-current-human"];
         delete?: never;
@@ -520,6 +574,178 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/identity/identities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List identities
+         * @description Requires the relevant explicit application capability or direct account administration. Runtime requests remain identity and tenant scoped.
+         */
+        get: operations["list-identities"];
+        put?: never;
+        /**
+         * Create identity
+         * @description Requires the relevant explicit application capability or direct account administration. Runtime requests remain identity and tenant scoped.
+         */
+        post: operations["create-identity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/identities/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve identity
+         * @description Requires the relevant explicit application capability or direct account administration. Runtime requests remain identity and tenant scoped.
+         */
+        post: operations["resolve-identity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/identities/{identity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get identity
+         * @description Requires the relevant explicit application capability or direct account administration. Runtime requests remain identity and tenant scoped.
+         */
+        get: operations["get-identity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update identity
+         * @description Requires the relevant explicit application capability or direct account administration. Runtime requests remain identity and tenant scoped.
+         */
+        patch: operations["update-identity"];
+        trace?: never;
+    };
+    "/api/v1/identity/identities/{identity_id}/identifiers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove identity identifier
+         * @description Requires the relevant explicit application capability or direct account administration. Runtime requests remain identity and tenant scoped.
+         */
+        delete: operations["remove-identity-identifier"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/identities/{identity_id}/link-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create identity link
+         * @description Requires the relevant explicit application capability or direct account administration. Runtime requests remain identity and tenant scoped.
+         */
+        post: operations["create-identity-link"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/identities/{identity_id}/team": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Provision identity team
+         * @description Requires the relevant explicit application capability or direct account administration. Runtime requests remain identity and tenant scoped.
+         */
+        post: operations["provision-identity-team"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/identities/{identity_id}/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List identity teams
+         * @description Requires the relevant explicit application capability or direct account administration. Runtime requests remain identity and tenant scoped.
+         */
+        get: operations["list-identity-teams"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/identities/{identity_id}/teams/{team_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Add identity team
+         * @description Requires the relevant explicit application capability or direct account administration. Runtime requests remain identity and tenant scoped.
+         */
+        put: operations["add-identity-team"];
+        post?: never;
+        /**
+         * Remove identity team
+         * @description Requires the relevant explicit application capability or direct account administration. Runtime requests remain identity and tenant scoped.
+         */
+        delete: operations["remove-identity-team"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/identity/invitations/accept": {
         parameters: {
             query?: never;
@@ -534,6 +760,46 @@ export interface paths {
          * @description Accept an invitation after verifying the authenticated email and invitation password
          */
         post: operations["accept-invitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/link-requests/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete identity link
+         * @description Requires directly authenticated account authority; proxy tokens cannot perform this operation.
+         */
+        post: operations["complete-identity-link"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/link-requests/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview identity link
+         * @description Requires directly authenticated account authority; proxy tokens cannot perform this operation.
+         */
+        post: operations["preview-identity-link"];
         delete?: never;
         options?: never;
         head?: never;
@@ -640,6 +906,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/identity/onboarding/organization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create the account's first native organization and team */
+        post: operations["onboard-organization"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/identity/organizations": {
         parameters: {
             query?: never;
@@ -675,7 +958,7 @@ export interface paths {
         put?: never;
         /**
          * Create a hosted OpenBot instance
-         * @description Creates an isolated Tilde team, one Vercel runtime project containing the web app, control API, and agent functions, a persistent Vercel Sandbox with local Git and a deterministic Vercel project domain, and OIDC-backed AI Gateway access, then starts deployment. Deprecated control and agent project response fields mirror the runtime project for compatibility. Custom Cloudflare DNS is a follow-up.
+         * @description Creates an isolated Tilde team and OAuth registration, then provisions the requested target. `target: vercel` (default) creates one Vercel runtime project containing the web app, control API, and agent functions plus a persistent Vercel Sandbox, and starts deployment; deprecated control and agent project response fields mirror the runtime project for compatibility. `target: exe` creates one exe.dev VM backed by a Tilde-owned Code Storage repository; the VM redeems a single-use bootstrap bundle and the instance becomes active once its runtime serves /healthz. Custom Cloudflare DNS is a follow-up.
          */
         post: operations["create_hosted_openbot_deployment"];
         delete?: never;
@@ -926,6 +1209,54 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/proxy-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List proxy tokens
+         * @description Requires directly authenticated account authority; proxy tokens cannot perform this operation.
+         */
+        get: operations["list-proxy-tokens"];
+        put?: never;
+        /**
+         * Create proxy token
+         * @description Requires directly authenticated account authority; proxy tokens cannot perform this operation.
+         */
+        post: operations["create-proxy-token"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity/proxy-tokens/{token_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke proxy token
+         * @description Requires directly authenticated account authority; proxy tokens cannot perform this operation.
+         */
+        delete: operations["revoke-proxy-token"];
+        options?: never;
+        head?: never;
+        /**
+         * Rename proxy token
+         * @description Requires directly authenticated account authority; proxy tokens cannot perform this operation.
+         */
+        patch: operations["rename-proxy-token"];
         trace?: never;
     };
     "/api/v1/identity/team-groups": {
@@ -1320,6 +1651,26 @@ export interface paths {
          * @description List globally available tool providers and their tools without authentication
          */
         get: operations["list-public-available-tool-groups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/openbot/bootstrap/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Redeem a hosted OpenBot bootstrap token
+         * @description Exchanges the single-use token an exe.dev VM received through its environment for the instance bootstrap bundle: `openbot init` answers, the runtime environment, the secrets written to the mode-0600 environment file (team API key, repository-scoped Code Storage token, organization AI Gateway key), and the bootstrap shell script. The token is invalidated before the bundle is rendered; a second request returns 404.
+         */
+        get: operations["get_hosted_openbot_bootstrap_bundle"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2592,6 +2943,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/chatkit/identities/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Link a member's attested address
+         * @description A team admin links an address to a team member without a challenge. Only an address the member has already verified with an identity provider is accepted.
+         */
+        post: operations["link-team-identity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/chatkit/inbox": {
         parameters: {
             query?: never;
@@ -3091,6 +3462,26 @@ export interface paths {
          * @description Delete a message by its ID
          */
         delete: operations["delete-message"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/chatkit/session/{session_id}/message/{message_id}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get message delivery receipts
+         * @description Requires permission to read the message and its session. Delivered means the channel adapter received provider acceptance, not that the recipient read it.
+         */
+        get: operations["get-message-deliveries"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4542,6 +4933,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/git-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Re-mint a hosted OpenBot Code Storage Git token
+         * @description Mints a fresh 30-day `git:read`/`git:write` credential confined to this exe.dev instance's own Code Storage repository. Only the instance's runtime API key is accepted; the organization key never leaves Tilde.
+         */
+        post: operations["issue_hosted_openbot_git_token"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/identity/openbot/instances/{instance_id}/releases": {
         parameters: {
             query?: never;
@@ -4616,6 +5027,26 @@ export interface paths {
          * @description Requires every manifest file to be uploaded, derives the canonical runtime project or legacy service-specific project server-side, and idempotently creates its production deployment.
          */
         post: operations["finalize_hosted_openbot_release"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/identity/realtime-ticket": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue proxy realtime ticket
+         * @description Requires the relevant explicit application capability or direct account administration. Runtime requests remain identity and tenant scoped.
+         */
+        post: operations["issue-proxy-realtime-ticket"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5639,7 +6070,7 @@ export interface paths {
         };
         /**
          * Get memory bank document
-         * @description Get retained document content, metadata, tags, and extraction statistics.
+         * @description Get retained document content, typed provenance and provider state.
          */
         get: operations["get-memory-bank-document"];
         put?: never;
@@ -7294,6 +7725,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/team/{team_id}/tilde-pay/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Provision Tilde Pay
+         * @description Idempotently enroll billing, create a customer when details are supplied, create a wallet after KYC, configure the wallet MCP server and tools, and optionally configure browser tools when enabled.
+         */
+        post: operations["tilde-pay-provision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/tilde-pay/payments/mpp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make MPP payment
+         * @description Make an MPP payment from a Tilde Pay wallet.
+         */
+        post: operations["tilde-pay-payment-mpp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/tilde-pay/payments/x402": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make x402 payment
+         * @description Make an x402 payment from a Tilde Pay wallet.
+         */
+        post: operations["tilde-pay-payment-x402"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/tilde-pay/wallet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Tilde Pay wallet summary
+         * @description Return wallet, balances, fiat deposit information, and crypto deposit information for Tilde Pay.
+         */
+        get: operations["tilde-pay-wallet-summary"];
+        put?: never;
+        /**
+         * Create Tilde Pay wallet
+         * @description Create a Tilde Pay wallet after KYC and return product-shaped wallet details.
+         */
+        post: operations["tilde-pay-wallet-create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/tilde-pay/wallet/wait-until-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Wait for Tilde Pay balance
+         * @description Poll wallet balances until the requested asset reaches the requested minimum.
+         */
+        post: operations["tilde-pay-wallet-wait-until-balance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/team/{team_id}/trusted-runtime": {
         parameters: {
             query?: never;
@@ -7344,6 +7879,294 @@ export interface paths {
          * @description Patch trusted runtime metadata or status.
          */
         patch: operations["update-trusted-runtime"];
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List wallets
+         * @description List wallets for the current org/team.
+         */
+        get: operations["wallet-list"];
+        put?: never;
+        /**
+         * Create wallet
+         * @description Create a Tilde wallet by provisioning a Privy EVM wallet, Compose virtual IBAN, and Compose crypto deposit wallet.
+         */
+        post: operations["wallet-create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/customer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List wallet customers
+         * @description List wallet customers for the current org/team.
+         */
+        get: operations["wallet-customer-list"];
+        put?: never;
+        /**
+         * Create wallet customer
+         * @description Create a Compose customer and return a KYC verification link for wallet onboarding.
+         */
+        post: operations["wallet-customer-create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/customer/{customer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wallet customer
+         * @description Get a wallet customer by local id.
+         */
+        get: operations["wallet-customer-get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/customer/{customer_id}/kyc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wallet customer KYC details
+         * @description Return the stored Compose KYC verification status and KYC flow URL for a wallet customer.
+         */
+        get: operations["wallet-customer-kyc-get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wallet
+         * @description Get a wallet by id.
+         */
+        get: operations["wallet-get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wallet balances
+         * @description Refresh and return Compose balances for this wallet.
+         */
+        get: operations["wallet-get-balances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/crypto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wallet crypto deposit information
+         * @description Return crypto deposit information for this wallet.
+         */
+        get: operations["wallet-get-crypto-deposit-information"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/fiat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get wallet fiat deposit information
+         * @description Refresh and return Compose fiat deposit information for this wallet.
+         */
+        get: operations["wallet-get-fiat-deposit-information"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/payments/mpp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make MPP payment
+         * @description Make an MPP payment from the wallet using the configured payment adapter.
+         */
+        post: operations["wallet-make-mpp-payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/payments/x402": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make x402 payment
+         * @description Make an x402 payment from the wallet using the configured payment adapter.
+         */
+        post: operations["wallet-make-x402-payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List wallet transaction history
+         * @description Return cached transaction history for this wallet without scanning the chain.
+         */
+        get: operations["wallet-transaction-history-list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh wallet transaction history
+         * @description Scan configured chains for wallet-linked USDC transfers and upsert cached transaction history.
+         */
+        post: operations["wallet-transaction-history-refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/virtual-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create wallet virtual account
+         * @description Create a currency-denominated Compose virtual account for an existing wallet.
+         */
+        post: operations["wallet-virtual-account-create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/team/{team_id}/wallet/{wallet_id}/wait-until-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Wait until wallet balance
+         * @description Poll the local wallet balance cache until an asset reaches the requested minimum.
+         */
+        post: operations["wallet-wait-until-balance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/team/{team_id}/wiki-ontology-templates": {
@@ -8473,6 +9296,106 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["remove_personal_uc_visibility_grant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/user/{user_id}/identities/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List linked addresses
+         * @description Every external address linked to the user, with the provider namespace and the tenant route each one carries.
+         */
+        get: operations["list-verified-identity-links"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/user/{user_id}/identities/links/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Unlink an address
+         * @description Remove a link and withdraw the authority it granted on its routed channel immediately.
+         */
+        delete: operations["delete-verified-identity-link"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/user/{user_id}/identities/verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start verifying an external address
+         * @description Issue a challenge proving the user holds an email address or phone number on a ChatKit channel provider. An inbound challenge returns the code the user must send to the channel; an outbound challenge sends the code to the address and returns nothing to show.
+         */
+        post: operations["initiate-identity-verification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/user/{user_id}/identities/verifications/{verification_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an address verification
+         * @description Read the state of one challenge: its mode, expiry, attempts used, and whether it completed. The code is never returned.
+         */
+        get: operations["get-identity-verification"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/user/{user_id}/identities/verifications/{verification_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete an address verification
+         * @description Submit the code for a challenge from an app rather than from the channel. A wrong code counts as an attempt; a challenge closes after five.
+         */
+        post: operations["complete-identity-verification"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -9654,6 +10577,20 @@ export interface components {
             invitation_id: string;
             password: string;
         };
+        /** @description Canonical tenant destination after accepting an invitation with a login account. */
+        AcceptInvitationResponse: {
+            identity_id: string;
+            invitation: components["schemas"]["UserInvitation"];
+            org_id: string;
+            team_id: string;
+        };
+        /** @description Explicit login-account membership, independent of runtime identity availability. */
+        AccountOrganizationMembership: {
+            account_id: string;
+            name: string;
+            organization_id: string;
+            role: string;
+        };
         /** @description Request body for adding a participant to a ChatKit session. */
         AddChatKitParticipantRequestInner: {
             participant: components["schemas"]["ChatKitParticipantInput"];
@@ -9890,6 +10827,11 @@ export interface components {
             tool_call_id: string;
             tool_name: string;
         };
+        AgentRunJobContext: {
+            /** Format: int64 */
+            generation: number;
+            id: components["schemas"]["WrappedUuidV4"];
+        };
         /** @enum {string} */
         AgentRunStatus: "active" | "waiting" | "paused" | "stalled" | "completed" | "failed" | "canceled";
         AgentSpec: {
@@ -9949,6 +10891,11 @@ export interface components {
             cost_microusd: number;
             /** Format: int64 */
             elapsed_ms: number;
+            /**
+             * Format: int64
+             * @description Required for job-bound runs; fences accounting from stale callbacks.
+             */
+            expected_generation?: number | null;
             /** Format: int64 */
             input_tokens: number;
             outcome: string;
@@ -10043,10 +10990,10 @@ export interface components {
             products: components["schemas"]["ProductBillingContext"][];
         };
         /**
-         * @description A separately billed Tilde product whose access is evaluated per organization.
+         * @description The Core subscription whose access is evaluated per organization.
          * @enum {string}
          */
-        BillingProductId: "tilde_core" | "tilde_pay";
+        BillingProductId: "tilde_core";
         BrokerAction: {
             Redirect: components["schemas"]["BrokerActionRedirect"];
         } | "None";
@@ -10159,6 +11106,16 @@ export interface components {
             manifest_template?: string | null;
             markdown: string;
         };
+        /**
+         * @description How a Tilde-managed (platform) installation of a provider is scoped.
+         *
+         *     Decides the uniqueness rule a managed installation is held to. A
+         *     self-managed installation, where the tenant brings its own credentials and
+         *     address, is never constrained by this: it is already unique by the
+         *     tenant's own address.
+         * @enum {string}
+         */
+        ChatChannelPlatformScope: "external_container" | "pooled_address";
         /** @description Provider-specific setup option for a product-facing chat channel. */
         ChatChannelProvider: {
             auth_methods?: components["schemas"]["ChatChannelProviderAuthMethod"][];
@@ -10166,6 +11123,8 @@ export interface components {
             description: string;
             display_name: string;
             id: string;
+            /** @description Uniqueness rule for a Tilde-managed installation of this provider. */
+            platform_scope?: components["schemas"]["ChatChannelPlatformScope"];
             provisioner_provider_id?: string | null;
             setup_kind: string;
             subscription_options?: components["schemas"]["ChatChannelSubscriptionOption"][];
@@ -10228,6 +11187,7 @@ export interface components {
             /** Format: int64 */
             generation: number;
             hidden: boolean;
+            job?: null | components["schemas"]["ChatKitAgentJobExecutionContext"];
             runId: components["schemas"]["WrappedUuidV4"];
             workerId: string;
         };
@@ -10614,6 +11574,7 @@ export interface components {
             metadata?: null | components["schemas"]["WrappedJsonValue"];
             parts: components["schemas"]["ChatMessagePart"][];
             role: components["schemas"]["MessageRole"];
+            signal?: null | components["schemas"]["SignalMessageContext"];
         };
         /** @description Server-authored context for a synthetic HTTP-agent message. */
         ChatMessageContext: {
@@ -10727,10 +11688,16 @@ export interface components {
             transferred_team_ids: string[];
         };
         CloudWhoamiResponse: {
+            account_organizations?: components["schemas"]["AccountOrganizationMembership"][];
             groups: string[];
             identity: components["schemas"]["Identity"];
             local_runtime_tunnel_domain: string;
             local_runtime_tunnel_origin: string;
+            /**
+             * @description True after explicit first-organization creation, even if that org was removed.
+             *     A membership-less completed account needs invitation/link recovery, not replay.
+             */
+            organization_onboarding_completed?: boolean | null;
             organizations: components["schemas"]["UserOrganization"][];
             teams: components["schemas"]["UserTeam"][];
         };
@@ -10749,6 +11716,34 @@ export interface components {
             reservation_id: string;
             tags: string[];
         };
+        /** @description Provider-neutral typed configuration for a common-provider installation. */
+        CommonProviderConfiguration: {
+            /** @enum {string} */
+            type: "default";
+        } | {
+            chatkit_enabled?: boolean;
+            default_agent_inbox_id?: string | null;
+            phone_numbers?: string[];
+            reverse_proxy_enabled?: boolean;
+            signals_enabled?: boolean;
+            subscription_option_ids?: string[];
+            /** @enum {string} */
+            type: "linq";
+        } | {
+            chatkit_enabled?: boolean;
+            default_agent_inbox_id?: string | null;
+            reverse_proxy_enabled?: boolean;
+            signals_enabled?: boolean;
+            subscription_option_ids?: string[];
+            /** @enum {string} */
+            type: "whatsapp";
+        };
+        /** @description Typed intent to make a resource credential the root of a common-provider installation. */
+        CommonProviderCredentialSetup: {
+            account_name: string;
+            configuration?: components["schemas"]["CommonProviderConfiguration"];
+            provider_id: string;
+        };
         CommonProviderInstallationPage: {
             items: components["schemas"]["CommonProviderInstallationSerialized"][];
             next_page_token?: string | null;
@@ -10759,6 +11754,7 @@ export interface components {
             authorization: components["schemas"]["ResourceAuthorizationModes"];
             chat_provider_id?: string | null;
             common_provider_id: string;
+            configuration: components["schemas"]["CommonProviderConfiguration"];
             created_at: components["schemas"]["WrappedChronoDateTime"];
             created_by_user_id?: string | null;
             id: string;
@@ -10767,11 +11763,38 @@ export interface components {
             org_id: string;
             resource_server_credential_id: components["schemas"]["WrappedUuidV4"];
             reverse_proxy_profile_ids: string[];
+            runtime_state: components["schemas"]["CommonProviderRuntimeState"];
             signal_provider_instance_id?: string | null;
             status: string;
             team_id: string;
             tool_group_instance_id?: string | null;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        /** @description Runtime lifecycle state owned by the common-provider reconciler. */
+        CommonProviderRuntimeState: {
+            /** @enum {string} */
+            type: "default";
+        } | {
+            /** @enum {string} */
+            type: "linq";
+            webhook_subscription_id?: string | null;
+            webhook_url?: string | null;
+        } | {
+            /** @description Display number Meta reports for the configured phone number ID. */
+            display_phone_number?: string | null;
+            /** @enum {string} */
+            type: "whatsapp";
+            /** @description Verified business name shown to recipients. */
+            verified_name?: string | null;
+            /** @description Shared ingress endpoint that verifies `X-Hub-Signature-256`. */
+            webhook_endpoint_id?: string | null;
+            /**
+             * @description Whether Tilde registered the callback through the Graph API. When
+             *     false the tenant must paste `webhook_url` into the Meta dashboard.
+             */
+            webhook_registered?: boolean;
+            /** @description Callback URL Meta must deliver to. */
+            webhook_url?: string | null;
         };
         /** @description Request to mark a direct upload as complete. */
         CompleteAttachmentUploadInner: {
@@ -10784,9 +11807,15 @@ export interface components {
             user_credential_id?: null | components["schemas"]["WrappedUuidV4"];
         };
         CompleteHumanApprovalActionRequest: {
+            completion: components["schemas"]["HumanApprovalCompletion"];
             id?: string;
+            /** @description Caller-owned completion extension data. Tilde never interprets this value. */
             metadata?: components["schemas"]["WrappedJsonValue"];
             token?: string;
+        };
+        /** @description Body of `POST /user/{user_id}/identities/verifications/{id}/complete`. */
+        CompleteIdentityVerificationRequestInner: {
+            code: string;
         };
         CompleteSlackProviderProvisionedSetupRequestInner: {
             resource_server_credential_id: components["schemas"]["WrappedUuidV4"];
@@ -10868,6 +11897,7 @@ export interface components {
             budget?: components["schemas"]["AgentRunBudget"];
             goal_id?: null | components["schemas"]["WrappedUuidV4"];
             idempotency_key: string;
+            job?: null | components["schemas"]["AgentRunJobContext"];
             objective: string;
         };
         /** @description Public body for creating an organization AI-credit checkout. */
@@ -10964,8 +11994,20 @@ export interface components {
             objective: string;
         };
         CreateHostedOpenBotDeploymentRequest: {
+            /**
+             * @description Owner of an exe installation provisioned by an administrator. Must belong to team_id.
+             *     Omitted requests retain the authenticated caller as owner.
+             */
+            owner_user_id?: string | null;
             /** @description Globally unique label used for deterministic Tilde and Vercel resources. */
             slug: string;
+            /**
+             * @description Hosting substrate. Defaults to Vercel; `exe` provisions one exe.dev VM backed by a
+             *     Tilde-owned Code Storage repository.
+             */
+            target?: components["schemas"]["HostedOpenBotTarget"];
+            /** @description Deploy into an existing team in this organization instead of creating a team. */
+            team_id?: string | null;
             /** @description User-facing title for the isolated OpenBot instance and its Tilde team. */
             title: string;
         };
@@ -10983,11 +12025,13 @@ export interface components {
             source_revision: string;
         };
         CreateHumanApprovalActionRequestInner: {
+            action: components["schemas"]["HumanApprovalActionPayload"];
             approval_type?: string;
             credential_source_type_id?: string | null;
             /** Format: int64 */
             expires_in_seconds?: number;
             instructions?: string | null;
+            /** @description Caller-owned extension data. Tilde never interprets this value. */
             metadata?: components["schemas"]["WrappedJsonValue"];
             owner_id?: string | null;
             owner_type?: string | null;
@@ -11000,12 +12044,26 @@ export interface components {
             approval_url_path: string;
             token: string;
         };
+        CreateIdentityLinkRequest: {
+            delivery?: null | components["schemas"]["IdentityLinkDelivery"];
+            return_url?: string | null;
+        };
+        CreateIdentityRequest: {
+            display_name?: string | null;
+            identifiers?: components["schemas"]["IdentityIdentifier"][];
+            kind: components["schemas"]["UserType"];
+        };
         CreateManagedUserCredentialBody: {
             /** @description Allow Browser form filling to enumerate this credential. */
             browser_password_manager_eligible?: boolean;
             dek_alias: string;
             metadata?: null | components["schemas"]["Metadata"];
             secretValue: components["schemas"]["WrappedJsonValue"];
+            /**
+             * @description Web origins (`https://accounts.example.com`) this credential belongs to.
+             *     Browser fill only offers a credential on pages whose origin matches.
+             */
+            site_origins?: string[];
         };
         CreateMcpServerInstanceRequestInner: {
             agent_id?: string | null;
@@ -11071,6 +12129,11 @@ export interface components {
         CreatePageTypeVersionBody: {
             schema: unknown;
         };
+        CreatePayWalletRequest: {
+            name: string;
+            owner_id?: string | null;
+            wallet_customer_id: string;
+        };
         CreatePersonalToolGroupInstanceBody: {
             authorization?: components["schemas"]["ResourceAuthorizationModes"];
             credential_source_type_id: string;
@@ -11082,6 +12145,12 @@ export interface components {
             tool_group_instance_id?: string | null;
             tool_group_source_type_id: string;
             user_credential_id?: null | components["schemas"]["WrappedUuidV4"];
+        };
+        CreateProxyTokenRequest: {
+            allowed_return_urls?: string[];
+            capabilities?: string[];
+            expires_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            name: string;
         };
         CreateRelationshipTypeBody: {
             description?: string;
@@ -11107,6 +12176,7 @@ export interface components {
         };
         CreateResourceServerCredentialParamsInner: {
             authorization?: components["schemas"]["ResourceAuthorizationModes"];
+            common_provider?: null | components["schemas"]["CommonProviderCredentialSetup"];
             dek_alias: string;
             initial_grants?: components["schemas"]["ResourceGrantRequest"][];
             metadata?: null | components["schemas"]["Metadata"];
@@ -11352,6 +12422,19 @@ export interface components {
             metadata?: null | components["schemas"]["Metadata"];
             user_credential_configuration: components["schemas"]["WrappedJsonValue"];
         };
+        CreateWalletBody: {
+            name: string;
+            owner_id?: string | null;
+            wallet_customer_id: string;
+        };
+        CreateWalletCustomerBody: {
+            account_type?: string;
+            name: string;
+            owner_id?: string | null;
+        };
+        CreateWalletVirtualAccountBody: {
+            currency: string;
+        };
         CreateWikiAssetBody: {
             alt_text?: string | null;
             checksum?: string | null;
@@ -11371,6 +12454,21 @@ export interface components {
             memory_bank_ids?: components["schemas"]["WrappedUuidV4"][] | null;
             name: string;
         };
+        CreatedIdentityLink: {
+            expires_at: components["schemas"]["WrappedChronoDateTime"];
+            id: string;
+            url: string;
+        };
+        CreatedProxyToken: {
+            secret: string;
+            token: components["schemas"]["OrgProxyToken"];
+        };
+        /** @description Typed relationship established after a state-import credential is configured. */
+        CredentialSetupBinding: {
+            desired_enabled?: boolean;
+            owner_id: string;
+            owner_type: string;
+        };
         /** @enum {string} */
         CredentialSetupCredentialKind: "resource_server_credential" | "user_credential";
         CredentialSetupFormField: {
@@ -11382,6 +12480,9 @@ export interface components {
             required?: boolean;
         };
         CredentialSetupItem: {
+            bindings?: components["schemas"]["CredentialSetupBinding"][];
+            common_provider?: null | components["schemas"]["CommonProviderCredentialSetup"];
+            configuration_defaults?: components["schemas"]["WrappedJsonValue"];
             created_at: components["schemas"]["WrappedChronoDateTime"];
             credential_source_type_id: string;
             desired_enabled: boolean;
@@ -11395,7 +12496,10 @@ export interface components {
             owner_type: string;
             provider_display_name?: string | null;
             provider_id: string;
+            provider_provisioner_id?: string | null;
             resource_server_credential_id?: null | components["schemas"]["WrappedUuidV4"];
+            return_url?: string | null;
+            source?: null | components["schemas"]["CredentialSetupSource"];
             status: components["schemas"]["CredentialSetupItemStatus"];
             team_id: string;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
@@ -11429,6 +12533,11 @@ export interface components {
             /** @enum {string} */
             type: "complete";
         };
+        /**
+         * @description Origin of a durable credential setup item.
+         * @enum {string}
+         */
+        CredentialSetupSource: "state_import" | "user_credential_brokering" | "mcp_tool_group_instance_creation" | "mcp_proxied_server_connection";
         CredentialSourceSerialized: {
             auth_adapter: components["schemas"]["ProviderAuthAdapterConfig"];
             configuration_schema: components["schemas"]["ConfigurationSchema"];
@@ -11520,6 +12629,19 @@ export interface components {
             model_id?: string | null;
             objective: string;
         };
+        /**
+         * @description A runtime actor authenticated by an organization application credential.
+         *     Credential authority remains separate from the actor's own groups.
+         */
+        DelegatedIdentity: {
+            email?: string | null;
+            groups: string[];
+            kind: components["schemas"]["UserType"];
+            org_id: string;
+            proxy_token_id: string;
+            sub: string;
+            team_id?: string | null;
+        };
         DeleteChatKitAgentTurnQueueItemResponse: {
             deleted: boolean;
         };
@@ -11547,16 +12669,27 @@ export interface components {
          *     processing lease. They are deliberately absent from owner-initiated deletes.
          */
         DeleteSynthesisMemoryDocumentBody: {
-            batch_id: string;
+            binding: components["schemas"]["MemorySynthesisMutationBinding"];
             document_id: string;
-            evidence_ids: string[];
-            /** @description Exact durable worker lease that issued this synthesis turn. */
-            lease_owner: string;
+        };
+        /** @description Response of `DELETE /user/{user_id}/identities/links/{id}`. */
+        DeleteVerifiedIdentityLinkResponse: {
+            success: boolean;
         };
         DeploymentEnvironmentFile: {
             content_type: string;
             contents: string;
             filename: string;
+        };
+        DirectTokenPayment: {
+            amount: string;
+            asset?: string;
+            chain?: string;
+            destination_address: string;
+            destination_asset?: string | null;
+            destination_chain?: string | null;
+            /** Format: int64 */
+            slippage_bps?: number | null;
         };
         /** @description Selects one package file for a lazy download URL. */
         DownloadSkillPackageFileRequest: {
@@ -11687,6 +12820,25 @@ export interface components {
             download_url: string;
             expires_at: components["schemas"]["WrappedChronoDateTime"];
         };
+        GetBalancesResponse: {
+            balances: components["schemas"]["WrappedJsonValue"];
+            wallet_id: string;
+        };
+        GetCryptoDepositInformationResponse: {
+            crypto: components["schemas"]["WrappedJsonValue"];
+            wallet_id: string;
+        };
+        GetFiatDepositInformationResponse: {
+            currency: string;
+            fiat: components["schemas"]["WrappedJsonValue"];
+            wallet_id: string;
+        };
+        GetWalletCustomerKycResponse: {
+            compose_customer_id: string;
+            kyc_flow_link?: string | null;
+            kyc_verified: boolean;
+            wallet_customer_id: string;
+        };
         /** @description Durable desired outcome owned by one explicit agent in one conversation. */
         Goal: {
             agent_id: string;
@@ -11777,78 +12929,137 @@ export interface components {
         HealthCheckResponse: {
             status: string;
         };
+        /**
+         * @description Single-use bootstrap bundle handed to a freshly created exe.dev VM. The route that returns
+         *     it is unauthenticated by design: the one-time token in the URL is the secret, and the row
+         *     that stored its hash is cleared before the bundle is rendered.
+         */
+        HostedOpenBotBootstrapBundle: {
+            /** @description Bash script the VM runs detached to clone, initialize, and supervise the runtime. */
+            bootstrap_script: string;
+            /** @description Non-secret runtime environment for the systemd unit environment file. */
+            environment: {
+                [key: string]: string;
+            };
+            /** @description Answers for `openbot init --non-interactive --json`. */
+            init_answers: Record<string, never>;
+            instance_id: string;
+            /** @description Secret runtime environment written only to the mode-0600 environment file. */
+            secrets: {
+                [key: string]: string;
+            };
+        };
         HostedOpenBotDeployment: {
+            /** @description Vercel Sandbox command id, or the exe.dev bootstrap marker for `exe` instances. */
             bootstrap_command_id: string;
+            /** @description Code Storage repository path holding this instance's fork for `exe` instances. */
+            code_storage_repository?: string | null;
             deployment_url: string;
+            /** @description exe.dev VM name for `exe` instances. */
+            exe_vm_name?: string | null;
             hostname: string;
             instance_id: string;
             oauth: components["schemas"]["OpenBotDeployment"];
             org_id: string;
             slug: string;
             status: string;
+            target: components["schemas"]["HostedOpenBotTarget"];
             team_id: string;
             title: string;
             /**
              * @deprecated
-             * @description Deprecated compatibility projection. New instances mirror the runtime project here.
+             * @description Deprecated compatibility projection. New Vercel instances mirror the runtime project here.
              */
-            vercel_agent_project: string;
+            vercel_agent_project?: string | null;
             /**
              * @deprecated
-             * @description Deprecated compatibility projection. New instances mirror the runtime project here.
+             * @description Deprecated compatibility projection. New Vercel instances mirror the runtime project here.
              */
-            vercel_control_project: string;
+            vercel_control_project?: string | null;
             /**
              * @description Canonical Vercel project for combined web, control, and agent runtime releases.
-             *     This is absent only for pre-consolidation instances that still use split projects.
+             *     This is absent only for pre-consolidation instances that still use split projects,
+             *     and for every exe.dev-hosted instance.
              */
             vercel_runtime_project?: string | null;
-            vercel_sandbox: string;
+            /** @description Vercel Sandbox Computer name. Absent for exe.dev-hosted instances. */
+            vercel_sandbox?: string | null;
+        };
+        /**
+         * @description Durable progress of one hosted `exe` instance. Steps are strictly ordered; the recorder only
+         *     ever advances, so a retried provisioning call can skip every step that already completed
+         *     and a stale watcher can never move an instance backwards.
+         * @enum {string}
+         */
+        HostedOpenBotExeStep: "repository" | "vm" | "published" | "bootstrap_redeemed" | "ready";
+        /** @description Repository-scoped Code Storage Git credential minted for one hosted instance. */
+        HostedOpenBotGitToken: {
+            expires_at: components["schemas"]["WrappedChronoDateTime"];
+            organization: string;
+            repository: string;
+            /** @description Bearer credential for `https://t:<token>@<organization>.code.storage/<repository>.git`. */
+            token: string;
         };
         HostedOpenBotInstance: {
             bootstrap_command_id?: string | null;
+            /** @description Code Storage repository path holding this instance's fork for `exe` instances. */
+            code_storage_repository?: string | null;
             computer_image?: string | null;
-            computer_service_url: string;
+            /**
+             * @description Computer service RPC endpoint. Absent for exe.dev-hosted instances, whose runtime owns
+             *     the Computer on the VM itself.
+             */
+            computer_service_url?: string | null;
             created_at: components["schemas"]["WrappedChronoDateTime"];
+            exe_provisioning_step?: null | components["schemas"]["HostedOpenBotExeStep"];
+            /** @description exe.dev VM name for `exe` instances. */
+            exe_vm_name?: string | null;
             hostname: string;
             id: string;
             org_id: string;
+            /** @description Public HTTPS origin serving the runtime for `exe` instances. */
+            public_origin?: string | null;
             slug: string;
             status: components["schemas"]["HostedOpenBotInstanceStatus"];
+            /** @description Hosting substrate this instance runs on. */
+            target: components["schemas"]["HostedOpenBotTarget"];
             team_id: string;
             title: string;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
             /**
              * @deprecated
-             * @description Deprecated compatibility projection. New instances mirror the runtime project here.
+             * @description Deprecated compatibility projection. New Vercel instances mirror the runtime project here.
              */
-            vercel_agent_project_id: string;
+            vercel_agent_project_id?: string | null;
             /**
              * @deprecated
-             * @description Deprecated compatibility projection. New instances mirror the runtime project here.
+             * @description Deprecated compatibility projection. New Vercel instances mirror the runtime project here.
              */
-            vercel_agent_project_name: string;
+            vercel_agent_project_name?: string | null;
             /**
              * @deprecated
-             * @description Deprecated compatibility projection. New instances mirror the runtime project here.
+             * @description Deprecated compatibility projection. New Vercel instances mirror the runtime project here.
              */
-            vercel_control_project_id: string;
+            vercel_control_project_id?: string | null;
             /**
              * @deprecated
-             * @description Deprecated compatibility projection. New instances mirror the runtime project here.
+             * @description Deprecated compatibility projection. New Vercel instances mirror the runtime project here.
              */
-            vercel_control_project_name: string;
+            vercel_control_project_name?: string | null;
             /**
              * @description Canonical Vercel project ID for combined web, control, and agent runtime releases.
-             *     This is absent on legacy instances that retain split control and agent projects.
+             *     This is absent on legacy instances that retain split control and agent projects and on
+             *     every exe.dev-hosted instance.
              */
             vercel_runtime_project_id?: string | null;
             /**
              * @description Canonical Vercel project name for combined web, control, and agent runtime releases.
-             *     This is absent on legacy instances that retain split control and agent projects.
+             *     This is absent on legacy instances that retain split control and agent projects and on
+             *     every exe.dev-hosted instance.
              */
             vercel_runtime_project_name?: string | null;
-            vercel_sandbox_name: string;
+            /** @description Vercel Sandbox Computer name. Absent for exe.dev-hosted instances. */
+            vercel_sandbox_name?: string | null;
         };
         /** @enum {string} */
         HostedOpenBotInstanceStatus: "provisioning" | "active" | "error" | "deleting";
@@ -11881,11 +13092,20 @@ export interface components {
         /** @enum {string} */
         HostedOpenBotReleaseStatus: "uploading" | "finalizing" | "deploying" | "ready" | "failed";
         /**
+         * @description Hosting substrate for one hosted OpenBot instance.
+         * @enum {string}
+         */
+        HostedOpenBotTarget: "vercel" | "exe";
+        /**
          * @description Authenticated human identity.
          *
          *     Represents a real user that authenticated via STS/OAuth token.
          */
         Human: {
+            /** @description Administrative account roles, separate from the runtime actor's resource groups. */
+            account_groups?: string[];
+            /** @description Login account that authenticated this runtime actor. Human-owned API keys have no account session. */
+            account_id?: string | null;
             /** @description Email address of the user (if available from token) */
             email?: string | null;
             /** @description Group IDs the user belongs to */
@@ -11894,15 +13114,23 @@ export interface components {
             sub: string;
         };
         HumanApprovalAction: {
+            action: components["schemas"]["HumanApprovalActionPayload"];
             approval_type: string;
             cancelled_at?: null | components["schemas"]["WrappedChronoDateTime"];
             completed_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            completion?: null | components["schemas"]["HumanApprovalCompletion"];
+            completion_metadata: components["schemas"]["WrappedJsonValue"];
             created_at: components["schemas"]["WrappedChronoDateTime"];
             credential_source_type_id?: string | null;
+            decided_by_user_id?: string | null;
+            decision?: null | components["schemas"]["HumanApprovalDecision"];
             expires_at: components["schemas"]["WrappedChronoDateTime"];
             id: string;
             instructions?: string | null;
+            /** @description Caller-owned extension data. Tilde never interprets this value. */
             metadata: components["schemas"]["WrappedJsonValue"];
+            /** @description Server-attached notes recorded while the approval was pending. */
+            notes?: components["schemas"]["HumanApprovalNote"][];
             org_id: string;
             owner_id?: string | null;
             owner_type?: string | null;
@@ -11913,8 +13141,93 @@ export interface components {
             updated_at: components["schemas"]["WrappedChronoDateTime"];
             user_credential_id?: null | components["schemas"]["WrappedUuidV4"];
         };
+        /** @description Server-interpreted action rendered by the Human Approval product. */
+        HumanApprovalActionPayload: {
+            /** @enum {string} */
+            type: "api_key";
+        } | {
+            redirect_url?: string | null;
+            /** @enum {string} */
+            type: "managed_oauth";
+        } | {
+            redirect_url?: string | null;
+            /** @enum {string} */
+            type: "self_managed_oauth";
+        } | {
+            browser_id?: string | null;
+            credential_type: string;
+            display_name: string;
+            /** @enum {string} */
+            type: "managed_user_credential";
+        } | {
+            handoff_url: string;
+            tool_group_instance_id: string;
+            /** @enum {string} */
+            type: "tool_group_instance_activation";
+        } | {
+            browser_id: string;
+            browser_session_id: components["schemas"]["WrappedUuidV4"];
+            debugger_fullscreen_url: string;
+            debugger_url: string;
+            reason?: string | null;
+            /** @enum {string} */
+            type: "browser_session_handoff";
+            ws_url: string;
+        } | {
+            proposal_id: string;
+            /** @enum {string} */
+            type: "capability_change";
+        };
         HumanApprovalActionResponse: {
             approval: components["schemas"]["HumanApprovalAction"];
+        };
+        /** @description Typed result supplied when a pending approval is completed. */
+        HumanApprovalCompletion: {
+            /** @enum {string} */
+            type: "api_key_configured";
+        } | {
+            /** @enum {string} */
+            type: "managed_oauth_confirmed";
+        } | {
+            client_id: string;
+            client_secret_present: boolean;
+            issuer: string;
+            /** @enum {string} */
+            type: "self_managed_oauth_configured";
+        } | {
+            browser_id?: string | null;
+            credential_type: string;
+            managed_user_credential_id: components["schemas"]["WrappedUuidV4"];
+            /** @enum {string} */
+            type: "managed_user_credential_created";
+        } | {
+            tool_group_instance_id: string;
+            /** @enum {string} */
+            type: "tool_group_instance_activated";
+        } | {
+            /** @enum {string} */
+            type: "browser_session_handoff_completed";
+        };
+        /** @enum {string} */
+        HumanApprovalDecision: "approved" | "rejected";
+        /**
+         * @description Server-attached, typed note recorded on an approval while it was pending.
+         *     Notes tell the requesting agent what happened during the approval (for
+         *     example a login the human saved through the browser extension during a
+         *     handoff). They never carry secret values.
+         */
+        HumanApprovalNote: {
+            browser_session_id: components["schemas"]["WrappedUuidV4"];
+            /** @description `true` for a new credential, `false` for an update. */
+            created: boolean;
+            credential_type: string;
+            managed_user_credential_id: components["schemas"]["WrappedUuidV4"];
+            /** @description `scheme://host[:port]` the login was submitted on. */
+            origin: string;
+            recorded_at: components["schemas"]["WrappedChronoDateTime"];
+            /** @enum {string} */
+            type: "credential_saved";
+            username_hint?: string | null;
         };
         /** @description Request body for hydrating converted ChatKit messages by ID. */
         HydrateConvertedMessagesRequest: {
@@ -11930,7 +13243,10 @@ export interface components {
          *     This is the result of authentication and is used throughout the system
          *     for authorization decisions.
          */
-        Identity: (components["schemas"]["Agent"] & {
+        Identity: (components["schemas"]["DelegatedIdentity"] & {
+            /** @enum {string} */
+            type: "delegated";
+        }) | (components["schemas"]["Agent"] & {
             /** @enum {string} */
             type: "agent";
         }) | (components["schemas"]["Human"] & {
@@ -11940,6 +13256,87 @@ export interface components {
             /** @enum {string} */
             type: "unauthenticated";
         };
+        IdentityClaimRequest: {
+            claim: string;
+        };
+        IdentityIdentifier: {
+            namespace: string;
+            value: string;
+        };
+        IdentityLinkDelivery: {
+            address: string;
+            type: string;
+        };
+        IdentityLinkPreview: {
+            account_email?: string | null;
+            application_name: string;
+            display_name?: string | null;
+            expires_at: components["schemas"]["WrappedChronoDateTime"];
+            identity_id: string;
+            org_id: string;
+        };
+        /** @description Tenant a linked address routes to when it arrives on a shared channel. */
+        IdentityLinkRoute: {
+            /** @description ChatKit chat provider (channel inbox) that owns the conversation. */
+            chat_provider_id: string;
+            org_id: string;
+            team_id: string;
+        };
+        IdentityTeam: {
+            identity_id: string;
+            org_id: string;
+            team_id: string;
+        };
+        /** @description Runtime membership only; this record never grants a login-account role. */
+        IdentityTeamMembership: {
+            identity_id: string;
+            org_id: string;
+            role: string;
+            team_id: string;
+        };
+        IdentityTeamMembershipPaginatedResponse: {
+            items: components["schemas"]["IdentityTeamMembership"][];
+            next_page_token?: string;
+        };
+        /** @description One pending or completed challenge. The code hash is never on the wire. */
+        IdentityVerification: {
+            /** Format: int32 */
+            attempts: number;
+            completed_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            expires_at: components["schemas"]["WrappedChronoDateTime"];
+            external_id: string;
+            id: string;
+            kind: components["schemas"]["ChatKitIdentityKind"];
+            /** Format: int32 */
+            max_attempts: number;
+            mode: components["schemas"]["IdentityVerificationMode"];
+            provider_account_id: string;
+            provider_id: string;
+            provider_namespace: string;
+            route?: null | components["schemas"]["IdentityLinkRoute"];
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+            user_id: string;
+        };
+        /**
+         * @description Result of initiating a challenge.
+         *
+         *     `code` is present only for [`IdentityVerificationMode::InboundChallenge`],
+         *     where the user needs to see it in order to send it to the provider
+         *     address. For an outbound challenge the provider delivered it and it is
+         *     never shown.
+         */
+        IdentityVerificationChallenge: {
+            code?: string | null;
+            /** @description Address the user must send the code to, for an inbound challenge. */
+            send_to?: string | null;
+            verification: components["schemas"]["IdentityVerification"];
+        };
+        /**
+         * @description How a provider proves that an external address belongs to a user.
+         * @enum {string}
+         */
+        IdentityVerificationMode: "provider_attested" | "inbound_challenge" | "outbound_challenge" | "external_link";
         ImportMemoryBankTemplateBody: {
             dry_run?: boolean;
             manifest: unknown;
@@ -12051,6 +13448,36 @@ export interface components {
             accepted: number;
             delivery_ids: components["schemas"]["WrappedUuidV4"][];
         };
+        /** @description Body of `POST /user/{user_id}/identities/verifications`. */
+        InitiateIdentityVerificationRequestInner: {
+            /** @description Raw address as the user typed it; normalized by the provider adapter. */
+            external_identifier: string;
+            /**
+             * @description Text of the message that carries the code for an outbound challenge.
+             *     `{{code}}` is replaced by the code and must appear at least once; the
+             *     provider's default wording is used when this is absent. Ignored by an
+             *     inbound challenge, where the user sends the code instead.
+             */
+            message?: string | null;
+            /**
+             * @description Configured account of that provider: the chat provider (channel inbox)
+             *     id for tenant channels, the platform address id for shared channels.
+             */
+            provider_account_id: string;
+            /** @description ChatKit provider id, for example `chatkit.channel.agentmail`. */
+            provider_id: string;
+            /**
+             * @description Move an address that is already linked and routed elsewhere.
+             *
+             *     Without this, verifying an address that another organization's
+             *     installation already routes is a conflict naming that tenant, so a
+             *     second route can never be created by accident. With it, completing
+             *     the challenge moves the single link and its route, and the move is
+             *     audited.
+             */
+            relink?: boolean;
+            route?: null | components["schemas"]["IdentityLinkRoute"];
+        };
         /** @description Response returned after requesting an active ChatKit session interruption. */
         InterruptChatKitSessionResponse: {
             interrupted: boolean;
@@ -12136,6 +13563,26 @@ export interface components {
         JwksResponse: {
             keys: components["schemas"]["Jwk"][];
         };
+        /**
+         * @description Body of `POST /team/{team_id}/chatkit/identities/link`.
+         *
+         *     Admin linking is provider-attested only: the address must already be a
+         *     verified address of the target user, so an admin can shortcut the
+         *     challenge but never assert an address nobody has proven.
+         */
+        LinkTeamIdentityRequestInner: {
+            external_identifier: string;
+            /** @description Chat provider (channel inbox) id in this team. */
+            provider_account_id: string;
+            provider_id: string;
+            /** @description Team member to link the address to. */
+            user_id: string;
+        };
+        LinkedIdentity: {
+            identity_id: string;
+            org_id: string;
+            return_url?: string | null;
+        };
         ListApiKeysResponse: {
             items: components["schemas"]["HashedApiKey"][];
             next_page_token?: string | null;
@@ -12160,6 +13607,10 @@ export interface components {
         ListReverseProxyProvidersResponse: {
             items: components["schemas"]["ReverseProxyProviderInfo"][];
         };
+        /** @description Response of `GET /user/{user_id}/identities/links`. */
+        ListVerifiedIdentityLinksResponse: {
+            links: components["schemas"]["VerifiedIdentityLink"][];
+        };
         LocalRuntimeTunnelApiKey: {
             api_key_id?: string | null;
             created_at?: null | components["schemas"]["WrappedChronoDateTime"];
@@ -12182,6 +13633,82 @@ export interface components {
             /** @enum {string} */
             type: "custom_oidc";
         };
+        MakeMppPaymentRequest: {
+            body?: unknown;
+            headers?: {
+                [key: string]: string;
+            };
+            max_amount?: string | null;
+            max_amount_atomic?: string | null;
+            method?: string | null;
+            payment?: null | components["schemas"]["DirectTokenPayment"];
+            preferred_assets?: string[];
+            /**
+             * @description Payment-channel contract addresses the caller explicitly permits.
+             *     Stateful methods that sign a server-selected channel, such as the
+             *     Stellar `channel` intent, require this pin on their first use. A
+             *     validated `session_snapshot` pins subsequent requests.
+             */
+            preferred_channels?: string[];
+            preferred_networks?: string[];
+            preferred_recipients?: string[];
+            /**
+             * @description Session lifecycle action (`open`, `voucher`, `commit`, `topUp`, or
+             *     `close`). Omit to open when no snapshot is supplied and voucher
+             *     otherwise.
+             */
+            session_action?: string | null;
+            /**
+             * @description Incremental session amount in atomic units. Required for voucher and
+             *     commit actions unless the challenge pins an increment.
+             */
+            session_amount_atomic?: string | null;
+            /** @description Delivery identifier required by a metered `commit` action. */
+            session_delivery_id?: string | null;
+            session_snapshot?: null | components["schemas"]["PaymentSessionSnapshot"];
+            /**
+             * @description Preferred method-specific settlement mode. Methods that negotiate
+             *     client versus server broadcast currently accept `push` or `pull`.
+             */
+            settlement_mode?: string | null;
+            /**
+             * @description Payment transport. Defaults to `http`; use `mcp` for MCP's nested
+             *     payment metadata or `jsonrpc` for the generic root `_meta` binding.
+             *     Tempo session challenges also support `sse` and `websocket` (`ws`) for
+             *     metered streaming with in-band voucher and receipt handling.
+             */
+            transport?: string | null;
+            url: string;
+            wallet_id: string;
+        };
+        MakeX402PaymentRequest: {
+            body?: unknown;
+            headers?: {
+                [key: string]: string;
+            };
+            max_amount?: string | null;
+            max_amount_atomic?: string | null;
+            method?: string | null;
+            payment?: null | components["schemas"]["DirectTokenPayment"];
+            preferred_assets?: string[];
+            preferred_networks?: string[];
+            preferred_recipients?: string[];
+            /**
+             * @description Stateful scheme action (`open`, `voucher`, or `refund`). Omit to open
+             *     when no snapshot is supplied and voucher otherwise.
+             */
+            session_action?: string | null;
+            /** @description Incremental amount for voucher/close actions, in atomic units. */
+            session_amount_atomic?: string | null;
+            session_snapshot?: null | components["schemas"]["PaymentSessionSnapshot"];
+            /**
+             * @description Payment transport. Defaults to `http`; use `mcp` when `body` is the
+             *     JSON-RPC MCP tool-call request that should be retried with x402 metadata.
+             */
+            transport?: string | null;
+            url: string;
+            wallet_id: string;
+        };
         ManagedSkillSelection: {
             provider_id: string;
             skill_ids: string[];
@@ -12200,6 +13727,8 @@ export interface components {
             created_at: components["schemas"]["WrappedChronoDateTime"];
             id: components["schemas"]["WrappedUuidV4"];
             metadata: components["schemas"]["Metadata"];
+            /** @description Web origins this credential is scoped to for browser fill. */
+            site_origins?: string[];
             summaryValue: components["schemas"]["ManagedUserCredentialSummaryValue"];
             type: string;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
@@ -12389,7 +13918,7 @@ export interface components {
             overrides: unknown;
         };
         MemoryBankDocumentList: {
-            items: unknown[];
+            items: components["schemas"]["StoredMemoryDocument"][];
             /** Format: int64 */
             limit: number;
             /** Format: int64 */
@@ -12427,21 +13956,70 @@ export interface components {
         };
         MemoryDocument: {
             actor?: null | components["schemas"]["MemoryActorContext"];
+            authorship?: components["schemas"]["MemoryDocumentAuthorship"];
             content: string;
             document_id: string;
+            /**
+             * Format: double
+             * @description Normalized salience in the inclusive range 0.0..=1.0.
+             */
+            importance?: number;
+            memory_type?: components["schemas"]["MemoryType"];
+            /** @description Provider-native or caller-owned extension data. Memory never interprets this value. */
             metadata?: unknown;
             /**
              * @description Explicit actor observation scopes. Each inner list is consolidated
              *     independently, preventing observations from crossing actor boundaries.
              */
             observation_scopes?: string[][];
+            provenance?: components["schemas"]["MemoryDocumentProvenance"];
+            relations?: components["schemas"]["MemoryDocumentRelations"];
             tags?: string[];
+            title?: string | null;
+        };
+        /** @description Server-owned authorship and mutation policy for one memory. */
+        MemoryDocumentAuthorship: {
+            author_principal_id?: string | null;
+            automatic_overwrite_protected?: boolean;
+            origin: components["schemas"]["MemoryDocumentOrigin"];
+            owner_user_id?: string | null;
+        };
+        /**
+         * @description Server-owned origin of a retained memory.
+         * @enum {string}
+         */
+        MemoryDocumentOrigin: "unspecified" | "owner_explicit" | "source_snapshot" | "synthesis";
+        /** @description Typed source and synthesizer provenance returned with recalled memories. */
+        MemoryDocumentProvenance: {
+            learned_by_agent_id?: string | null;
+            source?: null | components["schemas"]["MemorySourceProvenance"];
+            synthesizer_agent_id?: string | null;
+        };
+        /** @description Typed graph relationships owned by the Memory domain. */
+        MemoryDocumentRelations: {
+            evidence_ids?: string[];
+            subjects?: string[];
+            supersedes_memory_id?: string | null;
         };
         MemoryOperationResponse: {
             result: unknown;
         };
         /** @enum {string} */
         MemoryProvider: "helix";
+        /** @description Provider-owned storage and ranking details returned with a typed document. */
+        MemoryProviderDocumentState: {
+            actor_tags?: string[];
+            /** Format: double */
+            distance?: number | null;
+            /** Format: int64 */
+            embedding_dimensions?: number | null;
+            embedding_model?: string | null;
+            embedding_model_version?: string | null;
+            /** Format: double */
+            retrieval_score?: number | null;
+            /** Format: int64 */
+            updated_epoch_seconds?: number | null;
+        };
         MemorySourceBinding: {
             created_at: components["schemas"]["WrappedChronoDateTime"];
             /** @description True while a detached source is waiting for provider document cleanup. */
@@ -12462,10 +14040,41 @@ export interface components {
         };
         /** @enum {string} */
         MemorySourceKind: "chatkit_channel" | "chatkit_session" | "signal_provider" | "signal_delivery" | "skill_registry" | "skill" | "mcp_server" | "wiki" | "wiki_page";
+        /** @description Typed provenance common to every Tilde source snapshot. */
+        MemorySourceProvenance: {
+            container_id?: string | null;
+            dynamic_catalog?: boolean | null;
+            event_type?: string | null;
+            /** Format: int64 */
+            item_count?: number | null;
+            kind: components["schemas"]["MemorySourceKind"];
+            provider_id?: string | null;
+            /** @description Provider-native facts that Memory never interprets. */
+            provider_metadata?: unknown;
+            provider_reference_id?: string | null;
+            revision?: string | null;
+            source_id: string;
+        };
         MemorySpec: {
             bank?: null | components["schemas"]["MemoryBankSpec"];
             wiki?: null | components["schemas"]["WikiSpec"];
         };
+        /** @description Exact durable evidence lease authorizing one synthesis mutation. */
+        MemorySynthesisMutationBinding: {
+            batch_id: string;
+            evidence_ids: string[];
+            lease_owner: string;
+        };
+        /**
+         * @description Terminal synthesis outcome for one exact evidence lease.
+         * @enum {string}
+         */
+        MemorySynthesisOutcome: "mutated" | "noop";
+        /**
+         * @description OpenViking/OKF category assigned to a retained memory.
+         * @enum {string}
+         */
+        MemoryType: "profile" | "preferences" | "entities" | "events" | "identity" | "soul" | "cases" | "trajectories" | "experiences" | "tools" | "skills";
         /** @description A message in an inbox - can be either a simple text message or a rich UI message */
         Message: (components["schemas"]["TextMessage"] & {
             /** @enum {string} */
@@ -12483,6 +14092,17 @@ export interface components {
             external_user_provider?: string | null;
             external_user_provider_account_id?: string | null;
             tilde_user_id?: string | null;
+        };
+        /** @description Adapter delivery receipts for a message the caller can already read. */
+        MessageDeliveryReceipt: {
+            channel_inbox_id: string;
+            delivered_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            external_message_id?: string | null;
+            last_error?: string | null;
+            provider_id: string;
+            provider_status?: null | components["schemas"]["ProviderDeliveryStatus"];
+            /** @description Queue state, refined by final provider status where that API is available. */
+            status: string;
         };
         /**
          * @description Message format that an inbox can consume or produce.
@@ -12517,6 +14137,15 @@ export interface components {
             /** Format: int64 */
             expected_revision: number;
             path: string;
+        };
+        OnboardOrganizationRequest: {
+            name: string;
+            team_name: string;
+        };
+        OnboardOrganizationResponse: {
+            identity_id: string;
+            org_id: string;
+            team_id: string;
         };
         /** @description A page type bundled by an ontology template. */
         OntologyPageTypeDefinition: {
@@ -12591,7 +14220,29 @@ export interface components {
         };
         /** @enum {string} */
         OrgOidcProviderStatus: "draft" | "pending_verification" | "active" | "disabled";
+        OrgProxyToken: {
+            allowed_return_urls: string[];
+            capabilities: string[];
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            created_by_account_id: string;
+            expires_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            id: string;
+            last_used_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            name: string;
+            org_id: string;
+            revoked_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            token_prefix: string;
+        };
+        OrgProxyTokenPaginatedResponse: {
+            items: components["schemas"]["OrgProxyToken"][];
+            next_page_token?: string;
+        };
         Organization: {
+            /**
+             * @description Browser app origin (for example `https://heyash.ai/app`) that owns links Tilde generates
+             *     for this organization outside a request context, such as human approval URLs.
+             */
+            app_base_url?: string | null;
             created_at: components["schemas"]["WrappedChronoDateTime"];
             id: string;
             metadata?: null | components["schemas"]["WrappedJsonValue"];
@@ -12616,6 +14267,8 @@ export interface components {
             topup_remaining_microusd: number;
         };
         OrganizationMemberWithUser: {
+            /** @description Enabled Tilde login account linked to this runtime identity, when present. */
+            account_id?: string | null;
             membership: components["schemas"]["UserOrganization"];
             user: components["schemas"]["User"];
         };
@@ -12651,6 +14304,65 @@ export interface components {
          * @enum {string}
          */
         PartState: "streaming" | "done";
+        /** @enum {string} */
+        PayOnboardingStep: "enter_details" | "complete_kyc" | "ready";
+        PayPaymentRequest: {
+            body?: unknown;
+            headers?: {
+                [key: string]: string;
+            };
+            max_amount?: string | null;
+            max_amount_atomic?: string | null;
+            method?: string | null;
+            payment?: null | components["schemas"]["DirectTokenPayment"];
+            preferred_assets?: string[];
+            preferred_channels?: string[];
+            preferred_networks?: string[];
+            preferred_recipients?: string[];
+            session_action?: string | null;
+            session_amount_atomic?: string | null;
+            session_delivery_id?: string | null;
+            session_snapshot?: null | components["schemas"]["PaymentSessionSnapshot"];
+            settlement_mode?: string | null;
+            transport?: string | null;
+            url: string;
+            wallet_id: string;
+        };
+        PayWalletSummaryError: {
+            field: string;
+            message: string;
+        };
+        PayWalletSummaryResponse: {
+            balances?: null | components["schemas"]["GetBalancesResponse"];
+            crypto_deposit?: null | components["schemas"]["GetCryptoDepositInformationResponse"];
+            fiat_deposit?: null | components["schemas"]["GetFiatDepositInformationResponse"];
+            summary_errors?: components["schemas"]["PayWalletSummaryError"][];
+            wallet?: null | components["schemas"]["Wallet"];
+        };
+        PaymentResponse: {
+            protocol: string;
+            response: components["schemas"]["WrappedJsonValue"];
+            wallet_id: string;
+        };
+        /**
+         * @description Opaque-enough client state needed to safely resume a stateful payment
+         *     scheme after a process restart. Every field is authenticated again against
+         *     the next server challenge before it is used.
+         */
+        PaymentSessionSnapshot: {
+            authorized_signer: string;
+            channel_id: string;
+            cumulative_amount: string;
+            deposit_amount: string;
+            /** Format: int64 */
+            expires_at: number;
+            metadata?: unknown;
+            method: string;
+            network: string;
+            /** Format: int64 */
+            nonce: number;
+            protocol: string;
+        };
         PersonalMcpServerInstanceSerialized: {
             agent_id?: string | null;
             authorization?: components["schemas"]["ResourceAuthorizationModes"];
@@ -12714,6 +14426,26 @@ export interface components {
             variables?: {
                 [key: string]: string;
             };
+        };
+        /** @description One platform address a tenant may bind, as declared in system config. */
+        PlatformChannelAddress: {
+            /**
+             * @description The address itself: an E.164 number, a mailbox address. Also the
+             *     `provider_account_id` under which senders on it are linked.
+             */
+            address: string;
+            /**
+             * @description Product audience the address is offered to, for example `ash` or
+             *     `tilde`.
+             */
+            audience: string;
+            /** @description Label shown in the picker. */
+            display_name: string;
+            /**
+             * @description ChatKit provider the address belongs to, for example
+             *     `chatkit.channel.agentmail`.
+             */
+            provider_id: string;
         };
         /** @description UI and enforcement projection for one product. */
         ProductBillingContext: {
@@ -12847,6 +14579,8 @@ export interface components {
             label: string;
             placeholder?: string | null;
         };
+        /** @enum {string} */
+        ProviderDeliveryStatus: "pending" | "delivered" | "failed";
         /** @description Provider provisioner field descriptor for generic frontend rendering. */
         ProviderProvisionerConfigField: {
             field_type: string;
@@ -13012,6 +14746,26 @@ export interface components {
             mcp_server?: null | components["schemas"]["McpServerSpec"];
             memory?: null | components["schemas"]["MemorySpec"];
             skill_registry?: null | components["schemas"]["SkillRegistrySpec"];
+        };
+        ProvisionIdentityTeamRequest: {
+            name: string;
+        };
+        ProvisionPayBrowserResponse: {
+            browser_definition_id: string;
+            enabled_tool_ids: string[];
+        };
+        ProvisionTildePayRequest: {
+            account_type?: string | null;
+            name?: string | null;
+            owner_id?: string | null;
+        };
+        ProvisionTildePayResponse: {
+            browser?: null | components["schemas"]["ProvisionPayBrowserResponse"];
+            customer?: null | components["schemas"]["WalletCustomer"];
+            kyc?: null | components["schemas"]["GetWalletCustomerKycResponse"];
+            mcp?: null | components["schemas"]["SetupPayMcpResponse"];
+            next_step: components["schemas"]["PayOnboardingStep"];
+            wallet?: null | components["schemas"]["Wallet"];
         };
         /** @description App credentials and metadata created by a provider provisioner. */
         ProvisionedProviderApp: {
@@ -13206,6 +14960,12 @@ export interface components {
             /** @description The refresh token. If not provided, will be read from cookie. */
             refresh_token?: string | null;
         };
+        RefreshWalletTransactionHistoryResponse: {
+            inserted_or_updated: number;
+            linked_transactions: number;
+            scanned_chains: string[];
+            wallet_id: string;
+        };
         RegisterAgentTool: {
             display_name: string;
             identity_snapshot?: null | components["schemas"]["WrappedJsonValue"];
@@ -13222,6 +14982,12 @@ export interface components {
             default_agent_inbox_id?: string | null;
             display_name: string;
             id?: string | null;
+            /**
+             * @description Platform address to bind, for a Tilde-managed installation of a
+             *     pooled-address provider. Must be one the catalog offers for the
+             *     provider. Absent for a self-managed installation.
+             */
+            platform_address?: string | null;
             provider_configuration?: null | components["schemas"]["WrappedJsonValue"];
         };
         /** @description Chat provider registration response. */
@@ -13335,6 +15101,9 @@ export interface components {
         /** @description Request body for renaming a ChatKit workspace thread. */
         RenameChatKitWorkspaceThreadRequestInner: {
             title: string;
+        };
+        RenameProxyTokenRequest: {
+            name: string;
         };
         ReorderChatKitAgentTurnQueueItemRequestInner: {
             /** Format: int64 */
@@ -13695,11 +15464,23 @@ export interface components {
             debug_auth_profiles_enabled: boolean;
             org_context_in_header: boolean;
             posthog_api_host: string;
-            posthog_product: components["schemas"]["BillingProductId"];
+            posthog_product: string;
             posthog_project_id: string;
             posthog_project_key: string;
             sentry_dsn: string;
             sentry_react_dsn?: string | null;
+        };
+        RuntimeIdentity: {
+            disabled: boolean;
+            display_name?: string | null;
+            id: string;
+            identifiers: components["schemas"]["IdentityIdentifier"][];
+            kind: components["schemas"]["UserType"];
+            org_id: string;
+        };
+        RuntimeIdentityPaginatedResponse: {
+            items: components["schemas"]["RuntimeIdentity"][];
+            next_page_token?: string;
         };
         SelectDebugAuthProfileRequest: {
             profile: string;
@@ -13850,6 +15631,7 @@ export interface components {
         SessionParticipantIdentity: {
             display_name: string;
             external_id?: string | null;
+            identity?: null | components["schemas"]["ChatKitMessageIdentity"];
             inbox_id: string;
             inbox_instance_id: string;
             membership_source: components["schemas"]["ChatKitParticipantMembershipSource"];
@@ -13891,6 +15673,12 @@ export interface components {
          */
         SetResourceAccessModeRequest: {
             mode: components["schemas"]["ResourceAccessMode"];
+        };
+        SetupPayMcpResponse: {
+            enabled_tool_ids: string[];
+            mcp_path: string;
+            mcp_server_id: string;
+            tool_group_instance_id: string;
         };
         SignalAction: {
             agent_inbox_id: string;
@@ -13960,12 +15748,21 @@ export interface components {
             related_task_ids?: string[];
             role: components["schemas"]["MessageRole"];
             session_id: components["schemas"]["WrappedUuidV4"];
+            signal?: null | components["schemas"]["SignalMessageContext"];
             summary?: string | null;
             to_inbox_instance_id?: string | null;
             to_inbox_type_id?: string | null;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
             user_display_name: string;
             user_external_id?: string | null;
+        };
+        /** @description Typed identity and correlation for a normalized Signal delivery. */
+        SignalMessageContext: {
+            delivery_id: components["schemas"]["WrappedUuidV4"];
+            provider_instance_id: string;
+            routine_id?: null | components["schemas"]["WrappedUuidV4"];
+            routine_trigger_id: components["schemas"]["WrappedUuidV4"];
+            signal_type: string;
         };
         SignalPollingDescriptor: {
             /** Format: int64 */
@@ -14238,6 +16035,8 @@ export interface components {
             form_values?: components["schemas"]["WrappedJsonValue"];
             /** @description Optional memory banks to bind atomically when setup creates a resource. */
             memory_bank_ids?: components["schemas"]["WrappedUuidV4"][] | null;
+            /** @description Create a personal account for the authenticated user. Defaults to team ownership. */
+            personal?: boolean;
             provider_id: string;
             return_url?: string | null;
             target_resource?: null | components["schemas"]["WrappedJsonValue"];
@@ -14345,6 +16144,10 @@ export interface components {
             items: components["schemas"]["StoredEvent"][];
             next_page_token?: string;
         };
+        /** @description One typed retained memory reconstructed by a provider adapter. */
+        StoredMemoryDocument: components["schemas"]["MemoryDocument"] & {
+            provider?: components["schemas"]["MemoryProviderDocumentState"];
+        };
         /** @description Body for creating a session when needed and submitting one owner turn. */
         SubmitChatKitWorkspaceTurnRequestInner: {
             attachments?: components["schemas"]["ChatKitWorkspaceAttachmentCompletion"][];
@@ -14371,6 +16174,19 @@ export interface components {
             /** @description The `type_id` of the underlying `CredentialSourceLike`. */
             credential_source_type_id: string;
             proxy_credential_template: components["schemas"]["ProxyCredentialTemplate"];
+        };
+        /** @description Typed synthesis-session command. Lease material is never retained as document metadata. */
+        SynthesisSessionRetainMemoryBody: {
+            binding: components["schemas"]["MemorySynthesisMutationBinding"];
+            document: components["schemas"]["MemoryDocument"];
+            /** @enum {string} */
+            operation: "retain";
+        } | {
+            binding: components["schemas"]["MemorySynthesisMutationBinding"];
+            /** @enum {string} */
+            operation: "complete";
+            outcome: components["schemas"]["MemorySynthesisOutcome"];
+            reason: string;
         };
         /** @description Executable work item owned by one explicit agent in one conversation. */
         Task: {
@@ -14459,6 +16275,7 @@ export interface components {
             related_task_ids?: string[];
             role: components["schemas"]["MessageRole"];
             session_id: components["schemas"]["WrappedUuidV4"];
+            signal?: null | components["schemas"]["SignalMessageContext"];
             text: string;
             to_inbox_instance_id?: string | null;
             to_inbox_type_id?: string | null;
@@ -14717,6 +16534,7 @@ export interface components {
             related_task_ids?: string[];
             role: components["schemas"]["MessageRole"];
             session_id: components["schemas"]["WrappedUuidV4"];
+            signal?: null | components["schemas"]["SignalMessageContext"];
             to_inbox_instance_id?: string | null;
             to_inbox_type_id?: string | null;
             updated_at: components["schemas"]["WrappedChronoDateTime"];
@@ -14814,12 +16632,19 @@ export interface components {
             /** Format: int64 */
             timeout_ms?: number | null;
         };
+        UpdateIdentityRequest: {
+            disabled?: boolean | null;
+            display_name?: string | null;
+            identifiers?: components["schemas"]["IdentityIdentifier"][];
+        };
         UpdateManagedUserCredentialBody: {
             /** @description Allow Browser form filling to enumerate this credential. */
             browser_password_manager_eligible?: boolean | null;
             dek_alias: string;
             metadata?: null | components["schemas"]["Metadata"];
             secretValue: components["schemas"]["WrappedJsonValue"];
+            /** @description Replace the credential's web origins. Omit to keep the current list. */
+            site_origins?: string[] | null;
         };
         /** @description Request body for updating an MCP server instance (excludes ID, which comes from path). */
         UpdateMcpServerInstanceBody: {
@@ -15150,6 +16975,153 @@ export interface components {
             user_tool_federation_mode: components["schemas"]["UserToolFederationMode"];
             user_tool_federation_selections: components["schemas"]["UserToolFederationSelection"][];
         }[];
+        /** @description Global statement that one external address belongs to one Tilde user. */
+        VerifiedIdentityLink: {
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            /** @description Normalized address within the namespace. */
+            external_id: string;
+            id: string;
+            kind: components["schemas"]["ChatKitIdentityKind"];
+            /**
+             * @description `<provider_id>:<provider_account_id>`; see
+             *     `ChatChannelIdentityLike::provider_namespace`.
+             */
+            provider_namespace: string;
+            route?: null | components["schemas"]["IdentityLinkRoute"];
+            source: components["schemas"]["VerifiedIdentityLinkSource"];
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+            user_id: string;
+            verified_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        /**
+         * @description What established a [`VerifiedIdentityLink`].
+         * @enum {string}
+         */
+        VerifiedIdentityLinkSource: "provider_attested" | "challenge" | "admin";
+        WaitForPayBalanceRequest: {
+            asset: string;
+            /** Format: double */
+            minimum_amount: number;
+            /** Format: int64 */
+            poll_interval_secs?: number | null;
+            /** Format: int64 */
+            timeout_secs?: number | null;
+            wallet_id: string;
+        };
+        WaitUntilBalanceRequest: {
+            asset: string;
+            /** Format: double */
+            minimum_amount: number;
+            /** Format: int64 */
+            poll_interval_secs?: number;
+            /** Format: int64 */
+            timeout_secs?: number;
+            wallet_id: string;
+        };
+        WaitUntilBalanceResponse: {
+            /** Format: double */
+            observed_amount: number;
+            satisfied: boolean;
+            wallet_id: string;
+        };
+        Wallet: {
+            cached_compose_balances?: null | components["schemas"]["WrappedJsonValue"];
+            compose_customer_id: string;
+            compose_deposit_chain: string;
+            compose_deposit_currency: string;
+            compose_deposit_wallet_id?: string | null;
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            id: string;
+            last_compose_sync_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            name: string;
+            org_id: string;
+            owner_id?: string | null;
+            privy_evm_address: string;
+            privy_wallet_id: string;
+            status: string;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+            wallet_customer_id: string;
+        };
+        WalletCustomer: {
+            account_type: string;
+            compose_customer_id: string;
+            compose_customer_payload: components["schemas"]["WrappedJsonValue"];
+            compose_kyc_payload?: null | components["schemas"]["WrappedJsonValue"];
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            id: string;
+            kyc_flow_link?: string | null;
+            kyc_verified: boolean;
+            name: string;
+            org_id: string;
+            owner_id?: string | null;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        WalletCustomerPaginatedResponse: {
+            items: components["schemas"]["WalletCustomer"][];
+            next_page_token?: string;
+        };
+        WalletMerchant: {
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            favicon_url?: string | null;
+            icon_fetched_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            icon_media_type?: string | null;
+            icon_sha256?: string | null;
+            id: string;
+            merchant_url: string;
+            name?: string | null;
+            org_id: string;
+            origin: string;
+            raw_metadata: components["schemas"]["WrappedJsonValue"];
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+        };
+        WalletPaginatedResponse: {
+            items: components["schemas"]["Wallet"][];
+            next_page_token?: string;
+        };
+        WalletTransactionHistoryItem: {
+            amount?: string | null;
+            /** Format: int32 */
+            amount_decimals?: number | null;
+            amount_raw?: string | null;
+            asset?: string | null;
+            chain?: string | null;
+            counterparty_address?: string | null;
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            direction: string;
+            id: string;
+            item_type: string;
+            merchant?: null | components["schemas"]["WalletMerchant"];
+            merchant_id?: string | null;
+            occurred_at: components["schemas"]["WrappedChronoDateTime"];
+            org_id: string;
+            raw_payload: components["schemas"]["WrappedJsonValue"];
+            scanned_at?: null | components["schemas"]["WrappedChronoDateTime"];
+            status: string;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+            wallet_id: string;
+        };
+        WalletTransactionHistoryItemPaginatedResponse: {
+            items: components["schemas"]["WalletTransactionHistoryItem"][];
+            next_page_token?: string;
+        };
+        WalletVirtualAccount: {
+            cached_compose_deposit_info?: null | components["schemas"]["WrappedJsonValue"];
+            compose_customer_id: string;
+            compose_virtual_account_id: string;
+            created_at: components["schemas"]["WrappedChronoDateTime"];
+            currency: string;
+            id: string;
+            org_id: string;
+            status?: string | null;
+            team_id: string;
+            updated_at: components["schemas"]["WrappedChronoDateTime"];
+            wallet_customer_id: string;
+            wallet_id: string;
+        };
         /** @description Safe public metadata for a webhook signing key. Secret material is omitted. */
         WebhookSigningKeyMetadata: {
             created_at: components["schemas"]["WrappedChronoDateTime"];
@@ -15454,6 +17426,108 @@ export interface operations {
             };
         };
     };
+    "billing-enroll-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingContext"];
+                };
+            };
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "billing-remove-account-seat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "billing-ai-gateway-ensure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Organization billing and AI Gateway are ready */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingContext"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Organization membership required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "billing-ai-credit-receipt-commit": {
         parameters: {
             query?: never;
@@ -15691,7 +17765,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description tilde_core or tilde_pay */
+                /** @description tilde_core */
                 product_id: string;
             };
             cookie?: never;
@@ -16185,6 +18259,15 @@ export interface operations {
                 email?: string | null;
                 /** @description Optional IdP screen hint, for example "signup" for Clerk-hosted sign-up */
                 screen_hint?: string | null;
+                /**
+                 * @description Clerk development-instance browser token, forwarded to the IdP.
+                 *
+                 *     A Clerk development instance keeps its session against this token
+                 *     rather than a cookie the IdP's own domain can read, so a hand-off from
+                 *     a sign-up embedded in an app carries it here; without it Clerk shows
+                 *     its hosted sign-in page instead of redirecting straight back.
+                 */
+                __clerk_db_jwt?: string | null;
             };
             header?: never;
             path: {
@@ -16528,6 +18611,406 @@ export interface operations {
             };
         };
     };
+    "list-identities": {
+        parameters: {
+            query?: {
+                /** @description Page size; defaults to 50 and is clamped to 1..100 */
+                page_size?: number;
+                /** @description Opaque cursor returned by the previous page */
+                next_page_token?: string;
+            };
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeIdentityPaginatedResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-identity": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateIdentityRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeIdentity"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "resolve-identity": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentityIdentifier"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeIdentity"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-identity": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path: {
+                /** @description Identity id */
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeIdentity"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "update-identity": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path: {
+                /** @description Identity id */
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateIdentityRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeIdentity"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "remove-identity-identifier": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path: {
+                /** @description Identity id */
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentityIdentifier"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeIdentity"];
+                };
+            };
+        };
+    };
+    "create-identity-link": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path: {
+                /** @description Identity id */
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateIdentityLinkRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedIdentityLink"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "provision-identity-team": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path: {
+                /** @description Identity id */
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProvisionIdentityTeamRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentityTeam"];
+                };
+            };
+        };
+    };
+    "list-identity-teams": {
+        parameters: {
+            query?: {
+                /** @description Page size; defaults to 50 and is clamped to 1..100 */
+                page_size?: number;
+                /** @description Opaque cursor returned by the previous page */
+                next_page_token?: string;
+            };
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path: {
+                /** @description Identity id */
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentityTeamMembershipPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "add-identity-team": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path: {
+                /** @description Identity id */
+                identity_id: string;
+                /** @description Team id */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentityTeamMembership"];
+                };
+            };
+        };
+    };
+    "remove-identity-team": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path: {
+                /** @description Identity id */
+                identity_id: string;
+                /** @description Team id */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     "accept-invitation": {
         parameters: {
             query?: never;
@@ -16546,7 +19029,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserInvitation"];
+                    "application/json": components["schemas"]["AcceptInvitationResponse"];
                 };
             };
             403: {
@@ -16555,6 +19038,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "complete-identity-link": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Hosted Tilde confirmation origin */
+                Origin: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentityClaimRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkedIdentity"];
+                };
+            };
+        };
+    };
+    "preview-identity-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentityClaimRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentityLinkPreview"];
                 };
             };
         };
@@ -16754,6 +19286,45 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "onboard-organization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OnboardOrganizationRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardOrganizationResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
             };
         };
     };
@@ -17807,6 +20378,177 @@ export interface operations {
                 };
             };
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "list-proxy-tokens": {
+        parameters: {
+            query?: {
+                /** @description Page size; defaults to 50 and is clamped to 1..100 */
+                page_size?: number;
+                /** @description Opaque cursor returned by the previous page */
+                next_page_token?: string;
+            };
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgProxyTokenPaginatedResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "create-proxy-token": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProxyTokenRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedProxyToken"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "revoke-proxy-token": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path: {
+                /** @description Token id */
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "rename-proxy-token": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+            };
+            path: {
+                /** @description Token id */
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameProxyTokenRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -19119,6 +21861,47 @@ export interface operations {
             };
         };
     };
+    get_hosted_openbot_bootstrap_bundle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description One-time bootstrap token from ASH_BOOTSTRAP_TOKEN */
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bootstrap bundle */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HostedOpenBotBootstrapBundle"];
+                };
+            };
+            /** @description Unknown, expired, or already redeemed token */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description The exe target is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "automations-list": {
         parameters: {
             query?: {
@@ -19128,7 +21911,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -19150,7 +21932,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 routine_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -19181,7 +21962,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 routine_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -19216,7 +21996,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 routine_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -19243,7 +22022,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 routine_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -19266,7 +22044,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 routine_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -19293,7 +22070,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 routine_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -19320,7 +22096,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 routine_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -19347,7 +22122,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 routine_id: components["schemas"]["WrappedUuidV4"];
                 plane: components["schemas"]["ResourceGrantPlane"];
@@ -19371,7 +22145,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 routine_id: components["schemas"]["WrappedUuidV4"];
                 plane: components["schemas"]["ResourceGrantPlane"];
@@ -19399,7 +22172,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 routine_id: components["schemas"]["WrappedUuidV4"];
                 plane: components["schemas"]["ResourceGrantPlane"];
@@ -19906,7 +22678,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
             };
@@ -19937,7 +22708,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
             };
@@ -19980,7 +22750,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
             };
@@ -20011,7 +22780,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
             };
@@ -20054,7 +22822,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
             };
@@ -20158,7 +22925,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
             };
@@ -20181,7 +22947,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
             };
@@ -20208,7 +22973,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
             };
@@ -20290,7 +23054,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20314,7 +23077,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20342,7 +23104,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20367,7 +23128,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20400,7 +23160,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20424,7 +23183,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20452,7 +23210,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20477,7 +23234,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20502,7 +23258,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20531,7 +23286,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20560,7 +23314,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20589,7 +23342,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20617,7 +23369,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20641,7 +23392,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20669,7 +23419,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20694,7 +23443,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20723,7 +23471,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20755,7 +23502,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20780,7 +23526,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20809,7 +23554,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20838,7 +23582,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20872,7 +23615,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20896,7 +23638,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20924,7 +23665,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -20949,7 +23689,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
@@ -21031,7 +23770,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
             };
@@ -21074,7 +23812,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
             };
@@ -21117,7 +23854,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 tool_id: string;
@@ -21161,7 +23897,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
             };
@@ -21204,7 +23939,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 plane: string;
@@ -21236,7 +23970,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 plane: string;
@@ -21280,7 +24013,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
                 plane: string;
@@ -21874,6 +24606,55 @@ export interface operations {
             };
         };
     };
+    "link-team-identity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkTeamIdentityRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifiedIdentityLink"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "list-inboxes": {
         parameters: {
             query: {
@@ -22014,7 +24795,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -22036,7 +24816,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -22062,7 +24841,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 proposal_id: string;
             };
@@ -22085,7 +24863,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 proposal_id: string;
             };
@@ -22108,7 +24885,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 proposal_id: string;
             };
@@ -22131,7 +24907,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 proposal_id: string;
             };
@@ -22158,7 +24933,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 proposal_id: string;
             };
@@ -22181,7 +24955,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 proposal_id: string;
             };
@@ -22204,7 +24977,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 proposal_id: string;
             };
@@ -23112,6 +25884,39 @@ export interface operations {
             };
         };
     };
+    "get-message-deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                session_id: components["schemas"]["WrappedUuidV4"];
+                message_id: components["schemas"]["WrappedUuidV4"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider delivery receipts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageDeliveryReceipt"][];
+                };
+            };
+            /** @description Message not found or not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "observe-session": {
         parameters: {
             query?: {
@@ -23166,7 +25971,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: string;
             };
@@ -23209,7 +26013,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: string;
             };
@@ -23252,7 +26055,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: string;
                 plane: string;
@@ -23284,7 +26086,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: string;
                 plane: string;
@@ -23328,7 +26129,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: string;
                 plane: string;
@@ -23460,7 +26260,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -23521,7 +26320,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -23563,7 +26361,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -23602,7 +26399,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -23645,7 +26441,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
                 invitation_id: components["schemas"]["WrappedUuidV4"];
@@ -23685,7 +26480,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
                 invitation_id: components["schemas"]["WrappedUuidV4"];
@@ -23846,7 +26640,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -24100,7 +26893,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
                 tool_name: string;
@@ -24514,7 +27306,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 broker_state_id: string;
             };
@@ -24545,7 +27336,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -24567,7 +27357,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -24590,7 +27379,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -24617,7 +27405,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -24640,7 +27427,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -24667,7 +27453,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
                 principal_type: string;
@@ -24690,7 +27475,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -24717,7 +27501,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -24740,7 +27523,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -24767,7 +27549,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
                 principal_type: string;
@@ -24790,7 +27571,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -24813,7 +27593,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -24840,7 +27619,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 state_id: string;
             };
@@ -24864,7 +27642,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 state_id: string;
             };
@@ -24895,7 +27672,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -24918,7 +27694,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -24942,7 +27717,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -24964,7 +27738,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -24992,7 +27765,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -25019,7 +27791,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -25042,7 +27813,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -25069,7 +27839,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
                 principal_type: string;
@@ -25092,7 +27861,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -25119,7 +27887,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -25142,7 +27909,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -25169,7 +27935,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
                 principal_type: string;
@@ -25196,7 +27961,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -25219,7 +27983,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -25243,7 +28006,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -25271,7 +28033,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -25299,7 +28060,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -25327,7 +28087,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 credential_source_type_id: string;
             };
@@ -25355,7 +28114,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 credential_source_type_id: string;
             };
@@ -25381,7 +28139,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 credential_source_type_id: string;
             };
@@ -25409,7 +28166,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 credential_source_type_id: string;
             };
@@ -25437,7 +28193,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 credential_source_type_id: string;
             };
@@ -25466,7 +28221,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -25489,7 +28243,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -25513,7 +28266,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -25535,7 +28287,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -25563,7 +28314,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -25590,7 +28340,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -25613,7 +28362,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -25640,7 +28388,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
                 principal_type: string;
@@ -25663,7 +28410,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -25690,7 +28436,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -25713,7 +28458,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -25740,7 +28484,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
                 principal_type: string;
@@ -25763,7 +28506,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -25814,7 +28556,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
+                /** @description Tilde team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -25859,7 +28601,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
+                /** @description Tilde team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -25904,7 +28646,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
+                /** @description Tilde team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -25945,7 +28687,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
+                /** @description Tilde team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -25990,7 +28732,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 instance_id: string;
             };
@@ -26021,7 +28762,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 instance_id: string;
             };
@@ -26056,7 +28796,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 instance_id: string;
             };
@@ -26086,12 +28825,50 @@ export interface operations {
             };
         };
     };
+    issue_hosted_openbot_git_token: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+                instance_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HostedOpenBotGitToken"];
+                };
+            };
+            /** @description Not the instance runtime API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     create_hosted_openbot_release: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 instance_id: string;
             };
@@ -26126,7 +28903,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 instance_id: string;
                 release_id: string;
@@ -26158,7 +28934,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 instance_id: string;
                 release_id: string;
@@ -26195,7 +28970,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 instance_id: string;
                 release_id: string;
@@ -26222,6 +28996,37 @@ export interface operations {
             };
         };
     };
+    "issue-proxy-realtime-ticket": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Organization routing when not selected by host */
+                "X-Tilde-Org-Id"?: string | null;
+                /** @description Enabled runtime identity acting in the route team */
+                "X-Tilde-Identity-Id": string;
+            };
+            path: {
+                /** @description Team id */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueChatKitRealtimeSocketTicketRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatKitRealtimeSocketTicket"];
+                };
+            };
+        };
+    };
     list_managed_user_credentials: {
         parameters: {
             query?: {
@@ -26230,7 +29035,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -26253,7 +29057,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 type_id: string;
             };
@@ -26283,7 +29086,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 type_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
@@ -26308,7 +29110,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 type_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
@@ -26337,7 +29138,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29293,7 +32093,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -29315,7 +32114,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -29344,7 +32142,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -29366,7 +32163,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29389,7 +32185,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29410,7 +32205,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29437,7 +32231,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29460,7 +32253,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29483,7 +32275,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29514,7 +32305,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29537,7 +32327,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29562,7 +32351,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
                 document_id: string;
@@ -29576,7 +32364,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["StoredMemoryDocument"];
                 };
             };
         };
@@ -29586,7 +32374,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29609,7 +32396,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29636,7 +32422,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29659,7 +32444,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29686,7 +32470,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
                 principal_type: components["schemas"]["ResourcePrincipalType"];
@@ -29709,7 +32492,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29736,7 +32518,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29763,7 +32544,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29790,7 +32570,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29813,7 +32592,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29840,7 +32618,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29867,7 +32644,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29890,7 +32666,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29917,7 +32692,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 bank_id: components["schemas"]["WrappedUuidV4"];
                 principal_type: components["schemas"]["ResourcePrincipalType"];
@@ -29940,7 +32714,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 memory_bank_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -29966,7 +32739,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -29988,7 +32760,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -30014,7 +32785,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -30040,7 +32810,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -30065,7 +32834,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -30092,7 +32860,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -30100,7 +32867,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RetainMemoryBody"];
+                "application/json": components["schemas"]["SynthesisSessionRetainMemoryBody"];
             };
         };
         responses: {
@@ -30119,7 +32886,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 session_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -30145,7 +32911,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 agent_id: string;
             };
@@ -30172,7 +32937,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -30196,7 +32960,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -30219,7 +32982,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -30246,7 +33008,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 setup_id: string;
             };
@@ -30388,7 +33149,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 profile_id: string;
             };
@@ -30464,7 +33224,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 profile_id: string;
             };
@@ -30491,7 +33250,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 profile_id: string;
             };
@@ -30514,7 +33272,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 profile_id: string;
             };
@@ -30541,7 +33298,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 profile_id: string;
                 principal_type: components["schemas"]["ResourcePrincipalType"];
@@ -30564,7 +33320,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 profile_id: string;
             };
@@ -30591,7 +33346,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 profile_id: string;
             };
@@ -30614,7 +33368,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 profile_id: string;
             };
@@ -30641,7 +33394,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 profile_id: string;
                 principal_type: components["schemas"]["ResourcePrincipalType"];
@@ -30764,7 +33516,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 delivery_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -30787,7 +33538,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 delivery_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -30837,7 +33587,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -30863,7 +33612,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -30890,7 +33638,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -30917,7 +33664,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
                 plane: components["schemas"]["ResourceGrantPlane"];
@@ -30941,7 +33687,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
                 plane: components["schemas"]["ResourceGrantPlane"];
@@ -30969,7 +33714,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
                 plane: components["schemas"]["ResourceGrantPlane"];
@@ -30993,7 +33737,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 instance_id: string;
             };
@@ -31016,7 +33759,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 instance_id: string;
             };
@@ -31039,7 +33781,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 instance_id: string;
             };
@@ -31066,7 +33807,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 instance_id: string;
             };
@@ -31123,7 +33863,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -31155,7 +33894,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -31191,7 +33929,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -31214,7 +33951,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -31259,7 +33995,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 provider_id: string;
             };
@@ -31296,7 +34031,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -31328,7 +34062,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -31364,7 +34097,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -31406,7 +34138,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -31446,7 +34177,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -31492,7 +34222,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -31519,7 +34248,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -31542,7 +34270,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -31569,7 +34296,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
                 principal_type: string;
@@ -31592,7 +34318,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -31638,7 +34363,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -31689,7 +34413,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -31731,7 +34454,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
                 title: string;
@@ -31774,7 +34496,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
                 skill_id: string;
@@ -31817,7 +34538,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
                 skill_id: string;
@@ -31860,7 +34580,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -31887,7 +34606,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -31910,7 +34628,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -31937,7 +34654,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
                 principal_type: string;
@@ -31960,7 +34676,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -32002,7 +34717,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -32042,7 +34756,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -32088,7 +34801,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32115,7 +34827,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32138,7 +34849,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32165,7 +34875,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
                 principal_type: string;
@@ -32188,7 +34897,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -32230,7 +34938,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: string;
             };
@@ -32276,7 +34983,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32303,7 +35009,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32326,7 +35031,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32353,7 +35057,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
                 principal_type: string;
@@ -32625,6 +35328,164 @@ export interface operations {
             };
         };
     };
+    "tilde-pay-provision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProvisionTildePayRequest"];
+            };
+        };
+        responses: {
+            /** @description Fully reconciled Tilde Pay onboarding state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvisionTildePayResponse"];
+                };
+            };
+        };
+    };
+    "tilde-pay-payment-mpp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Tilde Pay payment response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+        };
+    };
+    "tilde-pay-payment-x402": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Tilde Pay payment response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+        };
+    };
+    "tilde-pay-wallet-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tilde Pay wallet summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayWalletSummaryResponse"];
+                };
+            };
+        };
+    };
+    "tilde-pay-wallet-create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePayWalletRequest"];
+            };
+        };
+        responses: {
+            /** @description Tilde Pay wallet summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayWalletSummaryResponse"];
+                };
+            };
+        };
+    };
+    "tilde-pay-wallet-wait-until-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaitForPayBalanceRequest"];
+            };
+        };
+        responses: {
+            /** @description Tilde Pay balance wait result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitUntilBalanceResponse"];
+                };
+            };
+        };
+    };
     "list-trusted-runtimes": {
         parameters: {
             query?: {
@@ -32633,7 +35494,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -32665,7 +35525,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -32701,7 +35560,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32743,7 +35601,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32774,7 +35631,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32815,12 +35671,510 @@ export interface operations {
             };
         };
     };
-    "list-wiki-ontology-templates": {
+    "wallet-list": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                owner_id?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List wallets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "wallet-create": {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWalletBody"];
+            };
+        };
+        responses: {
+            /** @description Created wallet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Upstream provider error */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "wallet-customer-list": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                owner_id?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List wallet customers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletCustomerPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "wallet-customer-create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWalletCustomerBody"];
+            };
+        };
+        responses: {
+            /** @description Created wallet customer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletCustomer"];
+                };
+            };
+        };
+    };
+    "wallet-customer-get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet customer ID */
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet customer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletCustomer"];
+                };
+            };
+        };
+    };
+    "wallet-customer-kyc-get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet customer ID */
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet customer KYC details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetWalletCustomerKycResponse"];
+                };
+            };
+        };
+    };
+    "wallet-get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"];
+                };
+            };
+        };
+    };
+    "wallet-get-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet balances */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetBalancesResponse"];
+                };
+            };
+        };
+    };
+    "wallet-get-crypto-deposit-information": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet crypto deposit information */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetCryptoDepositInformationResponse"];
+                };
+            };
+        };
+    };
+    "wallet-get-fiat-deposit-information": {
+        parameters: {
+            query?: {
+                currency?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet fiat deposit information */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetFiatDepositInformationResponse"];
+                };
+            };
+        };
+    };
+    "wallet-make-mpp-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MakeMppPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Payment response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+        };
+    };
+    "wallet-make-x402-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MakeX402PaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Payment response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+        };
+    };
+    "wallet-transaction-history-list": {
+        parameters: {
+            query?: {
+                page_size?: number;
+                next_page_token?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet transaction history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletTransactionHistoryItemPaginatedResponse"];
+                };
+            };
+        };
+    };
+    "wallet-transaction-history-refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet transaction history refresh result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefreshWalletTransactionHistoryResponse"];
+                };
+            };
+        };
+    };
+    "wallet-virtual-account-create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWalletVirtualAccountBody"];
+            };
+        };
+        responses: {
+            /** @description Created wallet virtual account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletVirtualAccount"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Upstream provider error */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "wallet-wait-until-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Team ID */
+                team_id: string;
+                /** @description Wallet ID */
+                wallet_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaitUntilBalanceRequest"];
+            };
+        };
+        responses: {
+            /** @description Wait result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitUntilBalanceResponse"];
+                };
+            };
+        };
+    };
+    "list-wiki-ontology-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
                 team_id: string;
             };
             cookie?: never;
@@ -32845,7 +36199,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -32867,7 +36220,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
             };
             cookie?: never;
@@ -32893,7 +36245,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32916,7 +36267,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32937,7 +36287,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32969,7 +36318,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -32992,7 +36340,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -33019,7 +36366,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 asset_id: components["schemas"]["WrappedUuidV4"];
@@ -33048,7 +36394,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 asset_id: components["schemas"]["WrappedUuidV4"];
@@ -33076,7 +36421,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 asset_id: components["schemas"]["WrappedUuidV4"];
@@ -33100,7 +36444,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 asset_id: components["schemas"]["WrappedUuidV4"];
@@ -33131,7 +36474,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 asset_id: components["schemas"]["WrappedUuidV4"];
@@ -33171,7 +36513,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 asset_id: components["schemas"]["WrappedUuidV4"];
@@ -33195,7 +36536,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 asset_id: components["schemas"]["WrappedUuidV4"];
@@ -33226,7 +36566,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -33249,7 +36588,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -33272,7 +36610,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 template_key: string;
@@ -33296,7 +36633,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -33323,7 +36659,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -33346,7 +36681,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -33373,7 +36707,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 principal_type: components["schemas"]["ResourcePrincipalType"];
@@ -33398,7 +36731,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -33421,7 +36753,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -33448,7 +36779,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_type_id: components["schemas"]["WrappedUuidV4"];
@@ -33472,7 +36802,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_type_id: components["schemas"]["WrappedUuidV4"];
@@ -33501,7 +36830,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_type_id: components["schemas"]["WrappedUuidV4"];
@@ -33536,7 +36864,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_type_id: components["schemas"]["WrappedUuidV4"];
@@ -33564,7 +36891,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_type_id: components["schemas"]["WrappedUuidV4"];
@@ -33588,7 +36914,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_type_id: components["schemas"]["WrappedUuidV4"];
@@ -33623,7 +36948,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_type_id: components["schemas"]["WrappedUuidV4"];
@@ -33648,7 +36972,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_type_id: components["schemas"]["WrappedUuidV4"];
@@ -33678,7 +37001,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_type_id: components["schemas"]["WrappedUuidV4"];
@@ -33714,7 +37036,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -33737,7 +37058,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -33764,7 +37084,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -33791,7 +37110,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_id: components["schemas"]["WrappedUuidV4"];
@@ -33815,7 +37133,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_id: components["schemas"]["WrappedUuidV4"];
@@ -33850,7 +37167,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_id: components["schemas"]["WrappedUuidV4"];
@@ -33883,7 +37199,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_id: components["schemas"]["WrappedUuidV4"];
@@ -33909,7 +37224,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_id: components["schemas"]["WrappedUuidV4"];
@@ -33933,7 +37247,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_id: components["schemas"]["WrappedUuidV4"];
@@ -33968,7 +37281,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_id: components["schemas"]["WrappedUuidV4"];
@@ -34009,7 +37321,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_id: components["schemas"]["WrappedUuidV4"];
@@ -34036,7 +37347,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 page_id: components["schemas"]["WrappedUuidV4"];
@@ -34060,7 +37370,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -34083,7 +37392,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -34110,7 +37418,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 type_id: components["schemas"]["WrappedUuidV4"];
@@ -34134,7 +37441,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 type_id: components["schemas"]["WrappedUuidV4"];
@@ -34163,7 +37469,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 type_id: components["schemas"]["WrappedUuidV4"];
@@ -34198,7 +37503,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 type_id: components["schemas"]["WrappedUuidV4"];
@@ -34222,7 +37526,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 type_id: components["schemas"]["WrappedUuidV4"];
@@ -34257,7 +37560,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 type_id: components["schemas"]["WrappedUuidV4"];
@@ -34285,7 +37587,6 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -34308,7 +37609,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -34342,7 +37642,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 relationship_id: components["schemas"]["WrappedUuidV4"];
@@ -34366,7 +37665,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 relationship_id: components["schemas"]["WrappedUuidV4"];
@@ -34388,7 +37686,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 relationship_id: components["schemas"]["WrappedUuidV4"];
@@ -34416,7 +37713,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -34439,7 +37735,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -34466,7 +37761,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -34493,7 +37787,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -34516,7 +37809,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
             };
@@ -34543,7 +37835,6 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Team ID */
                 team_id: string;
                 wiki_id: components["schemas"]["WrappedUuidV4"];
                 principal_type: components["schemas"]["ResourcePrincipalType"];
@@ -34994,6 +38285,202 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "list-verified-identity-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListVerifiedIdentityLinksResponse"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "delete-verified-identity-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteVerifiedIdentityLinkResponse"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "initiate-identity-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InitiateIdentityVerificationRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentityVerificationChallenge"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "get-identity-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                verification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentityVerification"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "complete-identity-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                verification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteIdentityVerificationRequestInner"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifiedIdentityLink"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
             };
         };
     };
@@ -35643,7 +39130,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["StoredMemoryDocument"];
                 };
             };
         };

@@ -5,6 +5,16 @@ description: Find deepening opportunities in OpenBot's TypeScript monorepo using
 
 # Improve Codebase Architecture
 
+## Repository documentation requirements
+
+Follow [docs/README.md](../../../docs/README.md) for every change in this workflow. Create or update
+ADRs for resolved durable decisions, keep affected README/setup/public docs current,
+and maintain the complete pending or PR-numbered update record after every revision.
+Use the shared templates and section names. Missing or stale required documentation
+blocks completion. Document already authorized decisions without asking again; ask
+only about unresolved choices. These requirements govern documentation instructions
+elsewhere in this skill; preserve its repository-specific implementation and checks.
+
 Surface architectural friction and propose deepening opportunities: more useful behavior behind smaller, stable interfaces.
 
 ## Glossary
@@ -56,7 +66,7 @@ Use OpenBot concepts, not generic placeholders. Do not design interfaces until t
 For the selected candidate, resolve constraints, ownership, lifecycle, failure modes, compatibility, and the test surface one decision at a time.
 
 - Update a glossary only when a durable domain term is resolved.
-- Offer an ADR only for a load-bearing, surprising trade-off.
+- Create or update an ADR for a resolved durable decision; avoid empty records for routine edits.
 - Amend an existing governing ADR instead of duplicating it, and append the required timestamped `Updates` bullet when its decision changes.
 - Preserve Tilde, database, environment, sandbox, web, desktop, and provider boundaries unless the change deliberately redefines one.
 - Use [INTERFACE-DESIGN.md](INTERFACE-DESIGN.md) when comparing interface shapes and [DEEPENING.md](DEEPENING.md) for deeper examples.

@@ -5,6 +5,16 @@ description: "Add a changeset to the current change. Use when preparing a PR tha
 
 # Add Changeset
 
+## Repository documentation requirements
+
+Follow [docs/README.md](../../../docs/README.md) for every change in this workflow. Create or update
+ADRs for resolved durable decisions, keep affected README/setup/public docs current,
+and maintain the complete pending or PR-numbered update record after every revision.
+Use the shared templates and section names. Missing or stale required documentation
+blocks completion. Document already authorized decisions without asking again; ask
+only about unresolved choices. These requirements govern documentation instructions
+elsewhere in this skill; preserve its repository-specific implementation and checks.
+
 A changeset declares which packages are affected by a change, the semver bump type, and a user-facing summary. It lives as a markdown file in `.changeset/` and is consumed automatically by CI to version and publish packages.
 
 ## When to Add One

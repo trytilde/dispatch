@@ -5,6 +5,16 @@ description: Prepare, commit, push, and open or update a draft pull request for 
 
 # Create PR
 
+## Repository documentation requirements
+
+Follow [docs/README.md](../../../docs/README.md) for every change in this workflow. Create or update
+ADRs for resolved durable decisions, keep affected README/setup/public docs current,
+and maintain the complete pending or PR-numbered update record after every revision.
+Use the shared templates and section names. Missing or stale required documentation
+blocks completion. Document already authorized decisions without asking again; ask
+only about unresolved choices. These requirements govern documentation instructions
+elsewhere in this skill; preserve its repository-specific implementation and checks.
+
 Use when the user asks to open, publish, prepare, or update a PR for the current OpenBot branch.
 
 ## Required Order
@@ -190,7 +200,7 @@ Review at least:
 
 If no major decision exists, record `ADR review: no new decision` in the PR body.
 
-If one exists, stop before commit, push, or PR mutation. Summarize the candidate decision, state whether an ADR is recommended, and prompt the user through it one question at a time using `grill-with-docs`. Do not infer approval. If accepted, create the next sequential `docs/adrs/NNNN-slug.md` using [ADR-FORMAT.md](../grill-with-docs/ADR-FORMAT.md), or amend the governing ADR and append its required timestamped `Updates` bullet. If declined, record the decision and the user's rationale in the PR body.
+For each resolved durable decision, create the next sequential `docs/adrs/NNNN-slug.md` using the shared template, or amend the governing ADR and append a timestamped `Updates` entry. Use `grill-with-docs` only for unresolved choices; do not ask again about decisions already authorized in the task. Include the resulting ADR links in the PR body and update record.
 
 ## PR Title
 
@@ -238,20 +248,20 @@ Every upstream PR that changes repository contents must add exactly one `docs/up
 Use this sequence:
 
 1. Finish initial validation and commit the implementation, tests, ADRs, READMEs, and ordinary documentation.
-2. Push the branch and open the draft PR before generating the update record.
+2. Prepare the pending update record with the implementation. When publication is authorized, push the branch and open the draft PR.
 3. Read the stable PR number from GitHub; never guess or use a local sequence.
-4. Analyze the full PR diff, commit history, review discussion, and all threads in the coding agent's database on the current machine. Inspect every locally available thread, not only the current chat or task. Retain implementation evidence relevant to this PR in the update record. Preserve actionable but out-of-scope OpenBot feature planning in the PR body or a PR comment using the exact `<FOLLOW UP>` block syntax from `CONTEXT.md`; link an existing issue when one exists, group only work with the same owner and trigger, and include concrete acceptance proof. Do not copy unrelated planning into the repository update record.
-5. Create `docs/updates/<pr-number>.md`, commit it, and push it to the same draft PR.
+4. Analyze the full PR diff, commit history, review discussion, and relevant task evidence available for this change. Retain only implementation evidence relevant to this PR in the update record. Preserve actionable but out-of-scope OpenBot feature planning in the PR body or a PR comment using the exact `<FOLLOW UP>` block syntax from `CONTEXT.md`; link an existing issue when one exists, group only work with the same owner and trigger, and include concrete acceptance proof. Do not copy unrelated planning into the repository update record.
+5. Rename the pending record to `docs/updates/<pr-number>.md`, update its verified PR URL and final contents, commit it, and push it to the same draft PR.
 6. After every later code, test, documentation, rebase, conflict-resolution, or accepted-review change, regenerate the same record from all evidence and push its update before declaring the PR current.
 
-Thread-database review is read-only. Prefer the coding agent's supported thread APIs; otherwise inspect its discovered local database without modifying it. Never copy unrelated private conversation, credentials, secrets, personal data, or raw thread transcripts into the repository or PR. If the complete local thread set cannot be inspected, state the limitation in the PR and do not claim the update record is complete.
+Use the change diff, accepted decisions, validation results, and relevant review evidence. Do not inspect unrelated private tasks to write an update record. Never copy credentials, secrets, personal data, or raw task transcripts into the repository or PR; state material evidence gaps honestly.
 
-Write the record in detailed caveman style with these exact sections:
+Write the record in concise normal prose with these exact sections:
 
 1. `Intent of the change`
 2. `Architecture changes`, always with a Mermaid diagram; use a small unchanged-boundary diagram when architecture did not change
-3. `Summarized package changes`
-4. `Critical to apply to forks`, starting with exactly `yes` or `no`, then the reason and concrete fork action
+3. `Summarized changes`
+4. `Critical to apply`, starting with exactly `yes` or `no`, then the reason and concrete fork action
 
 Include breaking imports, path moves, configuration or secret migration, provider obligations, deployment topology, removed behavior, and checks a customized fork must run. State `no updates` only in `configuration/docs/update-notes/<hash>.md` when `openbot update` finds no upstream commits; never use it as an upstream PR update record.
 

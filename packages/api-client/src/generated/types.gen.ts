@@ -86,6 +86,31 @@ export type Agent = {
     sub: string;
 };
 
+/**
+ * Persisted configuration for one agent's voice behavior. Secrets stay in managed credentials.
+ */
+export type AgentAudioConfiguration = {
+    /**
+     * Optional bound OpenAI API-key credential. Otherwise use the server's OpenAI key.
+     */
+    credential_id?: string | null;
+    /**
+     * Instructions for the native realtime model, independent of the text endpoint.
+     */
+    instructions?: string;
+    interruptible?: boolean;
+    language?: string;
+    /**
+     * Hard lifetime bound, enforced independently of speech or network activity.
+     */
+    max_duration_seconds: number;
+    mode: AudioMode;
+    realtime_model: string;
+    stt_model: string;
+    tts_model: string;
+    voice: string;
+};
+
 export enum AgentCredentialStrategy {
     PRESERVE = 'preserve',
     ROTATE = 'rotate'
@@ -482,6 +507,58 @@ export enum AttachmentUploadStatus {
 }
 
 /**
+ * Server-authored field descriptor; frontends do not implement model-provider setup logic.
+ */
+export type AudioConfigurationField = {
+    key: string;
+    kind: string;
+    label: string;
+    nullable: boolean;
+    options: Array<string>;
+};
+
+/**
+ * One supported voice mode and its generic setup fields.
+ */
+export type AudioConfigurationProfile = {
+    configuration: AgentAudioConfiguration;
+    description: string;
+    fields: Array<AudioConfigurationField>;
+    label: string;
+};
+
+/**
+ * Speech implementation selected by the agent owner.
+ */
+export enum AudioMode {
+    PIPELINE = 'pipeline',
+    REALTIME = 'realtime',
+    TELNYX_RELAY = 'telnyx_relay'
+}
+
+/**
+ * One live interaction, owned and authorized by its normal ChatKit session.
+ */
+export type AudioSession = {
+    agent_id: string;
+    agent_instance_id: string;
+    channel_inbox_id: string;
+    external_call_id?: string | null;
+    human_instance_id: string;
+    id: WrappedUuidV4;
+    /**
+     * Authenticated browser caller; absent for unverified carrier callers.
+     */
+    initiator_user_id?: string | null;
+    org_id: string;
+    provider: string;
+    session_id: WrappedUuidV4;
+    status: string;
+    team_id: string;
+    telnyx?: null | ChatKitTelnyxContext;
+};
+
+/**
  * Request body for auto-provisioning a Slack app and starting ChatKit OAuth setup.
  */
 export type AutoProvisionSlackChannelInstallationRequestInner = {
@@ -737,6 +814,7 @@ export type ChatChannelSubscriptionOption = {
  */
 export type ChatKitAgent = Inbox & {
     api_key_id?: string | null;
+    audio?: null | AgentAudioConfiguration;
     principal_user_id?: string | null;
 };
 
@@ -835,6 +913,16 @@ export enum ChatKitAgentTurnQueueStatus {
     FAILED = 'failed',
     CANCELLED = 'cancelled'
 }
+
+/**
+ * Context delivered in the signed HTTP-agent request for a transcribed speech turn.
+ */
+export type ChatKitAudioContext = {
+    live: boolean;
+    liveSessionId: WrappedUuidV4;
+    mode: AudioMode;
+    utteranceId: string;
+};
 
 /**
  * One provenance-bearing memory supplied to the active recipient agent.
@@ -1235,6 +1323,34 @@ export type ChatKitSessionWithParticipants = {
 };
 
 /**
+ * Server-authored provenance of a speech message, stored with its typed message body.
+ */
+export type ChatKitSpeechContext = {
+    audio: ChatKitAudioContext;
+    /**
+     * True for generated assistant speech; generation is not proof of playback.
+     */
+    generated: boolean;
+    interrupted?: boolean;
+    played_audio_ms?: number | null;
+    /**
+     * Prefix the carrier reports it spoke; absent means playback is not established.
+     */
+    reported_spoken_text?: string | null;
+    telnyx?: null | ChatKitTelnyxContext;
+};
+
+/**
+ * Verified carrier facts delivered to the agent, never inferred from caller-authored metadata.
+ */
+export type ChatKitTelnyxContext = {
+    callControlId: string;
+    callSessionId: string;
+    from: string;
+    to: string;
+};
+
+/**
  * Paginated sessions payload for "show more".
  */
 export type ChatKitWorkspaceAgentSessionsResponse = {
@@ -1358,6 +1474,10 @@ export type ChatMessage = {
  * Server-authored context for a synthetic HTTP-agent message.
  */
 export type ChatMessageContext = {
+    audio: ChatKitAudioContext;
+    telnyx?: null | ChatKitTelnyxContext;
+    type: 'speech';
+} | {
     event_id: WrappedUuidV4;
     event_type: string;
     type: 'participant_lifecycle';
@@ -5851,6 +5971,7 @@ export type RegisterChatKitChatProviderResponse = {
  * Request body for registering a Vercel AI SDK-compatible HTTP agent.
  */
 export type RegisterHttpVercelAiSdkAgentRequestInner = {
+    audio?: null | AgentAudioConfiguration;
     authorization?: ResourceAuthorizationModes;
     /**
      * Automatic recall and retention policy. Disabled unless explicitly selected.
@@ -6609,6 +6730,13 @@ export enum SessionUserRole {
 }
 
 /**
+ * Replace or disable an agent's audio configuration.
+ */
+export type SetAgentAudioBody = {
+    audio?: null | AgentAudioConfiguration;
+};
+
+/**
  * Request body for setting an agent or channel status.
  */
 export type SetChatKitResourceStatusRequest = {
@@ -7034,6 +7162,15 @@ export type SourceUrlUiPart = {
     url: string;
 };
 
+/**
+ * Audio session bootstrap. The token is returned once and stored only as a digest.
+ */
+export type StartAudioSessionResponse = {
+    audio_session: AudioSession;
+    token: string;
+    websocket_path: string;
+};
+
 export type StartBrokeringBodyExternal = {
     owner_id: string;
     owner_type: string;
@@ -7376,6 +7513,32 @@ export type TeamPaginatedResponse = {
 };
 
 /**
+ * Telnyx Voice API application binding. The credential ID references an encrypted API key.
+ */
+export type TelnyxVoiceRoute = {
+    /**
+     * Normal ChatKit channel owning this carrier binding; assigned by Tilde.
+     */
+    readonly channel_inbox_id?: string | null;
+    connection_id: string;
+    credential_id: string;
+    /**
+     * Public HTTPS origin reaching this API's media WebSocket routes.
+     */
+    media_base_url: string;
+    phone_number: string;
+    public_key: string;
+};
+
+/**
+ * Carrier setup result with the exact externally reachable webhook address.
+ */
+export type TelnyxVoiceRouteResponse = {
+    route: TelnyxVoiceRoute;
+    webhook_url: string;
+};
+
+/**
  * A simple text message with raw text content
  */
 export type TextMessage = {
@@ -7406,6 +7569,7 @@ export type TextMessage = {
     role: MessageRole;
     session_id: WrappedUuidV4;
     signal?: null | SignalMessageContext;
+    speech?: null | ChatKitSpeechContext;
     text: string;
     to_inbox_instance_id?: string | null;
     to_inbox_type_id?: string | null;
@@ -7755,6 +7919,7 @@ export type UiMessage = {
     role: MessageRole;
     session_id: WrappedUuidV4;
     signal?: null | SignalMessageContext;
+    speech?: null | ChatKitSpeechContext;
     to_inbox_instance_id?: string | null;
     to_inbox_type_id?: string | null;
     updated_at: WrappedChronoDateTime;
@@ -8749,6 +8914,28 @@ export type WrappedJsonValue = unknown;
 
 export type WrappedUuidV4 = string;
 
+/**
+ * Telnyx Voice API application binding. The credential ID references an encrypted API key.
+ */
+export type TelnyxVoiceRouteWritable = {
+    connection_id: string;
+    credential_id: string;
+    /**
+     * Public HTTPS origin reaching this API's media WebSocket routes.
+     */
+    media_base_url: string;
+    phone_number: string;
+    public_key: string;
+};
+
+/**
+ * Carrier setup result with the exact externally reachable webhook address.
+ */
+export type TelnyxVoiceRouteResponseWritable = {
+    route: TelnyxVoiceRouteWritable;
+    webhook_url: string;
+};
+
 export type ChatkitCompleteSlackProviderProvisionedSetupData = {
     body: CompleteSlackProviderProvisionedSetupRequestInner;
     path: {
@@ -9144,6 +9331,46 @@ export type BillingWebhookStripeDeprecatedResponses = {
 };
 
 export type BillingWebhookStripeDeprecatedResponse = BillingWebhookStripeDeprecatedResponses[keyof BillingWebhookStripeDeprecatedResponses];
+
+export type ListAgentAudioProfilesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/chatkit/audio/profiles';
+};
+
+export type ListAgentAudioProfilesResponses = {
+    200: Array<AudioConfigurationProfile>;
+};
+
+export type ListAgentAudioProfilesResponse = ListAgentAudioProfilesResponses[keyof ListAgentAudioProfilesResponses];
+
+export type ReceiveTelnyxVoiceWebhookData = {
+    body: unknown;
+    path: {
+        org_id: string;
+        team_id: string;
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/chatkit/audio/telnyx/{org_id}/{team_id}/{agent_id}/webhook';
+};
+
+export type ReceiveTelnyxVoiceWebhookResponses = {
+    /**
+     * Accepted
+     */
+    200: unknown;
+};
+
+export type ConnectAgentAudioMediaData = {
+    body?: never;
+    path: {
+        audio_session_id: WrappedUuidV4;
+    };
+    query?: never;
+    url: '/api/v1/chatkit/audio/{audio_session_id}/media';
+};
 
 export type GetRuntimeConfigData = {
     body?: never;
@@ -12678,6 +12905,70 @@ export type ChatkitUpdateAgentResponses = {
 };
 
 export type ChatkitUpdateAgentResponse = ChatkitUpdateAgentResponses[keyof ChatkitUpdateAgentResponses];
+
+export type GetAgentAudioData = {
+    body?: never;
+    path: {
+        team_id: string;
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/audio';
+};
+
+export type GetAgentAudioResponses = {
+    200: SetAgentAudioBody;
+};
+
+export type GetAgentAudioResponse = GetAgentAudioResponses[keyof GetAgentAudioResponses];
+
+export type SetAgentAudioData = {
+    body: SetAgentAudioBody;
+    path: {
+        team_id: string;
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/audio';
+};
+
+export type SetAgentAudioResponses = {
+    200: SetAgentAudioBody;
+};
+
+export type SetAgentAudioResponse = SetAgentAudioResponses[keyof SetAgentAudioResponses];
+
+export type StartAgentAudioSessionData = {
+    body?: never;
+    path: {
+        team_id: string;
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/audio/sessions';
+};
+
+export type StartAgentAudioSessionResponses = {
+    200: StartAudioSessionResponse;
+};
+
+export type StartAgentAudioSessionResponse = StartAgentAudioSessionResponses[keyof StartAgentAudioSessionResponses];
+
+export type ConfigureTelnyxVoiceData = {
+    body: TelnyxVoiceRouteWritable;
+    path: {
+        team_id: string;
+        agent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/agents/{agent_id}/audio/telnyx';
+};
+
+export type ConfigureTelnyxVoiceResponses = {
+    200: TelnyxVoiceRouteResponse;
+};
+
+export type ConfigureTelnyxVoiceResponse = ConfigureTelnyxVoiceResponses[keyof ConfigureTelnyxVoiceResponses];
 
 export type ChatkitGetAgentAvatarData = {
     body?: never;

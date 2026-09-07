@@ -39,7 +39,7 @@ const handlers = new Map<string, ReturnType<typeof chatKitEndpoint>>(
         webhookSigningKey: registration.webhookSigningKey,
         responseMode: "agentLoop",
         async handler(request, context) {
-          // This is the normal callback. Rust has already transcribed the caller.
+          // This is the normal callback. Tilde supplies text from OpenAI STT or Telnyx Relay.
           console.log("Text turn", {
             audio: context.audio?.mode,
             carrier: context.telnyx ? "telnyx" : "browser-or-text",

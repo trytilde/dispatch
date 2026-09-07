@@ -10,26 +10,6 @@ export type AcceptInvitationRequest = {
 };
 
 /**
- * Canonical tenant destination after accepting an invitation with a login account.
- */
-export type AcceptInvitationResponse = {
-    identity_id: string;
-    invitation: UserInvitation;
-    org_id: string;
-    team_id: string;
-};
-
-/**
- * Explicit login-account membership, independent of runtime identity availability.
- */
-export type AccountOrganizationMembership = {
-    account_id: string;
-    name: string;
-    organization_id: string;
-    role: string;
-};
-
-/**
  * Request body for adding a participant to a ChatKit session.
  */
 export type AddChatKitParticipantRequestInner = {
@@ -442,6 +422,13 @@ export type AssignMemoryBankSynthesizerBody = {
 };
 
 /**
+ * An optional toolkit backend materialized as an ordinary custom Tools provider.
+ */
+export type AssociatedToolkit = {
+    discovery_url: string;
+};
+
+/**
  * ChatKit-owned attachment metadata.
  */
 export type Attachment = {
@@ -519,10 +506,12 @@ export type BillingContext = {
 };
 
 /**
- * The Core subscription whose access is evaluated per organization.
+ * A separately billed Tilde product whose access is evaluated per organization.
  */
 export enum BillingProductId {
-    TILDE_CORE = 'tilde_core'
+    TILDE_CORE = 'tilde_core',
+    TILDE_PAY = 'tilde_pay',
+    ASH = 'ash'
 }
 
 export type BrokerAction = {
@@ -647,6 +636,24 @@ export enum CapabilityChangeDecision {
  */
 export type ChangeResourceOwnershipRequest = {
     ownership: ResourceOwnership;
+};
+
+/**
+ * Private send intent; never include this value in canonical public events.
+ */
+export type ChannelDeliveryOptions = {
+    attachment_ids?: Array<string>;
+    bcc?: Array<string> | null;
+    cc?: Array<string> | null;
+    html?: string | null;
+    /**
+     * Opaque extension interpreted exclusively by the owning adapter.
+     */
+    provider_options?: unknown;
+    reply_all?: boolean | null;
+    subject?: string | null;
+    to?: Array<string> | null;
+    visible_recipients?: Array<CustomExternalIdentity>;
 };
 
 /**
@@ -937,6 +944,41 @@ export type ChatKitExecutionContext = (ChatKitAgentRunExecutionContext & {
 });
 
 /**
+ * A party that can appear in a ChatKit session.
+ */
+export type ChatKitIdentity = {
+    /**
+     * Set when this address belongs to one of our agents.
+     */
+    agent_inbox_id?: string | null;
+    created_at: WrappedChronoDateTime;
+    display_name: string;
+    /**
+     * The address within that scheme. `None` only for [`ChatKitIdentityKind::TildeUser`].
+     */
+    external_id?: string | null;
+    id: string;
+    kind: ChatKitIdentityKind;
+    metadata?: {
+        [key: string]: unknown;
+    } | null;
+    org_id: string;
+    /**
+     * Namespace that owns the address. Two GitHub organizations can both have
+     * a `dan`, so the scheme alone is never unique.
+     */
+    provider_id?: string | null;
+    team_id: string;
+    /**
+     * Set only by a verified linking flow, or by us when registering an
+     * address for one of our own principals. `None` means no authority.
+     */
+    tilde_user_id?: string | null;
+    updated_at: WrappedChronoDateTime;
+    verified_at?: null | WrappedChronoDateTime;
+};
+
+/**
  * Address scheme for a [`ChatKitIdentity`].
  */
 export enum ChatKitIdentityKind {
@@ -1034,6 +1076,23 @@ export enum ChatKitParticipantType {
     HUMAN = 'human',
     AGENT = 'agent'
 }
+
+/**
+ * Discovery document served by the customer's SDK endpoint.
+ */
+export type ChatKitProviderManifest = {
+    auth_methods?: Array<CustomProviderAuthMethod>;
+    capabilities: CustomProviderCapabilities;
+    configuration_schema: unknown;
+    description: string;
+    display_name: string;
+    fields?: Array<CustomProviderField>;
+    invoke_url: string;
+    protocol_version: number;
+    session_tools?: Array<CustomSessionTool>;
+    subscriptions?: Array<string>;
+    version: string;
+};
 
 export type ChatKitRealtimeSocketTicket = {
     expires_at: WrappedChronoDateTime;
@@ -1424,16 +1483,10 @@ export type ClaimTemporaryAccountResponse = {
 };
 
 export type CloudWhoamiResponse = {
-    account_organizations?: Array<AccountOrganizationMembership>;
     groups: Array<string>;
     identity: Identity;
     local_runtime_tunnel_domain: string;
     local_runtime_tunnel_origin: string;
-    /**
-     * True after explicit first-organization creation, even if that org was removed.
-     * A membership-less completed account needs invitation/link recovery, not replay.
-     */
-    organization_onboarding_completed?: boolean | null;
     organizations: Array<UserOrganization>;
     teams: Array<UserTeam>;
 };
@@ -1860,17 +1913,6 @@ export type CreateHumanApprovalActionResponse = {
     token: string;
 };
 
-export type CreateIdentityLinkRequest = {
-    delivery?: null | IdentityLinkDelivery;
-    return_url?: string | null;
-};
-
-export type CreateIdentityRequest = {
-    display_name?: string | null;
-    identifiers?: Array<IdentityIdentifier>;
-    kind: UserType;
-};
-
 export type CreateManagedUserCredentialBody = {
     /**
      * Allow Browser form filling to enumerate this credential.
@@ -1962,12 +2004,6 @@ export type CreatePageTypeVersionBody = {
     schema: unknown;
 };
 
-export type CreatePayWalletRequest = {
-    name: string;
-    owner_id?: string | null;
-    wallet_customer_id: string;
-};
-
 export type CreatePersonalToolGroupInstanceBody = {
     authorization?: ResourceAuthorizationModes;
     credential_source_type_id: string;
@@ -1981,13 +2017,6 @@ export type CreatePersonalToolGroupInstanceBody = {
     tool_group_instance_id?: string | null;
     tool_group_source_type_id: string;
     user_credential_id?: null | WrappedUuidV4;
-};
-
-export type CreateProxyTokenRequest = {
-    allowed_return_urls?: Array<string>;
-    capabilities?: Array<string>;
-    expires_at?: null | WrappedChronoDateTime;
-    name: string;
 };
 
 export type CreateRelationshipTypeBody = {
@@ -2321,22 +2350,6 @@ export type CreateUserCredentialParamsInner = {
     user_credential_configuration: WrappedJsonValue;
 };
 
-export type CreateWalletBody = {
-    name: string;
-    owner_id?: string | null;
-    wallet_customer_id: string;
-};
-
-export type CreateWalletCustomerBody = {
-    account_type?: string;
-    name: string;
-    owner_id?: string | null;
-};
-
-export type CreateWalletVirtualAccountBody = {
-    currency: string;
-};
-
 export type CreateWikiAssetBody = {
     alt_text?: string | null;
     checksum?: string | null;
@@ -2357,17 +2370,6 @@ export type CreateWikiInner = {
      */
     memory_bank_ids?: Array<WrappedUuidV4> | null;
     name: string;
-};
-
-export type CreatedIdentityLink = {
-    expires_at: WrappedChronoDateTime;
-    id: string;
-    url: string;
-};
-
-export type CreatedProxyToken = {
-    secret: string;
-    token: OrgProxyToken;
 };
 
 /**
@@ -2485,6 +2487,348 @@ export enum CurrentSeatStatus {
     NOT_BILLABLE = 'not_billable'
 }
 
+/**
+ * Stable registration, separate from any configured connection.
+ */
+export type CustomChatKitProvider = {
+    created_at: WrappedChronoDateTime;
+    discovery_url: string;
+    display_name: string;
+    enabled: boolean;
+    id: string;
+    last_discovery_at?: null | WrappedChronoDateTime;
+    last_discovery_error?: string | null;
+    local_running_endpoint: boolean;
+    manifest?: null | ChatKitProviderManifest;
+    org_id: string;
+    revision: number;
+    team_id: string;
+    updated_at: WrappedChronoDateTime;
+};
+
+/**
+ * Returned once after rotation, with remote notification outcome for host recovery.
+ */
+export type CustomConnectionCredentials = {
+    backend_notified: boolean;
+    runtime_token: string;
+};
+
+/**
+ * Public connection configuration; runtime credentials and setup state are excluded.
+ */
+export type CustomConnectionInfo = {
+    configuration: unknown;
+    default_agent_inbox_id?: string | null;
+    definition_id: string;
+    display_name: string;
+    enabled: boolean;
+    id: string;
+    org_id: string;
+    setup_id: string;
+    status: string;
+    team_id: string;
+    tool_group_instance_id?: string | null;
+    toolkit_discovery_url?: string | null;
+};
+
+export type CustomConnectionInfoPaginatedResponse = {
+    items: Array<CustomConnectionInfo>;
+    next_page_token?: string;
+};
+
+/**
+ * Operational diagnostics omit normalized message bodies and credentials.
+ */
+export type CustomConnectionWork = {
+    attempts: number;
+    created_at: WrappedChronoDateTime;
+    kind: string;
+    last_error?: string | null;
+    next_attempt_at: WrappedChronoDateTime;
+    status: string;
+    work_id: string;
+};
+
+export type CustomConnectionWorkPaginatedResponse = {
+    items: Array<CustomConnectionWork>;
+    next_page_token?: string;
+};
+
+/**
+ * One external address; callers cannot grant themselves principal authority.
+ */
+export type CustomExternalIdentity = {
+    display_name: string;
+    external_id: string;
+    kind: ChatKitIdentityKind;
+};
+
+/**
+ * Normalized event accepted using a single connection's runtime credential.
+ */
+export type CustomInboundMessage = {
+    attachment_ids?: Array<string>;
+    conversation_key: string;
+    event_id: string;
+    external_message_id: string;
+    provider_metadata?: unknown;
+    provider_thread?: unknown;
+    sender: CustomExternalIdentity;
+    text: string;
+};
+
+/**
+ * A durable ingestion acknowledgment, including replay of an existing event.
+ */
+export type CustomIngressReceipt = {
+    event_id: string;
+    message_id: string;
+    status: string;
+};
+
+/**
+ * Provider-owned authorization method; secret fields are never list outputs.
+ */
+export type CustomProviderAuthMethod = {
+    description: string;
+    display_name: string;
+    fields: Array<CustomProviderField>;
+    id: string;
+};
+
+/**
+ * Content conversion and runtime features declared by a backend.
+ */
+export type CustomProviderCapabilities = {
+    attachments?: boolean;
+    delivery?: boolean;
+    html?: boolean;
+    identity?: boolean;
+    inbound?: boolean;
+    markdown?: boolean;
+    max_length?: number | null;
+    streaming?: boolean;
+    toolkit?: boolean;
+};
+
+/**
+ * Named schema-backed field rendered by the existing generic setup flow.
+ */
+export type CustomProviderField = {
+    field_type: string;
+    label: string;
+    name: string;
+    placeholder?: string;
+    required?: boolean;
+};
+
+/**
+ * Exact signed remote invocation. Secret-bearing payloads intentionally omit Debug.
+ */
+export type CustomProviderInvocation = {
+    configuration: unknown;
+    context?: null | CustomSessionContext;
+    input: unknown;
+    manifest_version: string;
+    operation: CustomProviderOperation;
+    protocol_version: number;
+    request_id: string;
+    scope: CustomProviderScope;
+    secrets: unknown;
+};
+
+/**
+ * A paginated team catalog; continuation uses the existing timestamp cursor.
+ */
+export type CustomProviderList = {
+    items: Array<CustomChatKitProvider>;
+    next_page_token?: string | null;
+};
+
+/**
+ * Tilde-owned protocol operations are typed independently of provider business inputs.
+ */
+export enum CustomProviderOperation {
+    SETUP_START = 'setup_start',
+    SETUP_RESUME = 'setup_resume',
+    DISCONNECT = 'disconnect',
+    RUNTIME_CREDENTIALS_UPDATED = 'runtime_credentials_updated',
+    TOOLKIT_CONFIGURED = 'toolkit_configured',
+    REGISTER_IDENTITY = 'register_identity',
+    NORMALIZE_MENTIONS = 'normalize_mentions',
+    LIST_SESSION_TOOLS = 'list_session_tools',
+    INVOKE_SESSION_TOOL = 'invoke_session_tool',
+    RECONCILE_SESSION_TOOL = 'reconcile_session_tool',
+    PREPARE_SEND = 'prepare_send',
+    DELIVER = 'deliver',
+    RECONCILE_DELIVERY = 'reconcile_delivery'
+}
+
+/**
+ * Signing material is returned only by explicit create/rotate operations.
+ */
+export type CustomProviderRegistration = {
+    provider: CustomChatKitProvider;
+    signing_key: string;
+};
+
+/**
+ * Input for creating or editing a reusable backend registration.
+ */
+export type CustomProviderRegistrationInput = {
+    discovery_url: string;
+    display_name: string;
+    local_running_endpoint?: boolean;
+};
+
+/**
+ * Tenant-scoped coordinates recovered from persisted records.
+ */
+export type CustomProviderScope = {
+    connection_id: string;
+    definition_id: string;
+    org_id: string;
+    team_id: string;
+};
+
+/**
+ * Remote mutations must distinguish absence from an unresolved prior attempt.
+ */
+export type CustomReconciliation = {
+    result: unknown;
+    status: 'applied';
+} | {
+    status: 'absent';
+} | {
+    reason: string;
+    status: 'uncertain';
+};
+
+/**
+ * Narrow operations a provider may perform inside its own bound conversations.
+ */
+export type CustomRuntimeCommand = {
+    operation: 'register_agent_identity';
+} | {
+    operation: 'normalize_mentions';
+    tags: Array<string>;
+} | {
+    conversation_key: string;
+    operation: 'ensure_conversation';
+    provider_thread?: unknown;
+    title?: string | null;
+} | {
+    filename?: string | null;
+    media_type: string;
+    operation: 'create_attachment_upload';
+    session_id: string;
+    size_bytes?: number | null;
+} | {
+    attachment_id: string;
+    operation: 'complete_attachment_upload';
+    session_id: string;
+    sha256?: string | null;
+    size_bytes?: number | null;
+} | {
+    attachment_id: string;
+    operation: 'attachment_download';
+    session_id: string;
+} | {
+    identity: CustomExternalIdentity;
+    operation: 'upsert_participant';
+    session_id: string;
+} | {
+    external_id: string;
+    operation: 'leave_participant';
+    session_id: string;
+} | {
+    next_page_token?: string | null;
+    operation: 'history';
+    page_size?: number | null;
+    session_id: string;
+};
+
+/**
+ * Runtime responses deliberately expose no general team resource operations.
+ */
+export type CustomRuntimeResponse = {
+    identity: ChatKitIdentity;
+    type: 'identity';
+} | {
+    identities: Array<ChatKitIdentity>;
+    type: 'mentions';
+} | {
+    session_id: string;
+    type: 'conversation';
+} | {
+    type: 'upload';
+    upload: CreateAttachmentUploadResponse;
+} | {
+    attachment: Attachment;
+    type: 'attachment';
+} | {
+    download: GetAttachmentDownloadUrlResponse;
+    type: 'download';
+} | {
+    participant: ChatKitParticipant;
+    type: 'participant';
+} | {
+    type: 'left';
+} | {
+    messages: Array<CustomVisibleMessage>;
+    next_page_token?: string | null;
+    type: 'history';
+};
+
+/**
+ * Coordinates verified against the active turn before invoking a session tool.
+ */
+export type CustomSessionContext = {
+    agent_inbox_instance_id: string;
+    conversation_key: string;
+    execution_id: string;
+    external_message_id: string;
+    participants?: Array<CustomSessionParticipant>;
+    provider_message: unknown;
+    /**
+     * Only the provider adapter interprets this external reply handle.
+     */
+    provider_thread: unknown;
+    session_id: string;
+    target_inbox_instance_id: string;
+    trigger_message_id: string;
+};
+
+/**
+ * Active delivery roster, excluding Tilde authorization principals and other connections' addresses.
+ */
+export type CustomSessionParticipant = {
+    display_name: string;
+    external_id?: string | null;
+    instance_id: string;
+    is_agent: boolean;
+};
+
+/**
+ * Tool schemas describe business inputs only. Context travels separately.
+ */
+export type CustomSessionTool = {
+    description: string;
+    input_schema: unknown;
+    name: string;
+    output_schema: unknown;
+    read_only?: boolean;
+};
+
+/**
+ * Server-bound tool catalog for the authenticated agent's current turn.
+ */
+export type CustomSessionToolCatalog = {
+    context?: null | CustomSessionContext;
+    tools: Array<CustomSessionTool>;
+};
+
 export type CustomSkillSpec = {
     content: string;
     description: string;
@@ -2531,6 +2875,14 @@ export type CustomToolProviderSerialized = {
     updated_at: WrappedChronoDateTime;
 };
 
+export type CustomVisibleMessage = {
+    created_at: WrappedChronoDateTime;
+    id: string;
+    role: MessageRole;
+    sender_display_name: string;
+    text: string;
+};
+
 /**
  * Data UI part - represents custom data parts
  */
@@ -2573,20 +2925,6 @@ export type DelegateAgentJobRequestInner = {
     };
     model_id?: string | null;
     objective: string;
-};
-
-/**
- * A runtime actor authenticated by an organization application credential.
- * Credential authority remains separate from the actor's own groups.
- */
-export type DelegatedIdentity = {
-    email?: string | null;
-    groups: Array<string>;
-    kind: UserType;
-    org_id: string;
-    proxy_token_id: string;
-    sub: string;
-    team_id?: string | null;
 };
 
 export type DeleteChatKitAgentTurnQueueItemResponse = {
@@ -2641,16 +2979,6 @@ export type DeploymentEnvironmentFile = {
     content_type: string;
     contents: string;
     filename: string;
-};
-
-export type DirectTokenPayment = {
-    amount: string;
-    asset?: string;
-    chain?: string;
-    destination_address: string;
-    destination_asset?: string | null;
-    destination_chain?: string | null;
-    slippage_bps?: number | null;
 };
 
 /**
@@ -2820,29 +3148,6 @@ export type GetAttachmentDownloadUrlResponse = {
     attachment: Attachment;
     download_url: string;
     expires_at: WrappedChronoDateTime;
-};
-
-export type GetBalancesResponse = {
-    balances: WrappedJsonValue;
-    wallet_id: string;
-};
-
-export type GetCryptoDepositInformationResponse = {
-    crypto: WrappedJsonValue;
-    wallet_id: string;
-};
-
-export type GetFiatDepositInformationResponse = {
-    currency: string;
-    fiat: WrappedJsonValue;
-    wallet_id: string;
-};
-
-export type GetWalletCustomerKycResponse = {
-    compose_customer_id: string;
-    kyc_flow_link?: string | null;
-    kyc_verified: boolean;
-    wallet_customer_id: string;
 };
 
 /**
@@ -3202,14 +3507,6 @@ export enum HostedOpenBotTarget {
  */
 export type Human = {
     /**
-     * Administrative account roles, separate from the runtime actor's resource groups.
-     */
-    account_groups?: Array<string>;
-    /**
-     * Login account that authenticated this runtime actor. Human-owned API keys have no account session.
-     */
-    account_id?: string | null;
-    /**
      * Email address of the user (if available from token)
      */
     email?: string | null;
@@ -3363,37 +3660,12 @@ export type HydrateConvertedMessagesResponse = {
  * This is the result of authentication and is used throughout the system
  * for authorization decisions.
  */
-export type Identity = (DelegatedIdentity & {
-    type: 'delegated';
-}) | (Agent & {
+export type Identity = (Agent & {
     type: 'agent';
 }) | (Human & {
     type: 'human';
 }) | {
     type: 'unauthenticated';
-};
-
-export type IdentityClaimRequest = {
-    claim: string;
-};
-
-export type IdentityIdentifier = {
-    namespace: string;
-    value: string;
-};
-
-export type IdentityLinkDelivery = {
-    address: string;
-    type: string;
-};
-
-export type IdentityLinkPreview = {
-    account_email?: string | null;
-    application_name: string;
-    display_name?: string | null;
-    expires_at: WrappedChronoDateTime;
-    identity_id: string;
-    org_id: string;
 };
 
 /**
@@ -3406,27 +3678,6 @@ export type IdentityLinkRoute = {
     chat_provider_id: string;
     org_id: string;
     team_id: string;
-};
-
-export type IdentityTeam = {
-    identity_id: string;
-    org_id: string;
-    team_id: string;
-};
-
-/**
- * Runtime membership only; this record never grants a login-account role.
- */
-export type IdentityTeamMembership = {
-    identity_id: string;
-    org_id: string;
-    role: string;
-    team_id: string;
-};
-
-export type IdentityTeamMembershipPaginatedResponse = {
-    items: Array<IdentityTeamMembership>;
-    next_page_token?: string;
 };
 
 /**
@@ -3782,12 +4033,6 @@ export type LinkTeamIdentityRequestInner = {
     user_id: string;
 };
 
-export type LinkedIdentity = {
-    identity_id: string;
-    org_id: string;
-    return_url?: string | null;
-};
-
 export type ListApiKeysResponse = {
     items: Array<HashedApiKey>;
     next_page_token?: string | null;
@@ -3850,88 +4095,6 @@ export type LoginProviderResolution = {
     org_id: string;
     provider_id: string;
     type: 'custom_oidc';
-};
-
-export type MakeMppPaymentRequest = {
-    body?: unknown;
-    headers?: {
-        [key: string]: string;
-    };
-    max_amount?: string | null;
-    max_amount_atomic?: string | null;
-    method?: string | null;
-    payment?: null | DirectTokenPayment;
-    preferred_assets?: Array<string>;
-    /**
-     * Payment-channel contract addresses the caller explicitly permits.
-     * Stateful methods that sign a server-selected channel, such as the
-     * Stellar `channel` intent, require this pin on their first use. A
-     * validated `session_snapshot` pins subsequent requests.
-     */
-    preferred_channels?: Array<string>;
-    preferred_networks?: Array<string>;
-    preferred_recipients?: Array<string>;
-    /**
-     * Session lifecycle action (`open`, `voucher`, `commit`, `topUp`, or
-     * `close`). Omit to open when no snapshot is supplied and voucher
-     * otherwise.
-     */
-    session_action?: string | null;
-    /**
-     * Incremental session amount in atomic units. Required for voucher and
-     * commit actions unless the challenge pins an increment.
-     */
-    session_amount_atomic?: string | null;
-    /**
-     * Delivery identifier required by a metered `commit` action.
-     */
-    session_delivery_id?: string | null;
-    session_snapshot?: null | PaymentSessionSnapshot;
-    /**
-     * Preferred method-specific settlement mode. Methods that negotiate
-     * client versus server broadcast currently accept `push` or `pull`.
-     */
-    settlement_mode?: string | null;
-    /**
-     * Payment transport. Defaults to `http`; use `mcp` for MCP's nested
-     * payment metadata or `jsonrpc` for the generic root `_meta` binding.
-     * Tempo session challenges also support `sse` and `websocket` (`ws`) for
-     * metered streaming with in-band voucher and receipt handling.
-     */
-    transport?: string | null;
-    url: string;
-    wallet_id: string;
-};
-
-export type MakeX402PaymentRequest = {
-    body?: unknown;
-    headers?: {
-        [key: string]: string;
-    };
-    max_amount?: string | null;
-    max_amount_atomic?: string | null;
-    method?: string | null;
-    payment?: null | DirectTokenPayment;
-    preferred_assets?: Array<string>;
-    preferred_networks?: Array<string>;
-    preferred_recipients?: Array<string>;
-    /**
-     * Stateful scheme action (`open`, `voucher`, or `refund`). Omit to open
-     * when no snapshot is supplied and voucher otherwise.
-     */
-    session_action?: string | null;
-    /**
-     * Incremental amount for voucher/close actions, in atomic units.
-     */
-    session_amount_atomic?: string | null;
-    session_snapshot?: null | PaymentSessionSnapshot;
-    /**
-     * Payment transport. Defaults to `http`; use `mcp` when `body` is the
-     * JSON-RPC MCP tool-call request that should be retried with x402 metadata.
-     */
-    transport?: string | null;
-    url: string;
-    wallet_id: string;
 };
 
 export type ManagedSkillSelection = {
@@ -4484,17 +4647,6 @@ export type MoveWikiPageBody = {
     path: string;
 };
 
-export type OnboardOrganizationRequest = {
-    name: string;
-    team_name: string;
-};
-
-export type OnboardOrganizationResponse = {
-    identity_id: string;
-    org_id: string;
-    team_id: string;
-};
-
 /**
  * A page type bundled by an ontology template.
  */
@@ -4586,25 +4738,6 @@ export enum OrgOidcProviderStatus {
     DISABLED = 'disabled'
 }
 
-export type OrgProxyToken = {
-    allowed_return_urls: Array<string>;
-    capabilities: Array<string>;
-    created_at: WrappedChronoDateTime;
-    created_by_account_id: string;
-    expires_at?: null | WrappedChronoDateTime;
-    id: string;
-    last_used_at?: null | WrappedChronoDateTime;
-    name: string;
-    org_id: string;
-    revoked_at?: null | WrappedChronoDateTime;
-    token_prefix: string;
-};
-
-export type OrgProxyTokenPaginatedResponse = {
-    items: Array<OrgProxyToken>;
-    next_page_token?: string;
-};
-
 export type Organization = {
     /**
      * Browser app origin (for example `https://heyash.ai/app`) that owns links Tilde generates
@@ -4633,10 +4766,6 @@ export type OrganizationAiCreditContext = {
 };
 
 export type OrganizationMemberWithUser = {
-    /**
-     * Enabled Tilde login account linked to this runtime identity, when present.
-     */
-    account_id?: string | null;
     membership: UserOrganization;
     user: User;
 };
@@ -4683,72 +4812,6 @@ export enum PartState {
     STREAMING = 'streaming',
     DONE = 'done'
 }
-
-export enum PayOnboardingStep {
-    ENTER_DETAILS = 'enter_details',
-    COMPLETE_KYC = 'complete_kyc',
-    READY = 'ready'
-}
-
-export type PayPaymentRequest = {
-    body?: unknown;
-    headers?: {
-        [key: string]: string;
-    };
-    max_amount?: string | null;
-    max_amount_atomic?: string | null;
-    method?: string | null;
-    payment?: null | DirectTokenPayment;
-    preferred_assets?: Array<string>;
-    preferred_channels?: Array<string>;
-    preferred_networks?: Array<string>;
-    preferred_recipients?: Array<string>;
-    session_action?: string | null;
-    session_amount_atomic?: string | null;
-    session_delivery_id?: string | null;
-    session_snapshot?: null | PaymentSessionSnapshot;
-    settlement_mode?: string | null;
-    transport?: string | null;
-    url: string;
-    wallet_id: string;
-};
-
-export type PayWalletSummaryError = {
-    field: string;
-    message: string;
-};
-
-export type PayWalletSummaryResponse = {
-    balances?: null | GetBalancesResponse;
-    crypto_deposit?: null | GetCryptoDepositInformationResponse;
-    fiat_deposit?: null | GetFiatDepositInformationResponse;
-    summary_errors?: Array<PayWalletSummaryError>;
-    wallet?: null | Wallet;
-};
-
-export type PaymentResponse = {
-    protocol: string;
-    response: WrappedJsonValue;
-    wallet_id: string;
-};
-
-/**
- * Opaque-enough client state needed to safely resume a stateful payment
- * scheme after a process restart. Every field is authenticated again against
- * the next server challenge before it is used.
- */
-export type PaymentSessionSnapshot = {
-    authorized_signer: string;
-    channel_id: string;
-    cumulative_amount: string;
-    deposit_amount: string;
-    expires_at: number;
-    metadata?: unknown;
-    method: string;
-    network: string;
-    nonce: number;
-    protocol: string;
-};
 
 export type PersonalMcpServerInstanceSerialized = {
     agent_id?: string | null;
@@ -5190,30 +5253,6 @@ export type ProvisionAgentRequest = {
     skill_registry?: null | SkillRegistrySpec;
 };
 
-export type ProvisionIdentityTeamRequest = {
-    name: string;
-};
-
-export type ProvisionPayBrowserResponse = {
-    browser_definition_id: string;
-    enabled_tool_ids: Array<string>;
-};
-
-export type ProvisionTildePayRequest = {
-    account_type?: string | null;
-    name?: string | null;
-    owner_id?: string | null;
-};
-
-export type ProvisionTildePayResponse = {
-    browser?: null | ProvisionPayBrowserResponse;
-    customer?: null | WalletCustomer;
-    kyc?: null | GetWalletCustomerKycResponse;
-    mcp?: null | SetupPayMcpResponse;
-    next_step: PayOnboardingStep;
-    wallet?: null | Wallet;
-};
-
 /**
  * App credentials and metadata created by a provider provisioner.
  */
@@ -5449,13 +5488,6 @@ export type RefreshTokenRequest = {
     refresh_token?: string | null;
 };
 
-export type RefreshWalletTransactionHistoryResponse = {
-    inserted_or_updated: number;
-    linked_transactions: number;
-    scanned_chains: Array<string>;
-    wallet_id: string;
-};
-
 export type RegisterAgentTool = {
     display_name: string;
     identity_snapshot?: null | WrappedJsonValue;
@@ -5634,10 +5666,6 @@ export type RemoveSessionUserMemberResponse = {
  */
 export type RenameChatKitWorkspaceThreadRequestInner = {
     title: string;
-};
-
-export type RenameProxyTokenRequest = {
-    name: string;
 };
 
 export type ReorderChatKitAgentTurnQueueItemRequestInner = {
@@ -5908,6 +5936,10 @@ export type RetainMemoryBody = {
     document: MemoryDocument;
 };
 
+export type RetryConnectionWork = {
+    work_id: string;
+};
+
 export type RetryMemorySourceBody = {
     source_id: string;
     source_kind: MemorySourceKind;
@@ -6076,25 +6108,11 @@ export type RuntimeConfig = {
     debug_auth_profiles_enabled: boolean;
     org_context_in_header: boolean;
     posthog_api_host: string;
-    posthog_product: string;
+    posthog_product: BillingProductId;
     posthog_project_id: string;
     posthog_project_key: string;
     sentry_dsn: string;
     sentry_react_dsn?: string | null;
-};
-
-export type RuntimeIdentity = {
-    disabled: boolean;
-    display_name?: string | null;
-    id: string;
-    identifiers: Array<IdentityIdentifier>;
-    kind: UserType;
-    org_id: string;
-};
-
-export type RuntimeIdentityPaginatedResponse = {
-    items: Array<RuntimeIdentity>;
-    next_page_token?: string;
 };
 
 export type SelectDebugAuthProfileRequest = {
@@ -6242,10 +6260,12 @@ export type SendSessionMessageBody = SendSessionMessageInput & {
  * Model-visible parameters for the session-bound communication tool.
  */
 export type SendSessionMessageInput = {
+    attachment_ids?: Array<WrappedUuidV4>;
     bcc?: Array<string> | null;
     cc?: Array<string> | null;
     content: string;
     html?: string | null;
+    provider_options?: null | WrappedJsonValue;
     reply_all?: boolean | null;
     subject?: string | null;
     to?: Array<string> | null;
@@ -6364,13 +6384,6 @@ export type SetOpenBotAvatarRequest = {
  */
 export type SetResourceAccessModeRequest = {
     mode: ResourceAccessMode;
-};
-
-export type SetupPayMcpResponse = {
-    enabled_tool_ids: Array<string>;
-    mcp_path: string;
-    mcp_server_id: string;
-    tool_group_instance_id: string;
 };
 
 export type SignalAction = {
@@ -7563,12 +7576,6 @@ export type UpdateHttpVercelAiSdkAgentRequestInner = {
     timeout_ms?: number | null;
 };
 
-export type UpdateIdentityRequest = {
-    disabled?: boolean | null;
-    display_name?: string | null;
-    identifiers?: Array<IdentityIdentifier>;
-};
-
 export type UpdateManagedUserCredentialBody = {
     /**
      * Allow Browser form filling to enumerate this credential.
@@ -8039,133 +8046,6 @@ export enum VerifiedIdentityLinkSource {
     ADMIN = 'admin'
 }
 
-export type WaitForPayBalanceRequest = {
-    asset: string;
-    minimum_amount: number;
-    poll_interval_secs?: number | null;
-    timeout_secs?: number | null;
-    wallet_id: string;
-};
-
-export type WaitUntilBalanceRequest = {
-    asset: string;
-    minimum_amount: number;
-    poll_interval_secs?: number;
-    timeout_secs?: number;
-    wallet_id: string;
-};
-
-export type WaitUntilBalanceResponse = {
-    observed_amount: number;
-    satisfied: boolean;
-    wallet_id: string;
-};
-
-export type Wallet = {
-    cached_compose_balances?: null | WrappedJsonValue;
-    compose_customer_id: string;
-    compose_deposit_chain: string;
-    compose_deposit_currency: string;
-    compose_deposit_wallet_id?: string | null;
-    created_at: WrappedChronoDateTime;
-    id: string;
-    last_compose_sync_at?: null | WrappedChronoDateTime;
-    name: string;
-    org_id: string;
-    owner_id?: string | null;
-    privy_evm_address: string;
-    privy_wallet_id: string;
-    status: string;
-    team_id: string;
-    updated_at: WrappedChronoDateTime;
-    wallet_customer_id: string;
-};
-
-export type WalletCustomer = {
-    account_type: string;
-    compose_customer_id: string;
-    compose_customer_payload: WrappedJsonValue;
-    compose_kyc_payload?: null | WrappedJsonValue;
-    created_at: WrappedChronoDateTime;
-    id: string;
-    kyc_flow_link?: string | null;
-    kyc_verified: boolean;
-    name: string;
-    org_id: string;
-    owner_id?: string | null;
-    team_id: string;
-    updated_at: WrappedChronoDateTime;
-};
-
-export type WalletCustomerPaginatedResponse = {
-    items: Array<WalletCustomer>;
-    next_page_token?: string;
-};
-
-export type WalletMerchant = {
-    created_at: WrappedChronoDateTime;
-    favicon_url?: string | null;
-    icon_fetched_at?: null | WrappedChronoDateTime;
-    icon_media_type?: string | null;
-    icon_sha256?: string | null;
-    id: string;
-    merchant_url: string;
-    name?: string | null;
-    org_id: string;
-    origin: string;
-    raw_metadata: WrappedJsonValue;
-    team_id: string;
-    updated_at: WrappedChronoDateTime;
-};
-
-export type WalletPaginatedResponse = {
-    items: Array<Wallet>;
-    next_page_token?: string;
-};
-
-export type WalletTransactionHistoryItem = {
-    amount?: string | null;
-    amount_decimals?: number | null;
-    amount_raw?: string | null;
-    asset?: string | null;
-    chain?: string | null;
-    counterparty_address?: string | null;
-    created_at: WrappedChronoDateTime;
-    direction: string;
-    id: string;
-    item_type: string;
-    merchant?: null | WalletMerchant;
-    merchant_id?: string | null;
-    occurred_at: WrappedChronoDateTime;
-    org_id: string;
-    raw_payload: WrappedJsonValue;
-    scanned_at?: null | WrappedChronoDateTime;
-    status: string;
-    team_id: string;
-    updated_at: WrappedChronoDateTime;
-    wallet_id: string;
-};
-
-export type WalletTransactionHistoryItemPaginatedResponse = {
-    items: Array<WalletTransactionHistoryItem>;
-    next_page_token?: string;
-};
-
-export type WalletVirtualAccount = {
-    cached_compose_deposit_info?: null | WrappedJsonValue;
-    compose_customer_id: string;
-    compose_virtual_account_id: string;
-    created_at: WrappedChronoDateTime;
-    currency: string;
-    id: string;
-    org_id: string;
-    status?: string | null;
-    team_id: string;
-    updated_at: WrappedChronoDateTime;
-    wallet_customer_id: string;
-    wallet_id: string;
-};
-
 /**
  * Safe public metadata for a webhook signing key. Secret material is omitted.
  */
@@ -8481,49 +8361,6 @@ export type ChatkitCompleteSlackProviderProvisionedSetupResponses = {
 
 export type ChatkitCompleteSlackProviderProvisionedSetupResponse = ChatkitCompleteSlackProviderProvisionedSetupResponses[keyof ChatkitCompleteSlackProviderProvisionedSetupResponses];
 
-export type BillingEnrollAccountData = {
-    body?: never;
-    path: {
-        account_id: string;
-    };
-    query?: never;
-    url: '/api/v1/billing/accounts/{account_id}/enroll';
-};
-
-export type BillingEnrollAccountErrors = {
-    402: Error;
-    403: Error;
-};
-
-export type BillingEnrollAccountError = BillingEnrollAccountErrors[keyof BillingEnrollAccountErrors];
-
-export type BillingEnrollAccountResponses = {
-    200: BillingContext;
-};
-
-export type BillingEnrollAccountResponse = BillingEnrollAccountResponses[keyof BillingEnrollAccountResponses];
-
-export type BillingRemoveAccountSeatData = {
-    body?: never;
-    path: {
-        account_id: string;
-    };
-    query?: never;
-    url: '/api/v1/billing/accounts/{account_id}/seat';
-};
-
-export type BillingRemoveAccountSeatErrors = {
-    403: Error;
-};
-
-export type BillingRemoveAccountSeatError = BillingRemoveAccountSeatErrors[keyof BillingRemoveAccountSeatErrors];
-
-export type BillingRemoveAccountSeatResponses = {
-    204: void;
-};
-
-export type BillingRemoveAccountSeatResponse = BillingRemoveAccountSeatResponses[keyof BillingRemoveAccountSeatResponses];
-
 export type BillingAiGatewayEnsureData = {
     body?: never;
     path?: never;
@@ -8714,7 +8551,7 @@ export type BillingProductEnrollCurrentHumanData = {
     body?: never;
     path: {
         /**
-         * tilde_core
+         * tilde_core or tilde_pay
          */
         product_id: string;
     };
@@ -9320,321 +9157,6 @@ export type WhoamiResponses = {
 
 export type WhoamiResponse = WhoamiResponses[keyof WhoamiResponses];
 
-export type ListIdentitiesData = {
-    body?: never;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path?: never;
-    query?: {
-        /**
-         * Page size; defaults to 50 and is clamped to 1..100
-         */
-        page_size?: number;
-        /**
-         * Opaque cursor returned by the previous page
-         */
-        next_page_token?: string;
-    };
-    url: '/api/v1/identity/identities';
-};
-
-export type ListIdentitiesErrors = {
-    401: Error;
-    403: Error;
-};
-
-export type ListIdentitiesError = ListIdentitiesErrors[keyof ListIdentitiesErrors];
-
-export type ListIdentitiesResponses = {
-    200: RuntimeIdentityPaginatedResponse;
-};
-
-export type ListIdentitiesResponse = ListIdentitiesResponses[keyof ListIdentitiesResponses];
-
-export type CreateIdentityData = {
-    body: CreateIdentityRequest;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/v1/identity/identities';
-};
-
-export type CreateIdentityErrors = {
-    401: Error;
-    403: Error;
-};
-
-export type CreateIdentityError = CreateIdentityErrors[keyof CreateIdentityErrors];
-
-export type CreateIdentityResponses = {
-    200: RuntimeIdentity;
-};
-
-export type CreateIdentityResponse = CreateIdentityResponses[keyof CreateIdentityResponses];
-
-export type ResolveIdentityData = {
-    body: IdentityIdentifier;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/v1/identity/identities/resolve';
-};
-
-export type ResolveIdentityErrors = {
-    401: Error;
-    403: Error;
-};
-
-export type ResolveIdentityError = ResolveIdentityErrors[keyof ResolveIdentityErrors];
-
-export type ResolveIdentityResponses = {
-    200: RuntimeIdentity;
-};
-
-export type ResolveIdentityResponse = ResolveIdentityResponses[keyof ResolveIdentityResponses];
-
-export type GetIdentityData = {
-    body?: never;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path: {
-        /**
-         * Identity id
-         */
-        identity_id: string;
-    };
-    query?: never;
-    url: '/api/v1/identity/identities/{identity_id}';
-};
-
-export type GetIdentityErrors = {
-    401: Error;
-    403: Error;
-};
-
-export type GetIdentityError = GetIdentityErrors[keyof GetIdentityErrors];
-
-export type GetIdentityResponses = {
-    200: RuntimeIdentity;
-};
-
-export type GetIdentityResponse = GetIdentityResponses[keyof GetIdentityResponses];
-
-export type UpdateIdentityData = {
-    body: UpdateIdentityRequest;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path: {
-        /**
-         * Identity id
-         */
-        identity_id: string;
-    };
-    query?: never;
-    url: '/api/v1/identity/identities/{identity_id}';
-};
-
-export type UpdateIdentityErrors = {
-    401: Error;
-    403: Error;
-};
-
-export type UpdateIdentityError = UpdateIdentityErrors[keyof UpdateIdentityErrors];
-
-export type UpdateIdentityResponses = {
-    200: RuntimeIdentity;
-};
-
-export type UpdateIdentityResponse = UpdateIdentityResponses[keyof UpdateIdentityResponses];
-
-export type RemoveIdentityIdentifierData = {
-    body: IdentityIdentifier;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path: {
-        /**
-         * Identity id
-         */
-        identity_id: string;
-    };
-    query?: never;
-    url: '/api/v1/identity/identities/{identity_id}/identifiers';
-};
-
-export type RemoveIdentityIdentifierResponses = {
-    200: RuntimeIdentity;
-};
-
-export type RemoveIdentityIdentifierResponse = RemoveIdentityIdentifierResponses[keyof RemoveIdentityIdentifierResponses];
-
-export type CreateIdentityLinkData = {
-    body: CreateIdentityLinkRequest;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path: {
-        /**
-         * Identity id
-         */
-        identity_id: string;
-    };
-    query?: never;
-    url: '/api/v1/identity/identities/{identity_id}/link-requests';
-};
-
-export type CreateIdentityLinkErrors = {
-    401: Error;
-    403: Error;
-};
-
-export type CreateIdentityLinkError = CreateIdentityLinkErrors[keyof CreateIdentityLinkErrors];
-
-export type CreateIdentityLinkResponses = {
-    200: CreatedIdentityLink;
-};
-
-export type CreateIdentityLinkResponse = CreateIdentityLinkResponses[keyof CreateIdentityLinkResponses];
-
-export type ProvisionIdentityTeamData = {
-    body: ProvisionIdentityTeamRequest;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path: {
-        /**
-         * Identity id
-         */
-        identity_id: string;
-    };
-    query?: never;
-    url: '/api/v1/identity/identities/{identity_id}/team';
-};
-
-export type ProvisionIdentityTeamResponses = {
-    200: IdentityTeam;
-};
-
-export type ProvisionIdentityTeamResponse = ProvisionIdentityTeamResponses[keyof ProvisionIdentityTeamResponses];
-
-export type ListIdentityTeamsData = {
-    body?: never;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path: {
-        /**
-         * Identity id
-         */
-        identity_id: string;
-    };
-    query?: {
-        /**
-         * Page size; defaults to 50 and is clamped to 1..100
-         */
-        page_size?: number;
-        /**
-         * Opaque cursor returned by the previous page
-         */
-        next_page_token?: string;
-    };
-    url: '/api/v1/identity/identities/{identity_id}/teams';
-};
-
-export type ListIdentityTeamsResponses = {
-    200: IdentityTeamMembershipPaginatedResponse;
-};
-
-export type ListIdentityTeamsResponse = ListIdentityTeamsResponses[keyof ListIdentityTeamsResponses];
-
-export type RemoveIdentityTeamData = {
-    body?: never;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path: {
-        /**
-         * Identity id
-         */
-        identity_id: string;
-        /**
-         * Team id
-         */
-        team_id: string;
-    };
-    query?: never;
-    url: '/api/v1/identity/identities/{identity_id}/teams/{team_id}';
-};
-
-export type RemoveIdentityTeamResponses = {
-    200: unknown;
-};
-
-export type AddIdentityTeamData = {
-    body?: never;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path: {
-        /**
-         * Identity id
-         */
-        identity_id: string;
-        /**
-         * Team id
-         */
-        team_id: string;
-    };
-    query?: never;
-    url: '/api/v1/identity/identities/{identity_id}/teams/{team_id}';
-};
-
-export type AddIdentityTeamResponses = {
-    200: IdentityTeamMembership;
-};
-
-export type AddIdentityTeamResponse = AddIdentityTeamResponses[keyof AddIdentityTeamResponses];
-
 export type AcceptInvitationData = {
     body: AcceptInvitationRequest;
     path?: never;
@@ -9649,42 +9171,10 @@ export type AcceptInvitationErrors = {
 export type AcceptInvitationError = AcceptInvitationErrors[keyof AcceptInvitationErrors];
 
 export type AcceptInvitationResponses = {
-    200: AcceptInvitationResponse;
+    200: UserInvitation;
 };
 
-export type AcceptInvitationResponse2 = AcceptInvitationResponses[keyof AcceptInvitationResponses];
-
-export type CompleteIdentityLinkData = {
-    body: IdentityClaimRequest;
-    headers: {
-        /**
-         * Hosted Tilde confirmation origin
-         */
-        Origin: string;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/v1/identity/link-requests/complete';
-};
-
-export type CompleteIdentityLinkResponses = {
-    200: LinkedIdentity;
-};
-
-export type CompleteIdentityLinkResponse = CompleteIdentityLinkResponses[keyof CompleteIdentityLinkResponses];
-
-export type PreviewIdentityLinkData = {
-    body: IdentityClaimRequest;
-    path?: never;
-    query?: never;
-    url: '/api/v1/identity/link-requests/preview';
-};
-
-export type PreviewIdentityLinkResponses = {
-    200: IdentityLinkPreview;
-};
-
-export type PreviewIdentityLinkResponse = PreviewIdentityLinkResponses[keyof PreviewIdentityLinkResponses];
+export type AcceptInvitationResponse = AcceptInvitationResponses[keyof AcceptInvitationResponses];
 
 export type GetLocalRuntimeTunnelConnectorData = {
     body?: never;
@@ -9828,26 +9318,6 @@ export type ExchangeOauthCodeResponses = {
 };
 
 export type ExchangeOauthCodeResponse = ExchangeOauthCodeResponses[keyof ExchangeOauthCodeResponses];
-
-export type OnboardOrganizationData = {
-    body: OnboardOrganizationRequest;
-    path?: never;
-    query?: never;
-    url: '/api/v1/identity/onboarding/organization';
-};
-
-export type OnboardOrganizationErrors = {
-    401: Error;
-    409: Error;
-};
-
-export type OnboardOrganizationError = OnboardOrganizationErrors[keyof OnboardOrganizationErrors];
-
-export type OnboardOrganizationResponses = {
-    200: OnboardOrganizationResponse;
-};
-
-export type OnboardOrganizationResponse2 = OnboardOrganizationResponses[keyof OnboardOrganizationResponses];
 
 export type ListOrganizationsData = {
     body?: never;
@@ -10637,125 +10107,6 @@ export type SetSelfOpenbotAvatarResponses = {
 };
 
 export type SetSelfOpenbotAvatarResponse = SetSelfOpenbotAvatarResponses[keyof SetSelfOpenbotAvatarResponses];
-
-export type ListProxyTokensData = {
-    body?: never;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path?: never;
-    query?: {
-        /**
-         * Page size; defaults to 50 and is clamped to 1..100
-         */
-        page_size?: number;
-        /**
-         * Opaque cursor returned by the previous page
-         */
-        next_page_token?: string;
-    };
-    url: '/api/v1/identity/proxy-tokens';
-};
-
-export type ListProxyTokensErrors = {
-    401: Error;
-    403: Error;
-};
-
-export type ListProxyTokensError = ListProxyTokensErrors[keyof ListProxyTokensErrors];
-
-export type ListProxyTokensResponses = {
-    200: OrgProxyTokenPaginatedResponse;
-};
-
-export type ListProxyTokensResponse = ListProxyTokensResponses[keyof ListProxyTokensResponses];
-
-export type CreateProxyTokenData = {
-    body: CreateProxyTokenRequest;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/v1/identity/proxy-tokens';
-};
-
-export type CreateProxyTokenErrors = {
-    401: Error;
-    403: Error;
-};
-
-export type CreateProxyTokenError = CreateProxyTokenErrors[keyof CreateProxyTokenErrors];
-
-export type CreateProxyTokenResponses = {
-    200: CreatedProxyToken;
-};
-
-export type CreateProxyTokenResponse = CreateProxyTokenResponses[keyof CreateProxyTokenResponses];
-
-export type RevokeProxyTokenData = {
-    body?: never;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path: {
-        /**
-         * Token id
-         */
-        token_id: string;
-    };
-    query?: never;
-    url: '/api/v1/identity/proxy-tokens/{token_id}';
-};
-
-export type RevokeProxyTokenErrors = {
-    401: Error;
-    403: Error;
-};
-
-export type RevokeProxyTokenError = RevokeProxyTokenErrors[keyof RevokeProxyTokenErrors];
-
-export type RevokeProxyTokenResponses = {
-    200: unknown;
-};
-
-export type RenameProxyTokenData = {
-    body: RenameProxyTokenRequest;
-    headers?: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-    };
-    path: {
-        /**
-         * Token id
-         */
-        token_id: string;
-    };
-    query?: never;
-    url: '/api/v1/identity/proxy-tokens/{token_id}';
-};
-
-export type RenameProxyTokenErrors = {
-    401: Error;
-    403: Error;
-};
-
-export type RenameProxyTokenError = RenameProxyTokenErrors[keyof RenameProxyTokenErrors];
-
-export type RenameProxyTokenResponses = {
-    200: unknown;
-};
 
 export type ListOrganizationTeamGroupsData = {
     body?: never;
@@ -11829,6 +11180,9 @@ export type GetHostedOpenbotBootstrapBundleResponse = GetHostedOpenbotBootstrapB
 export type AutomationsListData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -11848,6 +11202,9 @@ export type AutomationsListResponse = AutomationsListResponses[keyof Automations
 export type AutomationsDeleteData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         routine_id: WrappedUuidV4;
     };
@@ -11864,6 +11221,9 @@ export type AutomationsDeleteResponse = AutomationsDeleteResponses[keyof Automat
 export type AutomationsGetData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         routine_id: WrappedUuidV4;
     };
@@ -11886,6 +11246,9 @@ export type AutomationsGetResponse = AutomationsGetResponses[keyof AutomationsGe
 export type AutomationsPutData = {
     body: PutRoutineBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         routine_id: WrappedUuidV4;
     };
@@ -11908,6 +11271,9 @@ export type AutomationsPutResponse = AutomationsPutResponses[keyof AutomationsPu
 export type AutomationsListExecutionsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         routine_id: WrappedUuidV4;
     };
@@ -11928,6 +11294,9 @@ export type AutomationsListExecutionsResponse = AutomationsListExecutionsRespons
 export type AutomationsSetOwnershipData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         routine_id: WrappedUuidV4;
     };
@@ -11944,6 +11313,9 @@ export type AutomationsSetOwnershipResponse = AutomationsSetOwnershipResponses[k
 export type AutomationsRunData = {
     body: RunRoutineBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         routine_id: WrappedUuidV4;
     };
@@ -11960,6 +11332,9 @@ export type AutomationsRunResponse = AutomationsRunResponses[keyof AutomationsRu
 export type AutomationsSetVisibilityData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         routine_id: WrappedUuidV4;
     };
@@ -11976,6 +11351,9 @@ export type AutomationsSetVisibilityResponse = AutomationsSetVisibilityResponses
 export type AutomationsListGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         routine_id: WrappedUuidV4;
         plane: ResourceGrantPlane;
@@ -11993,6 +11371,9 @@ export type AutomationsListGrantsResponse = AutomationsListGrantsResponses[keyof
 export type AutomationsAddGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         routine_id: WrappedUuidV4;
         plane: ResourceGrantPlane;
@@ -12010,6 +11391,9 @@ export type AutomationsAddGrantResponse = AutomationsAddGrantResponses[keyof Aut
 export type AutomationsRemoveGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         routine_id: WrappedUuidV4;
         plane: ResourceGrantPlane;
@@ -12376,6 +11760,9 @@ export type ChatkitUpdateAgentResponse = ChatkitUpdateAgentResponses[keyof Chatk
 export type ChatkitGetAgentAvatarData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
     };
@@ -12398,6 +11785,9 @@ export type ChatkitGetAgentAvatarResponse = ChatkitGetAgentAvatarResponses[keyof
 export type ChatkitUpdateAgentAvatarData = {
     body: Array<number>;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
     };
@@ -12421,6 +11811,9 @@ export type ChatkitUpdateAgentAvatarResponse = ChatkitUpdateAgentAvatarResponses
 export type ChatkitGetAgentObservabilityData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
     };
@@ -12443,6 +11836,9 @@ export type ChatkitGetAgentObservabilityResponse = ChatkitGetAgentObservabilityR
 export type ChatkitUpdateAgentObservabilityData = {
     body: UpdateAgentObservabilityPolicyRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
     };
@@ -12466,6 +11862,9 @@ export type ChatkitUpdateAgentObservabilityResponse = ChatkitUpdateAgentObservab
 export type ChatkitUpdateAgentOwnershipData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
     };
@@ -12523,6 +11922,9 @@ export type ChatkitSetAgentPermissionsResponse = ChatkitSetAgentPermissionsRespo
 export type ChatkitGetAgentResourceBundleProvisioningData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
     };
@@ -12539,6 +11941,9 @@ export type ChatkitGetAgentResourceBundleProvisioningResponse = ChatkitGetAgentR
 export type ChatkitProvisionAgentResourceBundleData = {
     body: ProvisionAgentRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
     };
@@ -12555,6 +11960,9 @@ export type ChatkitProvisionAgentResourceBundleResponse = ChatkitProvisionAgentR
 export type ChatkitClaimAgentResourceBundleOutputsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
     };
@@ -12608,6 +12016,9 @@ export type ChatkitRecallAutomaticMemoryResponse = ChatkitRecallAutomaticMemoryR
 export type ChatkitListGoalsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12629,6 +12040,9 @@ export type ChatkitListGoalsResponse = ChatkitListGoalsResponses[keyof ChatkitLi
 export type ChatkitCreateGoalData = {
     body: CreateGoalRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12646,6 +12060,9 @@ export type ChatkitCreateGoalResponse = ChatkitCreateGoalResponses[keyof Chatkit
 export type ChatkitGetGoalData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12664,6 +12081,9 @@ export type ChatkitGetGoalResponse = ChatkitGetGoalResponses[keyof ChatkitGetGoa
 export type ChatkitUpdateGoalData = {
     body: UpdateGoalRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12682,6 +12102,9 @@ export type ChatkitUpdateGoalResponse = ChatkitUpdateGoalResponses[keyof Chatkit
 export type ChatkitListAgentJobsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12703,6 +12126,9 @@ export type ChatkitListAgentJobsResponse = ChatkitListAgentJobsResponses[keyof C
 export type ChatkitDelegateAgentJobData = {
     body: DelegateAgentJobRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12720,6 +12146,9 @@ export type ChatkitDelegateAgentJobResponse = ChatkitDelegateAgentJobResponses[k
 export type ChatkitGetAgentJobData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12738,6 +12167,9 @@ export type ChatkitGetAgentJobResponse = ChatkitGetAgentJobResponses[keyof Chatk
 export type ChatkitCollectAgentJobResultData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12756,6 +12188,9 @@ export type ChatkitCollectAgentJobResultResponse = ChatkitCollectAgentJobResultR
 export type ChatkitResumeAgentJobData = {
     body: ResumeAgentJobRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12774,6 +12209,9 @@ export type ChatkitResumeAgentJobResponse = ChatkitResumeAgentJobResponses[keyof
 export type ChatkitSteerAgentJobData = {
     body: SteerAgentJobRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12792,6 +12230,9 @@ export type ChatkitSteerAgentJobResponse = ChatkitSteerAgentJobResponses[keyof C
 export type ChatkitStopAgentJobData = {
     body: StopAgentJobRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12810,6 +12251,9 @@ export type ChatkitStopAgentJobResponse = ChatkitStopAgentJobResponses[keyof Cha
 export type ChatkitCreateAgentRunData = {
     body: CreateAgentRunInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12827,6 +12271,9 @@ export type ChatkitCreateAgentRunResponse = ChatkitCreateAgentRunResponses[keyof
 export type ChatkitGetActiveAgentRunData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12844,6 +12291,9 @@ export type ChatkitGetActiveAgentRunResponse = ChatkitGetActiveAgentRunResponses
 export type ChatkitClaimAgentRunsData = {
     body: ClaimAgentRunsInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12861,6 +12311,9 @@ export type ChatkitClaimAgentRunsResponse = ChatkitClaimAgentRunsResponses[keyof
 export type ChatkitGetAgentRunData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12879,6 +12332,9 @@ export type ChatkitGetAgentRunResponse = ChatkitGetAgentRunResponses[keyof Chatk
 export type ChatkitControlAgentRunData = {
     body: ControlAgentRunInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12897,6 +12353,9 @@ export type ChatkitControlAgentRunResponse = ChatkitControlAgentRunResponses[key
 export type ChatkitFinishAgentRunEffectData = {
     body: RecordAgentRunEffectInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12915,6 +12374,9 @@ export type ChatkitFinishAgentRunEffectResponse = ChatkitFinishAgentRunEffectRes
 export type ChatkitGetAgentRunEffectData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12936,6 +12398,9 @@ export type ChatkitGetAgentRunEffectResponse = ChatkitGetAgentRunEffectResponses
 export type ChatkitPrepareAgentRunEffectData = {
     body: RecordAgentRunEffectInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12954,6 +12419,9 @@ export type ChatkitPrepareAgentRunEffectResponse = ChatkitPrepareAgentRunEffectR
 export type ChatkitAppendAgentRunStepData = {
     body: AppendAgentRunStepInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12972,6 +12440,9 @@ export type ChatkitAppendAgentRunStepResponse = ChatkitAppendAgentRunStepRespons
 export type ChatkitTransitionAgentRunData = {
     body: TransitionAgentRunInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -12990,6 +12461,9 @@ export type ChatkitTransitionAgentRunResponse = ChatkitTransitionAgentRunRespons
 export type ChatkitListTasksData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -13012,6 +12486,9 @@ export type ChatkitListTasksResponse = ChatkitListTasksResponses[keyof ChatkitLi
 export type ChatkitCreateTaskData = {
     body: CreateTaskRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -13029,6 +12506,9 @@ export type ChatkitCreateTaskResponse = ChatkitCreateTaskResponses[keyof Chatkit
 export type ChatkitGetTaskData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -13047,6 +12527,9 @@ export type ChatkitGetTaskResponse = ChatkitGetTaskResponses[keyof ChatkitGetTas
 export type ChatkitUpdateTaskData = {
     body: UpdateTaskRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         session_id: WrappedUuidV4;
@@ -13098,6 +12581,9 @@ export type ChatkitSetAgentStatusResponse = ChatkitSetAgentStatusResponses[keyof
 export type ChatkitReportToolExecutionData = {
     body: ReportToolExecutionRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
     };
@@ -13121,6 +12607,9 @@ export type ChatkitReportToolExecutionResponse = ChatkitReportToolExecutionRespo
 export type ChatkitRegisterAgentToolsData = {
     body: RegisterAgentToolsRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
     };
@@ -13144,6 +12633,9 @@ export type ChatkitRegisterAgentToolsResponse = ChatkitRegisterAgentToolsRespons
 export type ChatkitUpdateAgentToolVisibilityData = {
     body: UpdateAgentToolVisibilityRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         tool_id: string;
@@ -13168,6 +12660,9 @@ export type ChatkitUpdateAgentToolVisibilityResponse = ChatkitUpdateAgentToolVis
 export type ChatkitUpdateAgentVisibilityData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
     };
@@ -13191,6 +12686,9 @@ export type ChatkitUpdateAgentVisibilityResponse = ChatkitUpdateAgentVisibilityR
 export type ChatkitListAgentResourceGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         plane: string;
@@ -13214,6 +12712,9 @@ export type ChatkitListAgentResourceGrantsResponse = ChatkitListAgentResourceGra
 export type ChatkitAddAgentResourceGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         plane: string;
@@ -13238,6 +12739,9 @@ export type ChatkitAddAgentResourceGrantResponse = ChatkitAddAgentResourceGrantR
 export type ChatkitRemoveAgentResourceGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
         plane: string;
@@ -13681,9 +13185,410 @@ export type ChatkitListAvailableChatChannelsResponses = {
 
 export type ChatkitListAvailableChatChannelsResponse = ChatkitListAvailableChatChannelsResponses[keyof ChatkitListAvailableChatChannelsResponses];
 
+export type ChatkitGetCustomConnectionData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        connection_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}';
+};
+
+export type ChatkitGetCustomConnectionErrors = {
+    400: Error;
+};
+
+export type ChatkitGetCustomConnectionError = ChatkitGetCustomConnectionErrors[keyof ChatkitGetCustomConnectionErrors];
+
+export type ChatkitGetCustomConnectionResponses = {
+    200: CustomConnectionInfo;
+};
+
+export type ChatkitGetCustomConnectionResponse = ChatkitGetCustomConnectionResponses[keyof ChatkitGetCustomConnectionResponses];
+
+export type ChatkitIngestCustomProviderMessageData = {
+    body: CustomInboundMessage;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        connection_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/messages';
+};
+
+export type ChatkitIngestCustomProviderMessageErrors = {
+    400: Error;
+};
+
+export type ChatkitIngestCustomProviderMessageError = ChatkitIngestCustomProviderMessageErrors[keyof ChatkitIngestCustomProviderMessageErrors];
+
+export type ChatkitIngestCustomProviderMessageResponses = {
+    200: CustomIngressReceipt;
+};
+
+export type ChatkitIngestCustomProviderMessageResponse = ChatkitIngestCustomProviderMessageResponses[keyof ChatkitIngestCustomProviderMessageResponses];
+
+export type ChatkitCustomProviderRuntimeData = {
+    body: CustomRuntimeCommand;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        connection_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/runtime';
+};
+
+export type ChatkitCustomProviderRuntimeErrors = {
+    400: Error;
+};
+
+export type ChatkitCustomProviderRuntimeError = ChatkitCustomProviderRuntimeErrors[keyof ChatkitCustomProviderRuntimeErrors];
+
+export type ChatkitCustomProviderRuntimeResponses = {
+    200: CustomRuntimeResponse;
+};
+
+export type ChatkitCustomProviderRuntimeResponse = ChatkitCustomProviderRuntimeResponses[keyof ChatkitCustomProviderRuntimeResponses];
+
+export type ChatkitRotateCustomConnectionCredentialsData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        connection_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/runtime-token/rotate';
+};
+
+export type ChatkitRotateCustomConnectionCredentialsErrors = {
+    400: Error;
+};
+
+export type ChatkitRotateCustomConnectionCredentialsError = ChatkitRotateCustomConnectionCredentialsErrors[keyof ChatkitRotateCustomConnectionCredentialsErrors];
+
+export type ChatkitRotateCustomConnectionCredentialsResponses = {
+    200: CustomConnectionCredentials;
+};
+
+export type ChatkitRotateCustomConnectionCredentialsResponse = ChatkitRotateCustomConnectionCredentialsResponses[keyof ChatkitRotateCustomConnectionCredentialsResponses];
+
+export type ChatkitListCustomConnectionWorkData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        connection_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/work';
+};
+
+export type ChatkitListCustomConnectionWorkErrors = {
+    400: Error;
+};
+
+export type ChatkitListCustomConnectionWorkError = ChatkitListCustomConnectionWorkErrors[keyof ChatkitListCustomConnectionWorkErrors];
+
+export type ChatkitListCustomConnectionWorkResponses = {
+    200: CustomConnectionWorkPaginatedResponse;
+};
+
+export type ChatkitListCustomConnectionWorkResponse = ChatkitListCustomConnectionWorkResponses[keyof ChatkitListCustomConnectionWorkResponses];
+
+export type ChatkitRetryCustomConnectionWorkData = {
+    body: RetryConnectionWork;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        connection_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/work/retry';
+};
+
+export type ChatkitRetryCustomConnectionWorkErrors = {
+    400: Error;
+};
+
+export type ChatkitRetryCustomConnectionWorkError = ChatkitRetryCustomConnectionWorkErrors[keyof ChatkitRetryCustomConnectionWorkErrors];
+
+export type ChatkitRetryCustomConnectionWorkResponses = {
+    200: DeleteInboxResponse;
+};
+
+export type ChatkitRetryCustomConnectionWorkResponse = ChatkitRetryCustomConnectionWorkResponses[keyof ChatkitRetryCustomConnectionWorkResponses];
+
+export type ChatkitListCustomProviderData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers';
+};
+
+export type ChatkitListCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitListCustomProviderError = ChatkitListCustomProviderErrors[keyof ChatkitListCustomProviderErrors];
+
+export type ChatkitListCustomProviderResponses = {
+    200: CustomProviderList;
+};
+
+export type ChatkitListCustomProviderResponse = ChatkitListCustomProviderResponses[keyof ChatkitListCustomProviderResponses];
+
+export type ChatkitCreateCustomProviderData = {
+    body: CustomProviderRegistrationInput;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers';
+};
+
+export type ChatkitCreateCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitCreateCustomProviderError = ChatkitCreateCustomProviderErrors[keyof ChatkitCreateCustomProviderErrors];
+
+export type ChatkitCreateCustomProviderResponses = {
+    200: CustomProviderRegistration;
+};
+
+export type ChatkitCreateCustomProviderResponse = ChatkitCreateCustomProviderResponses[keyof ChatkitCreateCustomProviderResponses];
+
+export type ChatkitDeleteCustomProviderData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}';
+};
+
+export type ChatkitDeleteCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitDeleteCustomProviderError = ChatkitDeleteCustomProviderErrors[keyof ChatkitDeleteCustomProviderErrors];
+
+export type ChatkitDeleteCustomProviderResponses = {
+    200: DeleteInboxResponse;
+};
+
+export type ChatkitDeleteCustomProviderResponse = ChatkitDeleteCustomProviderResponses[keyof ChatkitDeleteCustomProviderResponses];
+
+export type ChatkitGetCustomProviderData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}';
+};
+
+export type ChatkitGetCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitGetCustomProviderError = ChatkitGetCustomProviderErrors[keyof ChatkitGetCustomProviderErrors];
+
+export type ChatkitGetCustomProviderResponses = {
+    200: CustomChatKitProvider;
+};
+
+export type ChatkitGetCustomProviderResponse = ChatkitGetCustomProviderResponses[keyof ChatkitGetCustomProviderResponses];
+
+export type ChatkitUpdateCustomProviderData = {
+    body: CustomProviderRegistrationInput;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}';
+};
+
+export type ChatkitUpdateCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitUpdateCustomProviderError = ChatkitUpdateCustomProviderErrors[keyof ChatkitUpdateCustomProviderErrors];
+
+export type ChatkitUpdateCustomProviderResponses = {
+    200: CustomChatKitProvider;
+};
+
+export type ChatkitUpdateCustomProviderResponse = ChatkitUpdateCustomProviderResponses[keyof ChatkitUpdateCustomProviderResponses];
+
+export type ChatkitListCustomConnectionsData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/connections';
+};
+
+export type ChatkitListCustomConnectionsErrors = {
+    400: Error;
+};
+
+export type ChatkitListCustomConnectionsError = ChatkitListCustomConnectionsErrors[keyof ChatkitListCustomConnectionsErrors];
+
+export type ChatkitListCustomConnectionsResponses = {
+    200: CustomConnectionInfoPaginatedResponse;
+};
+
+export type ChatkitListCustomConnectionsResponse = ChatkitListCustomConnectionsResponses[keyof ChatkitListCustomConnectionsResponses];
+
+export type ChatkitDisableCustomProviderData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/disable';
+};
+
+export type ChatkitDisableCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitDisableCustomProviderError = ChatkitDisableCustomProviderErrors[keyof ChatkitDisableCustomProviderErrors];
+
+export type ChatkitDisableCustomProviderResponses = {
+    200: CustomChatKitProvider;
+};
+
+export type ChatkitDisableCustomProviderResponse = ChatkitDisableCustomProviderResponses[keyof ChatkitDisableCustomProviderResponses];
+
+export type ChatkitEnableCustomProviderData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/enable';
+};
+
+export type ChatkitEnableCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitEnableCustomProviderError = ChatkitEnableCustomProviderErrors[keyof ChatkitEnableCustomProviderErrors];
+
+export type ChatkitEnableCustomProviderResponses = {
+    200: CustomChatKitProvider;
+};
+
+export type ChatkitEnableCustomProviderResponse = ChatkitEnableCustomProviderResponses[keyof ChatkitEnableCustomProviderResponses];
+
+export type ChatkitRefreshCustomProviderData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/refresh';
+};
+
+export type ChatkitRefreshCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitRefreshCustomProviderError = ChatkitRefreshCustomProviderErrors[keyof ChatkitRefreshCustomProviderErrors];
+
+export type ChatkitRefreshCustomProviderResponses = {
+    200: CustomChatKitProvider;
+};
+
+export type ChatkitRefreshCustomProviderResponse = ChatkitRefreshCustomProviderResponses[keyof ChatkitRefreshCustomProviderResponses];
+
+export type ChatkitRotateCustomProviderData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/signing-key/rotate';
+};
+
+export type ChatkitRotateCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitRotateCustomProviderError = ChatkitRotateCustomProviderErrors[keyof ChatkitRotateCustomProviderErrors];
+
+export type ChatkitRotateCustomProviderResponses = {
+    200: CustomProviderRegistration;
+};
+
+export type ChatkitRotateCustomProviderResponse = ChatkitRotateCustomProviderResponses[keyof ChatkitRotateCustomProviderResponses];
+
 export type LinkTeamIdentityData = {
     body: LinkTeamIdentityRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -13801,6 +13706,9 @@ export type ChatkitHydrateConvertedMessagesResponse = ChatkitHydrateConvertedMes
 export type ChatkitListSelfExtensionProposalsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -13820,6 +13728,9 @@ export type ChatkitListSelfExtensionProposalsResponse = ChatkitListSelfExtension
 export type ChatkitProposeSelfExtensionData = {
     body: CreateSelfExtensionProposalInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -13835,6 +13746,9 @@ export type ChatkitProposeSelfExtensionResponse = ChatkitProposeSelfExtensionRes
 export type ChatkitGetSelfExtensionProposalData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         proposal_id: string;
     };
@@ -13851,6 +13765,9 @@ export type ChatkitGetSelfExtensionProposalResponse = ChatkitGetSelfExtensionPro
 export type ChatkitApproveSelfExtensionProposalData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         proposal_id: string;
     };
@@ -13867,6 +13784,9 @@ export type ChatkitApproveSelfExtensionProposalResponse = ChatkitApproveSelfExte
 export type ChatkitCancelSelfExtensionProposalData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         proposal_id: string;
     };
@@ -13883,6 +13803,9 @@ export type ChatkitCancelSelfExtensionProposalResponse = ChatkitCancelSelfExtens
 export type ChatkitDecideCapabilityChangeData = {
     body: DecideCapabilityChangeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         proposal_id: string;
     };
@@ -13899,6 +13822,9 @@ export type ChatkitDecideCapabilityChangeResponse = ChatkitDecideCapabilityChang
 export type ChatkitClaimSelfExtensionProposalOutputsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         proposal_id: string;
     };
@@ -13915,6 +13841,9 @@ export type ChatkitClaimSelfExtensionProposalOutputsResponse = ChatkitClaimSelfE
 export type ChatkitRejectSelfExtensionProposalData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         proposal_id: string;
     };
@@ -13931,6 +13860,9 @@ export type ChatkitRejectSelfExtensionProposalResponse = ChatkitRejectSelfExtens
 export type ChatkitRollbackSelfExtensionProposalData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         proposal_id: string;
     };
@@ -14713,6 +14645,9 @@ export type GetMessageResponse = GetMessageResponses[keyof GetMessageResponses];
 export type GetMessageDeliveriesData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
         message_id: WrappedUuidV4;
@@ -14788,6 +14723,9 @@ export type ObserveSessionResponses = {
 export type UpdateSessionOwnershipData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: string;
     };
@@ -14811,6 +14749,9 @@ export type UpdateSessionOwnershipResponse = UpdateSessionOwnershipResponses[key
 export type UpdateSessionVisibilityData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: string;
     };
@@ -14834,6 +14775,9 @@ export type UpdateSessionVisibilityResponse = UpdateSessionVisibilityResponses[k
 export type ListSessionResourceGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: string;
         plane: string;
@@ -14857,6 +14801,9 @@ export type ListSessionResourceGrantsResponse = ListSessionResourceGrantsRespons
 export type AddSessionResourceGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: string;
         plane: string;
@@ -14881,6 +14828,9 @@ export type AddSessionResourceGrantResponse = AddSessionResourceGrantResponses[k
 export type RemoveSessionResourceGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: string;
         plane: string;
@@ -14979,6 +14929,9 @@ export type ChatkitCreateSessionResponse = ChatkitCreateSessionResponses[keyof C
 export type ChatkitReportCompactionEventData = {
     body: ReportChatKitCompactionEventInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
     };
@@ -15004,6 +14957,9 @@ export type ChatkitReportCompactionEventResponse = ChatkitReportCompactionEventR
 export type ChatkitGetLatestCompactionData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
     };
@@ -15026,9 +14982,40 @@ export type ChatkitGetLatestCompactionResponses = {
 
 export type ChatkitGetLatestCompactionResponse = ChatkitGetLatestCompactionResponses[keyof ChatkitGetLatestCompactionResponses];
 
+export type ChatkitStreamSessionEventsData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query?: {
+        after_revision?: number | null;
+    };
+    url: '/api/v1/team/{team_id}/chatkit/sessions/{session_id}/events/stream';
+};
+
+export type ChatkitStreamSessionEventsErrors = {
+    400: Error;
+};
+
+export type ChatkitStreamSessionEventsError = ChatkitStreamSessionEventsErrors[keyof ChatkitStreamSessionEventsErrors];
+
+export type ChatkitStreamSessionEventsResponses = {
+    /**
+     * Canonical session event stream
+     */
+    200: unknown;
+};
+
 export type ChatkitListRoomInvitationsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
     };
@@ -15055,6 +15042,9 @@ export type ChatkitListRoomInvitationsResponse = ChatkitListRoomInvitationsRespo
 export type ChatkitCreateRoomInvitationData = {
     body: CreateChatKitRoomInvitationRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
     };
@@ -15078,6 +15068,9 @@ export type ChatkitCreateRoomInvitationResponse = ChatkitCreateRoomInvitationRes
 export type ChatkitRevokeRoomInvitationData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
         invitation_id: WrappedUuidV4;
@@ -15102,6 +15095,9 @@ export type ChatkitRevokeRoomInvitationResponse = ChatkitRevokeRoomInvitationRes
 export type ChatkitDecideRoomInvitationData = {
     body: DecideChatKitRoomInvitationRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
         invitation_id: WrappedUuidV4;
@@ -15209,6 +15205,9 @@ export type ChatkitListMessageHistoryResponse = ChatkitListMessageHistoryRespons
 export type ChatkitGetCompactedHistoryData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
     };
@@ -15363,6 +15362,31 @@ export type ChatkitRemoveSessionParticipantResponses = {
 
 export type ChatkitRemoveSessionParticipantResponse = ChatkitRemoveSessionParticipantResponses[keyof ChatkitRemoveSessionParticipantResponses];
 
+export type ChatkitListSessionProviderToolsData = {
+    body?: never;
+    path: {
+        /**
+         * Team ID
+         */
+        team_id: string;
+        session_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/sessions/{session_id}/provider-tools';
+};
+
+export type ChatkitListSessionProviderToolsErrors = {
+    400: Error;
+};
+
+export type ChatkitListSessionProviderToolsError = ChatkitListSessionProviderToolsErrors[keyof ChatkitListSessionProviderToolsErrors];
+
+export type ChatkitListSessionProviderToolsResponses = {
+    200: CustomSessionToolCatalog;
+};
+
+export type ChatkitListSessionProviderToolsResponse = ChatkitListSessionProviderToolsResponses[keyof ChatkitListSessionProviderToolsResponses];
+
 export type ChatkitSendSessionMessageData = {
     body: SendSessionMessageBody;
     path: {
@@ -15399,6 +15423,9 @@ export type ChatkitSendSessionMessageResponse = ChatkitSendSessionMessageRespons
 export type ChatkitInvokeSessionProviderToolData = {
     body: InvokeSessionProviderToolBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
         tool_name: string;
@@ -15764,6 +15791,9 @@ export type ChatkitWorkspaceSidebarResponse = ChatkitWorkspaceSidebarResponses[k
 export type ResumeUserCredentialBrokeringData = {
     body: ResumeUserCredentialBrokeringParams;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         broker_state_id: string;
     };
@@ -15783,6 +15813,9 @@ export type ResumeUserCredentialBrokeringResponse = ResumeUserCredentialBrokerin
 export type ListCommonProviderInstallationsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -15801,6 +15834,9 @@ export type ListCommonProviderInstallationsResponse = ListCommonProviderInstalla
 export type GetCommonProviderInstallationData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -15817,6 +15853,9 @@ export type GetCommonProviderInstallationResponse = GetCommonProviderInstallatio
 export type SetCommonProviderInstallationOwnershipData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -15833,6 +15872,9 @@ export type SetCommonProviderInstallationOwnershipResponse = SetCommonProviderIn
 export type ListCommonProviderInstallationOwnershipGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -15849,6 +15891,9 @@ export type ListCommonProviderInstallationOwnershipGrantsResponse = ListCommonPr
 export type AddCommonProviderInstallationOwnershipGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -15865,6 +15910,9 @@ export type AddCommonProviderInstallationOwnershipGrantResponse = AddCommonProvi
 export type RemoveCommonProviderInstallationOwnershipGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
         principal_type: string;
@@ -15881,6 +15929,9 @@ export type RemoveCommonProviderInstallationOwnershipGrantResponses = {
 export type SetCommonProviderInstallationVisibilityData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -15897,6 +15948,9 @@ export type SetCommonProviderInstallationVisibilityResponse = SetCommonProviderI
 export type ListCommonProviderInstallationVisibilityGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -15913,6 +15967,9 @@ export type ListCommonProviderInstallationVisibilityGrantsResponse = ListCommonP
 export type AddCommonProviderInstallationVisibilityGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -15929,6 +15986,9 @@ export type AddCommonProviderInstallationVisibilityGrantResponse = AddCommonProv
 export type RemoveCommonProviderInstallationVisibilityGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
         principal_type: string;
@@ -15945,6 +16005,9 @@ export type RemoveCommonProviderInstallationVisibilityGrantResponses = {
 export type ListProviderProvisionerCatalogData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -15963,6 +16026,9 @@ export type ListProviderProvisionerCatalogResponse = ListProviderProvisionerCata
 export type StartProviderAppProvisioningData = {
     body: StartProviderAppProvisioningBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -15981,6 +16047,9 @@ export type StartProviderAppProvisioningResponse = StartProviderAppProvisioningR
 export type GetProviderProvisioningHumanActionData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         state_id: string;
     };
@@ -16000,6 +16069,9 @@ export type GetProviderProvisioningHumanActionResponse = GetProviderProvisioning
 export type ResumeProviderAppProvisioningData = {
     body: ResumeProviderAppProvisioningBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         state_id: string;
     };
@@ -16019,6 +16091,9 @@ export type ResumeProviderAppProvisioningResponse = ResumeProviderAppProvisionin
 export type ListResourceServerCredentialsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -16040,6 +16115,9 @@ export type ListResourceServerCredentialsResponse = ListResourceServerCredential
 export type DeleteResourceServerCredentialData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -16057,6 +16135,9 @@ export type DeleteResourceServerCredentialResponses = {
 export type GetResourceServerCredentialData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -16076,6 +16157,9 @@ export type GetResourceServerCredentialResponse = GetResourceServerCredentialRes
 export type UpdateResourceServerCredentialData = {
     body: UpdateCredentialBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -16095,6 +16179,9 @@ export type UpdateResourceServerCredentialResponse = UpdateResourceServerCredent
 export type SetRscOwnershipData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -16111,6 +16198,9 @@ export type SetRscOwnershipResponse = SetRscOwnershipResponses[keyof SetRscOwner
 export type ListRscOwnershipGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -16127,6 +16217,9 @@ export type ListRscOwnershipGrantsResponse = ListRscOwnershipGrantsResponses[key
 export type AddRscOwnershipGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -16143,6 +16236,9 @@ export type AddRscOwnershipGrantResponse = AddRscOwnershipGrantResponses[keyof A
 export type RemoveRscOwnershipGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
         principal_type: string;
@@ -16159,6 +16255,9 @@ export type RemoveRscOwnershipGrantResponses = {
 export type SetRscVisibilityData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -16175,6 +16274,9 @@ export type SetRscVisibilityResponse = SetRscVisibilityResponses[keyof SetRscVis
 export type ListRscVisibilityGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -16191,6 +16293,9 @@ export type ListRscVisibilityGrantsResponse = ListRscVisibilityGrantsResponses[k
 export type AddRscVisibilityGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -16207,6 +16312,9 @@ export type AddRscVisibilityGrantResponse = AddRscVisibilityGrantResponses[keyof
 export type RemoveRscVisibilityGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
         principal_type: string;
@@ -16223,6 +16331,9 @@ export type RemoveRscVisibilityGrantResponses = {
 export type ListCredentialSetupItemsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -16245,6 +16356,9 @@ export type ListCredentialSetupItemsResponse = ListCredentialSetupItemsResponses
 export type GetCredentialSetupItemData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -16264,6 +16378,9 @@ export type GetCredentialSetupItemResponse = GetCredentialSetupItemResponses[key
 export type CompleteCredentialSetupItemData = {
     body: CompleteCredentialSetupItemBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -16283,6 +16400,9 @@ export type CompleteCredentialSetupItemResponse = CompleteCredentialSetupItemRes
 export type ResumeCredentialSetupItemData = {
     body: ResumeCredentialSetupItemBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -16302,6 +16422,9 @@ export type ResumeCredentialSetupItemResponse = ResumeCredentialSetupItemRespons
 export type StartCredentialSetupItemData = {
     body: StartCredentialSetupItemBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -16321,6 +16444,9 @@ export type StartCredentialSetupItemResponse2 = StartCredentialSetupItemResponse
 export type CreateResourceServerCredentialData = {
     body: CreateResourceServerCredentialParamsInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         credential_source_type_id: string;
     };
@@ -16340,6 +16466,9 @@ export type CreateResourceServerCredentialResponse = CreateResourceServerCredent
 export type EncryptResourceServerConfigurationData = {
     body: EncryptCredentialConfigurationParamsInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         credential_source_type_id: string;
     };
@@ -16357,6 +16486,9 @@ export type EncryptResourceServerConfigurationResponses = {
 export type CreateUserCredentialData = {
     body: CreateUserCredentialParamsInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         credential_source_type_id: string;
     };
@@ -16376,6 +16508,9 @@ export type CreateUserCredentialResponse = CreateUserCredentialResponses[keyof C
 export type StartUserCredentialBrokeringData = {
     body: StartBrokeringBodyExternal;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         credential_source_type_id: string;
     };
@@ -16395,6 +16530,9 @@ export type StartUserCredentialBrokeringResponse = StartUserCredentialBrokeringR
 export type EncryptUserCredentialConfigurationData = {
     body: EncryptCredentialConfigurationParamsInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         credential_source_type_id: string;
     };
@@ -16412,6 +16550,9 @@ export type EncryptUserCredentialConfigurationResponses = {
 export type ListUserCredentialsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -16433,6 +16574,9 @@ export type ListUserCredentialsResponse = ListUserCredentialsResponses[keyof Lis
 export type DeleteUserCredentialData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -16450,6 +16594,9 @@ export type DeleteUserCredentialResponses = {
 export type GetUserCredentialData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -16469,6 +16616,9 @@ export type GetUserCredentialResponse = GetUserCredentialResponses[keyof GetUser
 export type UpdateUserCredentialData = {
     body: UpdateCredentialBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -16488,6 +16638,9 @@ export type UpdateUserCredentialResponse = UpdateUserCredentialResponses[keyof U
 export type SetUcOwnershipData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -16504,6 +16657,9 @@ export type SetUcOwnershipResponse = SetUcOwnershipResponses[keyof SetUcOwnershi
 export type ListUcOwnershipGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -16520,6 +16676,9 @@ export type ListUcOwnershipGrantsResponse = ListUcOwnershipGrantsResponses[keyof
 export type AddUcOwnershipGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -16536,6 +16695,9 @@ export type AddUcOwnershipGrantResponse = AddUcOwnershipGrantResponses[keyof Add
 export type RemoveUcOwnershipGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
         principal_type: string;
@@ -16552,6 +16714,9 @@ export type RemoveUcOwnershipGrantResponses = {
 export type SetUcVisibilityData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -16568,6 +16733,9 @@ export type SetUcVisibilityResponse = SetUcVisibilityResponses[keyof SetUcVisibi
 export type ListUcVisibilityGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -16584,6 +16752,9 @@ export type ListUcVisibilityGrantsResponse = ListUcVisibilityGrantsResponses[key
 export type AddUcVisibilityGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -16600,6 +16771,9 @@ export type AddUcVisibilityGrantResponse = AddUcVisibilityGrantResponses[keyof A
 export type RemoveUcVisibilityGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
         principal_type: string;
@@ -16616,6 +16790,9 @@ export type RemoveUcVisibilityGrantResponses = {
 export type CreateHumanApprovalActionData = {
     body: CreateHumanApprovalActionRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -16643,7 +16820,7 @@ export type RegisterTeamOauthClientData = {
     body: RegisterOAuthClientRequest;
     path: {
         /**
-         * Tilde team ID
+         * Team ID
          */
         team_id: string;
     };
@@ -16677,7 +16854,7 @@ export type IssueOpenbotChatkitRealtimeTicketData = {
     body: IssueChatKitRealtimeSocketTicketRequest;
     path: {
         /**
-         * Tilde team ID
+         * Team ID
          */
         team_id: string;
     };
@@ -16711,7 +16888,7 @@ export type ListOpenbotDeploymentsData = {
     body?: never;
     path: {
         /**
-         * Tilde team ID
+         * Team ID
          */
         team_id: string;
     };
@@ -16745,7 +16922,7 @@ export type RegisterOpenbotDeploymentData = {
     body: RegisterOpenBotDeploymentRequest;
     path: {
         /**
-         * Tilde team ID
+         * Team ID
          */
         team_id: string;
     };
@@ -16778,6 +16955,9 @@ export type RegisterOpenbotDeploymentResponse = RegisterOpenbotDeploymentRespons
 export type GetHostedOpenbotInstanceData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         instance_id: string;
     };
@@ -16800,6 +16980,9 @@ export type GetHostedOpenbotInstanceResponse = GetHostedOpenbotInstanceResponses
 export type UpdateHostedOpenbotComputerImageData = {
     body: UpdateHostedOpenBotComputerImageRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         instance_id: string;
     };
@@ -16822,6 +17005,9 @@ export type UpdateHostedOpenbotComputerImageResponse = UpdateHostedOpenbotComput
 export type ConfigureHostedOpenbotInstanceData = {
     body: ConfigureHostedOpenBotInstanceRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         instance_id: string;
     };
@@ -16844,6 +17030,9 @@ export type ConfigureHostedOpenbotInstanceResponse = ConfigureHostedOpenbotInsta
 export type IssueHostedOpenbotGitTokenData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         instance_id: string;
     };
@@ -16870,6 +17059,9 @@ export type IssueHostedOpenbotGitTokenResponse = IssueHostedOpenbotGitTokenRespo
 export type CreateHostedOpenbotReleaseData = {
     body: CreateHostedOpenBotReleaseRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         instance_id: string;
     };
@@ -16892,6 +17084,9 @@ export type CreateHostedOpenbotReleaseResponse = CreateHostedOpenbotReleaseRespo
 export type GetHostedOpenbotReleaseData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         instance_id: string;
         release_id: string;
@@ -16915,6 +17110,9 @@ export type GetHostedOpenbotReleaseResponse = GetHostedOpenbotReleaseResponses[k
 export type UploadHostedOpenbotReleaseFileData = {
     body: Array<number>;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         instance_id: string;
         release_id: string;
@@ -16939,6 +17137,9 @@ export type UploadHostedOpenbotReleaseFileResponse = UploadHostedOpenbotReleaseF
 export type FinalizeHostedOpenbotReleaseData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         instance_id: string;
         release_id: string;
@@ -16959,37 +17160,12 @@ export type FinalizeHostedOpenbotReleaseResponses = {
 
 export type FinalizeHostedOpenbotReleaseResponse = FinalizeHostedOpenbotReleaseResponses[keyof FinalizeHostedOpenbotReleaseResponses];
 
-export type IssueProxyRealtimeTicketData = {
-    body: IssueChatKitRealtimeSocketTicketRequest;
-    headers: {
-        /**
-         * Organization routing when not selected by host
-         */
-        'X-Tilde-Org-Id'?: string | null;
-        /**
-         * Enabled runtime identity acting in the route team
-         */
-        'X-Tilde-Identity-Id': string;
-    };
-    path: {
-        /**
-         * Team id
-         */
-        team_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/identity/realtime-ticket';
-};
-
-export type IssueProxyRealtimeTicketResponses = {
-    200: ChatKitRealtimeSocketTicket;
-};
-
-export type IssueProxyRealtimeTicketResponse = IssueProxyRealtimeTicketResponses[keyof IssueProxyRealtimeTicketResponses];
-
 export type ListManagedUserCredentialsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -17011,6 +17187,9 @@ export type ListManagedUserCredentialsResponse = ListManagedUserCredentialsRespo
 export type CreateManagedUserCredentialData = {
     body: CreateManagedUserCredentialBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         type_id: string;
     };
@@ -17030,6 +17209,9 @@ export type CreateManagedUserCredentialResponse = CreateManagedUserCredentialRes
 export type GetManagedUserCredentialSecretData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         type_id: string;
         id: WrappedUuidV4;
@@ -17052,6 +17234,9 @@ export type GetManagedUserCredentialSecretResponse = GetManagedUserCredentialSec
 export type UpdateManagedUserCredentialData = {
     body: UpdateManagedUserCredentialBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         type_id: string;
         id: WrappedUuidV4;
@@ -17072,6 +17257,9 @@ export type UpdateManagedUserCredentialResponse = UpdateManagedUserCredentialRes
 export type DeleteManagedUserCredentialData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -19305,6 +19493,9 @@ export type GetToolsOpenapiSpecResponse = GetToolsOpenapiSpecResponses[keyof Get
 export type ListMemoryBanksData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -19323,6 +19514,9 @@ export type ListMemoryBanksResponse = ListMemoryBanksResponses[keyof ListMemoryB
 export type CreateMemoryBankData = {
     body: CreateMemoryBankBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -19338,6 +19532,9 @@ export type CreateMemoryBankResponse = CreateMemoryBankResponses[keyof CreateMem
 export type ListVisibleMemoryBanksData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -19356,6 +19553,9 @@ export type ListVisibleMemoryBanksResponse = ListVisibleMemoryBanksResponses[key
 export type DeleteMemoryBankData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19370,6 +19570,9 @@ export type DeleteMemoryBankResponses = {
 export type GetMemoryBankData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19386,6 +19589,9 @@ export type GetMemoryBankResponse = GetMemoryBankResponses[keyof GetMemoryBankRe
 export type UpdateMemoryBankData = {
     body: UpdateMemoryBankBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19402,6 +19608,9 @@ export type UpdateMemoryBankResponse = UpdateMemoryBankResponses[keyof UpdateMem
 export type ResetMemoryBankConfigData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19418,6 +19627,9 @@ export type ResetMemoryBankConfigResponse = ResetMemoryBankConfigResponses[keyof
 export type GetMemoryBankConfigData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19434,6 +19646,9 @@ export type GetMemoryBankConfigResponse = GetMemoryBankConfigResponses[keyof Get
 export type UpdateMemoryBankConfigData = {
     body: UpdateMemoryBankConfigBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19450,6 +19665,9 @@ export type UpdateMemoryBankConfigResponse = UpdateMemoryBankConfigResponses[key
 export type DeleteMemoryDocumentData = {
     body: DeleteMemoryDocumentBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19464,6 +19682,9 @@ export type DeleteMemoryDocumentResponses = {
 export type ListMemoryBankDocumentsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19484,6 +19705,9 @@ export type ListMemoryBankDocumentsResponse = ListMemoryBankDocumentsResponses[k
 export type GetMemoryBankDocumentData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
         document_id: string;
@@ -19501,6 +19725,9 @@ export type GetMemoryBankDocumentResponse = GetMemoryBankDocumentResponses[keyof
 export type CheckMemoryBankHealthData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19517,6 +19744,9 @@ export type CheckMemoryBankHealthResponse = CheckMemoryBankHealthResponses[keyof
 export type SetMemoryBankOwnershipModeData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19533,6 +19763,9 @@ export type SetMemoryBankOwnershipModeResponse = SetMemoryBankOwnershipModeRespo
 export type ListMemoryBankOwnershipGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19549,6 +19782,9 @@ export type ListMemoryBankOwnershipGrantsResponse = ListMemoryBankOwnershipGrant
 export type AddMemoryBankOwnershipGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19565,6 +19801,9 @@ export type AddMemoryBankOwnershipGrantResponse = AddMemoryBankOwnershipGrantRes
 export type RemoveMemoryBankOwnershipGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
         principal_type: ResourcePrincipalType;
@@ -19581,6 +19820,9 @@ export type RemoveMemoryBankOwnershipGrantResponses = {
 export type RecallMemoryData = {
     body: RecallMemoryBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19597,6 +19839,9 @@ export type RecallMemoryResponse = RecallMemoryResponses[keyof RecallMemoryRespo
 export type ReflectMemoryData = {
     body: ReflectMemoryBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19613,6 +19858,9 @@ export type ReflectMemoryResponse = ReflectMemoryResponses[keyof ReflectMemoryRe
 export type RetainMemoryDocumentData = {
     body: RetainMemoryBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19629,6 +19877,9 @@ export type RetainMemoryDocumentResponse = RetainMemoryDocumentResponses[keyof R
 export type ExportMemoryBankTemplateData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19645,6 +19896,9 @@ export type ExportMemoryBankTemplateResponse = ExportMemoryBankTemplateResponses
 export type ImportMemoryBankTemplateData = {
     body: ImportMemoryBankTemplateBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19661,6 +19915,9 @@ export type ImportMemoryBankTemplateResponse2 = ImportMemoryBankTemplateResponse
 export type SetMemoryBankVisibilityData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19677,6 +19934,9 @@ export type SetMemoryBankVisibilityResponse = SetMemoryBankVisibilityResponses[k
 export type ListMemoryBankVisibilityGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19693,6 +19953,9 @@ export type ListMemoryBankVisibilityGrantsResponse = ListMemoryBankVisibilityGra
 export type AddMemoryBankVisibilityGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
     };
@@ -19709,6 +19972,9 @@ export type AddMemoryBankVisibilityGrantResponse = AddMemoryBankVisibilityGrantR
 export type RemoveMemoryBankVisibilityGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         bank_id: WrappedUuidV4;
         principal_type: ResourcePrincipalType;
@@ -19725,6 +19991,9 @@ export type RemoveMemoryBankVisibilityGrantResponses = {
 export type ListMemoryBankSourceBindingsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         memory_bank_id: WrappedUuidV4;
     };
@@ -19741,6 +20010,9 @@ export type ListMemoryBankSourceBindingsResponse = ListMemoryBankSourceBindingsR
 export type ListMemorySourceBindingsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query: {
@@ -19759,6 +20031,9 @@ export type ListMemorySourceBindingsResponse = ListMemorySourceBindingsResponses
 export type ReplaceMemorySourceBindingsData = {
     body: ReplaceMemoryBankBindingsBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -19774,6 +20049,9 @@ export type ReplaceMemorySourceBindingsResponse = ReplaceMemorySourceBindingsRes
 export type RetryMemorySourceSyncData = {
     body: RetryMemorySourceBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -19789,6 +20067,9 @@ export type RetryMemorySourceSyncResponse = RetryMemorySourceSyncResponses[keyof
 export type DeleteSynthesisSessionMemoryData = {
     body: DeleteSynthesisMemoryDocumentBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
     };
@@ -19805,6 +20086,9 @@ export type DeleteSynthesisSessionMemoryResponse = DeleteSynthesisSessionMemoryR
 export type RecallSynthesisSessionMemoryData = {
     body: RecallMemoryBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
     };
@@ -19821,6 +20105,9 @@ export type RecallSynthesisSessionMemoryResponse = RecallSynthesisSessionMemoryR
 export type RetainSynthesisSessionMemoryData = {
     body: SynthesisSessionRetainMemoryBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
     };
@@ -19837,6 +20124,9 @@ export type RetainSynthesisSessionMemoryResponse = RetainSynthesisSessionMemoryR
 export type ValidateSynthesisSessionBatchData = {
     body: ValidateSynthesisBatchBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         session_id: WrappedUuidV4;
     };
@@ -19856,6 +20146,9 @@ export type ValidateSynthesisSessionBatchResponse = ValidateSynthesisSessionBatc
 export type ReconcileOpenbotAgentBundleData = {
     body: ReconcileOpenBotAgentBundleBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         agent_id: string;
     };
@@ -19872,6 +20165,9 @@ export type ReconcileOpenbotAgentBundleResponse = ReconcileOpenbotAgentBundleRes
 export type GetOpenbotPluginsCatalogData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -19887,6 +20183,9 @@ export type GetOpenbotPluginsCatalogResponse = GetOpenbotPluginsCatalogResponses
 export type ProviderSetupCatalogData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query: {
@@ -19907,6 +20206,9 @@ export type ProviderSetupCatalogResponse = ProviderSetupCatalogResponses[keyof P
 export type ProviderSetupStartData = {
     body: StartProviderSetupBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -19925,6 +20227,9 @@ export type ProviderSetupStartResponse = ProviderSetupStartResponses[keyof Provi
 export type ProviderSetupResumeData = {
     body: ResumeProviderSetupBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         setup_id: string;
     };
@@ -20011,6 +20316,9 @@ export type ReverseProxyCreateProfileResponse = ReverseProxyCreateProfileRespons
 export type ReverseProxyDeleteProfileData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         profile_id: string;
     };
@@ -20103,6 +20411,9 @@ export type ReverseProxyUpdateProfileResponse = ReverseProxyUpdateProfileRespons
 export type ReverseProxySetProfileOwnershipData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         profile_id: string;
     };
@@ -20119,6 +20430,9 @@ export type ReverseProxySetProfileOwnershipResponse = ReverseProxySetProfileOwne
 export type ReverseProxyListProfileOwnershipGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         profile_id: string;
     };
@@ -20135,6 +20449,9 @@ export type ReverseProxyListProfileOwnershipGrantsResponse = ReverseProxyListPro
 export type ReverseProxyAddProfileOwnershipGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         profile_id: string;
     };
@@ -20151,6 +20468,9 @@ export type ReverseProxyAddProfileOwnershipGrantResponse = ReverseProxyAddProfil
 export type ReverseProxyRemoveProfileOwnershipGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         profile_id: string;
         principal_type: ResourcePrincipalType;
@@ -20167,6 +20487,9 @@ export type ReverseProxyRemoveProfileOwnershipGrantResponses = {
 export type ReverseProxySetProfileVisibilityData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         profile_id: string;
     };
@@ -20183,6 +20506,9 @@ export type ReverseProxySetProfileVisibilityResponse = ReverseProxySetProfileVis
 export type ReverseProxyListProfileVisibilityGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         profile_id: string;
     };
@@ -20199,6 +20525,9 @@ export type ReverseProxyListProfileVisibilityGrantsResponse = ReverseProxyListPr
 export type ReverseProxyAddProfileVisibilityGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         profile_id: string;
     };
@@ -20215,6 +20544,9 @@ export type ReverseProxyAddProfileVisibilityGrantResponse = ReverseProxyAddProfi
 export type ReverseProxyRemoveProfileVisibilityGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         profile_id: string;
         principal_type: ResourcePrincipalType;
@@ -20329,6 +20661,9 @@ export type SignalsListDeliveriesResponse = SignalsListDeliveriesResponses[keyof
 export type SignalsGetDeliveryData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         delivery_id: WrappedUuidV4;
     };
@@ -20345,6 +20680,9 @@ export type SignalsGetDeliveryResponse = SignalsGetDeliveryResponses[keyof Signa
 export type SignalsRetryDeliveryData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         delivery_id: WrappedUuidV4;
     };
@@ -20384,6 +20722,9 @@ export type SignalsListProviderInstancesResponse = SignalsListProviderInstancesR
 export type SignalsCreateProviderInstanceData = {
     body: CreateSignalProviderInstanceRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -20399,6 +20740,9 @@ export type SignalsCreateProviderInstanceResponse = SignalsCreateProviderInstanc
 export type SetSignalProviderOwnershipData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -20415,6 +20759,9 @@ export type SetSignalProviderOwnershipResponse = SetSignalProviderOwnershipRespo
 export type SetSignalProviderVisibilityData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -20431,6 +20778,9 @@ export type SetSignalProviderVisibilityResponse = SetSignalProviderVisibilityRes
 export type ListSignalProviderGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
         plane: ResourceGrantPlane;
@@ -20448,6 +20798,9 @@ export type ListSignalProviderGrantsResponse = ListSignalProviderGrantsResponses
 export type AddSignalProviderGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
         plane: ResourceGrantPlane;
@@ -20465,6 +20818,9 @@ export type AddSignalProviderGrantResponse = AddSignalProviderGrantResponses[key
 export type RemoveSignalProviderGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
         plane: ResourceGrantPlane;
@@ -20482,6 +20838,9 @@ export type RemoveSignalProviderGrantResponses = {
 export type SignalsDeleteProviderInstanceData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         instance_id: string;
     };
@@ -20498,6 +20857,9 @@ export type SignalsDeleteProviderInstanceResponse = SignalsDeleteProviderInstanc
 export type SignalsGetProviderInstanceData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         instance_id: string;
     };
@@ -20514,6 +20876,9 @@ export type SignalsGetProviderInstanceResponse = SignalsGetProviderInstanceRespo
 export type SignalsUpdateProviderInstanceData = {
     body: UpdateSignalProviderInstanceRequestInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         instance_id: string;
     };
@@ -20530,6 +20895,9 @@ export type SignalsUpdateProviderInstanceResponse = SignalsUpdateProviderInstanc
 export type SignalsTriggerFakeData = {
     body: TriggerFakeSignalRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         instance_id: string;
     };
@@ -20567,6 +20935,9 @@ export type SignalsListAvailableProvidersResponse = SignalsListAvailableProvider
 export type ListSkillsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -20599,6 +20970,9 @@ export type ListSkillsResponse = ListSkillsResponses[keyof ListSkillsResponses];
 export type CreateSkillData = {
     body: CreateSkillInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -20626,6 +21000,9 @@ export type CreateSkillResponse = CreateSkillResponses[keyof CreateSkillResponse
 export type ListProxiedSkillProvidersData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -20644,6 +21021,9 @@ export type ListProxiedSkillProvidersResponse2 = ListProxiedSkillProvidersRespon
 export type CreateTrustedSkillProviderData = {
     body: CreateTrustedSkillProviderRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -20675,6 +21055,9 @@ export type CreateTrustedSkillProviderResponse = CreateTrustedSkillProviderRespo
 export type GetProxiedSkillProviderData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         provider_id: string;
     };
@@ -20703,6 +21086,9 @@ export type GetProxiedSkillProviderResponse = GetProxiedSkillProviderResponses[k
 export type ListSkillRegistriesData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -20734,6 +21120,9 @@ export type ListSkillRegistriesResponse = ListSkillRegistriesResponses[keyof Lis
 export type CreateSkillRegistryData = {
     body: CreateSkillRegistryBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -20761,6 +21150,9 @@ export type CreateSkillRegistryResponse = CreateSkillRegistryResponses[keyof Cre
 export type DeleteSkillRegistryData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -20791,6 +21183,9 @@ export type DeleteSkillRegistryResponses = {
 export type GetSkillRegistryData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -20823,6 +21218,9 @@ export type GetSkillRegistryResponse = GetSkillRegistryResponses[keyof GetSkillR
 export type UpdateSkillRegistryData = {
     body: UpdateSkillRegistryBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -20855,6 +21253,9 @@ export type UpdateSkillRegistryResponse = UpdateSkillRegistryResponses[keyof Upd
 export type SetSkillRegistryOwnershipModeData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -20871,6 +21272,9 @@ export type SetSkillRegistryOwnershipModeResponse = SetSkillRegistryOwnershipMod
 export type ListSkillRegistryOwnershipGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -20887,6 +21291,9 @@ export type ListSkillRegistryOwnershipGrantsResponse = ListSkillRegistryOwnershi
 export type AddSkillRegistryOwnershipGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -20903,6 +21310,9 @@ export type AddSkillRegistryOwnershipGrantResponse = AddSkillRegistryOwnershipGr
 export type RemoveSkillRegistryOwnershipGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
         principal_type: string;
@@ -20919,6 +21329,9 @@ export type RemoveSkillRegistryOwnershipGrantResponses = {
 export type AddProviderSkillsToSkillRegistryData = {
     body: AddProviderSkillsToRegistryRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -20951,6 +21364,9 @@ export type AddProviderSkillsToSkillRegistryResponse = AddProviderSkillsToSkillR
 export type SearchSkillRegistryData = {
     body: SkillDiscoverySearchRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -20983,6 +21399,9 @@ export type SearchSkillRegistryResponse = SearchSkillRegistryResponses[keyof Sea
 export type ListSkillRegistrySkillSummariesData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -21020,6 +21439,9 @@ export type ListSkillRegistrySkillSummariesResponse = ListSkillRegistrySkillSumm
 export type GetSkillRegistrySkillByTitleData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
         title: string;
@@ -21053,6 +21475,9 @@ export type GetSkillRegistrySkillByTitleResponse = GetSkillRegistrySkillByTitleR
 export type GetSkillRegistrySkillData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
         skill_id: string;
@@ -21086,6 +21511,9 @@ export type GetSkillRegistrySkillResponse = GetSkillRegistrySkillResponses[keyof
 export type GetSkillRegistrySkillDescriptionData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
         skill_id: string;
@@ -21119,6 +21547,9 @@ export type GetSkillRegistrySkillDescriptionResponse = GetSkillRegistrySkillDesc
 export type SetSkillRegistryVisibilityData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -21135,6 +21566,9 @@ export type SetSkillRegistryVisibilityResponse = SetSkillRegistryVisibilityRespo
 export type ListSkillRegistryVisibilityGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -21151,6 +21585,9 @@ export type ListSkillRegistryVisibilityGrantsResponse = ListSkillRegistryVisibil
 export type AddSkillRegistryVisibilityGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -21167,6 +21604,9 @@ export type AddSkillRegistryVisibilityGrantResponse = AddSkillRegistryVisibility
 export type RemoveSkillRegistryVisibilityGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
         principal_type: string;
@@ -21183,6 +21623,9 @@ export type RemoveSkillRegistryVisibilityGrantResponses = {
 export type DeleteSkillData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -21213,6 +21656,9 @@ export type DeleteSkillResponses = {
 export type GetSkillData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -21245,6 +21691,9 @@ export type GetSkillResponse = GetSkillResponses[keyof GetSkillResponses];
 export type UpdateSkillData = {
     body: UpdateSkillBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -21277,6 +21726,9 @@ export type UpdateSkillResponse = UpdateSkillResponses[keyof UpdateSkillResponse
 export type SetSkillOwnershipModeData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -21293,6 +21745,9 @@ export type SetSkillOwnershipModeResponse = SetSkillOwnershipModeResponses[keyof
 export type ListSkillOwnershipGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -21309,6 +21764,9 @@ export type ListSkillOwnershipGrantsResponse = ListSkillOwnershipGrantsResponses
 export type AddSkillOwnershipGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -21325,6 +21783,9 @@ export type AddSkillOwnershipGrantResponse = AddSkillOwnershipGrantResponses[key
 export type RemoveSkillOwnershipGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
         principal_type: string;
@@ -21341,6 +21802,9 @@ export type RemoveSkillOwnershipGrantResponses = {
 export type GetSkillPackageData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -21373,6 +21837,9 @@ export type GetSkillPackageResponse = GetSkillPackageResponses[keyof GetSkillPac
 export type DownloadSkillPackageFileData = {
     body: DownloadSkillPackageFileRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: string;
     };
@@ -21405,6 +21872,9 @@ export type DownloadSkillPackageFileResponse = DownloadSkillPackageFileResponses
 export type SetSkillVisibilityData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -21421,6 +21891,9 @@ export type SetSkillVisibilityResponse = SetSkillVisibilityResponses[keyof SetSk
 export type ListSkillVisibilityGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -21437,6 +21910,9 @@ export type ListSkillVisibilityGrantsResponse = ListSkillVisibilityGrantsRespons
 export type AddSkillVisibilityGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -21453,6 +21929,9 @@ export type AddSkillVisibilityGrantResponse = AddSkillVisibilityGrantResponses[k
 export type RemoveSkillVisibilityGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
         principal_type: string;
@@ -21670,135 +22149,12 @@ export type StateValidateResponses = {
 
 export type StateValidateResponse = StateValidateResponses[keyof StateValidateResponses];
 
-export type TildePayProvisionData = {
-    body: ProvisionTildePayRequest;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/tilde-pay/onboarding';
-};
-
-export type TildePayProvisionResponses = {
-    /**
-     * Fully reconciled Tilde Pay onboarding state
-     */
-    200: ProvisionTildePayResponse;
-};
-
-export type TildePayProvisionResponse = TildePayProvisionResponses[keyof TildePayProvisionResponses];
-
-export type TildePayPaymentMppData = {
-    body: PayPaymentRequest;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/tilde-pay/payments/mpp';
-};
-
-export type TildePayPaymentMppResponses = {
-    /**
-     * Tilde Pay payment response
-     */
-    200: PaymentResponse;
-};
-
-export type TildePayPaymentMppResponse = TildePayPaymentMppResponses[keyof TildePayPaymentMppResponses];
-
-export type TildePayPaymentX402Data = {
-    body: PayPaymentRequest;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/tilde-pay/payments/x402';
-};
-
-export type TildePayPaymentX402Responses = {
-    /**
-     * Tilde Pay payment response
-     */
-    200: PaymentResponse;
-};
-
-export type TildePayPaymentX402Response = TildePayPaymentX402Responses[keyof TildePayPaymentX402Responses];
-
-export type TildePayWalletSummaryData = {
-    body?: never;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/tilde-pay/wallet';
-};
-
-export type TildePayWalletSummaryResponses = {
-    /**
-     * Tilde Pay wallet summary
-     */
-    200: PayWalletSummaryResponse;
-};
-
-export type TildePayWalletSummaryResponse = TildePayWalletSummaryResponses[keyof TildePayWalletSummaryResponses];
-
-export type TildePayWalletCreateData = {
-    body: CreatePayWalletRequest;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/tilde-pay/wallet';
-};
-
-export type TildePayWalletCreateResponses = {
-    /**
-     * Tilde Pay wallet summary
-     */
-    200: PayWalletSummaryResponse;
-};
-
-export type TildePayWalletCreateResponse = TildePayWalletCreateResponses[keyof TildePayWalletCreateResponses];
-
-export type TildePayWalletWaitUntilBalanceData = {
-    body: WaitForPayBalanceRequest;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/tilde-pay/wallet/wait-until-balance';
-};
-
-export type TildePayWalletWaitUntilBalanceResponses = {
-    /**
-     * Tilde Pay balance wait result
-     */
-    200: WaitUntilBalanceResponse;
-};
-
-export type TildePayWalletWaitUntilBalanceResponse = TildePayWalletWaitUntilBalanceResponses[keyof TildePayWalletWaitUntilBalanceResponses];
-
 export type ListTrustedRuntimesData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -21829,6 +22185,9 @@ export type ListTrustedRuntimesResponse = ListTrustedRuntimesResponses[keyof Lis
 export type CreateTrustedRuntimeData = {
     body: CreateTrustedRuntimeInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -21856,6 +22215,9 @@ export type CreateTrustedRuntimeResponse = CreateTrustedRuntimeResponses[keyof C
 export type DeleteTrustedRuntimeData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -21882,6 +22244,9 @@ export type DeleteTrustedRuntimeResponses = {
 export type GetTrustedRuntimeData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -21914,6 +22279,9 @@ export type GetTrustedRuntimeResponse = GetTrustedRuntimeResponses[keyof GetTrus
 export type UpdateTrustedRuntimeData = {
     body: UpdateTrustedRuntimeBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         id: WrappedUuidV4;
     };
@@ -21943,446 +22311,12 @@ export type UpdateTrustedRuntimeResponses = {
 
 export type UpdateTrustedRuntimeResponse = UpdateTrustedRuntimeResponses[keyof UpdateTrustedRuntimeResponses];
 
-export type WalletListData = {
-    body?: never;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-    };
-    query?: {
-        page_size?: number;
-        owner_id?: string | null;
-    };
-    url: '/api/v1/team/{team_id}/wallet';
-};
-
-export type WalletListResponses = {
-    /**
-     * List wallets
-     */
-    200: WalletPaginatedResponse;
-};
-
-export type WalletListResponse = WalletListResponses[keyof WalletListResponses];
-
-export type WalletCreateData = {
-    body: CreateWalletBody;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/wallet';
-};
-
-export type WalletCreateErrors = {
-    /**
-     * Invalid request
-     */
-    400: Error;
-    /**
-     * Authentication failed
-     */
-    401: Error;
-    /**
-     * Forbidden
-     */
-    403: Error;
-    /**
-     * Upstream provider error
-     */
-    502: Error;
-};
-
-export type WalletCreateError = WalletCreateErrors[keyof WalletCreateErrors];
-
-export type WalletCreateResponses = {
-    /**
-     * Created wallet
-     */
-    200: Wallet;
-};
-
-export type WalletCreateResponse = WalletCreateResponses[keyof WalletCreateResponses];
-
-export type WalletCustomerListData = {
-    body?: never;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-    };
-    query?: {
-        page_size?: number;
-        owner_id?: string | null;
-    };
-    url: '/api/v1/team/{team_id}/wallet/customer';
-};
-
-export type WalletCustomerListResponses = {
-    /**
-     * List wallet customers
-     */
-    200: WalletCustomerPaginatedResponse;
-};
-
-export type WalletCustomerListResponse = WalletCustomerListResponses[keyof WalletCustomerListResponses];
-
-export type WalletCustomerCreateData = {
-    body: CreateWalletCustomerBody;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/wallet/customer';
-};
-
-export type WalletCustomerCreateResponses = {
-    /**
-     * Created wallet customer
-     */
-    200: WalletCustomer;
-};
-
-export type WalletCustomerCreateResponse = WalletCustomerCreateResponses[keyof WalletCustomerCreateResponses];
-
-export type WalletCustomerGetData = {
-    body?: never;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-        /**
-         * Wallet customer ID
-         */
-        customer_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/wallet/customer/{customer_id}';
-};
-
-export type WalletCustomerGetResponses = {
-    /**
-     * Wallet customer
-     */
-    200: WalletCustomer;
-};
-
-export type WalletCustomerGetResponse = WalletCustomerGetResponses[keyof WalletCustomerGetResponses];
-
-export type WalletCustomerKycGetData = {
-    body?: never;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-        /**
-         * Wallet customer ID
-         */
-        customer_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/wallet/customer/{customer_id}/kyc';
-};
-
-export type WalletCustomerKycGetResponses = {
-    /**
-     * Wallet customer KYC details
-     */
-    200: GetWalletCustomerKycResponse;
-};
-
-export type WalletCustomerKycGetResponse = WalletCustomerKycGetResponses[keyof WalletCustomerKycGetResponses];
-
-export type WalletGetData = {
-    body?: never;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-        /**
-         * Wallet ID
-         */
-        wallet_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/wallet/{wallet_id}';
-};
-
-export type WalletGetResponses = {
-    /**
-     * Wallet
-     */
-    200: Wallet;
-};
-
-export type WalletGetResponse = WalletGetResponses[keyof WalletGetResponses];
-
-export type WalletGetBalancesData = {
-    body?: never;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-        /**
-         * Wallet ID
-         */
-        wallet_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/balances';
-};
-
-export type WalletGetBalancesResponses = {
-    /**
-     * Wallet balances
-     */
-    200: GetBalancesResponse;
-};
-
-export type WalletGetBalancesResponse = WalletGetBalancesResponses[keyof WalletGetBalancesResponses];
-
-export type WalletGetCryptoDepositInformationData = {
-    body?: never;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-        /**
-         * Wallet ID
-         */
-        wallet_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/crypto';
-};
-
-export type WalletGetCryptoDepositInformationResponses = {
-    /**
-     * Wallet crypto deposit information
-     */
-    200: GetCryptoDepositInformationResponse;
-};
-
-export type WalletGetCryptoDepositInformationResponse = WalletGetCryptoDepositInformationResponses[keyof WalletGetCryptoDepositInformationResponses];
-
-export type WalletGetFiatDepositInformationData = {
-    body?: never;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-        /**
-         * Wallet ID
-         */
-        wallet_id: string;
-    };
-    query?: {
-        currency?: string | null;
-    };
-    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/deposit-information/fiat';
-};
-
-export type WalletGetFiatDepositInformationResponses = {
-    /**
-     * Wallet fiat deposit information
-     */
-    200: GetFiatDepositInformationResponse;
-};
-
-export type WalletGetFiatDepositInformationResponse = WalletGetFiatDepositInformationResponses[keyof WalletGetFiatDepositInformationResponses];
-
-export type WalletMakeMppPaymentData = {
-    body: MakeMppPaymentRequest;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-        /**
-         * Wallet ID
-         */
-        wallet_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/payments/mpp';
-};
-
-export type WalletMakeMppPaymentResponses = {
-    /**
-     * Payment response
-     */
-    200: PaymentResponse;
-};
-
-export type WalletMakeMppPaymentResponse = WalletMakeMppPaymentResponses[keyof WalletMakeMppPaymentResponses];
-
-export type WalletMakeX402PaymentData = {
-    body: MakeX402PaymentRequest;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-        /**
-         * Wallet ID
-         */
-        wallet_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/payments/x402';
-};
-
-export type WalletMakeX402PaymentResponses = {
-    /**
-     * Payment response
-     */
-    200: PaymentResponse;
-};
-
-export type WalletMakeX402PaymentResponse = WalletMakeX402PaymentResponses[keyof WalletMakeX402PaymentResponses];
-
-export type WalletTransactionHistoryListData = {
-    body?: never;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-        /**
-         * Wallet ID
-         */
-        wallet_id: string;
-    };
-    query?: {
-        page_size?: number;
-        next_page_token?: string | null;
-    };
-    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history';
-};
-
-export type WalletTransactionHistoryListResponses = {
-    /**
-     * Wallet transaction history
-     */
-    200: WalletTransactionHistoryItemPaginatedResponse;
-};
-
-export type WalletTransactionHistoryListResponse = WalletTransactionHistoryListResponses[keyof WalletTransactionHistoryListResponses];
-
-export type WalletTransactionHistoryRefreshData = {
-    body?: never;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-        /**
-         * Wallet ID
-         */
-        wallet_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/transaction-history/refresh';
-};
-
-export type WalletTransactionHistoryRefreshResponses = {
-    /**
-     * Wallet transaction history refresh result
-     */
-    200: RefreshWalletTransactionHistoryResponse;
-};
-
-export type WalletTransactionHistoryRefreshResponse = WalletTransactionHistoryRefreshResponses[keyof WalletTransactionHistoryRefreshResponses];
-
-export type WalletVirtualAccountCreateData = {
-    body: CreateWalletVirtualAccountBody;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-        /**
-         * Wallet ID
-         */
-        wallet_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/virtual-account';
-};
-
-export type WalletVirtualAccountCreateErrors = {
-    /**
-     * Invalid request
-     */
-    400: Error;
-    /**
-     * Authentication failed
-     */
-    401: Error;
-    /**
-     * Forbidden
-     */
-    403: Error;
-    /**
-     * Upstream provider error
-     */
-    502: Error;
-};
-
-export type WalletVirtualAccountCreateError = WalletVirtualAccountCreateErrors[keyof WalletVirtualAccountCreateErrors];
-
-export type WalletVirtualAccountCreateResponses = {
-    /**
-     * Created wallet virtual account
-     */
-    200: WalletVirtualAccount;
-};
-
-export type WalletVirtualAccountCreateResponse = WalletVirtualAccountCreateResponses[keyof WalletVirtualAccountCreateResponses];
-
-export type WalletWaitUntilBalanceData = {
-    body: WaitUntilBalanceRequest;
-    path: {
-        /**
-         * Team ID
-         */
-        team_id: string;
-        /**
-         * Wallet ID
-         */
-        wallet_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/wallet/{wallet_id}/wait-until-balance';
-};
-
-export type WalletWaitUntilBalanceResponses = {
-    /**
-     * Wait result
-     */
-    200: WaitUntilBalanceResponse;
-};
-
-export type WalletWaitUntilBalanceResponse = WalletWaitUntilBalanceResponses[keyof WalletWaitUntilBalanceResponses];
-
 export type ListWikiOntologyTemplatesData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -22398,6 +22332,9 @@ export type ListWikiOntologyTemplatesResponse = ListWikiOntologyTemplatesRespons
 export type ListWikisData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: {
@@ -22416,6 +22353,9 @@ export type ListWikisResponse = ListWikisResponses[keyof ListWikisResponses];
 export type CreateWikiData = {
     body: CreateWikiInner;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
     };
     query?: never;
@@ -22431,6 +22371,9 @@ export type CreateWikiResponse = CreateWikiResponses[keyof CreateWikiResponses];
 export type DeleteWikiData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -22445,6 +22388,9 @@ export type DeleteWikiResponses = {
 export type GetWikiData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -22461,6 +22407,9 @@ export type GetWikiResponse = GetWikiResponses[keyof GetWikiResponses];
 export type UpdateWikiData = {
     body: UpdateWikiBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -22477,6 +22426,9 @@ export type UpdateWikiResponse = UpdateWikiResponses[keyof UpdateWikiResponses];
 export type ListWikiAssetsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -22498,6 +22450,9 @@ export type ListWikiAssetsResponse = ListWikiAssetsResponses[keyof ListWikiAsset
 export type CreateWikiAssetUploadData = {
     body: CreateWikiAssetBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -22514,6 +22469,9 @@ export type CreateWikiAssetUploadResponse = CreateWikiAssetUploadResponses[keyof
 export type DeleteWikiAssetData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         asset_id: WrappedUuidV4;
@@ -22536,6 +22494,9 @@ export type DeleteWikiAssetResponses = {
 export type UpdateWikiAssetData = {
     body: UpdateWikiAssetBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         asset_id: WrappedUuidV4;
@@ -22553,6 +22514,9 @@ export type UpdateWikiAssetResponse = UpdateWikiAssetResponses[keyof UpdateWikiA
 export type CompleteWikiAssetUploadData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         asset_id: WrappedUuidV4;
@@ -22570,6 +22534,9 @@ export type CompleteWikiAssetUploadResponse = CompleteWikiAssetUploadResponses[k
 export type DownloadWikiAssetContentData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         asset_id: WrappedUuidV4;
@@ -22594,6 +22561,9 @@ export type DownloadWikiAssetContentResponse = DownloadWikiAssetContentResponses
 export type UploadWikiAssetContentData = {
     body: Array<number>;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         asset_id: WrappedUuidV4;
@@ -22620,6 +22590,9 @@ export type UploadWikiAssetContentResponses = {
 export type DownloadWikiAssetData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         asset_id: WrappedUuidV4;
@@ -22637,6 +22610,9 @@ export type DownloadWikiAssetResponse = DownloadWikiAssetResponses[keyof Downloa
 export type InspectWikiAssetReferencesData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         asset_id: WrappedUuidV4;
@@ -22654,6 +22630,9 @@ export type InspectWikiAssetReferencesResponse = InspectWikiAssetReferencesRespo
 export type TraverseWikiGraphData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -22677,6 +22656,9 @@ export type TraverseWikiGraphResponse = TraverseWikiGraphResponses[keyof Travers
 export type ListWikiOntologyInstallationsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -22693,6 +22675,9 @@ export type ListWikiOntologyInstallationsResponse = ListWikiOntologyInstallation
 export type ApplyWikiOntologyTemplateData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         template_key: string;
@@ -22710,6 +22695,9 @@ export type ApplyWikiOntologyTemplateResponse = ApplyWikiOntologyTemplateRespons
 export type SetWikiOwnershipModeData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -22726,6 +22714,9 @@ export type SetWikiOwnershipModeResponse = SetWikiOwnershipModeResponses[keyof S
 export type ListWikiOwnershipGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -22742,6 +22733,9 @@ export type ListWikiOwnershipGrantsResponse = ListWikiOwnershipGrantsResponses[k
 export type AddWikiOwnershipGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -22758,6 +22752,9 @@ export type AddWikiOwnershipGrantResponse = AddWikiOwnershipGrantResponses[keyof
 export type RemoveWikiOwnershipGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         principal_type: ResourcePrincipalType;
@@ -22774,6 +22771,9 @@ export type RemoveWikiOwnershipGrantResponses = {
 export type ListWikiPageTypesData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -22792,6 +22792,9 @@ export type ListWikiPageTypesResponse = ListWikiPageTypesResponses[keyof ListWik
 export type CreateWikiPageTypeData = {
     body: CreatePageTypeBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -22808,6 +22811,9 @@ export type CreateWikiPageTypeResponse = CreateWikiPageTypeResponses[keyof Creat
 export type DeleteWikiPageTypeData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_type_id: WrappedUuidV4;
@@ -22832,6 +22838,9 @@ export type DeleteWikiPageTypeResponse = DeleteWikiPageTypeResponses[keyof Delet
 export type GetWikiPageTypeData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_type_id: WrappedUuidV4;
@@ -22849,6 +22858,9 @@ export type GetWikiPageTypeResponse = GetWikiPageTypeResponses[keyof GetWikiPage
 export type UpdateWikiPageTypeData = {
     body: UpdatePageTypeBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_type_id: WrappedUuidV4;
@@ -22873,6 +22885,9 @@ export type UpdateWikiPageTypeResponse = UpdateWikiPageTypeResponses[keyof Updat
 export type ValidateWikiPageTypeDataData = {
     body: ValidatePageTypeDataBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_type_id: WrappedUuidV4;
@@ -22890,6 +22905,9 @@ export type ValidateWikiPageTypeDataResponse = ValidateWikiPageTypeDataResponses
 export type ListWikiPageTypeVersionsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_type_id: WrappedUuidV4;
@@ -22907,6 +22925,9 @@ export type ListWikiPageTypeVersionsResponse = ListWikiPageTypeVersionsResponses
 export type CreateWikiPageTypeVersionData = {
     body: CreatePageTypeVersionBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_type_id: WrappedUuidV4;
@@ -22931,6 +22952,9 @@ export type CreateWikiPageTypeVersionResponse = CreateWikiPageTypeVersionRespons
 export type DeleteWikiPageTypeVersionData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_type_id: WrappedUuidV4;
@@ -22956,6 +22980,9 @@ export type DeleteWikiPageTypeVersionResponse = DeleteWikiPageTypeVersionRespons
 export type GetWikiPageTypeVersionData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_type_id: WrappedUuidV4;
@@ -22974,6 +23001,9 @@ export type GetWikiPageTypeVersionResponse = GetWikiPageTypeVersionResponses[key
 export type PreviewWikiPageTypeMigrationData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_type_id: WrappedUuidV4;
@@ -22999,6 +23029,9 @@ export type PreviewWikiPageTypeMigrationResponse = PreviewWikiPageTypeMigrationR
 export type ListWikiPagesData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -23019,6 +23052,9 @@ export type ListWikiPagesResponse = ListWikiPagesResponses[keyof ListWikiPagesRe
 export type CreateWikiPageData = {
     body: UpsertWikiPageBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -23035,6 +23071,9 @@ export type CreateWikiPageResponse = CreateWikiPageResponses[keyof CreateWikiPag
 export type GrepWikiPagesData = {
     body: GrepWikiPagesBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -23051,6 +23090,9 @@ export type GrepWikiPagesResponse2 = GrepWikiPagesResponses[keyof GrepWikiPagesR
 export type DeleteWikiPageData = {
     body: ExpectedRevisionBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_id: WrappedUuidV4;
@@ -23073,6 +23115,9 @@ export type DeleteWikiPageResponses = {
 export type GetWikiPageData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_id: WrappedUuidV4;
@@ -23090,6 +23135,9 @@ export type GetWikiPageResponse = GetWikiPageResponses[keyof GetWikiPageResponse
 export type UpdateWikiPageData = {
     body: UpsertWikiPageBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_id: WrappedUuidV4;
@@ -23114,6 +23162,9 @@ export type UpdateWikiPageResponse = UpdateWikiPageResponses[keyof UpdateWikiPag
 export type ListWikiPageAssetsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_id: WrappedUuidV4;
@@ -23131,6 +23182,9 @@ export type ListWikiPageAssetsResponse = ListWikiPageAssetsResponses[keyof ListW
 export type GetWikiPageBacklinksData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_id: WrappedUuidV4;
@@ -23150,6 +23204,9 @@ export type GetWikiPageBacklinksResponse = GetWikiPageBacklinksResponses[keyof G
 export type MigrateWikiPageTypeData = {
     body: MigrateWikiPageBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_id: WrappedUuidV4;
@@ -23174,6 +23231,9 @@ export type MigrateWikiPageTypeResponse = MigrateWikiPageTypeResponses[keyof Mig
 export type MoveWikiPageData = {
     body: MoveWikiPageBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_id: WrappedUuidV4;
@@ -23198,6 +23258,9 @@ export type MoveWikiPageResponse = MoveWikiPageResponses[keyof MoveWikiPageRespo
 export type GetWikiPageNeighborhoodData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_id: WrappedUuidV4;
@@ -23221,6 +23284,9 @@ export type GetWikiPageNeighborhoodResponse = GetWikiPageNeighborhoodResponses[k
 export type ListWikiPageRevisionsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         page_id: WrappedUuidV4;
@@ -23241,6 +23307,9 @@ export type ListWikiPageRevisionsResponse = ListWikiPageRevisionsResponses[keyof
 export type ListWikiRelationshipTypesData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -23257,6 +23326,9 @@ export type ListWikiRelationshipTypesResponse = ListWikiRelationshipTypesRespons
 export type CreateWikiRelationshipTypeData = {
     body: CreateRelationshipTypeBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -23273,6 +23345,9 @@ export type CreateWikiRelationshipTypeResponse = CreateWikiRelationshipTypeRespo
 export type DeleteWikiRelationshipTypeData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         type_id: WrappedUuidV4;
@@ -23295,6 +23370,9 @@ export type DeleteWikiRelationshipTypeResponses = {
 export type GetWikiRelationshipTypeData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         type_id: WrappedUuidV4;
@@ -23312,6 +23390,9 @@ export type GetWikiRelationshipTypeResponse = GetWikiRelationshipTypeResponses[k
 export type UpdateWikiRelationshipTypeData = {
     body: UpdateRelationshipTypeBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         type_id: WrappedUuidV4;
@@ -23336,6 +23417,9 @@ export type UpdateWikiRelationshipTypeResponse = UpdateWikiRelationshipTypeRespo
 export type ListWikiRelationshipTypeVersionsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         type_id: WrappedUuidV4;
@@ -23353,6 +23437,9 @@ export type ListWikiRelationshipTypeVersionsResponse = ListWikiRelationshipTypeV
 export type CreateWikiRelationshipTypeVersionData = {
     body: CreateRelationshipTypeVersionBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         type_id: WrappedUuidV4;
@@ -23377,6 +23464,9 @@ export type CreateWikiRelationshipTypeVersionResponse = CreateWikiRelationshipTy
 export type GetWikiRelationshipTypeVersionData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         type_id: WrappedUuidV4;
@@ -23395,6 +23485,9 @@ export type GetWikiRelationshipTypeVersionResponse = GetWikiRelationshipTypeVers
 export type ListWikiPageRelationshipsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -23414,6 +23507,9 @@ export type ListWikiPageRelationshipsResponse = ListWikiPageRelationshipsRespons
 export type UpsertWikiPageRelationshipData = {
     body: UpsertPageRelationshipBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -23437,6 +23533,9 @@ export type UpsertWikiPageRelationshipResponse = UpsertWikiPageRelationshipRespo
 export type DeleteWikiPageRelationshipData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         relationship_id: WrappedUuidV4;
@@ -23452,6 +23551,9 @@ export type DeleteWikiPageRelationshipResponses = {
 export type GetWikiPageRelationshipData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         relationship_id: WrappedUuidV4;
@@ -23469,6 +23571,9 @@ export type GetWikiPageRelationshipResponse = GetWikiPageRelationshipResponses[k
 export type UpdateWikiPageRelationshipData = {
     body: UpsertPageRelationshipBody;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         relationship_id: WrappedUuidV4;
@@ -23486,6 +23591,9 @@ export type UpdateWikiPageRelationshipResponse = UpdateWikiPageRelationshipRespo
 export type RetryWikiData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -23502,6 +23610,9 @@ export type RetryWikiResponse = RetryWikiResponses[keyof RetryWikiResponses];
 export type ChangeWikiOwnershipData = {
     body: ChangeResourceOwnershipRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -23518,6 +23629,9 @@ export type ChangeWikiOwnershipResponse = ChangeWikiOwnershipResponses[keyof Cha
 export type SetWikiVisibilityData = {
     body: SetResourceAccessModeRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -23534,6 +23648,9 @@ export type SetWikiVisibilityResponse = SetWikiVisibilityResponses[keyof SetWiki
 export type ListWikiVisibilityGrantsData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -23550,6 +23667,9 @@ export type ListWikiVisibilityGrantsResponse = ListWikiVisibilityGrantsResponses
 export type AddWikiVisibilityGrantData = {
     body: CreateResourcePlaneGrantRequest;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
     };
@@ -23566,6 +23686,9 @@ export type AddWikiVisibilityGrantResponse = AddWikiVisibilityGrantResponses[key
 export type RemoveWikiVisibilityGrantData = {
     body?: never;
     path: {
+        /**
+         * Team ID
+         */
         team_id: string;
         wiki_id: WrappedUuidV4;
         principal_type: ResourcePrincipalType;

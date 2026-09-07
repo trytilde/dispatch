@@ -37,6 +37,11 @@
       "types": "./src/proxy.ts",
       "development": "./src/proxy.ts",
       "import": "./dist/proxy.js"
+    },
+    "./chatkit-provider": {
+      "types": "./src/chatkit-provider/index.ts",
+      "development": "./src/chatkit-provider/index.ts",
+      "import": "./dist/chatkit-provider/index.js"
     }
   },
   "publishConfig": {
@@ -56,6 +61,10 @@
       "./proxy": {
         "types": "./dist/proxy.d.ts",
         "import": "./dist/proxy.js"
+      },
+      "./chatkit-provider": {
+        "types": "./dist/chatkit-provider/index.d.ts",
+        "import": "./dist/chatkit-provider/index.js"
       }
     },
     "access": "public"
@@ -71,7 +80,8 @@
   },
   "dependencies": {
     "@trytilde/api-client": "workspace:*",
-    "nice-grpc": "2.1.16"
+    "nice-grpc": "2.1.16",
+    "ajv": "8.20.0"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

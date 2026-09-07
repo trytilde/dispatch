@@ -67,6 +67,19 @@ export {
   type TaskStatus,
   type ToolExecutionState,
 } from "./chatkit";
+export type {
+  BoundProviderTool,
+  CustomChatKitConnection,
+  CustomChatKitProvider,
+  CustomChatKitSetup,
+  CustomChatKitWork,
+  CustomProviderInput,
+} from "./chatkit/custom-providers";
+export {
+  type ChatKitSessionStreamFrame,
+  type ChatKitSessionStreamOptions,
+  ChatKitStreamProtocolError,
+} from "./chatkit/session-stream";
 export { Client, createClient } from "./client";
 export {
   type CapabilityChangeApproval,

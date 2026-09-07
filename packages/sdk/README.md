@@ -62,6 +62,25 @@ pnpm add @trytilde/sdk
 - `@trytilde/sdk/api` exposes the generated API client when a stable wrapper does not yet exist.
 - `@trytilde/sdk/json` exposes the shared JSON types, guards, accessors, and parser.
 
+## Customer-hosted ChatKit providers
+
+The `@trytilde/sdk/chatkit-provider` subpath exports:
+
+- `defineChatKitProvider(definition)` validates configuration, capabilities, and session-tool declarations.
+- `chatKitProviderEndpoint(options)` creates signed Fetch discovery and invocation handlers without an AI framework dependency.
+- `createProviderRuntimeClient(options)` binds ingestion, conversation creation, participant/identity operations, history, and attachment workflows to one connection token.
+- `ChatKitProviderDefinition`, `ProviderContext`, `ProviderSessionTool`, `ProviderSetupResult`, `ProviderDeliveryOptions`, and `ProviderReconciliation` describe the authoring contract. Trusted routing and execution context stays separate from model inputs.
+
+`client.chatkit.customProviders` manages definitions, setup, connections, credential
+rotation, and failed-work inspection/retry. `client.chatkit.sessionTools({ sessionId })`
+returns currently authorized tools bound to the active turn. Keep each tool-call ID
+stable when retrying. `client.chatkit.submitTurn` and `streamSessionEvents` support
+custom client protocols using the caller's existing authorization and event cursors.
+
+See [the Linq, AgentMail, and streaming examples](examples/custom-chatkit/README.md).
+Deploy the companion API before releasing this SDK. Runtime connection credentials
+cannot impersonate Tilde users, and private delivery options must not enter shared logs.
+
 ## JSON values
 
 `@trytilde/sdk/json` owns the SDK's shared JSON types, object guards, string-field accessors, and

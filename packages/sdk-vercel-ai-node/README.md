@@ -23,6 +23,7 @@ pnpm add @trytilde/sdk @trytilde/sdk-vercel-ai-node zod
   without registering them as authored local tools. When Tilde supplies a verified speaker-bound
   personal-tool capability, both request-scoped helpers forward it privately to MCP with fresh
   nonce and protocol-session bindings; the capability is removed before application code runs.
+- `sessionProviderTools(client, { sessionId })` adapts the API's current authorized provider catalog to Vercel AI tools and preserves tool-call IDs for replay. Custom ChatKit connections use it automatically in `context.session.tools` and `context.$provider.tools`.
 - `createChatKitSessionTools(client, session)` constructs the trusted, provider-aware `sendMessage`,
   reaction, thread, AgentMail, and Linq poll tools used by tool-mode endpoints.
 - `toolEndpoint(options)` exposes signed, Zod-validated custom tool discovery and invocation.

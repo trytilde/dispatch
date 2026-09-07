@@ -442,6 +442,13 @@ export type AssignMemoryBankSynthesizerBody = {
 };
 
 /**
+ * An optional toolkit backend materialized as an ordinary custom Tools provider.
+ */
+export type AssociatedToolkit = {
+    discovery_url: string;
+};
+
+/**
  * ChatKit-owned attachment metadata.
  */
 export type Attachment = {
@@ -647,6 +654,24 @@ export enum CapabilityChangeDecision {
  */
 export type ChangeResourceOwnershipRequest = {
     ownership: ResourceOwnership;
+};
+
+/**
+ * Private send intent; never include this value in canonical public events.
+ */
+export type ChannelDeliveryOptions = {
+    attachment_ids?: Array<string>;
+    bcc?: Array<string> | null;
+    cc?: Array<string> | null;
+    html?: string | null;
+    /**
+     * Opaque extension interpreted exclusively by the owning adapter.
+     */
+    provider_options?: unknown;
+    reply_all?: boolean | null;
+    subject?: string | null;
+    to?: Array<string> | null;
+    visible_recipients?: Array<CustomExternalIdentity>;
 };
 
 /**
@@ -937,6 +962,41 @@ export type ChatKitExecutionContext = (ChatKitAgentRunExecutionContext & {
 });
 
 /**
+ * A party that can appear in a ChatKit session.
+ */
+export type ChatKitIdentity = {
+    /**
+     * Set when this address belongs to one of our agents.
+     */
+    agent_inbox_id?: string | null;
+    created_at: WrappedChronoDateTime;
+    display_name: string;
+    /**
+     * The address within that scheme. `None` only for [`ChatKitIdentityKind::TildeUser`].
+     */
+    external_id?: string | null;
+    id: string;
+    kind: ChatKitIdentityKind;
+    metadata?: {
+        [key: string]: unknown;
+    } | null;
+    org_id: string;
+    /**
+     * Namespace that owns the address. Two GitHub organizations can both have
+     * a `dan`, so the scheme alone is never unique.
+     */
+    provider_id?: string | null;
+    team_id: string;
+    /**
+     * Set only by a verified linking flow, or by us when registering an
+     * address for one of our own principals. `None` means no authority.
+     */
+    tilde_user_id?: string | null;
+    updated_at: WrappedChronoDateTime;
+    verified_at?: null | WrappedChronoDateTime;
+};
+
+/**
  * Address scheme for a [`ChatKitIdentity`].
  */
 export enum ChatKitIdentityKind {
@@ -1034,6 +1094,23 @@ export enum ChatKitParticipantType {
     HUMAN = 'human',
     AGENT = 'agent'
 }
+
+/**
+ * Discovery document served by the customer's SDK endpoint.
+ */
+export type ChatKitProviderManifest = {
+    auth_methods?: Array<CustomProviderAuthMethod>;
+    capabilities: CustomProviderCapabilities;
+    configuration_schema: unknown;
+    description: string;
+    display_name: string;
+    fields?: Array<CustomProviderField>;
+    invoke_url: string;
+    protocol_version: number;
+    session_tools?: Array<CustomSessionTool>;
+    subscriptions?: Array<string>;
+    version: string;
+};
 
 export type ChatKitRealtimeSocketTicket = {
     expires_at: WrappedChronoDateTime;
@@ -2485,6 +2562,348 @@ export enum CurrentSeatStatus {
     NOT_BILLABLE = 'not_billable'
 }
 
+/**
+ * Stable registration, separate from any configured connection.
+ */
+export type CustomChatKitProvider = {
+    created_at: WrappedChronoDateTime;
+    discovery_url: string;
+    display_name: string;
+    enabled: boolean;
+    id: string;
+    last_discovery_at?: null | WrappedChronoDateTime;
+    last_discovery_error?: string | null;
+    local_running_endpoint: boolean;
+    manifest?: null | ChatKitProviderManifest;
+    org_id: string;
+    revision: number;
+    team_id: string;
+    updated_at: WrappedChronoDateTime;
+};
+
+/**
+ * Returned once after rotation, with remote notification outcome for host recovery.
+ */
+export type CustomConnectionCredentials = {
+    backend_notified: boolean;
+    runtime_token: string;
+};
+
+/**
+ * Public connection configuration; runtime credentials and setup state are excluded.
+ */
+export type CustomConnectionInfo = {
+    configuration: unknown;
+    default_agent_inbox_id?: string | null;
+    definition_id: string;
+    display_name: string;
+    enabled: boolean;
+    id: string;
+    org_id: string;
+    setup_id: string;
+    status: string;
+    team_id: string;
+    tool_group_instance_id?: string | null;
+    toolkit_discovery_url?: string | null;
+};
+
+export type CustomConnectionInfoPaginatedResponse = {
+    items: Array<CustomConnectionInfo>;
+    next_page_token?: string;
+};
+
+/**
+ * Operational diagnostics omit normalized message bodies and credentials.
+ */
+export type CustomConnectionWork = {
+    attempts: number;
+    created_at: WrappedChronoDateTime;
+    kind: string;
+    last_error?: string | null;
+    next_attempt_at: WrappedChronoDateTime;
+    status: string;
+    work_id: string;
+};
+
+export type CustomConnectionWorkPaginatedResponse = {
+    items: Array<CustomConnectionWork>;
+    next_page_token?: string;
+};
+
+/**
+ * One external address; callers cannot grant themselves principal authority.
+ */
+export type CustomExternalIdentity = {
+    display_name: string;
+    external_id: string;
+    kind: ChatKitIdentityKind;
+};
+
+/**
+ * Normalized event accepted using a single connection's runtime credential.
+ */
+export type CustomInboundMessage = {
+    attachment_ids?: Array<string>;
+    conversation_key: string;
+    event_id: string;
+    external_message_id: string;
+    provider_metadata?: unknown;
+    provider_thread?: unknown;
+    sender: CustomExternalIdentity;
+    text: string;
+};
+
+/**
+ * A durable ingestion acknowledgment, including replay of an existing event.
+ */
+export type CustomIngressReceipt = {
+    event_id: string;
+    message_id: string;
+    status: string;
+};
+
+/**
+ * Provider-owned authorization method; secret fields are never list outputs.
+ */
+export type CustomProviderAuthMethod = {
+    description: string;
+    display_name: string;
+    fields: Array<CustomProviderField>;
+    id: string;
+};
+
+/**
+ * Content conversion and runtime features declared by a backend.
+ */
+export type CustomProviderCapabilities = {
+    attachments?: boolean;
+    delivery?: boolean;
+    html?: boolean;
+    identity?: boolean;
+    inbound?: boolean;
+    markdown?: boolean;
+    max_length?: number | null;
+    streaming?: boolean;
+    toolkit?: boolean;
+};
+
+/**
+ * Named schema-backed field rendered by the existing generic setup flow.
+ */
+export type CustomProviderField = {
+    field_type: string;
+    label: string;
+    name: string;
+    placeholder?: string;
+    required?: boolean;
+};
+
+/**
+ * Exact signed remote invocation. Secret-bearing payloads intentionally omit Debug.
+ */
+export type CustomProviderInvocation = {
+    configuration: unknown;
+    context?: null | CustomSessionContext;
+    input: unknown;
+    manifest_version: string;
+    operation: CustomProviderOperation;
+    protocol_version: number;
+    request_id: string;
+    scope: CustomProviderScope;
+    secrets: unknown;
+};
+
+/**
+ * A paginated team catalog; continuation uses the existing timestamp cursor.
+ */
+export type CustomProviderList = {
+    items: Array<CustomChatKitProvider>;
+    next_page_token?: string | null;
+};
+
+/**
+ * Tilde-owned protocol operations are typed independently of provider business inputs.
+ */
+export enum CustomProviderOperation {
+    SETUP_START = 'setup_start',
+    SETUP_RESUME = 'setup_resume',
+    DISCONNECT = 'disconnect',
+    RUNTIME_CREDENTIALS_UPDATED = 'runtime_credentials_updated',
+    TOOLKIT_CONFIGURED = 'toolkit_configured',
+    REGISTER_IDENTITY = 'register_identity',
+    NORMALIZE_MENTIONS = 'normalize_mentions',
+    LIST_SESSION_TOOLS = 'list_session_tools',
+    INVOKE_SESSION_TOOL = 'invoke_session_tool',
+    RECONCILE_SESSION_TOOL = 'reconcile_session_tool',
+    PREPARE_SEND = 'prepare_send',
+    DELIVER = 'deliver',
+    RECONCILE_DELIVERY = 'reconcile_delivery'
+}
+
+/**
+ * Signing material is returned only by explicit create/rotate operations.
+ */
+export type CustomProviderRegistration = {
+    provider: CustomChatKitProvider;
+    signing_key: string;
+};
+
+/**
+ * Input for creating or editing a reusable backend registration.
+ */
+export type CustomProviderRegistrationInput = {
+    discovery_url: string;
+    display_name: string;
+    local_running_endpoint?: boolean;
+};
+
+/**
+ * Tenant-scoped coordinates recovered from persisted records.
+ */
+export type CustomProviderScope = {
+    connection_id: string;
+    definition_id: string;
+    org_id: string;
+    team_id: string;
+};
+
+/**
+ * Remote mutations must distinguish absence from an unresolved prior attempt.
+ */
+export type CustomReconciliation = {
+    result: unknown;
+    status: 'applied';
+} | {
+    status: 'absent';
+} | {
+    reason: string;
+    status: 'uncertain';
+};
+
+/**
+ * Narrow operations a provider may perform inside its own bound conversations.
+ */
+export type CustomRuntimeCommand = {
+    operation: 'register_agent_identity';
+} | {
+    operation: 'normalize_mentions';
+    tags: Array<string>;
+} | {
+    conversation_key: string;
+    operation: 'ensure_conversation';
+    provider_thread?: unknown;
+    title?: string | null;
+} | {
+    filename?: string | null;
+    media_type: string;
+    operation: 'create_attachment_upload';
+    session_id: string;
+    size_bytes?: number | null;
+} | {
+    attachment_id: string;
+    operation: 'complete_attachment_upload';
+    session_id: string;
+    sha256?: string | null;
+    size_bytes?: number | null;
+} | {
+    attachment_id: string;
+    operation: 'attachment_download';
+    session_id: string;
+} | {
+    identity: CustomExternalIdentity;
+    operation: 'upsert_participant';
+    session_id: string;
+} | {
+    external_id: string;
+    operation: 'leave_participant';
+    session_id: string;
+} | {
+    next_page_token?: string | null;
+    operation: 'history';
+    page_size?: number | null;
+    session_id: string;
+};
+
+/**
+ * Runtime responses deliberately expose no general team resource operations.
+ */
+export type CustomRuntimeResponse = {
+    identity: ChatKitIdentity;
+    type: 'identity';
+} | {
+    identities: Array<ChatKitIdentity>;
+    type: 'mentions';
+} | {
+    session_id: string;
+    type: 'conversation';
+} | {
+    type: 'upload';
+    upload: CreateAttachmentUploadResponse;
+} | {
+    attachment: Attachment;
+    type: 'attachment';
+} | {
+    download: GetAttachmentDownloadUrlResponse;
+    type: 'download';
+} | {
+    participant: ChatKitParticipant;
+    type: 'participant';
+} | {
+    type: 'left';
+} | {
+    messages: Array<CustomVisibleMessage>;
+    next_page_token?: string | null;
+    type: 'history';
+};
+
+/**
+ * Coordinates verified against the active turn before invoking a session tool.
+ */
+export type CustomSessionContext = {
+    agent_inbox_instance_id: string;
+    conversation_key: string;
+    execution_id: string;
+    external_message_id: string;
+    participants?: Array<CustomSessionParticipant>;
+    provider_message: unknown;
+    /**
+     * Only the provider adapter interprets this external reply handle.
+     */
+    provider_thread: unknown;
+    session_id: string;
+    target_inbox_instance_id: string;
+    trigger_message_id: string;
+};
+
+/**
+ * Active delivery roster, excluding Tilde authorization principals and other connections' addresses.
+ */
+export type CustomSessionParticipant = {
+    display_name: string;
+    external_id?: string | null;
+    instance_id: string;
+    is_agent: boolean;
+};
+
+/**
+ * Tool schemas describe business inputs only. Context travels separately.
+ */
+export type CustomSessionTool = {
+    description: string;
+    input_schema: unknown;
+    name: string;
+    output_schema: unknown;
+    read_only?: boolean;
+};
+
+/**
+ * Server-bound tool catalog for the authenticated agent's current turn.
+ */
+export type CustomSessionToolCatalog = {
+    context?: null | CustomSessionContext;
+    tools: Array<CustomSessionTool>;
+};
+
 export type CustomSkillSpec = {
     content: string;
     description: string;
@@ -2529,6 +2948,14 @@ export type CustomToolProviderSerialized = {
     tool_group_instance_id: string;
     tool_group_source_type_id: string;
     updated_at: WrappedChronoDateTime;
+};
+
+export type CustomVisibleMessage = {
+    created_at: WrappedChronoDateTime;
+    id: string;
+    role: MessageRole;
+    sender_display_name: string;
+    text: string;
 };
 
 /**
@@ -5908,6 +6335,10 @@ export type RetainMemoryBody = {
     document: MemoryDocument;
 };
 
+export type RetryConnectionWork = {
+    work_id: string;
+};
+
 export type RetryMemorySourceBody = {
     source_id: string;
     source_kind: MemorySourceKind;
@@ -6242,10 +6673,12 @@ export type SendSessionMessageBody = SendSessionMessageInput & {
  * Model-visible parameters for the session-bound communication tool.
  */
 export type SendSessionMessageInput = {
+    attachment_ids?: Array<WrappedUuidV4>;
     bcc?: Array<string> | null;
     cc?: Array<string> | null;
     content: string;
     html?: string | null;
+    provider_options?: null | WrappedJsonValue;
     reply_all?: boolean | null;
     subject?: string | null;
     to?: Array<string> | null;
@@ -13681,6 +14114,356 @@ export type ChatkitListAvailableChatChannelsResponses = {
 
 export type ChatkitListAvailableChatChannelsResponse = ChatkitListAvailableChatChannelsResponses[keyof ChatkitListAvailableChatChannelsResponses];
 
+export type ChatkitGetCustomConnectionData = {
+    body?: never;
+    path: {
+        team_id: string;
+        connection_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}';
+};
+
+export type ChatkitGetCustomConnectionErrors = {
+    400: Error;
+};
+
+export type ChatkitGetCustomConnectionError = ChatkitGetCustomConnectionErrors[keyof ChatkitGetCustomConnectionErrors];
+
+export type ChatkitGetCustomConnectionResponses = {
+    200: CustomConnectionInfo;
+};
+
+export type ChatkitGetCustomConnectionResponse = ChatkitGetCustomConnectionResponses[keyof ChatkitGetCustomConnectionResponses];
+
+export type ChatkitIngestCustomProviderMessageData = {
+    body: CustomInboundMessage;
+    path: {
+        team_id: string;
+        connection_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/messages';
+};
+
+export type ChatkitIngestCustomProviderMessageErrors = {
+    400: Error;
+};
+
+export type ChatkitIngestCustomProviderMessageError = ChatkitIngestCustomProviderMessageErrors[keyof ChatkitIngestCustomProviderMessageErrors];
+
+export type ChatkitIngestCustomProviderMessageResponses = {
+    200: CustomIngressReceipt;
+};
+
+export type ChatkitIngestCustomProviderMessageResponse = ChatkitIngestCustomProviderMessageResponses[keyof ChatkitIngestCustomProviderMessageResponses];
+
+export type ChatkitCustomProviderRuntimeData = {
+    body: CustomRuntimeCommand;
+    path: {
+        team_id: string;
+        connection_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/runtime';
+};
+
+export type ChatkitCustomProviderRuntimeErrors = {
+    400: Error;
+};
+
+export type ChatkitCustomProviderRuntimeError = ChatkitCustomProviderRuntimeErrors[keyof ChatkitCustomProviderRuntimeErrors];
+
+export type ChatkitCustomProviderRuntimeResponses = {
+    200: CustomRuntimeResponse;
+};
+
+export type ChatkitCustomProviderRuntimeResponse = ChatkitCustomProviderRuntimeResponses[keyof ChatkitCustomProviderRuntimeResponses];
+
+export type ChatkitRotateCustomConnectionCredentialsData = {
+    body?: never;
+    path: {
+        team_id: string;
+        connection_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/runtime-token/rotate';
+};
+
+export type ChatkitRotateCustomConnectionCredentialsErrors = {
+    400: Error;
+};
+
+export type ChatkitRotateCustomConnectionCredentialsError = ChatkitRotateCustomConnectionCredentialsErrors[keyof ChatkitRotateCustomConnectionCredentialsErrors];
+
+export type ChatkitRotateCustomConnectionCredentialsResponses = {
+    200: CustomConnectionCredentials;
+};
+
+export type ChatkitRotateCustomConnectionCredentialsResponse = ChatkitRotateCustomConnectionCredentialsResponses[keyof ChatkitRotateCustomConnectionCredentialsResponses];
+
+export type ChatkitListCustomConnectionWorkData = {
+    body?: never;
+    path: {
+        team_id: string;
+        connection_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/work';
+};
+
+export type ChatkitListCustomConnectionWorkErrors = {
+    400: Error;
+};
+
+export type ChatkitListCustomConnectionWorkError = ChatkitListCustomConnectionWorkErrors[keyof ChatkitListCustomConnectionWorkErrors];
+
+export type ChatkitListCustomConnectionWorkResponses = {
+    200: CustomConnectionWorkPaginatedResponse;
+};
+
+export type ChatkitListCustomConnectionWorkResponse = ChatkitListCustomConnectionWorkResponses[keyof ChatkitListCustomConnectionWorkResponses];
+
+export type ChatkitRetryCustomConnectionWorkData = {
+    body: RetryConnectionWork;
+    path: {
+        team_id: string;
+        connection_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-connections/{connection_id}/work/retry';
+};
+
+export type ChatkitRetryCustomConnectionWorkErrors = {
+    400: Error;
+};
+
+export type ChatkitRetryCustomConnectionWorkError = ChatkitRetryCustomConnectionWorkErrors[keyof ChatkitRetryCustomConnectionWorkErrors];
+
+export type ChatkitRetryCustomConnectionWorkResponses = {
+    200: DeleteInboxResponse;
+};
+
+export type ChatkitRetryCustomConnectionWorkResponse = ChatkitRetryCustomConnectionWorkResponses[keyof ChatkitRetryCustomConnectionWorkResponses];
+
+export type ChatkitListCustomProviderData = {
+    body?: never;
+    path: {
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers';
+};
+
+export type ChatkitListCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitListCustomProviderError = ChatkitListCustomProviderErrors[keyof ChatkitListCustomProviderErrors];
+
+export type ChatkitListCustomProviderResponses = {
+    200: CustomProviderList;
+};
+
+export type ChatkitListCustomProviderResponse = ChatkitListCustomProviderResponses[keyof ChatkitListCustomProviderResponses];
+
+export type ChatkitCreateCustomProviderData = {
+    body: CustomProviderRegistrationInput;
+    path: {
+        team_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers';
+};
+
+export type ChatkitCreateCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitCreateCustomProviderError = ChatkitCreateCustomProviderErrors[keyof ChatkitCreateCustomProviderErrors];
+
+export type ChatkitCreateCustomProviderResponses = {
+    200: CustomProviderRegistration;
+};
+
+export type ChatkitCreateCustomProviderResponse = ChatkitCreateCustomProviderResponses[keyof ChatkitCreateCustomProviderResponses];
+
+export type ChatkitDeleteCustomProviderData = {
+    body?: never;
+    path: {
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}';
+};
+
+export type ChatkitDeleteCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitDeleteCustomProviderError = ChatkitDeleteCustomProviderErrors[keyof ChatkitDeleteCustomProviderErrors];
+
+export type ChatkitDeleteCustomProviderResponses = {
+    200: DeleteInboxResponse;
+};
+
+export type ChatkitDeleteCustomProviderResponse = ChatkitDeleteCustomProviderResponses[keyof ChatkitDeleteCustomProviderResponses];
+
+export type ChatkitGetCustomProviderData = {
+    body?: never;
+    path: {
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}';
+};
+
+export type ChatkitGetCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitGetCustomProviderError = ChatkitGetCustomProviderErrors[keyof ChatkitGetCustomProviderErrors];
+
+export type ChatkitGetCustomProviderResponses = {
+    200: CustomChatKitProvider;
+};
+
+export type ChatkitGetCustomProviderResponse = ChatkitGetCustomProviderResponses[keyof ChatkitGetCustomProviderResponses];
+
+export type ChatkitUpdateCustomProviderData = {
+    body: CustomProviderRegistrationInput;
+    path: {
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}';
+};
+
+export type ChatkitUpdateCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitUpdateCustomProviderError = ChatkitUpdateCustomProviderErrors[keyof ChatkitUpdateCustomProviderErrors];
+
+export type ChatkitUpdateCustomProviderResponses = {
+    200: CustomChatKitProvider;
+};
+
+export type ChatkitUpdateCustomProviderResponse = ChatkitUpdateCustomProviderResponses[keyof ChatkitUpdateCustomProviderResponses];
+
+export type ChatkitListCustomConnectionsData = {
+    body?: never;
+    path: {
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/connections';
+};
+
+export type ChatkitListCustomConnectionsErrors = {
+    400: Error;
+};
+
+export type ChatkitListCustomConnectionsError = ChatkitListCustomConnectionsErrors[keyof ChatkitListCustomConnectionsErrors];
+
+export type ChatkitListCustomConnectionsResponses = {
+    200: CustomConnectionInfoPaginatedResponse;
+};
+
+export type ChatkitListCustomConnectionsResponse = ChatkitListCustomConnectionsResponses[keyof ChatkitListCustomConnectionsResponses];
+
+export type ChatkitDisableCustomProviderData = {
+    body?: never;
+    path: {
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/disable';
+};
+
+export type ChatkitDisableCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitDisableCustomProviderError = ChatkitDisableCustomProviderErrors[keyof ChatkitDisableCustomProviderErrors];
+
+export type ChatkitDisableCustomProviderResponses = {
+    200: CustomChatKitProvider;
+};
+
+export type ChatkitDisableCustomProviderResponse = ChatkitDisableCustomProviderResponses[keyof ChatkitDisableCustomProviderResponses];
+
+export type ChatkitEnableCustomProviderData = {
+    body?: never;
+    path: {
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/enable';
+};
+
+export type ChatkitEnableCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitEnableCustomProviderError = ChatkitEnableCustomProviderErrors[keyof ChatkitEnableCustomProviderErrors];
+
+export type ChatkitEnableCustomProviderResponses = {
+    200: CustomChatKitProvider;
+};
+
+export type ChatkitEnableCustomProviderResponse = ChatkitEnableCustomProviderResponses[keyof ChatkitEnableCustomProviderResponses];
+
+export type ChatkitRefreshCustomProviderData = {
+    body?: never;
+    path: {
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/refresh';
+};
+
+export type ChatkitRefreshCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitRefreshCustomProviderError = ChatkitRefreshCustomProviderErrors[keyof ChatkitRefreshCustomProviderErrors];
+
+export type ChatkitRefreshCustomProviderResponses = {
+    200: CustomChatKitProvider;
+};
+
+export type ChatkitRefreshCustomProviderResponse = ChatkitRefreshCustomProviderResponses[keyof ChatkitRefreshCustomProviderResponses];
+
+export type ChatkitRotateCustomProviderData = {
+    body?: never;
+    path: {
+        team_id: string;
+        provider_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/custom-providers/{provider_id}/signing-key/rotate';
+};
+
+export type ChatkitRotateCustomProviderErrors = {
+    400: Error;
+};
+
+export type ChatkitRotateCustomProviderError = ChatkitRotateCustomProviderErrors[keyof ChatkitRotateCustomProviderErrors];
+
+export type ChatkitRotateCustomProviderResponses = {
+    200: CustomProviderRegistration;
+};
+
+export type ChatkitRotateCustomProviderResponse = ChatkitRotateCustomProviderResponses[keyof ChatkitRotateCustomProviderResponses];
+
 export type LinkTeamIdentityData = {
     body: LinkTeamIdentityRequestInner;
     path: {
@@ -15026,6 +15809,31 @@ export type ChatkitGetLatestCompactionResponses = {
 
 export type ChatkitGetLatestCompactionResponse = ChatkitGetLatestCompactionResponses[keyof ChatkitGetLatestCompactionResponses];
 
+export type ChatkitStreamSessionEventsData = {
+    body?: never;
+    path: {
+        team_id: string;
+        session_id: WrappedUuidV4;
+    };
+    query?: {
+        after_revision?: number | null;
+    };
+    url: '/api/v1/team/{team_id}/chatkit/sessions/{session_id}/events/stream';
+};
+
+export type ChatkitStreamSessionEventsErrors = {
+    400: Error;
+};
+
+export type ChatkitStreamSessionEventsError = ChatkitStreamSessionEventsErrors[keyof ChatkitStreamSessionEventsErrors];
+
+export type ChatkitStreamSessionEventsResponses = {
+    /**
+     * Canonical session event stream
+     */
+    200: unknown;
+};
+
 export type ChatkitListRoomInvitationsData = {
     body?: never;
     path: {
@@ -15362,6 +16170,28 @@ export type ChatkitRemoveSessionParticipantResponses = {
 };
 
 export type ChatkitRemoveSessionParticipantResponse = ChatkitRemoveSessionParticipantResponses[keyof ChatkitRemoveSessionParticipantResponses];
+
+export type ChatkitListSessionProviderToolsData = {
+    body?: never;
+    path: {
+        team_id: string;
+        session_id: string;
+    };
+    query?: never;
+    url: '/api/v1/team/{team_id}/chatkit/sessions/{session_id}/provider-tools';
+};
+
+export type ChatkitListSessionProviderToolsErrors = {
+    400: Error;
+};
+
+export type ChatkitListSessionProviderToolsError = ChatkitListSessionProviderToolsErrors[keyof ChatkitListSessionProviderToolsErrors];
+
+export type ChatkitListSessionProviderToolsResponses = {
+    200: CustomSessionToolCatalog;
+};
+
+export type ChatkitListSessionProviderToolsResponse = ChatkitListSessionProviderToolsResponses[keyof ChatkitListSessionProviderToolsResponses];
 
 export type ChatkitSendSessionMessageData = {
     body: SendSessionMessageBody;

@@ -5,6 +5,7 @@ import {
   connectorAuthorizedReturnUrl,
   connectorSelectionFromPart,
   connectorSetupFields,
+  connectorSetupValues,
   CreateConnectorAccountResultSchema,
   waitForConnectorAccountActive,
   type ConnectorAccount,
@@ -170,5 +171,26 @@ describe("waitForConnectorAccountActive", () => {
         sleep: async () => undefined,
       }),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("connector form values", () => {
+  it("preserves credential whitespace and parses structured values", () => {
+    const fields = connectorSetupFields({
+      type: "object",
+      properties: { api_key: { type: "string" }, config: { type: "object" } },
+    });
+    expect(
+      connectorSetupValues(fields, { api_key: " secret ", config: '{"enabled":true}' }),
+    ).toEqual({ api_key: " secret ", config: { enabled: true } });
+  });
+  it("does not expose invalid credential contents in validation errors", () => {
+    const fields = connectorSetupFields({
+      type: "object",
+      properties: { config: { type: "object" } },
+    });
+    expect(() => connectorSetupValues(fields, { config: "private-credential" })).toThrow(
+      "Config must contain a JSON object or array.",
+    );
   });
 });

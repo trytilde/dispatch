@@ -628,27 +628,6 @@ export type CancelHumanApprovalActionRequest = {
 };
 
 /**
- * Model-visible capability confirmation. It deliberately contains no approval token.
- */
-export type CapabilityChangeApproval = {
-    approval_id: string;
-    instructions: string;
-    proposal_generation: number;
-    proposal_hash: string;
-    proposal_id: string;
-    status: string;
-    title: string;
-};
-
-/**
- * The only supported decisions for an inline capability confirmation.
- */
-export enum CapabilityChangeDecision {
-    APPROVE = 'approve',
-    REJECT = 'reject'
-}
-
-/**
  * Body used by root-specific ownership-change operations. The target owner is
  * always the effective actor; APIs do not expose arbitrary user transfer.
  */
@@ -2128,24 +2107,6 @@ export type CreateReverseProxyProfileInner = {
 };
 
 /**
- * Agent-authored intent submitted to the server for validation and previewing.
- */
-export type CreateSelfExtensionProposalInner = {
-    category: SelfExtensionCategory;
-    /**
-     * Provider/domain desired state. Plaintext credential fields are rejected.
-     */
-    desired_state: WrappedJsonValue;
-    expires_in_seconds?: number;
-    idempotency_key: string;
-    rationale: string;
-    requesting_agent_id: string;
-    run_id?: string | null;
-    session_id?: string | null;
-    title: string;
-};
-
-/**
  * Inner create fields for a ChatKit session.
  */
 export type CreateSessionInner = {
@@ -2972,16 +2933,6 @@ export type DebugAuthProfilesResponse = {
 };
 
 /**
- * Exact client binding posted when a human presses Yes or No.
- */
-export type DecideCapabilityChangeRequest = {
-    approval_id: string;
-    decision: CapabilityChangeDecision;
-    proposal_generation: number;
-    proposal_hash: string;
-};
-
-/**
  * Request body for accepting or declining a room invitation.
  */
 export type DecideChatKitRoomInvitationRequestInner = {
@@ -3711,9 +3662,6 @@ export type HumanApprovalActionPayload = {
     reason?: string | null;
     type: 'browser_session_handoff';
     ws_url: string;
-} | {
-    proposal_id: string;
-    type: 'capability_change';
 };
 
 export type HumanApprovalActionResponse = {
@@ -5302,26 +5250,6 @@ export enum ProductSubscriptionStatus {
 }
 
 /**
- * A required credential descriptor. It intentionally cannot carry a value.
- */
-export type ProposalCredentialRequirement = {
-    brokered_by: string;
-    credential_type: string;
-    purpose: string;
-    required_fields?: Array<string>;
-};
-
-/**
- * One permission or audience expansion shown before approval.
- */
-export type ProposalPermissionChange = {
-    permission: string;
-    plane: string;
-    principals?: Array<string>;
-    reason: string;
-};
-
-/**
  * Response for setup or app provisioning lifecycle calls.
  */
 export type ProviderAppProvisioningResponse = {
@@ -6532,106 +6460,6 @@ export type SelectDebugAuthProfileRequest = {
     profile: string;
 };
 
-/**
- * Resource families an agent may propose but never directly provision.
- */
-export enum SelfExtensionCategory {
-    CONNECTOR = 'connector',
-    MCP_SERVER = 'mcp_server',
-    SKILL_REGISTRY = 'skill_registry',
-    CUSTOM_TOOL = 'custom_tool',
-    AGENT = 'agent',
-    MEMORY_BANK = 'memory_bank',
-    WIKI = 'wiki'
-}
-
-/**
- * Server-authored review document rendered by every client without category branches.
- */
-export type SelfExtensionPreview = {
-    affected_agents?: Array<string>;
-    affected_users?: Array<string>;
-    cost_summary: string;
-    credentials?: Array<ProposalCredentialRequirement>;
-    egress_destinations?: Array<string>;
-    permissions?: Array<ProposalPermissionChange>;
-    /**
-     * Concrete desired-state diff with secret references but no secret values.
-     */
-    resource_diff: WrappedJsonValue;
-    rollback_plan: string;
-    security_summary: string;
-};
-
-/**
- * Public proposal snapshot. It never returns worker leases or secret material.
- */
-export type SelfExtensionProposal = {
-    /**
-     * Secret-free binding used by clients to render and submit the exact approval.
-     */
-    approval: CapabilityChangeApproval;
-    approved_by_user_id?: string | null;
-    calling_subject_id: string;
-    category: SelfExtensionCategory;
-    continuation?: null | WrappedJsonValue;
-    created_at: WrappedChronoDateTime;
-    desired_state: WrappedJsonValue;
-    error_message?: string | null;
-    expires_at: WrappedChronoDateTime;
-    generation: number;
-    id: string;
-    org_id: string;
-    outputs_available: boolean;
-    preview: SelfExtensionPreview;
-    rationale: string;
-    requesting_agent_id: string;
-    requesting_user_id?: string | null;
-    resources?: Array<SelfExtensionResource>;
-    run_id?: string | null;
-    session_id?: string | null;
-    status: SelfExtensionStatus;
-    team_id: string;
-    title: string;
-    updated_at: WrappedChronoDateTime;
-};
-
-/**
- * One-time execution values, returned only to an authorized human reviewer.
- */
-export type SelfExtensionProposalOutputs = {
-    values?: {
-        [key: string]: string;
-    };
-};
-
-/**
- * A resource receipt used for idempotency and exact rollback ownership.
- */
-export type SelfExtensionResource = {
-    created_by_proposal: boolean;
-    id: string;
-    key: string;
-    kind: string;
-};
-
-/**
- * Durable proposal lifecycle. Execution and rollback are leased worker states.
- */
-export enum SelfExtensionStatus {
-    PENDING = 'pending',
-    APPROVED = 'approved',
-    EXECUTING = 'executing',
-    EXECUTED = 'executed',
-    REJECTED = 'rejected',
-    CANCELLED = 'cancelled',
-    EXPIRED = 'expired',
-    ROLLBACK_QUEUED = 'rollback_queued',
-    ROLLING_BACK = 'rolling_back',
-    ROLLED_BACK = 'rolled_back',
-    ERROR = 'error'
-}
-
 export type SelfProfileAvatarResponse = {
     avatar: UserAvatar;
 };
@@ -7123,6 +6951,12 @@ export type SkillRegistry = {
     updated_at: WrappedChronoDateTime;
 };
 
+export type SkillRegistryMembershipView = {
+    agent_id?: string | null;
+    id: WrappedUuidV4;
+    skill_ids: Array<WrappedUuidV4>;
+};
+
 export type SkillRegistryPaginatedResponse = {
     items: Array<SkillRegistry>;
     next_page_token?: string;
@@ -7134,6 +6968,25 @@ export type SkillRegistrySpec = {
     enabled_skills?: EnabledSkillsSpec;
     id?: string | null;
     name?: string | null;
+};
+
+export type SkillResourceInventory = {
+    skill_providers: Array<ProxiedSkillProvider>;
+    skill_registries: Array<SkillRegistryMembershipView>;
+    skills: Array<SkillResourceView>;
+};
+
+export type SkillResourceView = {
+    assigned_agent_ids: Array<string>;
+    description: string;
+    enabled_for_personal: boolean;
+    id: WrappedUuidV4;
+    name: string;
+    personal_user_id?: string | null;
+    source_commit_hash?: string | null;
+    source_kind: string;
+    source_path?: string | null;
+    source_provider_id?: string | null;
 };
 
 export type SkillSummary = {
@@ -7770,6 +7623,26 @@ export enum ToolInvocationState {
     OUTPUT_ERROR = 'output-error',
     OUTPUT_DENIED = 'output-denied'
 }
+
+export type ToolProviderAccountView = {
+    assigned_agent_ids: Array<string>;
+    credential_source_type_id: string;
+    display_name: string;
+    enabled_for_personal: boolean;
+    enabled_tool_source_type_ids: Array<string>;
+    id: string;
+    personal_user_id?: string | null;
+    status: string;
+    tool_group_source_type_id: string;
+};
+
+export type ToolProviderInventory = {
+    managed_providers: Array<McpProviderCatalogEntry>;
+    mcp_servers: Array<McpServerInstanceSerializedWithFunctions>;
+    proxied_mcp_servers: Array<ProxiedMcpServerListItem>;
+    tool_accounts: Array<ToolProviderAccountView>;
+    tool_providers: Array<ToolGroupSourceSerialized>;
+};
 
 export type ToolSourceSerialized = {
     annotations?: null | WrappedJsonValue;
@@ -14581,152 +14454,6 @@ export type ChatkitHydrateConvertedMessagesResponses = {
 
 export type ChatkitHydrateConvertedMessagesResponse = ChatkitHydrateConvertedMessagesResponses[keyof ChatkitHydrateConvertedMessagesResponses];
 
-export type ChatkitListSelfExtensionProposalsData = {
-    body?: never;
-    path: {
-        team_id: string;
-    };
-    query?: {
-        status?: SelfExtensionStatus;
-        requesting_agent_id?: string;
-        page_size?: number;
-    };
-    url: '/api/v1/team/{team_id}/chatkit/self-extension-proposals';
-};
-
-export type ChatkitListSelfExtensionProposalsResponses = {
-    200: Array<SelfExtensionProposal>;
-};
-
-export type ChatkitListSelfExtensionProposalsResponse = ChatkitListSelfExtensionProposalsResponses[keyof ChatkitListSelfExtensionProposalsResponses];
-
-export type ChatkitProposeSelfExtensionData = {
-    body: CreateSelfExtensionProposalInner;
-    path: {
-        team_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/chatkit/self-extension-proposals';
-};
-
-export type ChatkitProposeSelfExtensionResponses = {
-    201: SelfExtensionProposal;
-};
-
-export type ChatkitProposeSelfExtensionResponse = ChatkitProposeSelfExtensionResponses[keyof ChatkitProposeSelfExtensionResponses];
-
-export type ChatkitGetSelfExtensionProposalData = {
-    body?: never;
-    path: {
-        team_id: string;
-        proposal_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}';
-};
-
-export type ChatkitGetSelfExtensionProposalResponses = {
-    200: SelfExtensionProposal;
-};
-
-export type ChatkitGetSelfExtensionProposalResponse = ChatkitGetSelfExtensionProposalResponses[keyof ChatkitGetSelfExtensionProposalResponses];
-
-export type ChatkitApproveSelfExtensionProposalData = {
-    body?: never;
-    path: {
-        team_id: string;
-        proposal_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/approve';
-};
-
-export type ChatkitApproveSelfExtensionProposalResponses = {
-    200: SelfExtensionProposal;
-};
-
-export type ChatkitApproveSelfExtensionProposalResponse = ChatkitApproveSelfExtensionProposalResponses[keyof ChatkitApproveSelfExtensionProposalResponses];
-
-export type ChatkitCancelSelfExtensionProposalData = {
-    body?: never;
-    path: {
-        team_id: string;
-        proposal_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/cancel';
-};
-
-export type ChatkitCancelSelfExtensionProposalResponses = {
-    200: SelfExtensionProposal;
-};
-
-export type ChatkitCancelSelfExtensionProposalResponse = ChatkitCancelSelfExtensionProposalResponses[keyof ChatkitCancelSelfExtensionProposalResponses];
-
-export type ChatkitDecideCapabilityChangeData = {
-    body: DecideCapabilityChangeRequest;
-    path: {
-        team_id: string;
-        proposal_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/decision';
-};
-
-export type ChatkitDecideCapabilityChangeResponses = {
-    200: SelfExtensionProposal;
-};
-
-export type ChatkitDecideCapabilityChangeResponse = ChatkitDecideCapabilityChangeResponses[keyof ChatkitDecideCapabilityChangeResponses];
-
-export type ChatkitClaimSelfExtensionProposalOutputsData = {
-    body?: never;
-    path: {
-        team_id: string;
-        proposal_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/outputs/claim';
-};
-
-export type ChatkitClaimSelfExtensionProposalOutputsResponses = {
-    200: SelfExtensionProposalOutputs;
-};
-
-export type ChatkitClaimSelfExtensionProposalOutputsResponse = ChatkitClaimSelfExtensionProposalOutputsResponses[keyof ChatkitClaimSelfExtensionProposalOutputsResponses];
-
-export type ChatkitRejectSelfExtensionProposalData = {
-    body?: never;
-    path: {
-        team_id: string;
-        proposal_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/reject';
-};
-
-export type ChatkitRejectSelfExtensionProposalResponses = {
-    200: SelfExtensionProposal;
-};
-
-export type ChatkitRejectSelfExtensionProposalResponse = ChatkitRejectSelfExtensionProposalResponses[keyof ChatkitRejectSelfExtensionProposalResponses];
-
-export type ChatkitRollbackSelfExtensionProposalData = {
-    body?: never;
-    path: {
-        team_id: string;
-        proposal_id: string;
-    };
-    query?: never;
-    url: '/api/v1/team/{team_id}/chatkit/self-extension-proposals/{proposal_id}/rollback';
-};
-
-export type ChatkitRollbackSelfExtensionProposalResponses = {
-    200: SelfExtensionProposal;
-};
-
-export type ChatkitRollbackSelfExtensionProposalResponse = ChatkitRollbackSelfExtensionProposalResponses[keyof ChatkitRollbackSelfExtensionProposalResponses];
-
 export type ListSessionsData = {
     body?: never;
     path: {
@@ -20047,6 +19774,24 @@ export type EnableAndBindProviderToolsResponses = {
 
 export type EnableAndBindProviderToolsResponse = EnableAndBindProviderToolsResponses[keyof EnableAndBindProviderToolsResponses];
 
+export type ListToolProviderInventoryData = {
+    body?: never;
+    path: {
+        team_id: string;
+    };
+    query?: {
+        scope?: 'all' | 'personal' | 'bots';
+        user_id?: string | null;
+    };
+    url: '/api/v1/team/{team_id}/mcp/tool-providers';
+};
+
+export type ListToolProviderInventoryResponses = {
+    200: ToolProviderInventory;
+};
+
+export type ListToolProviderInventoryResponse = ListToolProviderInventoryResponses[keyof ListToolProviderInventoryResponses];
+
 export type ListToolsData = {
     body?: never;
     path: {
@@ -22295,6 +22040,24 @@ export type RemoveSkillVisibilityGrantData = {
 export type RemoveSkillVisibilityGrantResponses = {
     200: unknown;
 };
+
+export type ListSkillResourceInventoryData = {
+    body?: never;
+    path: {
+        team_id: string;
+    };
+    query?: {
+        scope?: 'all' | 'personal' | 'bots';
+        user_id?: string | null;
+    };
+    url: '/api/v1/team/{team_id}/skills';
+};
+
+export type ListSkillResourceInventoryResponses = {
+    200: SkillResourceInventory;
+};
+
+export type ListSkillResourceInventoryResponse = ListSkillResourceInventoryResponses[keyof ListSkillResourceInventoryResponses];
 
 export type StateExportData = {
     body?: never;

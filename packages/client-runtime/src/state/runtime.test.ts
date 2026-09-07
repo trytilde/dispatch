@@ -1,8 +1,30 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { createClientAuthAdapter } from "../auth.js";
-import { createOpenBotClient, type OpenBotClient } from "../chat/client.js";
+import {
+  createOpenBotClient as createTransportClient,
+  type OpenBotClient,
+} from "../chat/client.js";
 import type { Routine } from "../contracts/routines.js";
 import { createOpenBotRuntime, type OpenBotRuntimeOptions } from "./runtime.js";
+
+function createOpenBotClient(options: Parameters<typeof createTransportClient>[0] = {}) {
+  return {
+    ...createTransportClient(options),
+    getChatChannels: async () => [],
+    getRoomRoster: async () => [
+      {
+        participant_type: "human" as const,
+        participant_handle: "owner",
+        membership_source: "explicit" as const,
+        role: "owner" as const,
+        principal_user_id: "owner-one",
+        joined_at: "2026-09-07",
+        inbox: { id: "ui-inbox", provider_id: "chatkit.channel.vercel-ui" },
+        instance: { id: "owner-instance", user_display_name: "Owner One" },
+      },
+    ],
+  };
+}
 
 describe("OpenBot runtime", () => {
   it("ignores stale search responses and opens a result through its associated bot", async () => {

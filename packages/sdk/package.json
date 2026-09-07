@@ -80,8 +80,8 @@
   },
   "dependencies": {
     "@trytilde/api-client": "workspace:*",
-    "nice-grpc": "2.1.16",
-    "ajv": "8.20.0"
+    "ajv": "8.20.0",
+    "nice-grpc": "2.1.16"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

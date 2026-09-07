@@ -13,6 +13,7 @@ type ResolvableValue = string | (() => string | Promise<string>);
  */
 export interface ConnectorToolOptions {
   apiKey: ResolvableValue;
+  targetUserId?: ResolvableValue;
   orgId?: ResolvableValue;
   teamId?: ResolvableValue;
   baseUrl?: ResolvableValue;
@@ -35,6 +36,7 @@ async function resolveValue(
 
 interface TildeContext {
   apiKey: string;
+  targetUserId?: string;
   orgId: string;
   teamId: string;
   baseUrl: string;
@@ -44,6 +46,13 @@ interface TildeContext {
 async function tildeContext(options: ConnectorToolOptions): Promise<TildeContext> {
   return {
     apiKey: await resolveValue(options.apiKey, "TILDE_API_KEY"),
+    ...(options.targetUserId !== undefined
+      ? {
+          targetUserId: await (typeof options.targetUserId === "function"
+            ? options.targetUserId()
+            : options.targetUserId),
+        }
+      : {}),
     orgId: await resolveValue(options.orgId, "TILDE_ORG_ID"),
     teamId: await resolveValue(options.teamId, "TILDE_TEAM_ID"),
     baseUrl: await resolveValue(options.baseUrl, "TILDE_BASE_URL", defaultBaseUrl),
@@ -106,10 +115,10 @@ const cardShownNote = [
 export function createConfigureConnectorTool(options: ConnectorToolOptions): Tool {
   return tool({
     description: [
-      "Show the user an in-chat account picker for one connector (Tilde tool provider), so they can choose which account to enable for this bot or add a new one.",
-      "Use it when a task needs a provider (for example google_mail) whose tools are not on your MCP server yet, after confirming the provider exists with tilde_search_available_capabilities.",
-      "The client renders the picker from this tool's result: after calling it, give a one-sentence reason and stop your turn.",
-      "Skip it for providers already fully connected to this bot, and never ask the user to type credentials in chat.",
+      "Show an enable-provider event for the target user. Clicking it opens secure account selection, OAuth and managed-credential modals, then connects the account to the user’s tools MCP.",
+      "Use it when a task needs a provider (for example google_mail) whose tools are not on the target user’s tools MCP yet, after confirming the provider exists with tilde_search_available_capabilities.",
+      "The client renders the enable-provider card from this tool's result: after calling it, give a one-sentence reason and stop your turn.",
+      "Skip it for providers already fully connected for this user, and never ask the user to type credentials in chat.",
     ].join(" "),
     inputSchema: z.object({
       provider_type_id: z
@@ -158,6 +167,8 @@ export function createConfigureConnectorTool(options: ConnectorToolOptions): Too
         connector_selection: {
           provider_type_id: providerTypeId,
           provider_name: providerName,
+          ...(context.targetUserId ? { target_user_id: context.targetUserId } : {}),
+          ...(asText(provider.icon_url) ? { icon_url: asText(provider.icon_url) } : {}),
           ...(input.prompt ? { prompt: input.prompt } : {}),
           accounts: accounts.map((account) => ({
             id: asText(account.id),

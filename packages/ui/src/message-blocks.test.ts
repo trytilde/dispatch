@@ -1,97 +1,60 @@
 import { describe, expect, it } from "vite-plus/test";
-import { splitMessageSegments } from "./message-blocks.js";
+import { splitMessageSegments, toolAttachmentFilePart } from "./message-blocks.js";
 
 describe("message block segmentation", () => {
-  it("keeps progress narration inside the agent run when a tool follows", () => {
+  it("does not relabel communication as reasoning just because a tool follows", () => {
+    const tool = {
+      type: "tool",
+      tool_name: "SEARCH_TOOLS",
+      state: "output-available",
+      output: { isError: false },
+    };
     expect(
       splitMessageSegments([
-        { type: "text", text: "I’ll inspect the live registry first." },
-        {
-          type: "tool",
-          tool_name: "SEARCH_TOOLS",
-          state: "output-available",
-          output: { isError: false },
-        },
-        { type: "text", text: "The registry contains the requested connector." },
+        { type: "text", text: "I will inspect the registry." },
+        tool,
+        { type: "text", text: "Here is the result." },
       ]),
     ).toEqual([
-      {
-        kind: "run",
-        parts: [
-          { type: "reasoning", text: "I’ll inspect the live registry first." },
-          {
-            type: "tool",
-            tool_name: "SEARCH_TOOLS",
-            state: "output-available",
-            output: { isError: false },
-          },
-        ],
-      },
-      { kind: "text", text: "The registry contains the requested connector." },
+      { kind: "text", text: "I will inspect the registry." },
+      { kind: "run", parts: [tool] },
+      { kind: "text", text: "Here is the result." },
     ]);
   });
-
-  it("renders attachment-shaped tool output as media without its JSON tool result", () => {
-    const segments = splitMessageSegments([
-      {
-        type: "tool",
-        tool_name: "image",
-        state: "output-available",
-        output: {
-          attachment_id: "attachment-one",
-          media_type: "image/png",
-          filename: "screenshot-factory.png",
-        },
-      },
-      {
-        type: "file",
+  it("keeps attachment-shaped tool output as an event, separate from a sent attachment", () => {
+    const tool = {
+      type: "tool",
+      tool_name: "image",
+      output: {
         attachment_id: "attachment-one",
         media_type: "image/png",
-        filename: "screenshot-factory.png",
+        filename: "screenshot.png",
       },
+    };
+    const file = {
+      type: "file",
+      attachment_id: "attachment-one",
+      media_type: "image/png",
+      filename: "screenshot.png",
+    };
+    expect(splitMessageSegments([tool, file])).toEqual([
+      { kind: "run", parts: [tool] },
+      { kind: "files", parts: [file] },
     ]);
-
-    expect(segments).toEqual([
-      {
-        kind: "files",
-        parts: [
-          {
-            type: "file",
-            attachment_id: "attachment-one",
-            media_type: "image/png",
-            filename: "screenshot-factory.png",
-          },
-        ],
-      },
-    ]);
+    expect(toolAttachmentFilePart(tool)).toEqual(file);
   });
-
-  it("renders a legacy inline screenshot as an image instead of base64 tool JSON", () => {
+  it("can render inline tool screenshots as media inside an event", () => {
     expect(
-      splitMessageSegments([
-        {
-          type: "tool-screenshot",
-          tool_name: "screenshot",
-          state: "output-available",
-          output: {
-            media_type: "image/png",
-            data: "aGVsbG8=",
-            filename: "screenshot-factory.png",
-          },
-        },
-      ]),
-    ).toEqual([
-      {
-        kind: "files",
-        parts: [
-          {
-            type: "file",
-            media_type: "image/png",
-            filename: "screenshot-factory.png",
-            url: "data:image/png;base64,aGVsbG8=",
-          },
-        ],
-      },
-    ]);
+      toolAttachmentFilePart({
+        type: "tool-screenshot",
+        tool_name: "screenshot",
+        output: { media_type: "image/png", data: "aGVsbG8=", filename: "screenshot.png" },
+      }),
+    ).toEqual({
+      type: "file",
+      media_type: "image/png",
+      filename: "screenshot.png",
+      url: "data:image/png;base64,aGVsbG8=",
+    });
   });
 });

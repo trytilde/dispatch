@@ -150,23 +150,10 @@ body {
 @keyframes shimmer-text{0%{background-position:150%}to{background-position:-50%}}
 @keyframes fade-up{0%{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fade-in{0%{opacity:0}to{opacity:1}}
-@keyframes eq-bounce{0%,to{transform:scaleY(.35)}50%{transform:scaleY(1)}}
-@keyframes stream-in{0%{opacity:0;filter:blur(4px)}to{opacity:1;filter:blur()}}
-@keyframes caret-blink{0%,to{opacity:1}50%{opacity:0}}
 @keyframes pop-in{0%{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
 @keyframes spin{to{transform:rotate(1turn)}}
 @keyframes pixel-on{0%,to{opacity:.15}18%,42%{opacity:1}62%{opacity:.15}}
-@keyframes rainbow-drift{0%{background-position:0}to{background-position:200%}}
-@keyframes records-pulse{0%,to{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
 
-/* ── Streaming caret (atoms/StreamText) ────────────────── */
-.stream-caret{background:var(--ink);vertical-align:text-bottom;border-radius:1px;width:2px;height:1.05em;margin-left:1.5px;animation:caret-blink 1s step-end infinite;display:inline-block;translate:0 -.5px}
-.stream-caret.is-streaming{animation:none}
-
-/* ── Animated underline ────────────────────────────────── */
-.animated-underline{display:inline-block;position:relative}
-.animated-underline:after{content:"";transform-origin:0;height:1px;transition:transform .28s var(--ease-link);background:currentColor;position:absolute;bottom:-1px;left:0;right:0;transform:scaleX(0)}
-a:focus-visible .animated-underline:after,a:hover .animated-underline:after{transform:scaleX(1)}
 
 /* ── Records table ─────────────────────────────────────── */
 .records-shell{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:100%;min-width:0;overflow:hidden;box-shadow:0 1px 2px #0000000f}

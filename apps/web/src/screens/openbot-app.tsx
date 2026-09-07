@@ -1,24 +1,16 @@
+import { type FormEvent, useEffect, useCallback, useMemo, useRef, useState } from "react";
 import {
-  type FormEvent,
-  type ReactNode,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
-  type AttachmentCompletion,
   type ChatAgent,
-  type ChatMessage,
-  type CapabilityChangeApproval,
-  decideCapabilityChange,
-  getCapabilityChange,
+  type ConnectorSetupRequest,
   connectorAuthorizedReturnUrl,
-  type ConnectorProvider,
-  type CreateConnectorAccountResult,
+  isChatFindShortcut,
+  projectChatTranscript,
+  layoutChatTranscript,
+  promptStatus,
+  queuedTurnText,
+  userSessionForAgent,
   errorMessage,
-  waitForConnectorAccountActive,
+  createChatConnectorRuntime,
   latestMessagePreview,
   messageText,
   type QueuedTurn,
@@ -27,29 +19,24 @@ import {
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useStore } from "zustand";
 import {
-  ActivityQueue,
   AddAgentDialog,
   AgentSetupDialog,
   AgentWorkspacePanel,
-  ChatComposer,
+  ChatPrompt,
+  TranscriptTimeSeparator,
+  ChatMessage as ChatMessageView,
+  useChatFindHighlight,
+  ChatEventSurface,
+  SessionParticipantsDialog,
   ChatHeader,
   ChatPane,
-  type ConnectorCredentialSourceView,
   type ConnectorPartActions,
   type ConnectorSelectionView,
-  ConnectorSetupDialog,
-  type ConnectorSetupSubmit,
+  ChatConnectorDialog,
   ConversationSkeleton,
   ConversationSurface,
-  ConversationMessage,
-  MarkdownText,
   MessageContent,
-  type MessagePart,
-  splitMessageSegments,
-  ToolsBlock,
-  ScrollToLatestButton,
   ThinkingIndicator,
-  ThreadOverlay,
   WorkspaceSidebar,
   type WorkspaceSearchResult,
   WorkspaceShell,
@@ -57,8 +44,7 @@ import {
 } from "@tryopenbot/ui";
 import type { WorkspaceSearch } from "../router.js";
 import { AgentDetailsContainer } from "./agent-details.js";
-import { openBotRuntime } from "../runtime.js";
-import { optimisticParts, type PendingFile, uploadAttachments } from "../web-attachments.js";
+import { openBotRuntime, registerPromptFiles } from "../runtime.js";
 import { useClientWorkspace } from "../workspaces.js";
 import { shouldExpandComposer } from "./composer-layout.js";
 import { rankWorkspaceSearchHits, searchHitId } from "./search-results.js";
@@ -73,6 +59,7 @@ export function OpenBotApp() {
   const conversation = useStore(openBotRuntime.store, (state) => state.conversation);
   const agentSetup = useStore(openBotRuntime.store, (state) => state.agentSetup);
   const chatSearch = useStore(openBotRuntime.store, (state) => state.search);
+  const sessionHeader = useStore(openBotRuntime.session.store);
   const { agents, nextAgentToken, selectedAgentId: agentId, loading } = sidebar;
   const {
     selectedSessionId: sessionId,
@@ -86,31 +73,70 @@ export function OpenBotApp() {
     turnStatus,
     error,
   } = conversation;
-  const [draft, setDraft] = useState("");
-  const [files, setFiles] = useState<PendingFile[]>([]);
+  const promptState = useStore(openBotRuntime.prompt.store);
+  const draft = promptState.draft;
+  const setDraft = openBotRuntime.prompt.setDraft;
+  const files = promptState.attachments;
   const [dragging, setDragging] = useState(false);
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [messageMenuId, setMessageMenuId] = useState("");
-  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
-  const [threadRootId, setThreadRootId] = useState("");
   // Modal open-state lives in the URL so redirects and deep links can target
   // it directly; see WorkspaceSearch in router.tsx.
   const workspaceSearch = useSearch({ strict: false }) as WorkspaceSearch;
   const createAgentOpen = workspaceSearch.dialog === "new-agent";
-  const [connectorSetup, setConnectorSetup] = useState<ConnectorSetupState | null>(null);
-  const connectorWatchRef = useRef<AbortController | null>(null);
+  const chatConnectors = useMemo(
+    () =>
+      createChatConnectorRuntime(openBotRuntime.client, {
+        openAuthorization: (url) => {
+          window.open(url, "_blank", "noopener");
+        },
+        returnUrl: () =>
+          connectorAuthorizedReturnUrl(
+            window.location.origin,
+            navigator.userAgent.includes("Electron") ? "electron" : "web",
+          ),
+        saveSecretOutputs: (outputs) => {
+          const url = URL.createObjectURL(
+            new Blob([JSON.stringify(outputs, null, 2)], { type: "application/json" }),
+          );
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "provider-credentials.json";
+          link.click();
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        },
+        onSetupComplete: async (request) => {
+          setConnectorRoute(undefined);
+          await openBotRuntime.actions.sendMessage({
+            text: `Credential setup completed for ${request.provider_name}. tool_group_instance_id=${request.resource_id}${request.target ? `; target_mcp_server_instance_id=${request.target.mcp_server_instance_id}; target_kind=${request.target.kind}` : ""}. Verify the account and finish enabling only the required functions on the chosen target, then continue the task.`,
+          });
+        },
+        onComplete: async (accountId, mcpServerId) => {
+          setConnectorRoute(undefined);
+          await openBotRuntime.actions.sendMessage({
+            text: `Connector enabled for my tools. tool_group_instance_id=${accountId}; mcp_server_instance_id=${mcpServerId}. Continue the original task using this user tools MCP, not your agent-owned MCP.`,
+          });
+        },
+      }),
+    [],
+  );
+  const connectorState = useStore(chatConnectors.store);
+  const connectorSetupState = useStore(chatConnectors.setup.store);
+  useEffect(() => () => chatConnectors.dispose(), [chatConnectors]);
+  useEffect(() => {
+    chatConnectors.close();
+  }, [chatConnectors, sessionId, auth.session?.user.subject]);
+  const pendingConnectorRequestRef = useRef<ConnectorSetupRequest | null>(null);
   const pendingConnectorSelectionRef = useRef<ConnectorSelectionView | null>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const composerInputRef = useRef<HTMLTextAreaElement>(null);
+  const composerInputRef = useRef<HTMLElement>(null);
   const scrollSnapshotsRef = useRef<Record<string, number>>(readScrollSnapshots());
   const restoredSessionRef = useRef("");
   const stickToBottomRef = useRef(true);
   const previousMessageIdRef = useRef("");
   const [showScrollLatest, setShowScrollLatest] = useState(false);
-  const electron = navigator.userAgent.includes("Electron");
   const layout = useWorkspaceLayout({ floatingWorkspace: true });
   const navigate = useNavigate();
   const setCreateAgentOpen = (open: boolean): void => {
@@ -148,15 +174,7 @@ export function OpenBotApp() {
   const clientWorkspace = useClientWorkspace();
 
   const selectedAgent = agents.find((agent) => agent.id === agentId);
-  const hasContent = Boolean(draft.trim() || files.length);
-  const composerExpanded = shouldExpandComposer(draft, files.length > 0, Boolean(replyingTo));
-
-  useLayoutEffect(() => {
-    const input = composerInputRef.current;
-    if (!input) return;
-    input.style.height = "0px";
-    input.style.height = `${Math.min(100, Math.max(28, input.scrollHeight))}px`;
-  }, [draft]);
+  const composerExpanded = shouldExpandComposer(draft, files.length > 0);
 
   useEffect(() => {
     const element = conversationRef.current;
@@ -194,7 +212,6 @@ export function OpenBotApp() {
     () => messages.filter((message) => !queuedMessageIds.has(message.id)),
     [messages, queuedMessageIds],
   );
-  const threadRoot = visibleMessages.find((message) => message.id === threadRootId);
 
   const sidebarChats = useMemo(() => {
     const chats = agents.flatMap((agent) => {
@@ -253,8 +270,6 @@ export function OpenBotApp() {
       const session = agent.sessions.items.find((candidate) => candidate.id === selectedSessionId);
       if (!session) continue;
       clearFiles();
-      setReplyingTo(null);
-      setThreadRootId("");
       restoredSessionRef.current = "";
       void openBotRuntime.actions.selectSession(agent.id, session);
       return;
@@ -299,65 +314,14 @@ export function OpenBotApp() {
 
   function selectAgent(agent: ChatAgent): void {
     clearFiles();
-    setReplyingTo(null);
-    setThreadRootId("");
     restoredSessionRef.current = "";
     void openBotRuntime.actions.selectAgent(agent.id);
   }
 
-  async function send(event: FormEvent): Promise<void> {
+  async function send(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    const authoredText = draft.trim();
-    if (!hasContent || !agentId || (submitting && !agentBusy)) return;
-    const text = replyingTo
-      ? `> ${messageText(replyingTo).replaceAll("\n", "\n> ")}\n\n${authoredText}`.trim()
-      : authoredText;
-    const outgoingFiles = files;
-    let activeSessionId = sessionId;
-    try {
-      if (outgoingFiles.length > 0)
-        activeSessionId = await openBotRuntime.actions.ensureSession(
-          titleFrom(text, outgoingFiles),
-        );
-      setDraft("");
-      setReplyingTo(null);
-      setThreadRootId("");
-      clearFiles();
-
-      const attachmentIds: string[] = [];
-      const attachmentCompletions: AttachmentCompletion[] = [];
-      if (outgoingFiles.length > 0 && activeSessionId) {
-        for (const pending of outgoingFiles)
-          setFiles((current) => [...current, { ...pending, status: "uploading", progress: 0 }]);
-        const uploaded = await uploadAttachments(
-          openBotRuntime.client,
-          activeSessionId,
-          outgoingFiles.map((pending) => pending.file),
-          (index, progress) => setFileState(outgoingFiles[index]!.id, { progress }),
-        );
-        for (const [index, result] of uploaded.entries()) {
-          const pending = outgoingFiles[index]!;
-          attachmentIds.push(result.attachment.id);
-          attachmentCompletions.push(result.completion);
-          setFileState(pending.id, {
-            status: "uploaded",
-            progress: 1,
-            attachmentId: result.attachment.id,
-          });
-        }
-      }
-
-      await openBotRuntime.actions.sendMessage({
-        text,
-        attachmentIds,
-        attachmentCompletions,
-        optimisticParts: optimisticParts(text, outgoingFiles),
-        title: titleFrom(text, outgoingFiles),
-      });
-      clearFiles();
-    } catch (reason) {
-      openBotRuntime.actions.setError(errorMessage(reason));
-    }
+    if (!agentId || (submitting && !agentBusy)) return;
+    await openBotRuntime.prompt.send();
   }
 
   async function stop(): Promise<void> {
@@ -368,6 +332,25 @@ export function OpenBotApp() {
       openBotRuntime.actions.setError(errorMessage(reason));
     }
   }
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!isChatFindShortcut(event) || !sessionId || document.querySelector('[role="dialog"]'))
+        return;
+      event.preventDefault();
+      openBotRuntime.session.openFind();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [sessionId]);
+
+  useChatFindHighlight({
+    rootRef: conversationRef,
+    query: sessionHeader.find.open ? sessionHeader.find.query : "",
+    messageId: sessionHeader.find.items[sessionHeader.find.activeIndex]?.message?.id,
+    focusNonce: sessionHeader.find.resultFocusNonce,
+    revision: messages,
+  });
 
   // Cmd/Ctrl+I and Cmd/Ctrl+L focus the prompt.
   useEffect(() => {
@@ -395,36 +378,10 @@ export function OpenBotApp() {
   });
 
   function addFiles(incoming: FileList | File[]): void {
-    const additions = [...incoming].map((file) => ({
-      id: crypto.randomUUID(),
-      file,
-      progress: 0,
-      status: "ready" as const,
-      ...(file.type.startsWith("image/") ? { previewUrl: URL.createObjectURL(file) } : {}),
-    }));
-    setFiles((current) => [...current, ...additions].slice(0, 10));
+    registerPromptFiles(incoming);
   }
-
   function clearFiles(): void {
-    setFiles((current) => {
-      for (const pending of current) {
-        if (pending.previewUrl) URL.revokeObjectURL(pending.previewUrl);
-      }
-      return [];
-    });
-  }
-
-  function setFileState(id: string, patch: Partial<PendingFile>): void {
-    setFiles((current) => current.map((file) => (file.id === id ? { ...file, ...patch } : file)));
-  }
-
-  async function removeFile(pending: PendingFile): Promise<void> {
-    if (pending.attachmentId && sessionId) {
-      await openBotRuntime.client
-        .deleteAttachment(sessionId, pending.attachmentId)
-        .catch(() => undefined);
-    }
-    setFiles((current) => current.filter((file) => file.id !== pending.id));
+    openBotRuntime.prompt.clearAttachments();
   }
 
   async function loadOlderMessages(): Promise<void> {
@@ -488,27 +445,51 @@ export function OpenBotApp() {
     openBotRuntime.actions.clearSearch();
   }
 
+  const resolveAttachmentUrl = useCallback(
+    (chatId: string, attachmentId: string) =>
+      openBotRuntime.client.getAttachmentDownloadUrl(chatId, attachmentId),
+    [],
+  );
+  const rewriteUrl = useCallback((url: string) => openBotRuntime.client.rewriteTildeUrl(url), []);
   const composer = (
-    <ChatComposer
+    <ChatPrompt
+      access={sessionHeader.access}
+      joining={sessionHeader.joining}
+      onJoin={() => void openBotRuntime.session.join()}
+      queue={{
+        items: queuedTurns.map((turn) => ({
+          id: turn.id,
+          text: queuedTurnText(turn),
+          queuePosition: turn.queue_position,
+          pending: turn.id.startsWith("optimistic-queue-"),
+        })),
+        onEdit: (id) => {
+          const turn = queuedTurns.find((candidate) => candidate.id === id);
+          if (turn) void editQueuedTurn(turn);
+        },
+        onReorder: (id, queuePosition) =>
+          void mutateQueue(() => openBotRuntime.actions.reorderQueuedTurn(id, queuePosition)),
+        onRemove: (id) => void mutateQueue(() => openBotRuntime.actions.removeQueuedTurn(id)),
+        onRunNow: (id) => void mutateQueue(() => openBotRuntime.actions.steerQueuedTurn(id)),
+      }}
+      showScrollToBottom={showScrollLatest}
+      onScrollToBottom={scrollToLatest}
+      status={promptStatus({
+        error: promptState.error || sessionHeader.joinError || error,
+        unreachable: conversation.streamStatus === "Reconnecting",
+      })}
       agentAvailable={Boolean(agentId)}
       busy={agentBusy}
-      submitting={submitting}
+      submitting={submitting || promptState.phase !== "idle"}
       dragging={dragging}
       expanded={composerExpanded}
       draft={draft}
       error={error}
-      reply={
-        replyingTo
-          ? {
-              label: `Replying to ${replyingTo.role === "user" ? "yourself" : selectedAgent?.display_name || "agent"}`,
-              text: messageText(replyingTo) || "Message",
-            }
-          : undefined
-      }
       attachments={files.map((pending) => ({
         id: pending.id,
-        name: pending.file.name,
-        size: pending.file.size,
+        name: pending.name,
+        size: pending.sizeBytes,
+        removable: promptState.phase !== "sending",
         progress: pending.progress,
         status: pending.status,
         error: pending.error,
@@ -520,14 +501,7 @@ export function OpenBotApp() {
       onDraftChange={setDraft}
       onDragStateChange={setDragging}
       onFilesAdded={addFiles}
-      onRemoveAttachment={(id) => {
-        const pending = files.find((candidate) => candidate.id === id);
-        if (pending) void removeFile(pending);
-      }}
-      onCancelReply={() => {
-        setReplyingTo(null);
-        setThreadRootId("");
-      }}
+      onRemoveAttachment={(id) => void openBotRuntime.prompt.removeAttachment(id)}
       onStop={() => void stop()}
     />
   );
@@ -542,87 +516,38 @@ export function OpenBotApp() {
   }
 
   const connectorActions: ConnectorPartActions = {
-    busy: Boolean(connectorSetup?.submitting),
-    onSelectAccount: (selection, account) => {
-      void openBotRuntime.client
-        .bindConnector(agentId, account.id)
-        .catch((reason) => openBotRuntime.actions.setError(errorMessage(reason)));
+    onSetupRequired: (request) => {
+      pendingConnectorRequestRef.current = request;
+      setConnectorRoute(request.provider_type_id);
+    },
+    busy: connectorSetupState.status === "submitting" || connectorState.binding,
+    onSelectAccount: (_selection, account) => {
+      void chatConnectors.selectAccount(account.id);
     },
     onAddAccount: (selection) => {
-      // Route the modal open through the URL so back/close and redirects work.
       pendingConnectorSelectionRef.current = selection;
       setConnectorRoute(selection.providerTypeId);
     },
   };
-  const capabilityApprovalActions = {
-    loadCurrent: (approval: CapabilityChangeApproval) => getCapabilityChange("", approval.id),
-    onDecision: async (
-      approval: CapabilityChangeApproval,
-      decision: "approve" | "reject",
-    ): Promise<CapabilityChangeApproval> => {
-      let updated: CapabilityChangeApproval;
-      try {
-        updated = await decideCapabilityChange("", approval, decision);
-      } catch {
-        throw new Error("The capability decision could not be recorded. Please try again.");
-      }
-      try {
-        await openBotRuntime.actions.sendMessage({
-          text: `Capability change ${decision === "approve" ? "approved" : "declined"} by the authenticated owner. proposal_id=${updated.id}. Continue the original task from this durable decision and use only server-provided setup continuations.`,
-        });
-      } catch {
-        openBotRuntime.actions.setError(
-          "The capability decision was recorded, but the agent could not be resumed.",
-        );
-      }
-      return updated;
-    },
-  };
-
   function openConnectorSetup(selection: ConnectorSelectionView): void {
-    setConnectorSetup({ selection, loading: selection.credentialSources.length === 0 });
-    if (selection.credentialSources.length > 0) return;
-    // Payloads opened by URL (or older tool outputs) carry no credential
-    // sources; recover them from the catalog.
-    void openBotRuntime.client
-      .listConnectorProviders()
-      .then((providers) => {
-        const provider = providers.find(
-          (candidate) => candidate.type_id === selection.providerTypeId,
-        );
-        setConnectorSetup((current) =>
-          current && current.selection === selection
-            ? {
-                ...current,
-                loading: false,
-                ...(provider
-                  ? {
-                      selection: {
-                        ...selection,
-                        providerName: provider.name,
-                        ...(provider.icon_url ? { iconUrl: provider.icon_url } : {}),
-                        credentialSources: credentialSourceViews(provider),
-                      },
-                    }
-                  : { error: `No connector catalog entry for ${selection.providerName}` }),
-              }
-            : current,
-        );
-      })
-      .catch((reason) => {
-        setConnectorSetup((current) =>
-          current && current.selection === selection
-            ? { ...current, loading: false, error: errorMessage(reason) }
-            : current,
-        );
-      });
+    const userId = auth.session?.user.subject;
+    if (!userId) return;
+    void chatConnectors.open(
+      {
+        provider_type_id: selection.providerTypeId,
+        provider_name: selection.providerName,
+        icon_url: selection.iconUrl,
+        target_user_id: selection.targetUserId,
+        accounts: selection.accounts.map((account) => ({
+          id: account.id,
+          display_name: account.displayName,
+          status: account.status,
+        })),
+      },
+      userId,
+    );
   }
-
-  function closeConnectorSetup(): void {
-    connectorWatchRef.current?.abort();
-    connectorWatchRef.current = null;
-    setConnectorSetup(null);
-  }
+  const closeConnectorSetup = chatConnectors.close;
 
   // The `?connector=<provider>` search param is the source of truth for the
   // setup modal, so OAuth returns and deep links can open it directly and the
@@ -630,10 +555,17 @@ export function OpenBotApp() {
   useEffect(() => {
     const providerTypeId = workspaceSearch.connector;
     if (!providerTypeId) {
-      if (connectorSetup) closeConnectorSetup();
+      if (connectorState.open) closeConnectorSetup();
       return;
     }
-    if (connectorSetup?.selection.providerTypeId === providerTypeId) return;
+    if (connectorState.open && connectorState.selection?.provider_type_id === providerTypeId)
+      return;
+    const nativeRequest = pendingConnectorRequestRef.current;
+    pendingConnectorRequestRef.current = null;
+    if (nativeRequest && auth.session?.user.subject) {
+      void chatConnectors.openRequest(nativeRequest, auth.session.user.subject);
+      return;
+    }
     const pending = pendingConnectorSelectionRef.current;
     pendingConnectorSelectionRef.current = null;
     openConnectorSetup(
@@ -648,59 +580,6 @@ export function OpenBotApp() {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the URL param drives this modal
   }, [workspaceSearch.connector]);
-
-  async function submitConnectorSetup(input: ConnectorSetupSubmit): Promise<void> {
-    if (!connectorSetup) return;
-    const selection = connectorSetup.selection;
-    setConnectorSetup({ ...connectorSetup, submitting: true, error: undefined });
-    try {
-      const result = await openBotRuntime.client.createConnectorAccount({
-        providerTypeId: selection.providerTypeId,
-        credentialSourceTypeId: input.credentialSourceTypeId,
-        displayName: input.displayName,
-        ...(input.resourceServerValues ? { resourceServerValues: input.resourceServerValues } : {}),
-        ...(input.userCredentialValues ? { userCredentialValues: input.userCredentialValues } : {}),
-        returnUrl: connectorAuthorizedReturnUrl(
-          window.location.origin,
-          electron ? "electron" : "web",
-        ),
-      });
-      if (result.status === "authorize" && result.authorization_url) {
-        window.open(result.authorization_url, "_blank", "noopener");
-        setConnectorSetup({
-          selection,
-          submitting: false,
-          result,
-          authorizationUrl: result.authorization_url,
-        });
-        // Close the loop without a manual "Done": once Tilde flips the account
-        // to active after the OAuth return, hand back to the agent directly.
-        const watcher = new AbortController();
-        connectorWatchRef.current?.abort();
-        connectorWatchRef.current = watcher;
-        void waitForConnectorAccountActive(openBotRuntime.client, {
-          providerTypeId: selection.providerTypeId,
-          accountId: result.account.id,
-          signal: watcher.signal,
-        }).then((account) => {
-          if (!account || watcher.signal.aborted) return;
-          void finishConnectorSetup({ ...result, status: "created", account });
-        });
-        return;
-      }
-      await finishConnectorSetup(result);
-    } catch (reason) {
-      setConnectorSetup((current) =>
-        current ? { ...current, submitting: false, error: errorMessage(reason) } : current,
-      );
-    }
-  }
-
-  async function finishConnectorSetup(result: CreateConnectorAccountResult): Promise<void> {
-    await openBotRuntime.client.bindConnector(agentId, result.account.id);
-    closeConnectorSetup();
-    setConnectorRoute(undefined);
-  }
 
   return (
     <WorkspaceShell
@@ -762,7 +641,55 @@ export function OpenBotApp() {
       <ChatPane>
         <ChatHeader
           agentId={selectedAgent?.id}
-          agentName={selectedAgent?.display_name ?? "OpenBot"}
+          agentName={selectedAgent?.display_name ?? "Dispatch"}
+          participants={
+            sessionHeader.participants.length
+              ? sessionHeader.participants
+              : selectedAgent
+                ? [
+                    {
+                      id: selectedAgent.id,
+                      agentId: selectedAgent.id,
+                      name: selectedAgent.display_name,
+                      kind: "agent",
+                      ...(selectedAgent.avatar_url ? { avatarUrl: selectedAgent.avatar_url } : {}),
+                    },
+                  ]
+                : []
+          }
+          currentUserId={auth.session?.user.subject}
+          source={sessionHeader.source}
+          sessionName={
+            sessionHeader.title &&
+            !(
+              selectedAgent &&
+              userSessionForAgent(selectedAgent, auth.session?.user.subject ?? "")?.id ===
+                sessionId &&
+              sessionHeader.title === selectedAgent.display_name
+            )
+              ? sessionHeader.title
+              : undefined
+          }
+          onRenameSession={sessionId ? openBotRuntime.session.rename : undefined}
+          onManageParticipants={
+            sessionId ? () => void openBotRuntime.session.openParticipants() : undefined
+          }
+          find={
+            sessionHeader.find.open
+              ? {
+                  query: sessionHeader.find.query,
+                  loading: sessionHeader.find.status === "loading",
+                  error: sessionHeader.find.error,
+                  matchCount: sessionHeader.find.items.length,
+                  currentOrdinal: sessionHeader.find.activeIndex + 1,
+                  focusNonce: sessionHeader.find.focusNonce,
+                  onQueryChange: openBotRuntime.session.setFindQuery,
+                  onStepNext: () => void openBotRuntime.session.stepFind(1),
+                  onStepPrevious: () => void openBotRuntime.session.stepFind(-1),
+                  onClose: openBotRuntime.session.closeFind,
+                }
+              : undefined
+          }
           busy={Boolean(selectedAgent && agentBusy)}
           computerOpen={layout.workspaceOpen}
           onOpenSidebar={() => setMobileSidebarOpen(true)}
@@ -787,170 +714,56 @@ export function OpenBotApp() {
                     Load earlier messages
                   </button>
                 ) : null}
-                {(() => {
-                  const rendered: ReactNode[] = [];
-                  // An agent run (reasoning + tool calls) that spans adjacent
-                  // messages merges into one grouped tool-chips block.
-                  let pendingRun: { key: string; parts: MessagePart[] } | null = null;
-                  const flushRun = () => {
-                    if (!pendingRun) return;
-                    rendered.push(
-                      <div className="message-block" key={pendingRun.key}>
-                        <ToolsBlock parts={pendingRun.parts} />
-                      </div>,
+                {layoutChatTranscript(
+                  projectChatTranscript(visibleMessages, participantEvents, {
+                    viewerUserId: auth.session?.user.subject,
+                    participants: sessionHeader.participants,
+                  }),
+                ).map((item) => {
+                  if (item.kind === "day")
+                    return <TranscriptTimeSeparator key={item.id} dateTime={item.date} />;
+                  if (item.kind === "participant")
+                    return (
+                      <ChatEventSurface key={item.id} label="Participant event">
+                        <span>
+                          {item.event.data.participant.display_name}{" "}
+                          {item.event.type === "participant.joined" ? "joined" : "left"}
+                        </span>
+                      </ChatEventSurface>
                     );
-                    pendingRun = null;
-                  };
-                  const resolveAttachmentUrl = (sessionKey: string, attachmentId: string) =>
-                    openBotRuntime.client.getAttachmentDownloadUrl(sessionKey, attachmentId);
-                  const rewriteUrl = (value: string) =>
-                    openBotRuntime.client.rewriteTildeUrl(value);
-                  let participantEventIndex = 0;
-                  const renderParticipantEventsBefore = (timestamp: number) => {
-                    while (participantEventIndex < participantEvents.length) {
-                      const event = participantEvents[participantEventIndex];
-                      if (!event || Date.parse(event.occurred_at) > timestamp) break;
-                      flushRun();
-                      const participant = event.data.participant;
-                      const name = participant.display_name || participant.participant_handle;
-                      rendered.push(
-                        <div
-                          className="participant-activity"
-                          key={`participant:${event.id}`}
-                          role="status"
-                        >
-                          <span>{name}</span>{" "}
-                          {event.type === "participant.joined" ? "joined" : "left"}
-                        </div>,
-                      );
-                      participantEventIndex += 1;
-                    }
-                  };
-
-                  visibleMessages.forEach((message, index) => {
-                    renderParticipantEventsBefore(Date.parse(message.created_at));
-                    const previous = visibleMessages[index - 1];
-                    const next = visibleMessages[index + 1];
-                    const continuedPrevious = previous?.role === message.role;
-                    const continuedNext = next?.role === message.role;
-                    const parts = message.parts ?? [];
-                    const messageActions = {
-                      menuOpen: messageMenuId === message.id,
-                      onReply: () => {
-                        setReplyingTo(message);
-                        composerInputRef.current?.focus();
-                      },
-                      onToggleMenu: () => {
-                        setMessageMenuId((current) => (current === message.id ? "" : message.id));
-                      },
-                      onStartThread: () => {
-                        setThreadRootId(message.id);
-                        setReplyingTo(message);
-                        setMessageMenuId("");
-                        composerInputRef.current?.focus();
-                      },
-                      onCopy: () => {
-                        void navigator.clipboard.writeText(messageText(message));
-                        setMessageMenuId("");
-                      },
-                    };
-
-                    // Messages split into standalone blocks: text in bubbles;
-                    // agent runs and attachments as their own rows.
-                    const segments = parts.length > 0 ? splitMessageSegments(parts) : [];
-                    if (segments.length === 0) {
-                      flushRun();
-                      rendered.push(
-                        <ConversationMessage
-                          key={message.id}
-                          role={message.role}
-                          createdAt={message.created_at}
-                          continuedPrevious={continuedPrevious}
-                          continuedNext={continuedNext}
-                          {...messageActions}
-                        >
-                          <MessageContent
-                            capabilityApprovalActions={capabilityApprovalActions}
-                            message={message}
-                            resolveAttachmentUrl={resolveAttachmentUrl}
-                            rewriteUrl={rewriteUrl}
-                          />
-                        </ConversationMessage>,
-                      );
-                      return;
-                    }
-
-                    const lastText = segments.reduce(
-                      (last, segment, at) => (segment.kind === "text" ? at : last),
-                      -1,
+                  const message = item.message;
+                  const content = (
+                    <MessageContent
+                      connectorActions={connectorActions}
+                      message={
+                        item.parts.length ? { ...message, type: "ui", parts: item.parts } : message
+                      }
+                      resolveAttachmentUrl={resolveAttachmentUrl}
+                      rewriteUrl={rewriteUrl}
+                    />
+                  );
+                  if (item.kind === "event")
+                    return (
+                      <ChatEventSurface key={item.id} messageId={message.id}>
+                        {content}
+                      </ChatEventSurface>
                     );
-                    segments.forEach((segment, at) => {
-                      const key = `${message.id}:${at}`;
-                      if (segment.kind === "run") {
-                        if (pendingRun && message.role !== "user") {
-                          pendingRun.parts.push(...segment.parts);
-                        } else {
-                          flushRun();
-                          pendingRun = { key, parts: [...segment.parts] };
-                        }
-                        return;
+                  return (
+                    <ChatMessageView
+                      continuedPrevious={item.continuedPrevious}
+                      continuedNext={item.continuedNext}
+                      key={item.id}
+                      messageId={message.id}
+                      role={item.alignment === "self" ? "user" : "assistant"}
+                      createdAt={message.created_at}
+                      message={
+                        item.parts.length ? { ...message, type: "ui", parts: item.parts } : message
                       }
-                      flushRun();
-                      if (segment.kind === "text") {
-                        rendered.push(
-                          <ConversationMessage
-                            key={key}
-                            role={message.role}
-                            createdAt={message.created_at}
-                            continuedPrevious={
-                              at > 0 ? segments[at - 1]?.kind === "text" : continuedPrevious
-                            }
-                            continuedNext={
-                              at < segments.length - 1
-                                ? segments[at + 1]?.kind === "text"
-                                : continuedNext
-                            }
-                            {...(at === lastText ? messageActions : {})}
-                          >
-                            <MarkdownText text={segment.text} />
-                          </ConversationMessage>,
-                        );
-                        return;
-                      }
-                      if (segment.kind === "files") {
-                        rendered.push(
-                          <ConversationMessage
-                            key={key}
-                            role={message.role}
-                            createdAt={message.created_at}
-                            mediaOnly
-                          >
-                            <MessageContent
-                              message={{ ...message, type: "ui", parts: segment.parts }}
-                              resolveAttachmentUrl={resolveAttachmentUrl}
-                              rewriteUrl={rewriteUrl}
-                            />
-                          </ConversationMessage>,
-                        );
-                        return;
-                      }
-                      rendered.push(
-                        <div className="message-block" key={key}>
-                          <MessageContent
-                            capabilityApprovalActions={capabilityApprovalActions}
-                            connectorActions={connectorActions}
-                            message={{ ...message, type: "ui", parts: [segment.part] }}
-                            resolveAttachmentUrl={resolveAttachmentUrl}
-                            rewriteUrl={rewriteUrl}
-                          />
-                        </div>,
-                      );
-                    });
-                  });
-                  renderParticipantEventsBefore(Number.POSITIVE_INFINITY);
-                  flushRun();
-                  return rendered;
-                })()}
+                      resolveAttachmentUrl={resolveAttachmentUrl}
+                      rewriteUrl={rewriteUrl}
+                    />
+                  );
+                })}
                 {agentBusy ? (
                   <ThinkingIndicator>
                     {turnStatus || `${selectedAgent?.display_name || "Agent"} is working…`}
@@ -960,59 +773,7 @@ export function OpenBotApp() {
             ) : null}
           </ConversationSurface>
         ) : null}
-        {selectedAgent && showScrollLatest ? (
-          <ScrollToLatestButton onClick={scrollToLatest} />
-        ) : null}
-        {selectedAgent && !threadRoot ? (
-          <>
-            <ActivityQueue
-              items={queuedTurns.map((turn) => ({
-                id: turn.id,
-                text: queuedTurnText(turn),
-                queuePosition: turn.queue_position,
-                pending: turn.id.startsWith("optimistic-queue-"),
-              }))}
-              onEdit={(id) => {
-                const turn = queuedTurns.find((candidate) => candidate.id === id);
-                if (turn) void editQueuedTurn(turn);
-              }}
-              onReorder={(id, queuePosition) =>
-                void mutateQueue(() => openBotRuntime.actions.reorderQueuedTurn(id, queuePosition))
-              }
-              onRemove={(id) => void mutateQueue(() => openBotRuntime.actions.removeQueuedTurn(id))}
-              onRunNow={(id) => void mutateQueue(() => openBotRuntime.actions.steerQueuedTurn(id))}
-            />
-            {composer}
-          </>
-        ) : null}
-        {selectedAgent ? (
-          <ThreadOverlay
-            footer={composer}
-            onClose={() => {
-              setThreadRootId("");
-              setReplyingTo(null);
-            }}
-            open={Boolean(threadRoot)}
-          >
-            {threadRoot ? (
-              <div className="thread-root-group">
-                <ConversationMessage role={threadRoot.role} createdAt={threadRoot.created_at}>
-                  <MessageContent
-                    capabilityApprovalActions={capabilityApprovalActions}
-                    message={threadRoot}
-                    resolveAttachmentUrl={(selectedSessionId, attachmentId) =>
-                      openBotRuntime.client.getAttachmentDownloadUrl(
-                        selectedSessionId,
-                        attachmentId,
-                      )
-                    }
-                    rewriteUrl={(value) => openBotRuntime.client.rewriteTildeUrl(value)}
-                  />
-                </ConversationMessage>
-              </div>
-            ) : null}
-          </ThreadOverlay>
-        ) : null}
+        {selectedAgent ? composer : null}
       </ChatPane>
 
       <AgentDetailsContainer
@@ -1032,32 +793,36 @@ export function OpenBotApp() {
         onClose={layout.toggleWorkspace}
         onResize={layout.beginWorkspaceResize}
       />
-      {connectorSetup && !connectorSetup.loading ? (
-        <ConnectorSetupDialog
-          providerName={connectorSetup.selection.providerName}
-          {...(connectorSetup.selection.iconUrl
-            ? { providerIconUrl: connectorSetup.selection.iconUrl }
-            : {})}
-          credentialSources={connectorSetup.selection.credentialSources}
-          submitting={connectorSetup.submitting ?? false}
-          {...(connectorSetup.error ? { error: connectorSetup.error } : {})}
-          {...(connectorSetup.authorizationUrl
-            ? { authorizationUrl: connectorSetup.authorizationUrl }
-            : {})}
-          onSubmit={(input) => void submitConnectorSetup(input)}
-          onReopenAuthorization={() => {
-            if (connectorSetup.authorizationUrl)
-              window.open(connectorSetup.authorizationUrl, "_blank", "noopener");
-          }}
-          onClose={() => {
-            if (connectorSetup.result && connectorSetup.authorizationUrl) {
-              void finishConnectorSetup(connectorSetup.result);
-              return;
-            }
-            setConnectorRoute(undefined);
-          }}
-        />
-      ) : null}
+      <ChatConnectorDialog
+        onRetry={chatConnectors.retry}
+        state={connectorState}
+        setup={connectorSetupState}
+        onDownloadOutputs={() => void chatConnectors.downloadOutputs()}
+        onClose={() => {
+          chatConnectors.close();
+          setConnectorRoute(undefined);
+        }}
+        onAddAccount={chatConnectors.addAccount}
+        onSelectAccount={(id) => void chatConnectors.selectAccount(id)}
+        onSelectTarget={(id) => void chatConnectors.selectTarget(id)}
+        onSubmit={(input) => void chatConnectors.submit(input)}
+        onResume={(input) => void chatConnectors.resume(input)}
+        onReopenAuthorization={chatConnectors.reopenAuthorization}
+      />
+      <SessionParticipantsDialog
+        open={sessionHeader.participantsOpen}
+        participants={sessionHeader.participants}
+        candidates={sessionHeader.candidates}
+        currentUserId={auth.session?.user.subject}
+        loading={sessionHeader.loadingParticipants}
+        error={sessionHeader.error}
+        pendingIds={sessionHeader.pendingParticipantIds}
+        searching={sessionHeader.searchingParticipants}
+        onSearch={(query) => void openBotRuntime.session.searchParticipants(query)}
+        onClose={openBotRuntime.session.closeParticipants}
+        onAdd={(candidate) => void openBotRuntime.session.addParticipant(candidate)}
+        onRemove={(id) => void openBotRuntime.session.removeParticipant(id)}
+      />
       <AddAgentDialog
         agents={agents.map((agent) => ({
           id: agent.id,
@@ -1106,57 +871,4 @@ function saveScrollSnapshot(
   snapshotsRef.current = { ...snapshotsRef.current, [sessionId]: distanceFromBottom };
   const recent = Object.fromEntries(Object.entries(snapshotsRef.current).slice(-50));
   localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(recent));
-}
-
-function titleFrom(text: string, files: PendingFile[]): string {
-  const value = text || files[0]?.file.name || "New chat";
-  return value.length > 80 ? `${value.slice(0, 77)}...` : value;
-}
-
-interface ConnectorSetupState {
-  selection: ConnectorSelectionView;
-  loading?: boolean;
-  submitting?: boolean;
-  error?: string | undefined;
-  authorizationUrl?: string;
-  result?: CreateConnectorAccountResult;
-}
-
-/** Map the runtime's wire-shaped provider onto the UI's credential-source view. */
-function credentialSourceViews(provider: ConnectorProvider): ConnectorCredentialSourceView[] {
-  return provider.credential_sources.map((source) => ({
-    typeId: source.type_id,
-    name: source.name,
-    ...(source.documentation ? { documentation: source.documentation } : {}),
-    requiresBrokering: source.requires_brokering,
-    supportsAutoDisplayName: source.supports_auto_display_name ?? false,
-    ...(source.display_name_description
-      ? { displayNameDescription: source.display_name_description }
-      : {}),
-    resourceServerSchema: source.resource_server_schema,
-    userCredentialSchema: source.user_credential_schema,
-  }));
-}
-
-function queuedTurnText(turn: QueuedTurn): string {
-  const messages = turn.chat_request.messages;
-  if (!Array.isArray(messages)) return "Queued agent turn";
-  const latest = messages.filter((message) => record(message).role === "user").at(-1);
-  return unknownText(record(latest).content ?? record(latest).parts) || "Queued agent turn";
-}
-
-function unknownText(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value.map(unknownText).filter(Boolean).join("\n");
-  if (typeof value !== "object" || value === null) return "";
-  const item = record(value);
-  if (typeof item.text === "string") return item.text;
-  const nested = item.content ?? item.parts;
-  return nested === undefined ? "" : unknownText(nested);
-}
-
-function record(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
 }

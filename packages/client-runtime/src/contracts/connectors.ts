@@ -24,6 +24,7 @@ export type ConnectorAccount = z.infer<typeof ConnectorAccountSchema>;
 
 export const ConnectorCredentialSourceSchema = z
   .object({
+    uses_default_auth: z.boolean().optional(),
     type_id: z.string().min(1),
     name: z.string(),
     documentation: z.string().optional(),
@@ -64,6 +65,7 @@ export const ConnectorAccountPageSchema = z.object({
 /** Payload the agent's `configure_connector` tool embeds in its tool output. */
 export const ConnectorSelectionSchema = z
   .object({
+    target_user_id: z.string().min(1).optional(),
     provider_type_id: z.string().min(1),
     provider_name: z.string(),
     icon_url: z.string().optional(),
@@ -161,6 +163,30 @@ export function connectorSetupFields(schema: unknown): ConnectorSetupField[] {
       ...(description ? { description } : {}),
     };
   });
+}
+
+/** Convert structured form fields without including entered values in validation errors. */
+export function connectorSetupValues(
+  fields: readonly ConnectorSetupField[],
+  values: Readonly<Record<string, string>>,
+): Record<string, unknown> | undefined {
+  const entries: Array<[string, unknown]> = [];
+  for (const field of fields) {
+    const value = values[field.key] ?? "";
+    if (!value.length) continue;
+    if (!field.multiline) {
+      entries.push([field.key, value]);
+      continue;
+    }
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (typeof parsed !== "object" || parsed === null) throw new Error();
+      entries.push([field.key, parsed]);
+    } catch {
+      throw new Error(`${field.label} must contain a JSON object or array.`);
+    }
+  }
+  return entries.length ? Object.fromEntries(entries) : undefined;
 }
 
 function asRecordValue(value: unknown): Record<string, unknown> {
@@ -271,4 +297,55 @@ export function connectorAccountCreatedMessage(
     `(tool_group_source_type_id=${selection.provider_type_id}, tool_group_instance_id=${account.id}).`,
     `Enable its tools for this bot now.`,
   ].join(" ");
+}
+
+/** Emitted by native Tilde enable/brokering operations after account discovery/creation. */
+export const ConnectorSetupRequestSchema = z.object({
+  credential_source_type_id: z.string().nullish(),
+  provider_type_id: z.string().min(1),
+  provider_name: z.string(),
+  icon_url: z.string().nullish(),
+  resource_id: z.string().min(1),
+  hosted_url: z.string().url(),
+  target: z
+    .discriminatedUnion("kind", [
+      z.object({
+        kind: z.literal("personal"),
+        user_id: z.string(),
+        mcp_server_instance_id: z.string(),
+      }),
+      z.object({
+        kind: z.literal("bot"),
+        agent_id: z.string(),
+        mcp_server_instance_id: z.string(),
+      }),
+    ])
+    .nullish(),
+});
+export type ConnectorSetupRequest = z.infer<typeof ConnectorSetupRequestSchema>;
+export function connectorSetupRequestFromPart(part: {
+  type: string;
+  output?: unknown;
+  data?: unknown;
+  data_type?: string;
+  dataType?: string;
+}): ConnectorSetupRequest | undefined {
+  if (
+    part.type === "data-tilde-connector-setup" ||
+    part.data_type === "tilde-connector-setup" ||
+    part.dataType === "tilde-connector-setup"
+  ) {
+    const result = ConnectorSetupRequestSchema.safeParse(part.data);
+    return result.success ? result.data : undefined;
+  }
+  if (!(part.type === "tool" || part.type === "dynamic-tool" || part.type.startsWith("tool-")))
+    return;
+  const output = asRecordValue(unwrapToolOutput(part.output));
+  const parsed = ConnectorSetupRequestSchema.safeParse(
+    output.connector_setup_required ??
+      asRecordValue(output.next_action).connector_setup_required ??
+      asRecordValue(asRecordValue(output.provider_provisioning_response).next_action)
+        .connector_setup_required,
+  );
+  return parsed.success ? parsed.data : undefined;
 }

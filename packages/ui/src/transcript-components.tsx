@@ -1,3 +1,7 @@
+import { ScrollToLatestButton } from "./workspace-shell.js";
+import { ConversationMessage } from "./chat-components.js";
+import { transcriptDayKey } from "@tryopenbot/client-runtime";
+import { SearchIcon } from "lucide-react";
 import { type ReactNode, useEffect, useRef } from "react";
 
 export interface ChatFindBarProps {
@@ -5,6 +9,9 @@ export interface ChatFindBarProps {
   matchCount: number;
   currentOrdinal: number;
   focusNonce?: number;
+  autoFocus?: boolean;
+  loading?: boolean;
+  error?: string;
   onQueryChange: (query: string) => void;
   onStepNext: () => void;
   onStepPrevious: () => void;
@@ -16,6 +23,9 @@ export function ChatFindBar({
   matchCount,
   currentOrdinal,
   focusNonce = 0,
+  autoFocus = true,
+  loading = false,
+  error,
   onQueryChange,
   onStepNext,
   onStepPrevious,
@@ -23,14 +33,15 @@ export function ChatFindBar({
 }: ChatFindBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
+    if (!autoFocus) return;
     inputRef.current?.focus();
     inputRef.current?.select();
-  }, [focusNonce]);
+  }, [focusNonce, autoFocus]);
 
   return (
-    <div className="chat-find-bar">
+    <div className="chat-find-bar" role="search" aria-label="Find in this chat" aria-busy={loading}>
       <span aria-hidden="true" className="chat-find-icon">
-        ⌕
+        <SearchIcon aria-hidden />
       </span>
       <input
         aria-label="Find in chat"
@@ -54,8 +65,13 @@ export function ChatFindBar({
         value={query}
       />
       {query.trim() ? (
-        <span className={matchCount === 0 ? "empty" : ""} role="status">
-          {currentOrdinal}/{matchCount}
+        <span
+          className={matchCount === 0 ? "empty" : ""}
+          role="status"
+          title={error}
+          aria-label={error ? `Search failed: ${error}` : undefined}
+        >
+          {loading ? "…" : error ? "!" : `${currentOrdinal}/${matchCount}`}
         </span>
       ) : null}
       <i aria-hidden="true" />
@@ -72,17 +88,8 @@ export function ChatFindBar({
   );
 }
 
-export function TranscriptLoading({ children }: { children?: ReactNode }) {
-  return (
-    <div
-      aria-busy="true"
-      aria-label="Loading conversation"
-      className="chat-transcript-loading"
-      role="status"
-    >
-      {children ?? <span aria-hidden="true" className="transcript-loading-spinner" />}
-    </div>
-  );
+export function TranscriptLoading() {
+  return <ConversationSkeleton />;
 }
 
 export function ConversationSkeleton() {
@@ -141,55 +148,12 @@ export function ConversationSkeleton() {
   );
 }
 
-export function TranscriptError({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div
-      aria-describedby="openbot-transcript-error-detail"
-      aria-labelledby="openbot-transcript-error-title"
-      className="chat-transcript-loading"
-      role="alert"
-    >
-      <div className="chat-transcript-error">
-        <h2 id="openbot-transcript-error-title">Couldn&apos;t load conversation</h2>
-        <p id="openbot-transcript-error-detail">
-          Couldn&apos;t load this conversation. Check your connection and try again.
-        </p>
-        <button onClick={onRetry} type="button">
-          Retry
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export interface NewMessagesPillProps {
   count: number;
-  direction: "up" | "down";
   onJump: () => void;
-  onDismiss: () => void;
 }
-
-export function NewMessagesPill({ count, direction, onJump, onDismiss }: NewMessagesPillProps) {
-  const label = count === 1 ? "1 new message" : `${count} new messages`;
-  return (
-    <div className="new-messages-pill" data-direction={direction}>
-      <button className="new-messages-pill-jump" onClick={onJump} type="button">
-        <span aria-hidden="true">{direction === "up" ? "↑" : "↓"}</span>
-        {label}
-      </button>
-      <button
-        aria-label="Dismiss new messages"
-        className="new-messages-pill-dismiss"
-        onClick={(event) => {
-          event.stopPropagation();
-          onDismiss();
-        }}
-        type="button"
-      >
-        ×
-      </button>
-    </div>
-  );
+export function NewMessagesPill({ count, onJump }: NewMessagesPillProps) {
+  return <ScrollToLatestButton newMessageCount={count} onClick={onJump} />;
 }
 
 export function UnreadDivider() {
@@ -261,37 +225,31 @@ export function FailedSendActions({ onResend, onDelete }: FailedSendActionsProps
   );
 }
 
-export interface TranscriptNoticeProps {
-  children: ReactNode;
-  actionLabel?: string;
-  onAction?: () => void;
-  tone?: "neutral" | "warning" | "danger";
-}
-
-export function TranscriptNotice({
-  children,
-  actionLabel,
-  onAction,
-  tone = "neutral",
-}: TranscriptNoticeProps) {
-  return (
-    <div className="transcript-notice" data-tone={tone} role="status">
-      <span>{children}</span>
-      {actionLabel && onAction ? (
-        <button onClick={onAction} type="button">
-          {actionLabel}
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
-export function TranscriptTimeSeparator({ label, dateTime }: { label: string; dateTime?: string }) {
+export function TranscriptTimeSeparator({
+  label,
+  dateTime,
+  now = new Date(),
+}: {
+  label?: string;
+  dateTime?: string;
+  now?: Date;
+}) {
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const day = dateTime?.slice(0, 10);
+  const date = day ? new Date(`${day}T12:00:00`) : undefined;
+  const text =
+    label ??
+    (day === transcriptDayKey(now)
+      ? "Today"
+      : day === transcriptDayKey(yesterday)
+        ? "Yesterday"
+        : date && !Number.isNaN(date.valueOf())
+          ? date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+          : "");
   return (
     <div className="transcript-time-separator" role="separator">
-      <span aria-hidden="true" />
-      <time dateTime={dateTime}>{label}</time>
-      <span aria-hidden="true" />
+      <time dateTime={dateTime}>{text}</time>
     </div>
   );
 }
@@ -339,6 +297,7 @@ export function SystemEventChip({
 }
 
 export interface UnknownMessageCardProps {
+  createdAt?: string;
   messageType: string;
   content?: ReactNode;
   variant?: "unknown" | "retired";
@@ -349,7 +308,8 @@ export function UnknownMessageCard({
   messageType,
   content,
   variant = "unknown",
-  productName = "OpenBot",
+  productName = "Dispatch",
+  createdAt = "",
 }: UnknownMessageCardProps) {
   const fullMessage =
     variant === "retired"
@@ -358,15 +318,17 @@ export function UnknownMessageCard({
   const shortMessage =
     variant === "retired" ? fullMessage : `Update ${productName} to see the full message.`;
   return (
-    <div className="unknown-message-card" data-message-type={messageType}>
-      {content ? (
-        <>
-          <div>{content}</div>
-          <small>{shortMessage}</small>
-        </>
-      ) : (
-        <p>{fullMessage}</p>
-      )}
-    </div>
+    <ConversationMessage role="assistant" createdAt={createdAt} tone="warning">
+      <div data-message-type={messageType}>
+        {content ? (
+          <>
+            {content}
+            <p>{shortMessage}</p>
+          </>
+        ) : (
+          <p>{fullMessage}</p>
+        )}
+      </div>
+    </ConversationMessage>
   );
 }

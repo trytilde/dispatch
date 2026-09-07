@@ -83,7 +83,12 @@ export function useWorkspaceLayout({
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "b") return;
+      if (
+        event.defaultPrevented ||
+        !(event.metaKey || event.ctrlKey) ||
+        event.key.toLowerCase() !== "b"
+      )
+        return;
       event.preventDefault();
       if (event.altKey) toggleWorkspace();
       else toggleSidebar();

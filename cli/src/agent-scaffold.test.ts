@@ -67,18 +67,26 @@ describe("agent scaffolding", () => {
     expect(agentSource).toContain("tools: await localTools(sessionId)");
     expect(agentSource).toContain("createCuaTools");
     expect(agentSource).toContain("existingToolNames: Object.keys(standardTools)");
-    expect(agentSource).toContain(
-      'import createProposeSelfExtensionTool from "./tools/propose_self_extension.js"',
-    );
-    expect(agentSource).toContain(
-      "propose_self_extension: createProposeSelfExtensionTool({ client, sessionId })",
-    );
-    const proposalToolSource = await readFile(
-      join(directory, "tools/propose_self_extension.ts"),
-      "utf8",
-    );
-    expect(proposalToolSource).toContain('requestingAgentId: "research-assistant"');
-    expect(proposalToolSource).toContain("options.client.selfExtension.propose");
+    expect(agentSource).not.toContain("propose_self_extension");
+    expect(agentSource).not.toContain("configure_connector");
+    const instructions = await readFile(join(directory, "instructions.ts"), "utf8");
+    expect(instructions).toContain("tilde-memory");
+    expect(instructions).toContain("target user's");
+    expect(instructions).not.toContain("Always use propose_self_extension");
+    for (const name of [
+      "tilde-memory",
+      "tilde-connectors",
+      "tilde-chatkit",
+      "tilde-tools",
+      "tilde-skills",
+      "tilde-state",
+      "tilde-dev-tunnels",
+      "tilde-control-plane",
+    ]) {
+      expect(await readFile(join(directory, `skills/${name}/SKILL.md`), "utf8")).toContain(
+        `name: ${name}`,
+      );
+    }
     expect(agentSource).toContain("createTildeAttachmentMessageHandlers(client, context)");
     expect(agentSource).toContain("createTildeMediaUploader");
     expect(agentSource).toContain("createTildeMediaDownloader");
@@ -117,7 +125,8 @@ describe("agent scaffolding", () => {
     expect(agentSource).not.toContain("@ai-sdk/openai");
     expect(agentSource).not.toContain("OPENAI_API_KEY");
     expect(agentSource).not.toContain("openai(");
-    expect(agentSource).toContain("instructions,");
+    expect(agentSource).toContain("Authenticated target user ID:");
+    expect(agentSource).toContain("Agent-owned MCP ID:");
     const inferenceSource = await readFile(join(directory, "inference.ts"), "utf8");
     expect(inferenceSource).toContain('modelId ?? process.env.AI_MODEL ?? "openai/gpt-5.6-sol"');
     expect(inferenceSource).toContain('reasoning: "medium"');
@@ -127,7 +136,7 @@ describe("agent scaffolding", () => {
     expect(instructionsSource).toContain("process.env.AGENT_RESEARCH_ASSISTANT_NAME!");
     expect(instructionsSource).toContain("Your name is ${agentName}.");
     expect(instructionsSource).toContain("acknowledge the request");
-    expect(instructionsSource).toContain("Use search_skills");
+    expect(instructionsSource).toContain("search_skills/read_skill");
     expect(instructionsSource).toContain("ordinary direct tools");
     await expect(access(join(directory, "lib/identity.ts"))).rejects.toMatchObject({
       code: "ENOENT",

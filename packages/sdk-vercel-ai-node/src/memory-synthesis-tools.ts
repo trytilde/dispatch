@@ -3,6 +3,7 @@ import { tool, type ToolSet } from "ai";
 import { z } from "zod";
 
 const SKILL_DISCOVERY_TOOLS = new Set([
+  "chatkit_search_history",
   "list_skills",
   "search_skills",
   "read_skill_description",
@@ -15,7 +16,7 @@ const evidenceIdsSchema = z
 
 /**
  * Keep a synthesis turn restricted to its session-bound memory mutations and
- * the four read-only tools needed to load its managed skills.
+ * read-only history search and tools needed to load its managed skills.
  */
 export function restrictMemorySynthesisTools(discovered: ToolSet, bound: ToolSet): ToolSet {
   return Object.fromEntries(

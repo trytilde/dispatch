@@ -12,9 +12,9 @@ The portable Hono control application. It serves health, exposes raw allowlisted
   room roster/invitation semantics for an exact Client Runtime operation allowlist and exposes only
   the short-lived ChatKit realtime ticket needed for a direct browser WebSocket.
 - `registerTildeProxy(app, options)` preserves request and response bodies for a strict allowlist of Tilde-owned settings operations while keeping the installation API key out of clients.
-- `registerCapabilityApprovalRoutes(app, options)` forwards an exact approval/hash/generation
-  decision using only the owner bearer already verified by `requireOwner`; it never substitutes
-  the installation API key and returns only the tokenless approval projection consumed by clients.
+- The `user-tools/` bridge uses only the verified owner bearer for setup and inventory reads.
+  Personal account operations retain the native user namespace; the installation key is never
+  substituted when a human credential is required. Capability-proposal routes are removed.
 - `registerComputerPreview(app, provider, options)` exposes the narrow owner preview redirect without making Computer service browser-accessible.
 - `registerConnectorAuthorizedRoute(app)` serves only the public OAuth completion page that bounces desktop flows to the `openbot://` deep link. Connector resources and setup use native Tilde APIs through `registerTildeProxy`.
 

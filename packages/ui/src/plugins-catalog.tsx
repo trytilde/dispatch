@@ -1,4 +1,6 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import type { ResourceScope } from "@tryopenbot/client-runtime";
+import { ResourceScopeFilter } from "./resource-scope-filter.js";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { ChevronDownIcon, PlusIcon, SearchIcon, Trash2Icon, XIcon } from "lucide-react";
 import { AgentAvatar } from "./agent-avatar.js";
 import { Button } from "./beautiful-ui/atoms/button.js";
@@ -34,6 +36,8 @@ export interface PluginsCatalogAgent {
 }
 
 export interface PluginsCatalogProps {
+  scope?: ResourceScope;
+  onScopeChange?: (scope: ResourceScope) => void;
   agents: readonly PluginsCatalogAgent[];
   toolProviders: readonly PluginsCatalogToolProvider[];
   skillProviders: readonly PluginsCatalogSkillProvider[];
@@ -63,14 +67,18 @@ export interface PluginsCatalogToolProvider {
 export interface PluginsCatalogToolAccount {
   id: string;
   accountName: string;
+  personalUserId?: string;
   assignedAgentIds: readonly string[];
+  enabledForPersonal?: boolean;
 }
 
 export interface PluginsCatalogSkill {
+  personalUserId?: string;
   id: string;
   name: string;
   description: string;
   assignedAgentIds: readonly string[];
+  enabledForPersonal?: boolean;
   assignedSkillIdByAgentId?: Readonly<Record<string, string>>;
 }
 
@@ -99,6 +107,8 @@ interface PendingAssignment {
 }
 
 export function PluginsCatalog({
+  scope: controlledScope,
+  onScopeChange,
   agents,
   toolProviders,
   skillProviders,
@@ -110,6 +120,14 @@ export function PluginsCatalog({
   onSetToolAccount,
   onSetSkill,
 }: PluginsCatalogProps) {
+  const [localScope, setLocalScope] = useState<ResourceScope>("all");
+  const scope = controlledScope ?? localScope;
+  const matchesScope = (item: {
+    enabledForPersonal?: boolean;
+    assignedAgentIds: readonly string[];
+  }) =>
+    scope === "all" ||
+    (scope === "personal" ? item.enabledForPersonal : item.assignedAgentIds.length > 0);
   const catalogHeadingId = useId();
   const [selectedKind, setSelectedKind] = useState<CatalogKind>("tools");
   const kind = fixedKind ?? selectedKind;
@@ -123,7 +141,7 @@ export function PluginsCatalog({
   const normalizedQuery = query.trim().toLowerCase();
   const groupedSkillProviders = skillProviders.map((provider) => ({
     ...provider,
-    skills: groupSkillsByName(provider.skills),
+    skills: groupSkillsByName(provider.skills).filter(matchesScope),
   }));
   const availableCategories = [
     ...new Set(
@@ -141,6 +159,7 @@ export function PluginsCatalog({
         const text =
           `${provider.name} ${connection.accountName} ${provider.description}`.toLowerCase();
         return (
+          matchesScope(connection) &&
           text.includes(normalizedQuery) &&
           matchesSelectedAgents(connection.assignedAgentIds, selectedAgentIds)
         );
@@ -151,7 +170,9 @@ export function PluginsCatalog({
       return {
         provider,
         connections,
-        visible: (selectedAgentIds.length === 0 && providerMatches) || connections.length > 0,
+        visible:
+          (scope === "all" && selectedAgentIds.length === 0 && providerMatches) ||
+          connections.length > 0,
       };
     })
     .filter(({ visible }) => visible);
@@ -168,7 +189,12 @@ export function PluginsCatalog({
       );
     const matchesCategory =
       selectedCategory === null || provider.categories.includes(selectedCategory);
-    return matchesSearch && matchesAgent && matchesCategory;
+    return (
+      matchesSearch &&
+      matchesAgent &&
+      matchesCategory &&
+      (scope === "all" || provider.skills.length > 0)
+    );
   });
   const toolGroups = groupToolProvidersByCategory(visibleToolProviders, selectedCategory);
   const skillGroups = groupSkillProvidersByCategory(visibleSkillProviders, selectedCategory);
@@ -260,33 +286,25 @@ export function PluginsCatalog({
             className="flex items-center gap-2.5 max-[980px]:w-full max-[720px]:flex-col
               max-[720px]:items-stretch"
           >
-            <BotFilter
+            <ResourceScopeFilter
+              value={scope}
+              onChange={(value) => {
+                setLocalScope(value);
+                onScopeChange?.(value);
+              }}
+            />
+            <PluginAgentFilter
               agents={agents}
               selectedAgentIds={selectedAgentIds}
               onClear={() => setSelectedAgentIds([])}
               onToggle={toggleAgentFilter}
             />
-            <CategoryFilter
+            <PluginCategoryFilter
               categories={availableCategories}
               selectedCategory={selectedCategory}
               onSelect={setSelectedCategory}
             />
-            <label
-              className="flex h-[34px] w-[min(32vw,280px)] min-w-0 flex-[0_1_280px] items-center
-                gap-2 rounded-lg border-[0.5px] border-line-strong bg-surface text-ink-3
-                shadow-inset-field focus-within:border-[color-mix(in_srgb,var(--accent)_55%,var(--line-strong))]
-                focus-within:shadow-[0_0_0_2px_var(--accent-tint)] max-[980px]:w-full"
-            >
-              <SearchIcon aria-hidden="true" className="ml-2.5 size-[15px] stroke-[1.5]" />
-              <span className="sr-only">Search {kind}</span>
-              <input
-                className="h-full w-full min-w-0 bg-transparent pr-2.5 text-[12.5px] text-ink outline-none"
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={`Search ${kind}`}
-                type="search"
-                value={query}
-              />
-            </label>
+            <PluginSearchField label={`Search ${kind}`} value={query} onChange={setQuery} />
           </div>
         </div>
 
@@ -306,78 +324,64 @@ export function PluginsCatalog({
               {error}
             </div>
           ) : null}
-          {loading ? <CatalogSkeleton kind={kind} /> : null}
+          {loading ? <PluginCatalogSkeleton kind={kind} /> : null}
 
           {!loading && kind === "tools" ? (
             <div className="space-y-3">
               {toolGroups.map(([category, categoryProviders]) => (
-                <section aria-labelledby={`tool-category-${slugify(category)}`} key={category}>
-                  <h3
-                    className="m-0 px-2 pt-2 pb-1.5 text-[13px] leading-[18px] font-medium text-ink-3"
-                    id={`tool-category-${slugify(category)}`}
-                  >
-                    {categoryLabel(category)}
-                  </h3>
-                  <ul
-                    className="m-0 grid list-none grid-cols-2 gap-x-2 gap-y-0.5 p-0
-                      max-[980px]:grid-cols-1"
-                  >
-                    {categoryProviders.map(({ provider, connections }) => (
-                      <CatalogSummaryRow
-                        agents={agents}
-                        assignedAgentIds={unique(
-                          connections.flatMap((connection) => connection.assignedAgentIds),
-                        )}
-                        color={capabilityColor(provider.id)}
-                        description={provider.description}
-                        {...(provider.iconUrl ? { iconUrl: provider.iconUrl } : {})}
-                        {...(provider.iconKey ? { iconKey: provider.iconKey } : {})}
-                        key={provider.id}
-                        mark={capabilityMark(provider.name)}
-                        name={provider.name}
-                        platformFallbacks={[provider.id, provider.name]}
-                        onOpen={() => setDetailTarget({ kind: "tools", providerId: provider.id })}
-                      />
-                    ))}
-                  </ul>
-                </section>
+                <PluginCategorySection
+                  title={categoryLabel(category)}
+                  id={`tool-category-${slugify(category)}`}
+                  key={category}
+                >
+                  {categoryProviders.map(({ provider, connections }) => (
+                    <PluginProviderCard
+                      agents={agents}
+                      assignedAgentIds={unique(
+                        connections.flatMap((connection) => connection.assignedAgentIds),
+                      )}
+                      color={capabilityColor(provider.id)}
+                      description={provider.description}
+                      {...(provider.iconUrl ? { iconUrl: provider.iconUrl } : {})}
+                      {...(provider.iconKey ? { iconKey: provider.iconKey } : {})}
+                      key={provider.id}
+                      mark={capabilityMark(provider.name)}
+                      name={provider.name}
+                      platformFallbacks={[provider.id, provider.name]}
+                      onOpen={() => setDetailTarget({ kind: "tools", providerId: provider.id })}
+                    />
+                  ))}
+                </PluginCategorySection>
               ))}
             </div>
           ) : !loading ? (
             <div className="space-y-3">
               {skillGroups.map(([category, categoryProviders]) => (
-                <section aria-labelledby={`skill-category-${slugify(category)}`} key={category}>
-                  <h3
-                    className="m-0 px-2 pt-2 pb-1.5 text-[13px] leading-[18px] font-medium text-ink-3"
-                    id={`skill-category-${slugify(category)}`}
-                  >
-                    {categoryLabel(category)}
-                  </h3>
-                  <ul
-                    className="m-0 grid list-none grid-cols-2 gap-x-2 gap-y-0.5 p-0
-                      max-[980px]:grid-cols-1"
-                  >
-                    {categoryProviders.map((provider) => (
-                      <CatalogSummaryRow
-                        agents={agents}
-                        assignedAgentIds={unique(
-                          provider.skills.flatMap((skill) => skill.assignedAgentIds),
-                        )}
-                        color={capabilityColor(provider.id)}
-                        description={`${provider.skills.length} ${
-                          provider.skills.length === 1 ? "skill" : "skills"
-                        } · ${provider.description}`}
-                        {...(provider.iconUrl ? { iconUrl: provider.iconUrl } : {})}
-                        {...(provider.iconKey ? { iconKey: provider.iconKey } : {})}
-                        key={provider.id}
-                        mark={capabilityMark(provider.name)}
-                        name={provider.name}
-                        platformFallbacks={[provider.id, provider.name]}
-                        onOpen={() => setDetailTarget({ kind: "skills", providerId: provider.id })}
-                      />
-                    ))}
-                  </ul>
-                </section>
+                <PluginCategorySection
+                  title={categoryLabel(category)}
+                  id={`skill-category-${slugify(category)}`}
+                  key={category}
+                >
+                  {categoryProviders.map((provider) => (
+                    <PluginProviderCard
+                      agents={agents}
+                      assignedAgentIds={unique(
+                        provider.skills.flatMap((skill) => skill.assignedAgentIds),
+                      )}
+                      color={capabilityColor(provider.id)}
+                      description={`${provider.skills.length} ${
+                        provider.skills.length === 1 ? "skill" : "skills"
+                      } · ${provider.description}`}
+                      {...(provider.iconUrl ? { iconUrl: provider.iconUrl } : {})}
+                      {...(provider.iconKey ? { iconKey: provider.iconKey } : {})}
+                      key={provider.id}
+                      mark={capabilityMark(provider.name)}
+                      name={provider.name}
+                      platformFallbacks={[provider.id, provider.name]}
+                      onOpen={() => setDetailTarget({ kind: "skills", providerId: provider.id })}
+                    />
+                  ))}
+                </PluginCategorySection>
               ))}
             </div>
           ) : null}
@@ -437,14 +441,21 @@ export function PluginsCatalog({
   );
 }
 
-interface BotFilterProps {
+export interface PluginAgentFilterProps {
+  menuClassName?: string;
   agents: readonly PluginsCatalogAgent[];
   selectedAgentIds: readonly string[];
   onClear: () => void;
   onToggle: (agentId: string) => void;
 }
 
-function BotFilter({ agents, selectedAgentIds, onClear, onToggle }: BotFilterProps) {
+export function PluginAgentFilter({
+  menuClassName,
+  agents,
+  selectedAgentIds,
+  onClear,
+  onToggle,
+}: PluginAgentFilterProps) {
   const selected = agents.filter((agent) => selectedAgentIds.includes(agent.id));
   return (
     <DropdownMenu>
@@ -483,7 +494,7 @@ function BotFilter({ agents, selectedAgentIds, onClear, onToggle }: BotFilterPro
           <ChevronDownIcon aria-hidden="true" className="size-3.5 stroke-[1.5]" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[230px]">
+      <DropdownMenuContent align="end" className={cn("min-w-[230px]", menuClassName)}>
         <DropdownMenuItem onSelect={onClear}>Enabled for bot</DropdownMenuItem>
         <DropdownMenuSeparator />
         {agents.map((agent) => (
@@ -507,13 +518,19 @@ function BotFilter({ agents, selectedAgentIds, onClear, onToggle }: BotFilterPro
   );
 }
 
-interface CategoryFilterProps {
+export interface PluginCategoryFilterProps {
+  menuClassName?: string;
   categories: readonly string[];
   selectedCategory: string | null;
   onSelect: (category: string | null) => void;
 }
 
-function CategoryFilter({ categories, selectedCategory, onSelect }: CategoryFilterProps) {
+export function PluginCategoryFilter({
+  menuClassName,
+  categories,
+  selectedCategory,
+  onSelect,
+}: PluginCategoryFilterProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -532,7 +549,7 @@ function CategoryFilter({ categories, selectedCategory, onSelect }: CategoryFilt
           <ChevronDownIcon aria-hidden="true" className="size-3.5 stroke-[1.5]" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[200px]">
+      <DropdownMenuContent align="end" className={cn("min-w-[200px]", menuClassName)}>
         <DropdownMenuItem onSelect={() => onSelect(null)}>All categories</DropdownMenuItem>
         <DropdownMenuSeparator />
         {categories.map((category) => (
@@ -552,15 +569,15 @@ function CategoryFilter({ categories, selectedCategory, onSelect }: CategoryFilt
   );
 }
 
-interface CapabilityRowProps {
+export interface PluginItemRowProps {
   actionLabel?: string;
-  agents: readonly PluginsCatalogAgent[];
-  assignedAgentIds: readonly string[];
-  color: string;
+  agents?: readonly PluginsCatalogAgent[];
+  assignedAgentIds?: readonly string[];
+  color?: string;
   description?: string;
   iconUrl?: string;
   iconKey?: string;
-  mark: string;
+  mark?: string;
   multilineDescription?: boolean;
   name: string;
   pendingAgentIds?: readonly string[];
@@ -570,33 +587,45 @@ interface CapabilityRowProps {
   onAdd?: () => void;
   onRemoveAccount?: () => void;
   onRemove?: (agentId: string) => void;
+  id?: string;
+  /** Host-owned controls replace Dispatch assignment actions. */
+  actions?: ReactNode;
 }
 
-interface CatalogSummaryRowProps {
-  agents: readonly PluginsCatalogAgent[];
-  assignedAgentIds: readonly string[];
-  color: string;
+export interface PluginProviderCardProps {
+  agents?: readonly PluginsCatalogAgent[];
+  assignedAgentIds?: readonly string[];
+  color?: string;
   description: string;
   iconUrl?: string;
   iconKey?: string;
-  mark: string;
+  mark?: string;
   name: string;
   onOpen: () => void;
   platformFallbacks?: readonly string[];
+  id?: string;
+  /** Non-interactive trailing content; use PluginItemRow.actions for buttons. */
+  trailing?: ReactNode;
 }
 
-function CatalogSummaryRow({
-  agents,
-  assignedAgentIds,
-  color,
+export function PluginProviderCard({
+  agents = [],
+  assignedAgentIds = [],
+  color: suppliedColor,
   description,
   iconUrl,
   iconKey,
-  mark,
+  mark: suppliedMark,
   name,
   onOpen,
   platformFallbacks,
-}: CatalogSummaryRowProps) {
+  id,
+  trailing,
+}: PluginProviderCardProps) {
+  const color = suppliedColor ?? capabilityColor(id ?? name);
+  const mark = suppliedMark ?? capabilityMark(name);
+  const fallbacks = platformFallbacks ?? [id ?? name, name];
+
   const assignedAgents = agents.filter((agent) => assignedAgentIds.includes(agent.id));
   return (
     <li className="min-w-0">
@@ -613,13 +642,13 @@ function CatalogSummaryRow({
           {...(iconUrl ? { iconUrl } : {})}
           {...(iconKey ? { iconKey } : {})}
           mark={mark}
-          platformFallbacks={platformFallbacks}
+          platformFallbacks={fallbacks}
         />
         <div className="flex min-w-0 flex-1 flex-col gap-px">
           <h3 className="m-0 truncate text-[13px] leading-[18px] font-medium text-ink">{name}</h3>
           <p className="m-0 truncate text-[13px] leading-[18px] text-ink-2">{description}</p>
         </div>
-        <StaticAvatarGroup agents={assignedAgents} />
+        {trailing !== undefined ? trailing : <StaticAvatarGroup agents={assignedAgents} />}
       </button>
     </li>
   );
@@ -678,15 +707,15 @@ function StaticAvatarGroup({ agents }: { agents: readonly PluginsCatalogAgent[] 
   );
 }
 
-function CapabilityRow({
+export function PluginItemRow({
   actionLabel,
-  agents,
-  assignedAgentIds,
-  color,
+  agents = [],
+  assignedAgentIds = [],
+  color: suppliedColor,
   description,
   iconUrl,
   iconKey,
-  mark,
+  mark: suppliedMark,
   multilineDescription = false,
   name,
   onAction,
@@ -696,7 +725,13 @@ function CapabilityRow({
   pendingAgentIds = [],
   platformFallbacks,
   showIcon = true,
-}: CapabilityRowProps) {
+  id,
+  actions,
+}: PluginItemRowProps) {
+  const color = suppliedColor ?? capabilityColor(id ?? name);
+  const mark = suppliedMark ?? capabilityMark(name);
+  const fallbacks = platformFallbacks ?? [id ?? name, name];
+
   const visibleAgentIds = unique([...assignedAgentIds, ...pendingAgentIds]);
   const assignedAgents = agents.filter((agent) => visibleAgentIds.includes(agent.id));
   return (
@@ -711,21 +746,23 @@ function CapabilityRow({
           {...(iconUrl ? { iconUrl } : {})}
           {...(iconKey ? { iconKey } : {})}
           mark={mark}
-          platformFallbacks={platformFallbacks}
+          platformFallbacks={fallbacks}
         />
       ) : null}
       <div className="flex min-w-0 flex-1 flex-col gap-px">
         {onRemoveAccount ? (
           <div className="flex min-w-0 items-center gap-2">
             <h3 className="m-0 truncate text-[13px] leading-[18px] font-medium text-ink">{name}</h3>
-            <BotAvatarActions
-              agents={assignedAgents}
-              alignWithIcon={showIcon}
-              inlineWithTitle
-              pendingAgentIds={pendingAgentIds}
-              onAdd={onAdd}
-              onRemove={onRemove}
-            />
+            {actions === undefined ? (
+              <BotAvatarActions
+                agents={assignedAgents}
+                alignWithIcon={showIcon}
+                inlineWithTitle
+                pendingAgentIds={pendingAgentIds}
+                onAdd={onAdd}
+                onRemove={onRemove}
+              />
+            ) : null}
           </div>
         ) : (
           <h3 className="m-0 truncate text-[13px] leading-[18px] font-medium text-ink">{name}</h3>
@@ -741,7 +778,9 @@ function CapabilityRow({
           </p>
         ) : null}
       </div>
-      {actionLabel ? (
+      {actions !== undefined ? (
+        actions
+      ) : actionLabel ? (
         <Button
           className="shrink-0 max-[720px]:ml-[52px]"
           onClick={onAction}
@@ -976,7 +1015,7 @@ function PluginDetailDialog({
             <div className="grid gap-2">
               <ul className="m-0 grid list-none gap-0.5 p-0">
                 {provider.accounts.map((account) => (
-                  <CapabilityRow
+                  <PluginItemRow
                     agents={agents}
                     assignedAgentIds={account.assignedAgentIds}
                     color={capabilityColor(provider.id)}
@@ -990,12 +1029,21 @@ function PluginDetailDialog({
                       .map(({ agentId }) => agentId)}
                     platformFallbacks={[provider.id, provider.name]}
                     showIcon={false}
-                    onAdd={() => onAddToolAccount(account.id)}
+                    description={
+                      account.personalUserId
+                        ? "Shared through the personal-tool policy on each bot’s MCP server."
+                        : undefined
+                    }
+                    onAdd={account.personalUserId ? undefined : () => onAddToolAccount(account.id)}
                     onRemoveAccount={() => {
                       setDeleteError("");
                       setConfirmingDelete(account);
                     }}
-                    onRemove={(agentId) => onRemoveToolAccount(account.id, agentId)}
+                    onRemove={
+                      account.personalUserId
+                        ? undefined
+                        : (agentId) => onRemoveToolAccount(account.id, agentId)
+                    }
                   />
                 ))}
               </ul>
@@ -1023,7 +1071,7 @@ function PluginDetailDialog({
               min-[1200px]:grid-cols-4"
             >
               {skillProvider.skills.map((skill) => (
-                <CapabilityRow
+                <PluginItemRow
                   agents={agents}
                   assignedAgentIds={skill.assignedAgentIds}
                   color={capabilityColor(skillProvider.id)}
@@ -1039,9 +1087,15 @@ function PluginDetailDialog({
                     .map(({ agentId }) => agentId)}
                   platformFallbacks={[skillProvider.id, skillProvider.name]}
                   showIcon={false}
-                  onAdd={() => onAddSkill(skill.id)}
-                  onRemove={(agentId) =>
-                    onRemoveSkill(skill.assignedSkillIdByAgentId?.[agentId] ?? skill.id, agentId)
+                  onAdd={skill.personalUserId ? undefined : () => onAddSkill(skill.id)}
+                  onRemove={
+                    skill.personalUserId
+                      ? undefined
+                      : (agentId) =>
+                          onRemoveSkill(
+                            skill.assignedSkillIdByAgentId?.[agentId] ?? skill.id,
+                            agentId,
+                          )
                   }
                 />
               ))}
@@ -1252,6 +1306,7 @@ function groupSkillsByName(skills: readonly PluginsCatalogSkill[]): PluginsCatal
     groups.set(key, {
       ...existing,
       assignedAgentIds: unique([...existing.assignedAgentIds, ...skill.assignedAgentIds]),
+      enabledForPersonal: existing.enabledForPersonal || skill.enabledForPersonal,
       assignedSkillIdByAgentId,
     });
   }
@@ -1324,7 +1379,7 @@ function capabilityColor(id: string): string {
   return `hsl(${hash % 360} 48% 43%)`;
 }
 
-function CatalogSkeleton({ kind }: { kind: CatalogKind }) {
+export function PluginCatalogSkeleton({ kind }: { kind: CatalogKind }) {
   return (
     <div
       aria-label={`Loading ${kind}`}
@@ -1355,5 +1410,75 @@ function CatalogSkeleton({ kind }: { kind: CatalogKind }) {
         </div>
       ))}
     </div>
+  );
+}
+
+export interface PluginSearchFieldProps {
+  label: string;
+  placeholder?: string;
+  value: string;
+  onChange: (query: string) => void;
+  className?: string;
+}
+export function PluginSearchField({
+  label,
+  placeholder,
+  value,
+  onChange,
+  className,
+}: PluginSearchFieldProps) {
+  return (
+    <label
+      className={cn(
+        `flex h-[34px] w-[min(32vw,280px)] min-w-0 flex-[0_1_280px] items-center
+                gap-2 rounded-lg border-[0.5px] border-line-strong bg-surface text-ink-3
+                shadow-inset-field focus-within:border-[color-mix(in_srgb,var(--accent)_55%,var(--line-strong))]
+                focus-within:shadow-[0_0_0_2px_var(--accent-tint)] max-[980px]:w-full`,
+        className,
+      )}
+    >
+      <SearchIcon aria-hidden="true" className="ml-2.5 size-[15px] stroke-[1.5]" />
+      <span className="sr-only">{label}</span>
+      <input
+        className="h-full w-full min-w-0 bg-transparent pr-2.5 text-[12.5px] text-ink outline-none"
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder ?? label}
+        type="search"
+        value={value}
+      />
+    </label>
+  );
+}
+export interface PluginCategorySectionProps {
+  title: string;
+  id?: string;
+  children: ReactNode;
+  className?: string;
+}
+export function PluginCategorySection({
+  title,
+  id,
+  children,
+  className,
+}: PluginCategorySectionProps) {
+  const generatedId = useId();
+  const headingId = id ?? generatedId;
+  return (
+    <section aria-labelledby={headingId}>
+      <h3
+        className="m-0 px-2 pt-2 pb-1.5 text-[13px] leading-[18px] font-medium text-ink-3"
+        id={headingId}
+      >
+        {title}
+      </h3>
+      <ul
+        className={cn(
+          "m-0 grid list-none grid-cols-2 gap-x-2 gap-y-0.5 p-0 max-[980px]:grid-cols-1",
+          className,
+        )}
+      >
+        {children}
+      </ul>
+    </section>
   );
 }

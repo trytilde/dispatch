@@ -2,34 +2,22 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
   useEffect,
-  useId,
   useRef,
   useState,
 } from "react";
 
-const playbackRates = [1, 1.25, 1.5, 2] as const;
-
 export interface AudioPlayerProps {
   name: string;
   src: string;
-  surface?: "chip" | "fullscreen";
   suspended?: boolean;
   onUnavailable?: () => void;
 }
 
-export function AudioPlayer({
-  name,
-  src,
-  surface = "chip",
-  suspended = false,
-  onUnavailable,
-}: AudioPlayerProps) {
+export function AudioPlayer({ name, src, suspended = false, onUnavailable }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [rate, setRate] = useState<(typeof playbackRates)[number]>(1);
 
   useEffect(() => {
     if (suspended) audioRef.current?.pause();
@@ -38,22 +26,14 @@ export function AudioPlayer({
   function togglePlayback(): void {
     const audio = audioRef.current;
     if (!audio) return;
-    if (audio.paused) void audio.play().catch(onUnavailable);
+    if (audio.paused) void audio.play().catch(() => onUnavailable?.());
     else audio.pause();
   }
 
-  function cycleRate(): void {
-    const current = playbackRates.indexOf(rate);
-    const next = playbackRates[(current + 1) % playbackRates.length] ?? 1;
-    setRate(next);
-    if (audioRef.current) audioRef.current.playbackRate = next;
-  }
-
   return (
-    <div className="audio-player" data-surface={surface}>
+    <div className="audio-player">
       {!suspended ? (
         <audio
-          muted={muted}
           onDurationChange={(event) => setDuration(finiteDuration(event.currentTarget.duration))}
           onEnded={() => setPlaying(false)}
           onError={onUnavailable}
@@ -97,26 +77,6 @@ export function AudioPlayer({
       <span className="audio-player-time">
         {formatMediaTime(position)} / {formatMediaTime(duration)}
       </span>
-      {surface === "fullscreen" ? (
-        <>
-          <button
-            aria-label={`Playback speed ${rate}x`}
-            className="audio-player-speed"
-            onClick={cycleRate}
-            type="button"
-          >
-            {rate}x
-          </button>
-          <button
-            aria-label={muted ? "Unmute" : "Mute"}
-            className="audio-player-mute"
-            onClick={() => setMuted((value) => !value)}
-            type="button"
-          >
-            {muted ? "⌁" : "◖"}
-          </button>
-        </>
-      ) : null}
     </div>
   );
 }
@@ -163,42 +123,6 @@ export function LinkPreviewCard({ url, metadata, compact = false }: LinkPreviewC
         </span>
       </a>
     </article>
-  );
-}
-
-export interface LinkHoverPreviewProps extends LinkPreviewCardProps {
-  children: ReactNode;
-}
-
-export function LinkHoverPreview({ children, ...preview }: LinkHoverPreviewProps) {
-  const [open, setOpen] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  function schedule(value: boolean, delay: number): void {
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setOpen(value), delay);
-  }
-  useEffect(() => () => clearTimeout(timerRef.current), []);
-  return (
-    <span
-      className="link-hover-preview"
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) schedule(false, 200);
-      }}
-      onFocus={() => schedule(true, 350)}
-      onMouseEnter={() => schedule(true, 350)}
-      onMouseLeave={() => schedule(false, 200)}
-    >
-      {children}
-      {open ? (
-        <span
-          aria-label={`Link preview: ${preview.metadata?.hostname ?? safeHttpUrl(preview.url)?.hostname ?? preview.url}`}
-          className="link-hover-preview-popover"
-          role="tooltip"
-        >
-          <LinkPreviewCard {...preview} compact />
-        </span>
-      ) : null}
-    </span>
   );
 }
 
@@ -353,90 +277,6 @@ function DiagramModal({ children, onClose }: { children: ReactNode; onClose: () 
         </div>
       </div>
     </div>
-  );
-}
-
-export type ComputerHandoffStatus = "waiting" | "handed-back" | "answered" | "skipped";
-
-export interface ComputerHandoffCardProps {
-  instruction: string;
-  status: ComputerHandoffStatus;
-  snapshotUrl?: string;
-  onOpen: () => void;
-  onHandBack: () => void;
-  onDismiss: () => void;
-}
-
-const handoffLabels: Record<Exclude<ComputerHandoffStatus, "waiting">, string> = {
-  "handed-back": "Done",
-  answered: "Answered",
-  skipped: "Skipped",
-};
-
-export function ComputerHandoffCard({
-  instruction,
-  status,
-  snapshotUrl,
-  onOpen,
-  onHandBack,
-  onDismiss,
-}: ComputerHandoffCardProps) {
-  const titleId = useId();
-  const descriptionId = useId();
-  const waiting = status === "waiting";
-  return (
-    <article
-      aria-describedby={descriptionId}
-      aria-labelledby={titleId}
-      className="computer-handoff-card"
-      data-status={status}
-    >
-      <div className="computer-handoff-heading">
-        <div className="computer-handoff-header">
-          <strong id={titleId}>Computer</strong>
-          <span className="computer-handoff-badge" role="status">
-            <i aria-hidden="true" />
-            {waiting ? "Action needed" : handoffLabels[status]}
-          </span>
-        </div>
-        <p id={descriptionId}>{instruction.trim()}</p>
-      </div>
-      {waiting ? (
-        <button
-          aria-label="Drive the computer yourself"
-          className="computer-handoff-frame"
-          onClick={onOpen}
-          type="button"
-        >
-          {snapshotUrl ? (
-            <img alt="" aria-hidden="true" draggable={false} src={snapshotUrl} />
-          ) : (
-            <span aria-hidden="true">▣</span>
-          )}
-        </button>
-      ) : null}
-      <div className="computer-handoff-footer">
-        {waiting ? (
-          <>
-            <button className="primary" onClick={onOpen}>
-              Drive it yourself
-            </button>
-            <button onClick={onHandBack}>I’m done</button>
-            <button
-              className="quiet"
-              onClick={onDismiss}
-              title="Skip this step — the agent carries on without it"
-            >
-              Skip
-            </button>
-          </>
-        ) : (
-          <button onClick={onOpen}>
-            <span aria-hidden="true">▣</span> Open computer
-          </button>
-        )}
-      </div>
-    </article>
   );
 }
 

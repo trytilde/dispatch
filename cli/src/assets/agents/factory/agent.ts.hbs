@@ -32,12 +32,10 @@ import instructions from "./instructions.js";
 import awaitShell from "./tools/await_shell.js";
 import bash from "./tools/bash.js";
 import browserSession from "./tools/browser_session.js";
-import configureConnector from "./tools/configure_connector.js";
 import copyFromComputer from "./tools/copy_from_computer.js";
 import copyToComputer from "./tools/copy_to_computer.js";
 import glob from "./tools/glob.js";
 import grep from "./tools/grep.js";
-import createProposeSelfExtensionTool from "./tools/propose_self_extension.js";
 import createManageAgentJobsTool from "./tools/manage_agent_jobs.js";
 import createManageGoalsTool from "./tools/manage_goals.js";
 import createManageRoutinesTool from "./tools/manage_routines.js";
@@ -69,7 +67,6 @@ async function localTools(sessionId: string): Promise<ToolSet> {
     await_shell: awaitShell,
     bash,
     browser_session: browserSession,
-    configure_connector: configureConnector,
     copy_from_computer: copyFromComputer(uploadMedia),
     copy_to_computer: copyToComputer(downloadMedia),
     glob,
@@ -97,7 +94,6 @@ async function localTools(sessionId: string): Promise<ToolSet> {
       sessionId,
       teamId: process.env.TILDE_TEAM_ID!,
     }),
-    propose_self_extension: createProposeSelfExtensionTool({ client, sessionId }),
     read_file: readFile,
     screenshot: screenshot(uploadMedia),
     write_file: writeFile,
@@ -112,7 +108,7 @@ async function localTools(sessionId: string): Promise<ToolSet> {
 
 async function managedMcpTools(
   sessionId: string,
-  context: Pick<ChatKitEndpointContext, "mcp">,
+  context: Pick<ChatKitEndpointContext, "mcp" | "userId">,
 ): Promise<{ tools: ToolSet; closeMcp: () => Promise<void> }> {
   const handle = await context.mcp.connect({
     agentId: {{{AGENT_ID_JSON}}},
@@ -367,7 +363,7 @@ export default chatKitEndpoint({
     const streamOptions = {
       ...inference,
       abortSignal: request.signal,
-      instructions,
+      instructions: `${instructions}\n\nAuthenticated target user ID: ${context.userId ?? "unknown; resolve the intended user before mutating user-owned resources"}. Agent-owned MCP ID: ${mcpServerId}. User/shared tools MCP ID: ${sharedConnectorsMcpServerId ?? "discover the target user’s MCP; do not substitute the agent MCP"}.`,
       messages: modelMessages,
       prepareStep: composeChatKitCompactionPrepareStep(
         providerPrepareStep,

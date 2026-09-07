@@ -89,7 +89,12 @@ describe("TildeAgentProvider", () => {
             },
             skill_registry: {
               enabled: true,
-              enabled_skills: { managed: [{ provider_id: "cua" }] },
+              enabled_skills: {
+                managed: expect.arrayContaining([
+                  { provider_id: "cua", skill_ids: ["gui-automation"] },
+                  { provider_id: "tilde", skill_ids: ["enable-connections"] },
+                ]),
+              },
             },
             memory: {
               bank: {
@@ -412,7 +417,12 @@ describe("TildeAgentProvider", () => {
       mcp_server: { id: "openbot-factory", user_tool_federation_mode: "none" },
       skill_registry: {
         name: "Shared skills",
-        enabled_skills: { managed: [{ provider_id: "cua", skill_ids: ["gui-automation"] }] },
+        enabled_skills: {
+          managed: expect.arrayContaining([
+            { provider_id: "cua", skill_ids: ["gui-automation"] },
+            { provider_id: "tilde", skill_ids: ["enable-connections"] },
+          ]),
+        },
       },
       memory: {
         bank: { enabled: true, name: "Shared memory", synthesizer_agent_id: "memory-catcher" },
@@ -425,7 +435,24 @@ describe("TildeAgentProvider", () => {
     // The shared registry carries every authored agent's skills, not only the primary's.
     expect(
       primaryBundle.skill_registry.enabled_skills.custom.map(({ name }) => name).toSorted(),
-    ).toEqual(["factory-example", "memory-catcher-example", "operator-example", "scout-example"]);
+    ).toEqual(
+      expect.arrayContaining([
+        "factory-example",
+        "memory-catcher-example",
+        "operator-example",
+        "scout-example",
+      ]),
+    );
+    for (const id of ["factory", "memory-catcher", "operator", "scout"]) {
+      expect(primaryBundle.skill_registry.enabled_skills.custom.map((skill) => skill.name)).toEqual(
+        expect.arrayContaining([
+          `${id}-tilde-memory`,
+          `${id}-tilde-connectors`,
+          `${id}-tilde-chatkit`,
+          `${id}-tilde-control-plane`,
+        ]),
+      );
+    }
     expect(agentUpdates.factory).toEqual({
       personal_tool_mcp_server_instance_id: "openbot-connectors",
     });

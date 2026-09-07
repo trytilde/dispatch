@@ -15,7 +15,7 @@ Two published components were not vendored: `insight-cards` (depends on
 `liveline`) and `selection-actions` (depends on `iconoir-react`). They can be
 re-extracted the same way if needed.
 
-## Per-file SHA-256 at retrieval (pristine extraction)
+## Historical per-file SHA-256 at retrieval (pristine extraction)
 
 | File | SHA-256 at retrieval |
 | --- | --- |
@@ -60,8 +60,28 @@ The site does not ship source for its atom primitives (`Button`, `Shimmer`,
 reconstructions written against the API surface the upstream components use;
 they are not upstream source and carry no upstream hashes.
 
-`prompt-bar.tsx` depends on the MIT-licensed `glimm` npm package, declared in
-`packages/ui/package.json`.
+The removed `prompt-bar.tsx` demo depended on `glimm`; that dependency is no longer declared.
 
 OpenBot-specific composition and state wiring belong outside `upstream/` so
 source changes stay obvious.
+
+## Current retained implementation (2026-09-07)
+
+The 18 upstream React demo components and unused reconstructed `StreamText` atom
+were removed after auditing production imports. Their historical retrieval hashes
+above remain provenance, not a list of current files. `upstream/globals.css` and
+`upstream/LICENSE` remain for the shared theme and license attribution. Unused
+streaming/demo animation rules were removed from the stylesheet.
+
+Production retains reconstructed `Button`, `GlideMenu`, `Shimmer`, `LoaderGrid`,
+and the data-driven `TraceBlock` and `ToolChipsBlock` forks. `ToolChipsBlock` is
+adapted for real tool chains: a leading persistent disclosure chevron, compact
+parameter chips, output-only expansion and non-interactive summary-only rows.
+It has no horizontal divider, file-edit summary, demo timers or diff-chip footer.
+Reasoning remains in the chat catalog through `ThinkingBlock`/`TraceBlock`.
+The retained license and this provenance record are included in package files.
+
+The retained TraceBlock now preserves wrapped reasoning text in a 400px scroll
+area. Long prose traces no longer stagger each paragraph into visibility; all
+output stays available immediately. Tool output uses the same height limit and
+retains every line, including output that accompanies an error.

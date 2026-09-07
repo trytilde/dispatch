@@ -49,10 +49,20 @@ export function ConversationSurface({ children, scrollRef, onScroll }: Conversat
   );
 }
 
-export function ScrollToLatestButton({ onClick }: { onClick: () => void }) {
+export function ScrollToLatestButton({
+  onClick,
+  newMessageCount = 0,
+}: {
+  onClick: () => void;
+  newMessageCount?: number;
+}) {
+  const label =
+    newMessageCount > 0
+      ? `${newMessageCount} new message${newMessageCount === 1 ? "" : "s"}`
+      : "Scroll to bottom";
   return (
-    <button className="scroll-latest" onClick={onClick} aria-label="Scroll to bottom" type="button">
-      <span>Scroll to bottom</span>
+    <button className="scroll-latest" onClick={onClick} aria-label={label} type="button">
+      <span>{label}</span>
       <ArrowDownIcon aria-hidden="true" />
     </button>
   );

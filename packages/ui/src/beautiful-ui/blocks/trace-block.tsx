@@ -122,7 +122,7 @@ export function TraceBlock({
         }}
       >
         <div className="overflow-hidden">
-          <div className="relative mt-1 ml-[5px] pl-4">
+          <div className="reasoning-output-scroll relative mt-1 ml-[5px] pl-4">
             <span
               aria-hidden
               className="absolute left-[3px] w-px bg-line"
@@ -138,7 +138,7 @@ export function TraceBlock({
                 const rowClass =
                   "flex min-h-7 w-full items-center gap-2 rounded-[6px] px-1.5 py-0.5 text-left";
                 const animation = {
-                  animation: `fade-up 320ms cubic-bezier(0.23,1,0.32,1) ${index * 120}ms both`,
+                  animation: `fade-up 320ms cubic-bezier(0.23,1,0.32,1) ${row.prose ? 0 : index * 120}ms both`,
                 };
                 const marker = row.prose ? null : row.pending ? (
                   <span
@@ -181,8 +181,8 @@ export function TraceBlock({
                     <span
                       className={`min-w-0 text-[12.5px] ${
                         row.prose
-                          ? "whitespace-normal leading-relaxed text-ink-2"
-                          : "truncate font-medium text-ink"
+                          ? "whitespace-pre-wrap break-words leading-relaxed text-ink-2"
+                          : "whitespace-pre-wrap break-words font-medium text-ink"
                       } ${row.mono && !row.prose ? "font-mono" : ""}`}
                     >
                       {row.primary}

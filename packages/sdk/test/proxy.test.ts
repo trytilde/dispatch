@@ -163,3 +163,15 @@ describe("frontend chat UI transport", () => {
     expect(await response.text()).toBe("data: [DONE]\n\n");
   });
 });
+
+it("does not forward durable agent credential registration from a runtime session", async () => {
+  const { handle, upstream } = setup();
+  const response = await handle(
+    new Request(
+      "https://heyash.test/api/tilde/api/v1/team/team-a/chatkit/agents/http-vercel-ai-sdk",
+      { method: "POST", headers: { origin: "https://heyash.test" }, body: "{}" },
+    ),
+  );
+  expect(response.status).toBe(404);
+  expect(upstream).not.toHaveBeenCalled();
+});

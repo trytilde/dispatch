@@ -104,6 +104,7 @@ export function createTildeProxy(
       return jsonError(404, "Route not found");
     const path = incoming.pathname.slice(mount.length);
     if (
+      (request.method === "POST" && /\/chatkit\/agents\/http-vercel-ai-sdk$/.test(path)) ||
       /\/chatkit\/(?:agents\/[^/]+\/provision|self-extension-proposals\/[^/]+\/outputs\/claim)(?:\/|$)/.test(
         path,
       )

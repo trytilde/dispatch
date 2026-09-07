@@ -25,6 +25,9 @@ const requestHeaders = new Set([
   "range",
   "last-event-id",
   "idempotency-key",
+  "mcp-session-id",
+  "mcp-protocol-version",
+  "x-tilde-chatkit-session-id",
 ]);
 const responseHeaders = new Set([
   "content-type",
@@ -37,6 +40,7 @@ const responseHeaders = new Set([
   "retry-after",
   "x-vercel-ai-ui-message-stream",
   "x-vercel-ai-data-stream",
+  "mcp-session-id",
 ]);
 const runtimeDomains = new Set([
   "chatkit",
@@ -104,7 +108,7 @@ export function createTildeProxy(
       return jsonError(404, "Route not found");
     const path = incoming.pathname.slice(mount.length);
     if (
-      (request.method === "POST" && /\/chatkit\/agents\/http-vercel-ai-sdk$/.test(path)) ||
+      (request.method === "POST" && path.endsWith("/chatkit/agents/http-vercel-ai-sdk")) ||
       /\/chatkit\/(?:agents\/[^/]+\/provision|self-extension-proposals\/[^/]+\/outputs\/claim)(?:\/|$)/.test(
         path,
       )

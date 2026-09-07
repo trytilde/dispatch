@@ -175,3 +175,27 @@ it("does not forward durable agent credential registration from a runtime sessio
   expect(response.status).toBe(404);
   expect(upstream).not.toHaveBeenCalled();
 });
+
+it("preserves MCP protocol/session headers without forwarding credentials", async () => {
+  const { handle, upstream } = setup();
+  upstream.mockResolvedValue(new Response("{}", { headers: { "mcp-session-id": "session-a" } }));
+  const response = await handle(
+    new Request("https://heyash.test/api/tilde/api/v1/team/team-a/mcp/servers/server-a", {
+      method: "POST",
+      headers: {
+        origin: "https://heyash.test",
+        "mcp-session-id": "session-a",
+        "mcp-protocol-version": "2025-06-18",
+        "x-tilde-chatkit-session-id": "chat-a",
+        authorization: "Bearer forged",
+      },
+      body: "{}",
+    }),
+  );
+  const headers = new Headers(upstream.mock.calls[0]?.[1]?.headers);
+  expect(headers.get("mcp-session-id")).toBe("session-a");
+  expect(headers.get("mcp-protocol-version")).toBe("2025-06-18");
+  expect(headers.get("x-tilde-chatkit-session-id")).toBe("chat-a");
+  expect(headers.has("authorization")).toBe(false);
+  expect(response.headers.get("mcp-session-id")).toBe("session-a");
+});

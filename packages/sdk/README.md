@@ -177,3 +177,9 @@ are not supported by the gRPC reverse proxy and fail explicitly there.
 Identity lists use `identities.list({ pageSize?, nextPageToken? })` and return
 `{ items, next_page_token }`. Pass the returned cursor unchanged to the next call;
 page sizes are clamped to 1–100. Membership lists use the same response shape.
+
+## Realtime voice
+
+Configure speech with agent registration's `audio` option or `client.chatkit.audio.configure()`. Use `audio.start()` for browser media admission and `audio.configureTelnyx()` to bind a phone route. Rust owns STT/TTS and native OpenAI Realtime. The normal endpoint callback receives `context.audio` and `context.telnyx` for pipeline turns; native transcripts do not invoke it.
+
+See [the manual voice example](../../examples/realtime-voice/README.md). Deploy the matching voice API before enabling these wrappers. Browser personal-tool federation and native endpoint-tool bridging are outside this initial slice.

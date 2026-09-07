@@ -1,3 +1,8 @@
+export type {
+  ChatKitAudioContext,
+  ChatKitSpeechContext,
+  ChatKitTelnyxContext,
+} from "./audio-context";
 export {
   type GatewayGenerationReceipt,
   HostedInferenceBillingController,

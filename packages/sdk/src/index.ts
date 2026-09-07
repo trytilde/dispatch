@@ -1,3 +1,4 @@
+export { AudioClient, type AgentAudioConfiguration } from "./chatkit/audio";
 export {
   codingAgentSessionLookupKey,
   codingAgentToolId,

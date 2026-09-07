@@ -30,6 +30,11 @@ export type ChatKitMessageBase = {
 };
 
 export type ChatKitTextMessage = ChatKitMessageBase & {
+  speech?: {
+    generated: boolean;
+    interrupted: boolean;
+    played_audio_ms?: number | null;
+  } | null;
   type: "text";
   text: string;
 };
@@ -774,7 +779,14 @@ async function convertToAiSdkMessageInternal(
       ? ({
           id: message.id,
           role: message.role,
-          parts: [{ type: "text", text: message.text }],
+          parts: [
+            {
+              type: "text",
+              text: message.speech?.interrupted
+                ? `[Interrupted speech: this generated transcript may include unplayed words.]\n${message.text}`
+                : message.text,
+            },
+          ],
           metadata: aiSdkMetadata(message),
         } as UIMessage)
       : ({

@@ -1,3 +1,4 @@
+import type { ChatKitAudioContext, ChatKitTelnyxContext } from "./audio-context";
 import type {
   ChatKitCompactionCheckpoint,
   ChatKitCompactionLifecycle,
@@ -88,6 +89,8 @@ export type ChatKitSessionClient = {
 };
 
 export type ChatKitEndpointContext = ChatKitEndpointProviderContext & {
+  audio?: ChatKitAudioContext;
+  telnyx?: ChatKitTelnyxContext;
   responseMode: ChatKitResponseMode;
   rawBody: Uint8Array;
   body: ChatKitRequestBody;
@@ -471,7 +474,11 @@ export function chatKitEndpoint(
       duplex: "half",
     } as RequestInit);
 
+    const speech = [...body.messages].reverse().find((message) => message.role === "user")?.context;
     const context: ChatKitEndpointContext = {
+      ...(speech?.type === "speech"
+        ? { audio: speech.audio, ...(speech.telnyx ? { telnyx: speech.telnyx } : {}) }
+        : {}),
       rawBody: verified.rawBody,
       body: endpointBody,
       messages: endpointBody.messages,

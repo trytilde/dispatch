@@ -168,3 +168,14 @@ export const { GET, POST } = toolEndpoint({
 See the
 [code review bot example](https://github.com/trytilde/examples/tree/main/code-review-bot)
 for a complete endpoint.
+
+## Speech turns
+
+The existing `chatKitEndpoint` callback exposes optional `context.audio`
+(`liveSessionId`, `utteranceId`, `mode`, `live`) and `context.telnyx`
+(`callControlId`, `callSessionId`, `from`, `to`) from the signed speech context.
+Configure STT/TTS on the Tilde agent. The adapter does not run a second audio
+pipeline, and native OpenAI Realtime transcript observations do not invoke it.
+Stored native speech marked interrupted is annotated during history conversion
+because generated text may contain unplayed words. See the
+[voice example](../../examples/realtime-voice/README.md) for both modes.

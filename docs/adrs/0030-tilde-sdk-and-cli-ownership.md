@@ -69,3 +69,9 @@ flowchart LR
 - 2026-08-31: OpenCode and Gemini CLI receive matching dedicated adapters and
   native fail-open audit installation, completing ChatKit audit support across
   every coding harness configured by `openbot plugin`.
+
+- 2026-09-07T20:04:46Z: The public SDK exposes `telnyx_relay` alongside the OpenAI voice
+  modes. The API/carrier owns speech conversion; the SDK validates signed
+  callback context and annotates interrupted text/UI history with the distinct
+  carrier-reported spoken prefix. This adds no OpenBot provider or browser relay
+  runtime.

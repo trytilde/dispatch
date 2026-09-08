@@ -1,3 +1,4 @@
+import { AudioClient, audioToWire, type AgentAudioConfiguration } from "./audio";
 import type { NormalizedConfig } from "../config";
 import { requestJson } from "../internal/fetch-client";
 import { buildUrl, pathWithParams, teamPath } from "../internal/paths";
@@ -228,6 +229,7 @@ export type InvokeSessionProviderToolResult = {
 };
 
 export class ChatKitClient {
+  readonly audio: AudioClient;
   readonly customProviders: CustomChatKitProvidersClient;
 
   /** Submit a caller-owned turn and retain its snapshot cursor for streaming recovery. */
@@ -288,6 +290,7 @@ export class ChatKitClient {
   constructor(config: NormalizedConfig, messages = new MessagesClient(config)) {
     this.customProviders = new CustomChatKitProvidersClient(config);
     this.#config = config;
+    this.audio = new AudioClient(config);
     this.#messages = messages;
     this.rooms = new ChatKitRoomsClient(config);
     this.runs = new AgentRunsClient(config);
@@ -387,6 +390,7 @@ export class ChatKitClient {
   }
 
   async registerHttpVercelAiSdkAgent(input: {
+    audio?: AgentAudioConfiguration;
     id?: string;
     displayName: string;
     endpointUrl: string;
@@ -412,6 +416,7 @@ export class ChatKitClient {
         endpoint_url: input.endpointUrl,
         streaming: input.streaming ?? false,
         timeout_ms: input.timeoutMs,
+        ...(input.audio ? { audio: audioToWire(input.audio) } : {}),
         automatic_memory_mode: input.automaticMemoryMode ?? "none",
         memory_bank_ids: input.memoryBankIds,
       },

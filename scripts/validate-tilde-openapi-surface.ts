@@ -22,6 +22,11 @@ const requiredOperations = [
   "chatkit-report-tool-execution",
   "chatkit-send-session-message",
   "chatkit-invoke-session-provider-tool",
+  "listAgentAudioProfiles",
+  "getAgentAudio",
+  "setAgentAudio",
+  "startAgentAudioSession",
+  "configureTelnyxVoice",
 ];
 
 const spec = JSON.parse(await readFile(specPath, "utf8")) as {

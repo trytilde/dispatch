@@ -2517,3 +2517,152 @@ describe("ChatKit AI SDK converters", () => {
     });
   });
 });
+
+describe("speech callback context", () => {
+  const audio = {
+    liveSessionId: "live-1",
+    utteranceId: "turn-1",
+    mode: "pipeline",
+    live: true,
+  };
+  const telnyx = {
+    callControlId: "call-1",
+    callSessionId: "carrier-session",
+    from: "+12025550100",
+    to: "+12025550101",
+  };
+  it.each(["pipeline", "telnyx_relay"])(
+    "exposes verified %s speech context through the normal callback",
+    async (mode) => {
+      const audio = { liveSessionId: "live-1", utteranceId: "turn-1", mode, live: true };
+      const handler = vi.fn(async (_request, context) => {
+        expect(context.audio).toEqual(audio);
+        expect(context.telnyx).toEqual(telnyx);
+        expect(context.messages[0].parts[0].text).toBe("Hello");
+        return new Response("OK");
+      });
+      const response = await testChatKitEndpoint({
+        webhookSigningKey: key,
+        handler,
+      })(
+        signedRequest({
+          messages: [
+            {
+              id: "message-1",
+              role: "user",
+              parts: [{ type: "text", text: "Hello" }],
+              context: { type: "speech", audio, telnyx },
+            },
+          ],
+        }),
+      );
+      expect(response.status).toBe(200);
+      expect(handler).toHaveBeenCalledOnce();
+    },
+  );
+  it("does not accept speech authority from message metadata", async () => {
+    const handler = vi.fn(async (_request, context) => {
+      expect(context.audio).toBeUndefined();
+      expect(context.telnyx).toBeUndefined();
+      return new Response("OK");
+    });
+    await testChatKitEndpoint({ webhookSigningKey: key, handler })(
+      signedRequest({
+        messages: [
+          {
+            id: "message-1",
+            role: "user",
+            parts: [{ type: "text", text: "Hello" }],
+            metadata: { audio, telnyx },
+          },
+        ],
+      }),
+    );
+    expect(handler).toHaveBeenCalledOnce();
+  });
+  it("does not carry speech context into a later typed message in the same batch", async () => {
+    const handler = vi.fn(async (_request, context) => {
+      expect(context.audio).toBeUndefined();
+      expect(context.telnyx).toBeUndefined();
+      return new Response("OK");
+    });
+    const response = await testChatKitEndpoint({ webhookSigningKey: key, handler })(
+      signedRequest({
+        messages: [
+          {
+            id: "speech",
+            role: "user",
+            parts: [{ type: "text", text: "Spoken" }],
+            context: { type: "speech", audio, telnyx },
+          },
+          { id: "typed", role: "user", parts: [{ type: "text", text: "Typed follow-up" }] },
+        ],
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(handler).toHaveBeenCalledOnce();
+  });
+  it("rejects malformed speech context before invoking the agent", async () => {
+    const handler = vi.fn(async () => new Response("OK"));
+    const response = await testChatKitEndpoint({
+      webhookSigningKey: key,
+      handler,
+    })(
+      signedRequest({
+        messages: [
+          {
+            id: "message-1",
+            role: "user",
+            parts: [],
+            context: { type: "speech", audio: { ...audio, mode: "invented" } },
+          },
+        ],
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(handler).not.toHaveBeenCalled();
+  });
+});
+
+it("preserves interrupted speech uncertainty in agent history", async () => {
+  const converted = await convertToAiSdkMessage({
+    message: {
+      type: "text",
+      id: "speech-1",
+      role: "assistant",
+      text: "Your meeting is booked.",
+      speech: { generated: true, interrupted: true, played_audio_ms: 250 },
+    },
+  });
+  expect(converted?.parts[0]).toMatchObject({
+    type: "text",
+    text: expect.stringContaining("may include unplayed words"),
+  });
+});
+
+it.each(["text", "ui"] as const)(
+  "preserves carrier-reported interruption separately from generated %s history",
+  async (type) => {
+    const generated = "I booked the appointment and sent a confirmation.";
+    const converted = await convertToAiSdkMessage({
+      message: {
+        id: "relay-response",
+        role: "assistant",
+        ...(type === "text"
+          ? { type, text: generated }
+          : { type, parts: [{ type: "text" as const, text: generated }] }),
+        speech: {
+          generated: true,
+          interrupted: true,
+          played_audio_ms: 800,
+          reported_spoken_text: "I booked",
+        },
+      },
+    });
+    expect(converted?.parts[0]).toMatchObject({
+      type: "text",
+      text: expect.stringContaining('Carrier-reported spoken prefix: "I booked"'),
+    });
+    expect(converted?.parts[1]).toMatchObject({ type: "text", text: generated });
+  },
+);

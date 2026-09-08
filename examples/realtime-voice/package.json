@@ -1,0 +1,21 @@
+{
+  "name": "chatkit-realtime-voice-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "tsx --env-file=.env.local setup.ts",
+    "dev": "tsx --env-file=.env.local server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@trytilde/sdk": "link:../../packages/sdk",
+    "@trytilde/sdk-vercel-ai-node": "link:../../packages/sdk-vercel-ai-node",
+    "@ai-sdk/openai": "4.0.60",
+    "ai": "7.0.64"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

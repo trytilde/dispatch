@@ -1,3 +1,4 @@
+import { type ChatKitSpeechContext, parseSpeechContext } from "./audio-context";
 import type { JsonObject, JsonValue } from "@trytilde/sdk";
 import { isJsonObject } from "@trytilde/sdk/json";
 import {
@@ -88,6 +89,7 @@ export type ChatKitRequestMessagePart =
   | ChatKitRequestDataPart;
 
 export type ChatKitRequestMessage = {
+  context?: ChatKitSpeechContext;
   id: string;
   role: ChatKitRequestMessageRole;
   parts: ChatKitRequestMessagePart[];
@@ -306,6 +308,12 @@ function parseMessage(value: JsonValue, path: string): ChatKitRequestMessage {
   if (typeof value.createdAt === "string") message.createdAt = value.createdAt;
   if (value.metadata !== undefined) {
     message.metadata = value.metadata;
+  }
+  try {
+    const context = parseSpeechContext(value.context);
+    if (context) message.context = context;
+  } catch {
+    throw invalid(`${path}.context`, "contains invalid speech context");
   }
   const identity = parseChatKitMessageIdentity(value.identity as JsonValue | undefined);
   if (identity) {

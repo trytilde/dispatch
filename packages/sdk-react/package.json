@@ -1,6 +1,6 @@
 {
   "name": "@trytilde/sdk-react",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "React helpers for Tilde SDK applications.",
   "license": "MIT",
   "repository": {
@@ -49,7 +49,7 @@
     "vitest": "4.1.10"
   },
   "peerDependencies": {
-    "@trytilde/sdk": "^0.3.0",
+    "@trytilde/sdk": "^0.4.0",
     "react": ">=18 || >=19"
   },
   "engines": {

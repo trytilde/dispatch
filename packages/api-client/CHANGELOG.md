@@ -1,5 +1,13 @@
 # @trytilde/api-client
 
+## 0.4.0
+
+### Minor Changes
+
+- [#155](https://github.com/trytilde/dispatch/pull/155) [`a655a4f`](https://github.com/trytilde/dispatch/commit/a655a4fe026373583d5b7fe6dc1e6a180c418ccc) Thanks [@danielblignaut](https://github.com/danielblignaut)! - Add agent audio configuration, voice session admission, Telnyx Conversation Relay and media routing, and typed speech context for `chatKitEndpoint` callbacks. Preserve carrier-reported interrupted speech separately from generated text and UI history.
+
+- [#154](https://github.com/trytilde/dispatch/pull/154) [`bc1f40d`](https://github.com/trytilde/dispatch/commit/bc1f40dc386dc2668ea63f50d129337629d960c9) Thanks [@danielblignaut](https://github.com/danielblignaut)! - Support customer-hosted ChatKit providers with signed Fetch handlers, scoped runtime clients, contextual session tools, rich delivery, and Linq/AgentMail examples. Deploy compatible API support before using the new methods.
+
 ## 0.3.0
 
 ### Minor Changes

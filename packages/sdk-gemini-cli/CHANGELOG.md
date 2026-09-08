@@ -1,5 +1,12 @@
 # @trytilde/sdk-gemini-cli
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`a655a4f`](https://github.com/trytilde/dispatch/commit/a655a4fe026373583d5b7fe6dc1e6a180c418ccc), [`bc1f40d`](https://github.com/trytilde/dispatch/commit/bc1f40dc386dc2668ea63f50d129337629d960c9)]:
+  - @trytilde/sdk@0.4.0
+
 ## 0.2.0
 
 ### Minor Changes

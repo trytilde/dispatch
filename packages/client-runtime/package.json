@@ -1,6 +1,6 @@
 {
   "name": "@tryopenbot/client-runtime",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Shared OpenBot client contracts, transport, and state runtime",
   "license": "MIT",
   "files": [

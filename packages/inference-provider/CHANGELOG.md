@@ -1,5 +1,13 @@
 # @tryopenbot/inference-provider
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`7538aef`](https://github.com/trytilde/dispatch/commit/7538aefcc1055b29d5214315745baa82d6350e23)]:
+  - @tryopenbot/platform-integrations@2.0.0
+  - @tryopenbot/runtime-provider@2.0.0
+
 ## 0.2.0
 
 ### Minor Changes
